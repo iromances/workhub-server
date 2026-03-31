@@ -1,0 +1,73 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: workhub-server
+  servlet:
+    multipart:
+      max-file-size: ${WORKHUB_UPLOAD_MAX_FILE_SIZE:20MB}
+      max-request-size: ${WORKHUB_UPLOAD_MAX_REQUEST_SIZE:50MB}
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+  datasource:
+    druid:
+      url: jdbc:mysql://${WORKHUB_DB_HOST:127.0.0.1}:${WORKHUB_DB_PORT:3306}/${WORKHUB_DB_NAME:workhub}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      username: ${WORKHUB_DB_USERNAME:root}
+      password: ${WORKHUB_DB_PASSWORD:root}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      initial-size: 0
+      min-idle: 0
+      max-active: 20
+      max-wait: 30000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+    default-statement-timeout: 30
+
+logging:
+  level:
+    root: INFO
+    cn.aslight.workhub: INFO
+
+workhub:
+  jwt:
+    secret: ${WORKHUB_JWT_SECRET:workhub-dev-secret-workhub-dev-secret}
+    expiration-minutes: ${WORKHUB_JWT_EXPIRATION_MINUTES:720}
+  wecom:
+    robot:
+      enabled: ${WORKHUB_WECOM_ROBOT_ENABLED:false}
+      webhook: ${WORKHUB_WECOM_ROBOT_WEBHOOK:}
+  reminder:
+    enabled: ${WORKHUB_REMINDER_ENABLED:false}
+    due-soon-hours: ${WORKHUB_REMINDER_DUE_SOON_HOURS:24}
+    dedupe-minutes: ${WORKHUB_REMINDER_DEDUPE_MINUTES:60}
+    cron: ${WORKHUB_REMINDER_CRON:0 */30 * * * *}
+  ai:
+    provider: ${WORKHUB_AI_PROVIDER:heuristic}
+    openrouter:
+      enabled: ${WORKHUB_AI_OPENROUTER_ENABLED:false}
+      api-key: ${WORKHUB_AI_OPENROUTER_API_KEY:}
+      base-url: ${WORKHUB_AI_OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
+      model: ${WORKHUB_AI_OPENROUTER_MODEL:openai/gpt-4o-mini}
+      referer: ${WORKHUB_AI_OPENROUTER_REFERER:http://127.0.0.1:8080}
+      title: ${WORKHUB_AI_OPENROUTER_TITLE:WorkHub Server}
+    minimax:
+      enabled: ${WORKHUB_AI_MINIMAX_ENABLED:false}
+      api-key: ${WORKHUB_AI_MINIMAX_API_KEY:}
+      base-url: ${WORKHUB_AI_MINIMAX_BASE_URL:https://api.minimaxi.com/v1}
+      model: ${WORKHUB_AI_MINIMAX_MODEL:M2-her}
+    codex-cli:
+      enabled: ${WORKHUB_AI_CODEX_CLI_ENABLED:false}
+      command: ${WORKHUB_AI_CODEX_CLI_COMMAND:codex}
+      model: ${WORKHUB_AI_CODEX_CLI_MODEL:gpt-5.3-codex}
+      timeout-seconds: ${WORKHUB_AI_CODEX_CLI_TIMEOUT_SECONDS:120}
+      disable-plugins: ${WORKHUB_AI_CODEX_CLI_DISABLE_PLUGINS:true}
+  storage:
+    local-path: ${WORKHUB_STORAGE_LOCAL_PATH:data/uploads}
