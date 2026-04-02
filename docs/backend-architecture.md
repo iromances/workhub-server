@@ -30,30 +30,39 @@
 
 `cn.aslight.workhub`
 
-建议分层：
+建议多模块与分层：
 
 ```text
-src/main/java/cn/aslight/workhub/
-  common/
-  config/
-  security/
-  controller/
-  service/
-  mapper/
-  domain/
-    auth/
-    project/
-    sprint/
-    release/
-    workitem/
-    intake/
-    attachment/
-    system/
-  integration/
-    wecom/
-    ai/
-  job/
+workhub-model/
+  src/main/java/cn/aslight/workhub/model/
+workhub-support/
+  src/main/java/cn/aslight/workhub/config/
+workhub-dao/
+  src/main/java/cn/aslight/workhub/dao/
+workhub-service/
+  src/main/java/cn/aslight/workhub/service/
+  src/main/java/cn/aslight/workhub/integration/
+  src/main/java/cn/aslight/workhub/security/JwtTokenService.java
+workhub-controller/
+  src/main/java/cn/aslight/workhub/controller/
+  src/main/java/cn/aslight/workhub/common/
+  src/main/java/cn/aslight/workhub/security/JwtAuthenticationFilter.java
+workhub-job/
+  src/main/java/cn/aslight/workhub/job/
+workhub-bootstrap/
+  src/main/java/cn/aslight/workhub/WorkhubServerApplication.java
+  src/main/java/cn/aslight/workhub/config/
+  src/main/resources/
 ```
+
+约束：
+
+- 所有对前端和第三方暴露的 HTTP 接口统一放在 `workhub-controller`。
+- 所有前后端契约对象、实体和值对象统一放在 `workhub-model`。
+- MyBatis 接口统一放在 `workhub-dao`。
+- 业务编排、规则和动作服务统一放在 `workhub-service`。
+- 定时任务统一放在 `workhub-job`。
+- Spring Boot 启动、运行时配置和资源统一放在 `workhub-bootstrap`。
 
 ## 4. 核心数据模型
 
@@ -111,7 +120,7 @@ src/main/java/cn/aslight/workhub/
 - 结构化需求 JSON
 - 发送人
 - 发送时间
-- AI 整理结果
+- 结构化增强结果
 - 整理状态
 - 转正式工作项 ID
 
@@ -133,7 +142,7 @@ src/main/java/cn/aslight/workhub/
 - 指派单独接口
 - 转版本单独接口
 - 转迭代单独接口
-- AI 整理单独接口
+- 上传增强异步处理，不单独暴露 AI 草稿接口
 
 ## 6. 安全方案
 
@@ -163,29 +172,34 @@ src/main/java/cn/aslight/workhub/
 - 企微回调只负责收件和落库，不在回调线程内做重业务处理。
 - 回调验签、去重、重试策略必须优先设计。
 
-## 8. AI 处理原则
+## 8. 结构化增强原则
 
-AI 输入：
+增强输入：
 
 - 企微原始消息
-- 人工粘贴内容
+- 需求截图
 - 附件文本摘要
 - 已抽取的结构化审批字段
 
-AI 输出：
+增强输出：
 
-- 标题建议
-- 描述建议
-- 类型建议
-- 优先级建议
-- 项目归属建议
-- 验收标准建议
-- 任务拆解建议
+- 审批编号
+- 提出人
+- 提交时间
+- 需求类型
+- 需求摘要
+- 需求名称
+- 需求描述
+- 所在部门
+- 业务线
+- 备注等结构化字段
 
 约束：
 
-- AI 输出落入草稿区，不直接写正式表。
-- AI 输出必须保留原始结果，便于回溯。
+- 增强结果只更新 `structured_data_json` 和 enrichment 状态，不直接写正式表。
+- 增强过程必须保留原始文本和附件，便于回溯。
+- 需求管理列表展示的 `demandStatus` 优先使用人工维护的需求阶段状态；历史数据或未维护数据再回退到系统按 enrichment 状态、结构化结果和是否已转工作项推导的结果。
+- 需求管理通过显式阶段动作推进需求状态，不提供通用大而全编辑接口；动作执行过程中可补录工时和关键时间，并需记录修改历史。
 
 ## 9. 工程约束
 

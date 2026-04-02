@@ -58,30 +58,32 @@
 
 重点目录：
 
-- `src/main/java/cn/aslight/workhub/common/`：统一返回、异常处理等基础能力
-- `src/main/java/cn/aslight/workhub/config/`：安全、跨域、配置项
-- `src/main/java/cn/aslight/workhub/security/`：JWT 解析与鉴权过滤
-- `src/main/java/cn/aslight/workhub/controller/`：系统级控制器
-- `src/main/java/cn/aslight/workhub/domain/`：按业务域拆分的 controller、service、mapper、dto、model
-- `src/main/resources/db/schema/mysql/`：初始化 SQL
+- `workhub-model/`：按业务域分组的请求、响应、实体和值对象
+- `workhub-support/`：配置属性模型
+- `workhub-dao/`：按业务域分组的 MyBatis 数据访问接口
+- `workhub-service/`：按业务域分组的业务动作、集成服务与 JWT 令牌服务
+- `workhub-controller/`：按业务域分组的 HTTP 接口、统一响应、异常处理
+- `workhub-job/`：定时任务
+- `workhub-bootstrap/`：Spring Boot 启动入口、运行时配置与资源
+- `workhub-bootstrap/src/main/resources/db/schema/mysql/`：初始化 SQL
 - `docs/`：业务、架构、路线图等真实规则来源
 
 约定：
 
 - Controller 不写核心业务编排。
 - Service 按业务动作拆分，不写超长万能方法。
-- Mapper 只负责数据访问，不承载业务规则。
+- DAO 只负责数据访问，不承载业务规则。
 - 表结构变更时，同步更新 SQL 和相关文档。
-- 新增 API 时，优先按 `auth/project/sprint/release/workitem/intake` 等业务域归档，不要堆在公共目录。
+- 新增 API 时，优先按 `auth/project/sprint/release/workitem/intake` 等业务域归档到 `controller/`、`model/`、`dao/`、`service/`。
 
 ## 6. 修改代码时的工作方式
 
 1. 先确认变更属于当前路线图阶段范围。
 2. 先找已有文档和现有实现，再决定是否新增包或抽象。
-3. 小改动尽量复用既有模式；中大型改动优先补齐对应领域的 service、mapper、dto。
+3. 小改动尽量复用既有模式；中大型改动优先补齐对应领域的 `controller`、`model`、`dao`、`service`。
 4. 改业务接口时，同时检查：
-   - 是否需要新增 DTO
-   - 是否需要新增或扩展 Mapper
+   - 是否需要新增请求/响应模型
+   - 是否需要新增或扩展 DAO
    - 是否需要同步更新 SQL 或文档
    - 是否需要为前端补充稳定的响应字段
 5. 如发现文档与实现不一致：
@@ -92,7 +94,7 @@
 
 - 使用 Java 25。
 - 继续沿用 Spring Boot + MyBatis 注解/分层模式，保持实现直接、清晰。
-- DTO、实体、Mapper、Service 按业务域组织，不把跨领域逻辑塞进单个类。
+- Controller、Model、DAO、Service 统一按业务域分层组织，不把跨领域逻辑塞进单个类。
 - 明确动作接口优先于“大而全 update”。
 - 关键写操作优先保留留痕能力，尤其是工作项状态流转和跟踪记录。
 - 演示数据只允许作为临时骨架；一旦进入 M3 及之后阶段，优先接入真实数据库查询。
@@ -100,7 +102,7 @@
 ## 8. 常用命令
 
 - 编译验证：`mvn -q -DskipTests compile`
-- 本地启动：`mvn spring-boot:run`
+- 本地启动：`mvn -pl workhub-bootstrap spring-boot:run`
 
 当前仓库未看到成体系测试代码。提交较大改动前，至少保证：
 
