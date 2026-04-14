@@ -26,6 +26,7 @@ public record IntakeSummaryResponse(Long id,
                                     String actualEffort,
                                     String actualCompletedTime,
                                     String acceptanceTime,
+                                    String releasedTime,
                                     String enrichmentStatus,
                                     String status,
                                     Long convertedWorkItemId) {

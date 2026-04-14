@@ -1,6 +1,6 @@
 # WorkHub Server
 
-WorkHub 后端仓库，负责认证鉴权、项目与工作项领域建模、企微入站接收、群机器人通知、需求截图/附件结构化增强、附件处理以及统一 API 输出。
+WorkHub 后端仓库，负责认证鉴权、项目与工作项领域建模、企微入站接收、群机器人通知、需求截图/附件结构化增强、附件处理、支付接入配置管理以及统一 API 输出。
 
 当前阶段先沉淀项目边界与实施基线，后续开发默认遵循以下文档：
 
@@ -16,6 +16,7 @@ WorkHub 后端仓库，负责认证鉴权、项目与工作项领域建模、企
 - 群机器人通知
 - 需求截图和附件的结构化增强编排
 - 附件上传、关联和审计留痕
+- 支付渠道、商户、参数、秘钥与项目绑定配置管理
 
 当前技术方向：
 
@@ -46,6 +47,7 @@ WorkHub 后端仓库，负责认证鉴权、项目与工作项领域建模、企
 - `/api/work-items`
 - `/api/intake-records`
 - `/api/intake`
+- `/api/payment`
 - `/api/wecom/callback/messages`
 - JWT 安全过滤器
 - 初始化建表 SQL
@@ -79,10 +81,12 @@ mvn -pl workhub-bootstrap spring-boot:run
 - 需求管理阶段动作推进与历史留痕
 - 需求详情查看/编辑历史
 - 企微回调入待整理箱
-- 待整理转正式工作项
 - 上传截图/附件后可选调用本地 Codex CLI 增强结构化字段抽取
 - 非图片附件在服务端先提取正文摘要，再与图片一起用于 Codex 结构化增强
 - 待整理详情可查看附件 enrichment 状态、失败摘要和最近更新时间
+- 支付渠道、商户、项目绑定、参数、秘钥的配置管理接口
+- 商户按用途绑定到现有项目，并支持一个商户号被多个项目复用
+- 敏感参数和秘钥按应用层加密落库，接口只返回脱敏值、版本和指纹
 - 企业微信群机器人通知
 - 到期提醒定时扫描
 
@@ -105,12 +109,15 @@ mvn -pl workhub-bootstrap spring-boot:run
 - `WORKHUB_AI_CODEX_CLI_MODEL=gpt-5.3-codex`
 - `WORKHUB_AI_CODEX_CLI_TIMEOUT_SECONDS=0`
 - `WORKHUB_STORAGE_LOCAL_PATH=data/uploads`
+- `WORKHUB_PAYMENT_MASTER_KEY=请替换为生产主密钥`
 
 说明：
 
 - 外部通知发送失败不会影响核心业务写入。
 - 企微回调已按 `external_message_id` 做幂等保护。
 - 截图和附件会以本地文件方式保存，并通过 `/api/attachments/{id}/download` 下载。
+- 支付域会在服务启动时自动补齐 `pay_*` 配置表；如数据库账号无 `CREATE TABLE` 权限，需先手工执行初始化 SQL。
+- 支付敏感参数和秘钥统一做应用层加密存储，详情接口仅返回脱敏值、指纹和版本信息，不直接回显明文。
 - 开启 `WORKHUB_AI_CODEX_CLI_ENABLED=true` 后，截图/附件上传成功后会异步触发 intake enrichment：
   - 图片附件通过 `codex exec -i` 直接传给 Codex
   - `pdf/docx/doc/xlsx/xls` 这类非图片附件先由服务端提取正文摘要，再拼进 Codex prompt
@@ -123,7 +130,7 @@ mvn -pl workhub-bootstrap spring-boot:run
   - `RUNNING`：正在提取附件正文或调用 Codex
   - `SUCCEEDED`：增强完成；若有局部附件提取失败，失败摘要会写入 `enrichmentErrorSummary`
   - `FAILED`：异步增强失败，可在 `GET /api/intake/{id}` 中查看失败摘要
-- 当前 fallback 规则仍然是 `字段: 值` 文本抽取，但 enrichment 完成后会把非图片附件的文本摘要一并写入 `structured_data_json.attachmentSummaries`，供后续人工确认和转工作项使用。
+- 当前 fallback 规则仍然是 `字段: 值` 文本抽取，但 enrichment 完成后会把非图片附件的文本摘要一并写入 `structured_data_json.attachmentSummaries`，供后续人工确认使用。
 - 需求管理页面展示的是 intake 阶段的派生生命周期，不替代正式工作项状态：
   - 识别前只看 `enrichmentStatus`：`PENDING / RUNNING / FAILED / SUCCEEDED`
   - 识别成功后 `demandStatus` 进入业务生命周期：`已收录 -> 待评估 -> 已评估 -> 研发中 -> 待测试 -> 测试中 -> 待验收 -> 待上线 -> 已上线`

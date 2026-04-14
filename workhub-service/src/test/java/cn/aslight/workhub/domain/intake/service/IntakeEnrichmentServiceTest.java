@@ -70,6 +70,7 @@ class IntakeEnrichmentServiceTest {
                 null,
                 null,
                 null,
+                null,
                 "研发需求",
                 null,
                 null,

@@ -9,6 +9,8 @@ import java.util.List;
  */
 final class IntakeDemandStatusRules {
 
+    static final String REQUIREMENT_TYPE_RESEARCH = "研发需求";
+    static final String REQUIREMENT_TYPE_OPERATIONS = "数据提取/运维";
     static final String RECORDED = "已收录";
     static final String PENDING_EVALUATION = "待评估";
     static final String EVALUATED = "已评估";
@@ -25,6 +27,7 @@ final class IntakeDemandStatusRules {
     static final String ACTION_SUBMIT_ACCEPTANCE = "SUBMIT_ACCEPTANCE";
     static final String ACTION_CONFIRM_ACCEPTANCE = "CONFIRM_ACCEPTANCE";
     static final String ACTION_CONFIRM_RELEASE = "CONFIRM_RELEASE";
+    static final String ACTION_COMPLETE_DELIVERY = "COMPLETE_DELIVERY";
     static final List<String> EDITABLE_BUSINESS_STATUSES = List.of(
             RECORDED,
             PENDING_EVALUATION,
@@ -124,9 +127,32 @@ final class IntakeDemandStatusRules {
      * @param action 阶段动作
      * @return 下一阶段状态
      */
-    static String resolveNextStatus(String currentStatus, String action) {
+    static String resolveNextStatus(String currentStatus, String action, String requirementType) {
         String normalizedStatus = normalizeEditableStatus(currentStatus);
         String normalizedAction = normalizeAction(action);
+        if (isOperationsDemand(requirementType)) {
+            return switch (normalizedAction) {
+                case ACTION_EVALUATE_EFFORT -> {
+                    if (!List.of(RECORDED, PENDING_EVALUATION).contains(normalizedStatus)) {
+                        throw new IllegalArgumentException("当前阶段不允许执行评估工时");
+                    }
+                    yield EVALUATED;
+                }
+                case ACTION_START_DEVELOPMENT -> {
+                    if (!EVALUATED.equals(normalizedStatus)) {
+                        throw new IllegalArgumentException("仅已评估需求允许开始处理");
+                    }
+                    yield IN_DEVELOPMENT;
+                }
+                case ACTION_COMPLETE_DELIVERY -> {
+                    if (!IN_DEVELOPMENT.equals(normalizedStatus)) {
+                        throw new IllegalArgumentException("仅处理中需求允许确认完成");
+                    }
+                    yield RELEASED;
+                }
+                default -> throw new IllegalArgumentException("数据提取/运维类需求不支持该阶段动作");
+            };
+        }
         return switch (normalizedAction) {
             case ACTION_EVALUATE_EFFORT -> {
                 if (!List.of(RECORDED, PENDING_EVALUATION).contains(normalizedStatus)) {
@@ -192,9 +218,14 @@ final class IntakeDemandStatusRules {
                     ACTION_START_TESTING,
                     ACTION_SUBMIT_ACCEPTANCE,
                     ACTION_CONFIRM_ACCEPTANCE,
-                    ACTION_CONFIRM_RELEASE -> normalized;
+                    ACTION_CONFIRM_RELEASE,
+                    ACTION_COMPLETE_DELIVERY -> normalized;
             default -> throw new IllegalArgumentException("不支持的阶段动作: " + normalized);
         };
+    }
+
+    static boolean isOperationsDemand(String requirementType) {
+        return REQUIREMENT_TYPE_OPERATIONS.equals(trimToNull(requirementType));
     }
 
     private static String normalizeLegacyStatus(String demandStatus) {

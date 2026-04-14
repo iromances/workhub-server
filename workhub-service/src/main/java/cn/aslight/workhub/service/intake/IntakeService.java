@@ -3,15 +3,12 @@ package cn.aslight.workhub.service.intake;
 import cn.aslight.workhub.model.attachment.AttachmentResponse;
 import cn.aslight.workhub.service.attachment.AttachmentService;
 import cn.aslight.workhub.model.intake.IntakeAIDraft;
-import cn.aslight.workhub.model.intake.IntakeConvertRequest;
-import cn.aslight.workhub.model.intake.IntakeConvertResponse;
 import cn.aslight.workhub.model.intake.IntakeCreateRequest;
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakeHistoryEntity;
 import cn.aslight.workhub.model.intake.IntakeHistoryResponse;
 import cn.aslight.workhub.model.intake.IntakeStageActionRequest;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
-import cn.aslight.workhub.model.intake.IntakeTaskBreakdownItem;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
 import cn.aslight.workhub.model.intake.IntakeUploadRequest;
 import cn.aslight.workhub.model.intake.WecomCallbackRequest;
@@ -19,10 +16,6 @@ import cn.aslight.workhub.model.intake.IntakeZentaoLinkRequest;
 import cn.aslight.workhub.dao.intake.IntakeHistoryMapper;
 import cn.aslight.workhub.dao.intake.IntakeMapper;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
-import cn.aslight.workhub.model.workitem.WorkItemCreateRequest;
-import cn.aslight.workhub.model.workitem.WorkItemDetailResponse;
-import cn.aslight.workhub.service.workitem.WorkItemFollowUpService;
-import cn.aslight.workhub.service.workitem.WorkItemService;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +23,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,26 +36,20 @@ public class IntakeService {
 
     private final IntakeMapper intakeMapper;
     private final IntakeHistoryMapper intakeHistoryMapper;
-    private final WorkItemService workItemService;
     private final AttachmentService attachmentService;
-    private final WorkItemFollowUpService workItemFollowUpService;
     private final IntakeStructuredDataExtractor intakeStructuredDataExtractor;
     private final IntakeEnrichmentService intakeEnrichmentService;
     private final ObjectMapper objectMapper;
 
     public IntakeService(IntakeMapper intakeMapper,
                          IntakeHistoryMapper intakeHistoryMapper,
-                         WorkItemService workItemService,
                          AttachmentService attachmentService,
-                         WorkItemFollowUpService workItemFollowUpService,
                          IntakeStructuredDataExtractor intakeStructuredDataExtractor,
                          IntakeEnrichmentService intakeEnrichmentService,
                          ObjectMapper objectMapper) {
         this.intakeMapper = intakeMapper;
         this.intakeHistoryMapper = intakeHistoryMapper;
-        this.workItemService = workItemService;
         this.attachmentService = attachmentService;
-        this.workItemFollowUpService = workItemFollowUpService;
         this.intakeStructuredDataExtractor = intakeStructuredDataExtractor;
         this.intakeEnrichmentService = intakeEnrichmentService;
         this.objectMapper = objectMapper;
@@ -167,31 +155,16 @@ public class IntakeService {
     }
 
     @Transactional
-    public IntakeConvertResponse convertToWorkItem(Long id,
-                                                   IntakeConvertRequest request,
-                                                   String operatorUserName) {
-        IntakeRecordEntity entity = requireExisting(id);
-        if (entity.getConvertedWorkItemId() != null) {
-            throw new IllegalArgumentException("待整理记录已转正式工作项");
-        }
-
-        IntakeAIDraft draft = readDraft(entity.getAiDraftJson());
-        WorkItemCreateRequest workItemRequest = toWorkItemCreateRequest(entity, request, draft);
-        WorkItemDetailResponse workItem = workItemService.create(workItemRequest, operatorUserName);
-        writeTaskBreakdownNotes(workItem.id(), draft, operatorUserName);
-        IntakeStructuredData structuredData = readStructuredData(entity.getStructuredDataJson());
-        String currentDemandStatus = IntakeDemandStatusRules.resolve(entity, structuredData);
-        if (currentDemandStatus == null) {
-            currentDemandStatus = IntakeDemandStatusRules.RECORDED;
-        }
-        intakeMapper.markConverted(id, IntakeStatusRules.CONVERTED, currentDemandStatus, workItem.id());
-
-        return new IntakeConvertResponse(detail(id, null, false), workItem);
+    public IntakeDetailResponse advanceStage(Long id,
+                                             IntakeStageActionRequest request,
+                                             String operatorUserName) {
+        return advanceStage(id, request, null, operatorUserName);
     }
 
     @Transactional
     public IntakeDetailResponse advanceStage(Long id,
                                              IntakeStageActionRequest request,
+                                             List<MultipartFile> dataFiles,
                                              String operatorUserName) {
         IntakeRecordEntity entity = requireExisting(id);
         IntakeStructuredData currentStructuredData = readStructuredData(entity.getStructuredDataJson());
@@ -200,10 +173,21 @@ public class IntakeService {
             throw new IllegalArgumentException("需求尚未识别成功，暂不能推进业务阶段");
         }
         String action = IntakeDemandStatusRules.normalizeAction(request.getAction());
-        String nextDemandStatus = IntakeDemandStatusRules.resolveNextStatus(currentDemandStatus, action);
+        String nextDemandStatus = IntakeDemandStatusRules.resolveNextStatus(
+                currentDemandStatus,
+                action,
+                currentStructuredData == null ? null : currentStructuredData.requirementType()
+        );
         IntakeStructuredData nextStructuredData = applyStageAction(currentStructuredData, request, action);
 
-        String historyDetail = buildStageActionHistory(currentStructuredData, nextStructuredData, currentDemandStatus, nextDemandStatus);
+        List<String> uploadedFileNames = saveStageActionFiles(id, action, dataFiles);
+        String historyDetail = buildStageActionHistory(
+                currentStructuredData,
+                nextStructuredData,
+                currentDemandStatus,
+                nextDemandStatus,
+                uploadedFileNames
+        );
         intakeMapper.updateManagementFields(id, writeStructuredDataJson(nextStructuredData), nextDemandStatus);
         if (historyDetail != null) {
             recordHistory(id, "UPDATE", resolveStageActionSummary(action), historyDetail, operatorUserName);
@@ -314,6 +298,7 @@ public class IntakeService {
                 structuredData == null ? null : structuredData.actualEffort(),
                 structuredData == null ? null : structuredData.actualCompletedTime(),
                 structuredData == null ? null : structuredData.acceptanceTime(),
+                structuredData == null ? null : structuredData.releasedTime(),
                 entity.getEnrichmentStatus(),
                 entity.getIntakeStatus(),
                 entity.getConvertedWorkItemId()
@@ -385,35 +370,6 @@ public class IntakeService {
         }
     }
 
-    private WorkItemCreateRequest toWorkItemCreateRequest(IntakeRecordEntity entity,
-                                                          IntakeConvertRequest request,
-                                                          IntakeAIDraft draft) {
-        WorkItemCreateRequest workItemRequest = new WorkItemCreateRequest();
-        workItemRequest.setProjectId(request.getProjectId());
-        workItemRequest.setSprintId(request.getSprintId());
-        workItemRequest.setReleaseId(request.getReleaseId());
-        workItemRequest.setType(firstNonBlank(request.getType(), draft == null ? null : draft.typeSuggestion()));
-        workItemRequest.setTitle(firstNonBlank(request.getTitle(), draft == null ? null : draft.titleSuggestion()));
-        workItemRequest.setDescription(firstNonBlank(request.getDescription(),
-                draft == null ? entity.getRawContent() : draft.descriptionSuggestion()));
-        workItemRequest.setSourceType(entity.getSourceType());
-        workItemRequest.setSourceChannel(entity.getSourceChannel());
-        workItemRequest.setPriority(firstNonBlank(request.getPriority(), draft == null ? null : draft.prioritySuggestion()));
-        workItemRequest.setUrgency(trimToNull(request.getUrgency()));
-        workItemRequest.setOwnerUserName(request.getOwnerUserName());
-        workItemRequest.setFollowerUserName(request.getFollowerUserName());
-        IntakeStructuredData structuredData = readStructuredData(entity.getStructuredDataJson());
-        workItemRequest.setProposerName(firstNonBlank(
-                request.getProposerName(),
-                firstNonBlank(structuredData == null ? null : structuredData.proposerName(), entity.getSenderName())
-        ));
-        workItemRequest.setAcceptanceCriteria(firstNonBlank(request.getAcceptanceCriteria(),
-                draft == null ? null : draft.acceptanceCriteriaSuggestion()));
-        workItemRequest.setPlannedStartAt(request.getPlannedStartAt());
-        workItemRequest.setPlannedEndAt(request.getPlannedEndAt());
-        return workItemRequest;
-    }
-
     private IntakeAIDraft readDraft(String aiDraftJson) {
         if (aiDraftJson == null || aiDraftJson.isBlank()) {
             return null;
@@ -461,6 +417,7 @@ public class IntakeService {
         }
         String requirementType = normalizeRequirementType(structuredData.requirementType());
         String proposerName = normalizeProposerName(structuredData.proposerName(), structuredData.approvalTitle());
+        String developmentOwnerUserName = trimToNull(structuredData.developmentOwnerUserName());
         String developmentBranchName = normalizeDevelopmentBranchName(
                 structuredData.developmentBranchName(),
                 requirementType,
@@ -470,6 +427,7 @@ public class IntakeService {
         String zentaoUrl = trimToNull(structuredData.zentaoUrl());
         if (java.util.Objects.equals(requirementType, structuredData.requirementType())
                 && java.util.Objects.equals(proposerName, structuredData.proposerName())
+                && java.util.Objects.equals(developmentOwnerUserName, structuredData.developmentOwnerUserName())
                 && java.util.Objects.equals(developmentBranchName, structuredData.developmentBranchName())
                 && java.util.Objects.equals(zentaoUrl, structuredData.zentaoUrl())) {
             return structuredData;
@@ -478,6 +436,7 @@ public class IntakeService {
                 structuredData.category(),
                 structuredData.approvalTitle(),
                 proposerName,
+                developmentOwnerUserName,
                 structuredData.approvalCode(),
                 structuredData.submittedTime(),
                 requirementType,
@@ -561,33 +520,6 @@ public class IntakeService {
         return sanitized.isEmpty() ? null : sanitized;
     }
 
-    private void writeTaskBreakdownNotes(Long workItemId, IntakeAIDraft draft, String operatorUserName) {
-        if (draft == null || draft.taskBreakdownSuggestions() == null || draft.taskBreakdownSuggestions().isEmpty()) {
-            return;
-        }
-        StringBuilder content = new StringBuilder("AI 拆解建议：");
-        int index = 1;
-        for (IntakeTaskBreakdownItem item : draft.taskBreakdownSuggestions()) {
-            if (item == null || trimToNull(item.taskName()) == null) {
-                continue;
-            }
-            content.append("\n")
-                    .append(index++)
-                    .append(". ")
-                    .append(item.taskName().trim())
-                    .append(" | 工时: ").append(defaultValue(item.estimatedEffort()))
-                    .append(" | 开发负责人: ").append(defaultValue(item.ownerUserName()))
-                    .append(" | 状态: ").append(defaultValue(item.status()));
-            String notes = trimToNull(item.notes());
-            if (notes != null) {
-                content.append(" | 说明: ").append(notes);
-            }
-        }
-        if (index > 1) {
-            workItemFollowUpService.addSystemNote(workItemId, content.toString(), operatorUserName);
-        }
-    }
-
     private IntakeStructuredData applyStageAction(IntakeStructuredData currentStructuredData,
                                                   IntakeStageActionRequest request,
                                                   String action) {
@@ -619,12 +551,14 @@ public class IntakeService {
                     null,
                     null,
                     null,
+                    null,
                     List.of(),
                     List.of()
             );
         }
         String estimatedEffort = baseline.estimatedEffort();
         String plannedDueDate = baseline.plannedDueDate();
+        String developmentOwnerUserName = baseline.developmentOwnerUserName();
         String developmentStartedDate = baseline.developmentStartedDate();
         String actualEffort = baseline.actualEffort();
         String testingStartedDate = baseline.testingStartedDate();
@@ -637,8 +571,10 @@ public class IntakeService {
                 estimatedEffort = requireValue(request.getEstimatedEffort(), "预估工时不能为空");
                 plannedDueDate = requireValue(request.getPlannedDueDate(), "预估完成时间不能为空");
             }
-            case IntakeDemandStatusRules.ACTION_START_DEVELOPMENT ->
-                    developmentStartedDate = resolveActionDate(request.getOccurredAt());
+            case IntakeDemandStatusRules.ACTION_START_DEVELOPMENT -> {
+                developmentOwnerUserName = requireValue(request.getDevelopmentOwnerUserName(), "研发人员不能为空");
+                developmentStartedDate = resolveActionDate(request.getOccurredAt());
+            }
             case IntakeDemandStatusRules.ACTION_SUBMIT_TESTING -> {
                 actualEffort = requireValue(request.getActualEffort(), "实际工时不能为空");
                 actualCompletedTime = firstNonBlank(request.getActualCompletedTime(), resolveActionDate(request.getOccurredAt()));
@@ -652,6 +588,11 @@ public class IntakeService {
                     acceptanceTime = firstNonBlank(request.getAcceptanceTime(), resolveActionDate(request.getOccurredAt()));
             case IntakeDemandStatusRules.ACTION_CONFIRM_RELEASE ->
                     releasedTime = resolveActionDate(request.getOccurredAt());
+            case IntakeDemandStatusRules.ACTION_COMPLETE_DELIVERY -> {
+                actualEffort = firstNonBlank(request.getActualEffort(), actualEffort);
+                actualCompletedTime = firstNonBlank(request.getActualCompletedTime(), resolveActionDate(request.getOccurredAt()));
+                releasedTime = resolveActionDate(request.getOccurredAt());
+            }
             default -> throw new IllegalArgumentException("不支持的阶段动作");
         }
 
@@ -659,6 +600,7 @@ public class IntakeService {
                 baseline.category(),
                 baseline.approvalTitle(),
                 baseline.proposerName(),
+                developmentOwnerUserName,
                 baseline.approvalCode(),
                 baseline.submittedTime(),
                 baseline.requirementType(),
@@ -694,6 +636,7 @@ public class IntakeService {
                 baseline.category(),
                 baseline.approvalTitle(),
                 baseline.proposerName(),
+                baseline.developmentOwnerUserName(),
                 baseline.approvalCode(),
                 baseline.submittedTime(),
                 baseline.requirementType(),
@@ -734,17 +677,20 @@ public class IntakeService {
     private String buildStageActionHistory(IntakeStructuredData before,
                                            IntakeStructuredData after,
                                            String beforeDemandStatus,
-                                           String afterDemandStatus) {
+                                           String afterDemandStatus,
+                                           List<String> uploadedFileNames) {
         List<String> changes = new java.util.ArrayList<>();
         appendChange(changes, "需求状态", beforeDemandStatus, afterDemandStatus);
         appendChange(changes, "预估工时", before == null ? null : before.estimatedEffort(), after == null ? null : after.estimatedEffort());
         appendChange(changes, "预估完成时间", before == null ? null : before.plannedDueDate(), after == null ? null : after.plannedDueDate());
+        appendChange(changes, "研发人员", before == null ? null : before.developmentOwnerUserName(), after == null ? null : after.developmentOwnerUserName());
         appendChange(changes, "研发开始日期", before == null ? null : before.developmentStartedDate(), after == null ? null : after.developmentStartedDate());
         appendChange(changes, "实际工时", before == null ? null : before.actualEffort(), after == null ? null : after.actualEffort());
         appendChange(changes, "测试开始日期", before == null ? null : before.testingStartedDate(), after == null ? null : after.testingStartedDate());
         appendChange(changes, "实际完成时间", before == null ? null : before.actualCompletedTime(), after == null ? null : after.actualCompletedTime());
         appendChange(changes, "验收时间", before == null ? null : before.acceptanceTime(), after == null ? null : after.acceptanceTime());
         appendChange(changes, "上线时间", before == null ? null : before.releasedTime(), after == null ? null : after.releasedTime());
+        appendUploadedFiles(changes, uploadedFileNames);
         if (changes.isEmpty()) {
             return null;
         }
@@ -769,6 +715,7 @@ public class IntakeService {
             case IntakeDemandStatusRules.ACTION_SUBMIT_ACCEPTANCE -> "提交验收";
             case IntakeDemandStatusRules.ACTION_CONFIRM_ACCEPTANCE -> "确认验收";
             case IntakeDemandStatusRules.ACTION_CONFIRM_RELEASE -> "确认上线";
+            case IntakeDemandStatusRules.ACTION_COMPLETE_DELIVERY -> "确认完成";
             default -> "推进需求阶段";
         };
     }
@@ -779,6 +726,33 @@ public class IntakeService {
         if (!beforeValue.equals(afterValue)) {
             changes.add(label + "：" + beforeValue + " -> " + afterValue);
         }
+    }
+
+    private void appendUploadedFiles(List<String> changes, List<String> uploadedFileNames) {
+        if (uploadedFileNames == null || uploadedFileNames.isEmpty()) {
+            return;
+        }
+        changes.add("上传数据文件：" + String.join("、", uploadedFileNames));
+    }
+
+    private List<String> saveStageActionFiles(Long intakeId, String action, List<MultipartFile> dataFiles) {
+        if (!IntakeDemandStatusRules.ACTION_COMPLETE_DELIVERY.equals(action) || dataFiles == null || dataFiles.isEmpty()) {
+            return List.of();
+        }
+        List<String> uploadedFileNames = new ArrayList<>();
+        for (MultipartFile dataFile : dataFiles) {
+            if (dataFile == null || dataFile.isEmpty()) {
+                continue;
+            }
+            String fileName = trimToNull(dataFile.getOriginalFilename());
+            if (fileName != null) {
+                uploadedFileNames.add(fileName);
+            }
+        }
+        if (!uploadedFileNames.isEmpty()) {
+            attachmentService.saveIntakeDeliveryFiles(intakeId, dataFiles);
+        }
+        return uploadedFileNames;
     }
 
     private String defaultHistoryValue(String value) {

@@ -24,6 +24,104 @@ CREATE TABLE `pm_project` (
   UNIQUE KEY `uk_pm_project_code` (`project_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `pay_channel` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `channel_code` VARCHAR(64) NOT NULL,
+  `channel_name` VARCHAR(128) NOT NULL,
+  `vendor_name` VARCHAR(128) NOT NULL,
+  `status` VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
+  `description` TEXT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pay_channel_code` (`channel_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pay_merchant_account` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `channel_id` BIGINT NOT NULL,
+  `merchant_code` VARCHAR(128) NOT NULL,
+  `merchant_name` VARCHAR(128) NOT NULL,
+  `environment` VARCHAR(32) NOT NULL,
+  `status` VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
+  `app_id` VARCHAR(128) NULL,
+  `settlement_subject` VARCHAR(128) NULL,
+  `remark` TEXT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pay_merchant_channel_code_env` (`channel_id`, `merchant_code`, `environment`),
+  KEY `idx_pay_merchant_channel_id` (`channel_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pay_merchant_param` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `merchant_id` BIGINT NOT NULL,
+  `param_key` VARCHAR(128) NOT NULL,
+  `value_type` VARCHAR(32) NOT NULL,
+  `sensitive_flag` TINYINT(1) NOT NULL DEFAULT 0,
+  `plain_value` TEXT NULL,
+  `encrypted_value` TEXT NULL,
+  `masked_value` VARCHAR(255) NULL,
+  `remark` VARCHAR(255) NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pay_merchant_param_merchant_key` (`merchant_id`, `param_key`),
+  KEY `idx_pay_merchant_param_merchant_id` (`merchant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pay_merchant_secret` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `merchant_id` BIGINT NOT NULL,
+  `secret_name` VARCHAR(128) NOT NULL,
+  `secret_type` VARCHAR(32) NOT NULL,
+  `encrypted_value` TEXT NOT NULL,
+  `masked_value` VARCHAR(255) NOT NULL,
+  `fingerprint` VARCHAR(128) NOT NULL,
+  `algorithm` VARCHAR(64) NOT NULL,
+  `version_no` INT NOT NULL,
+  `status` VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
+  `valid_from` DATETIME NULL,
+  `valid_to` DATETIME NULL,
+  `remark` VARCHAR(255) NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pay_merchant_secret_name_version` (`merchant_id`, `secret_name`, `version_no`),
+  KEY `idx_pay_merchant_secret_lookup` (`merchant_id`, `secret_name`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pay_project_merchant_binding` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `project_id` BIGINT NOT NULL,
+  `merchant_id` BIGINT NOT NULL,
+  `purpose_code` VARCHAR(32) NOT NULL,
+  `priority` INT NOT NULL DEFAULT 1,
+  `is_default` TINYINT(1) NOT NULL DEFAULT 0,
+  `binding_status` VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
+  `remark` VARCHAR(255) NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pay_binding_project_merchant_purpose` (`project_id`, `merchant_id`, `purpose_code`),
+  KEY `idx_pay_binding_project_purpose` (`project_id`, `purpose_code`, `binding_status`, `is_default`, `priority`),
+  KEY `idx_pay_binding_merchant_id` (`merchant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pay_operation_log` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `biz_type` VARCHAR(32) NOT NULL,
+  `biz_id` BIGINT NOT NULL,
+  `action_type` VARCHAR(32) NOT NULL,
+  `action_summary` VARCHAR(128) NOT NULL,
+  `detail_text` TEXT NULL,
+  `operator_user_name` VARCHAR(64) NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_pay_operation_log_biz` (`biz_type`, `biz_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `pm_sprint` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `project_id` BIGINT NOT NULL,

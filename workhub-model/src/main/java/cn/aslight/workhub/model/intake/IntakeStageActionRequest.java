@@ -33,6 +33,10 @@ public class IntakeStageActionRequest {
      * 动作发生时间。
      */
     private String occurredAt;
+    /**
+     * 研发人员用户名。
+     */
+    private String developmentOwnerUserName;
 
     public String getAction() {
         return action;
@@ -88,5 +92,13 @@ public class IntakeStageActionRequest {
 
     public void setOccurredAt(String occurredAt) {
         this.occurredAt = occurredAt;
+    }
+
+    public String getDevelopmentOwnerUserName() {
+        return developmentOwnerUserName;
+    }
+
+    public void setDevelopmentOwnerUserName(String developmentOwnerUserName) {
+        this.developmentOwnerUserName = developmentOwnerUserName;
     }
 }

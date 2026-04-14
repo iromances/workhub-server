@@ -173,7 +173,7 @@ public class CodexCliStructuredExtractor {
                 6. requirementType 只能输出“数据提取/运维”或“研发需求”。
                 7. requirementDigest 输出给列表展示的极短摘要，尽量不超过 24 个字。
                 8. 如果 requirementType 为“研发需求”，请在 developmentBranchName 中给出推荐研发分支名，格式优先使用 feature/req-审批编号；若无审批编号可用则用 feature/req-时间戳。
-                9. 如果材料里没有禅道地址，zentaoUrl 返回 null。
+
 
                 来源渠道：%s
                 人工补充说明：

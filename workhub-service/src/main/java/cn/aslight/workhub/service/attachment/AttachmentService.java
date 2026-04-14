@@ -27,6 +27,7 @@ public class AttachmentService {
 
     public static final String INTAKE_SCREENSHOT = "INTAKE_SCREENSHOT";
     public static final String INTAKE_ATTACHMENT = "INTAKE_ATTACHMENT";
+    public static final String INTAKE_DELIVERY_FILE = "INTAKE_DELIVERY_FILE";
 
     private static final DateTimeFormatter PATH_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
@@ -44,8 +45,22 @@ public class AttachmentService {
         storeFiles(intakeId, attachments, INTAKE_ATTACHMENT);
     }
 
+    /**
+     * 保存需求阶段推进过程中补充上传的数据文件。
+     *
+     * @param intakeId 待整理需求 ID
+     * @param deliveryFiles 数据文件列表
+     */
+    @Transactional
+    public void saveIntakeDeliveryFiles(Long intakeId, List<MultipartFile> deliveryFiles) {
+        storeFiles(intakeId, deliveryFiles, INTAKE_DELIVERY_FILE);
+    }
+
     public List<AttachmentResponse> listIntakeAttachments(Long intakeId) {
-        List<AttachmentEntity> entities = attachmentMapper.findByBiz(intakeId, List.of(INTAKE_SCREENSHOT, INTAKE_ATTACHMENT));
+        List<AttachmentEntity> entities = attachmentMapper.findByBiz(
+                intakeId,
+                List.of(INTAKE_SCREENSHOT, INTAKE_ATTACHMENT, INTAKE_DELIVERY_FILE)
+        );
         List<AttachmentResponse> items = new ArrayList<>(entities.size());
         for (AttachmentEntity entity : entities) {
             items.add(toResponse(entity));
@@ -118,7 +133,11 @@ public class AttachmentService {
     }
 
     private AttachmentResponse toResponse(AttachmentEntity entity) {
-        String category = INTAKE_SCREENSHOT.equals(entity.getBizType()) ? "截图" : "附件";
+        String category = switch (entity.getBizType()) {
+            case INTAKE_SCREENSHOT -> "截图";
+            case INTAKE_DELIVERY_FILE -> "数据文件";
+            default -> "附件";
+        };
         return new AttachmentResponse(
                 entity.getId(),
                 category,

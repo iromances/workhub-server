@@ -2,8 +2,6 @@ package cn.aslight.workhub.controller.intake;
 
 import cn.aslight.workhub.common.api.ApiResponse;
 import cn.aslight.workhub.common.api.PageResponse;
-import cn.aslight.workhub.model.intake.IntakeConvertRequest;
-import cn.aslight.workhub.model.intake.IntakeConvertResponse;
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakeStageActionRequest;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
@@ -96,11 +94,28 @@ public class IntakeController {
      * @param authentication 当前认证信息
      * @return 更新后的需求详情
      */
-    @PostMapping("/{id}/stage-actions")
+    @PostMapping(value = "/{id}/stage-actions", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ApiResponse<IntakeDetailResponse> advanceStage(@PathVariable Long id,
                                                           @RequestBody IntakeStageActionRequest request,
                                                           Authentication authentication) {
         return ApiResponse.success(intakeService.advanceStage(id, request, authentication.getName()));
+    }
+
+    /**
+     * 通过 multipart 执行需求阶段动作，并可选上传阶段产出数据文件。
+     *
+     * @param id 待整理记录 ID
+     * @param request 阶段动作请求
+     * @param dataFiles 数据文件
+     * @param authentication 当前认证信息
+     * @return 更新后的需求详情
+     */
+    @PostMapping(value = "/{id}/stage-actions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<IntakeDetailResponse> advanceStageWithFiles(@PathVariable Long id,
+                                                                   @ModelAttribute IntakeStageActionRequest request,
+                                                                   @RequestParam(name = "dataFiles", required = false) List<MultipartFile> dataFiles,
+                                                                   Authentication authentication) {
+        return ApiResponse.success(intakeService.advanceStage(id, request, dataFiles, authentication.getName()));
     }
 
     /**
@@ -118,18 +133,4 @@ public class IntakeController {
         return ApiResponse.success(intakeService.updateZentaoLink(id, request, authentication.getName()));
     }
 
-    /**
-     * 将待整理需求转成正式工作项。
-     *
-     * @param id 待整理记录 ID
-     * @param request 转换请求
-     * @param authentication 当前认证信息
-     * @return 转换结果
-     */
-    @PostMapping("/{id}/convert")
-    public ApiResponse<IntakeConvertResponse> convert(@PathVariable Long id,
-                                                      @Valid @RequestBody IntakeConvertRequest request,
-                                                      Authentication authentication) {
-        return ApiResponse.success(intakeService.convertToWorkItem(id, request, authentication.getName()));
-    }
 }

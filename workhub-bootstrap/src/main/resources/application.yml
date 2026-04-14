@@ -78,3 +78,6 @@ workhub:
       disable-plugins: true
   storage:
     local-path: data/uploads
+  payment:
+    master-key: workhub-payment-dev-master-key
+    mask-visible-suffix: 4

@@ -184,6 +184,7 @@ public class IntakeEnrichmentService {
                     null,
                     null,
                     null,
+                    null,
                     List.of(),
                     safeSummaries
             );
@@ -192,6 +193,7 @@ public class IntakeEnrichmentService {
                 structuredData.category(),
                 structuredData.approvalTitle(),
                 structuredData.proposerName(),
+                structuredData.developmentOwnerUserName(),
                 structuredData.approvalCode(),
                 structuredData.submittedTime(),
                 structuredData.requirementType(),
@@ -228,6 +230,7 @@ public class IntakeEnrichmentService {
                 firstNonBlank(enriched.category(), baseline.category()),
                 firstNonBlank(enriched.approvalTitle(), baseline.approvalTitle()),
                 firstNonBlank(enriched.proposerName(), baseline.proposerName()),
+                firstNonBlank(enriched.developmentOwnerUserName(), baseline.developmentOwnerUserName()),
                 firstNonBlank(enriched.approvalCode(), baseline.approvalCode()),
                 firstNonBlank(enriched.submittedTime(), baseline.submittedTime()),
                 firstNonBlank(enriched.requirementType(), baseline.requirementType()),

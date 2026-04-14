@@ -8,6 +8,7 @@ import java.util.List;
 public record IntakeStructuredData(String category,
                                    String approvalTitle,
                                    String proposerName,
+                                   String developmentOwnerUserName,
                                    String approvalCode,
                                    String submittedTime,
                                    String requirementType,

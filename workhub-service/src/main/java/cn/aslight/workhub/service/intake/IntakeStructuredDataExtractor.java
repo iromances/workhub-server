@@ -27,6 +27,7 @@ public class IntakeStructuredDataExtractor {
 
         String approvalTitle = firstValue(fields, "审批标题", "标题");
         String proposerName = firstNonBlank(firstValue(fields, "提出人", "提报人", "申请人", "提交人"), extractProposerName(approvalTitle));
+        String developmentOwnerUserName = firstValue(fields, "研发人员", "研发负责人", "开发人员", "开发负责人");
         String approvalCode = firstValue(fields, "审批编号", "单号", "审批单号");
         String submittedTime = firstValue(fields, "提交时间", "提报时间", "申请时间");
         String requirementType = firstNonBlank(firstValue(fields, "需求类型", "事项类型"), inferRequirementType(normalized));
@@ -51,6 +52,7 @@ public class IntakeStructuredDataExtractor {
                 category,
                 approvalTitle,
                 proposerName,
+                developmentOwnerUserName,
                 approvalCode,
                 submittedTime,
                 requirementType,

@@ -16,6 +16,7 @@
 - 企业微信自建应用回调
 - 企业微信群机器人 webhook
 - AI 模型 HTTP API
+- 支付渠道网关配置管理
 
 ## 2. 设计目标
 
@@ -77,6 +78,12 @@ workhub-bootstrap/
 - `pm_work_item_transition_log`
 - `pm_intake_record`
 - `pm_attachment`
+- `pay_channel`
+- `pay_merchant_account`
+- `pay_merchant_param`
+- `pay_merchant_secret`
+- `pay_project_merchant_binding`
+- `pay_operation_log`
 
 建议关键字段：
 
@@ -122,7 +129,46 @@ workhub-bootstrap/
 - 发送时间
 - 结构化增强结果
 - 整理状态
-- 转正式工作项 ID
+- 历史关联工作项 ID（兼容保留）
+
+### `pay_channel`
+
+- 渠道编码
+- 渠道名称
+- 厂商名称
+- 状态
+- 描述
+
+### `pay_merchant_account`
+
+- 渠道 ID
+- 商户号
+- 商户名称
+- 环境
+- AppId
+- 结算主体
+- 状态
+
+### `pay_project_merchant_binding`
+
+- 项目 ID
+- 商户 ID
+- 用途编码
+- 优先级
+- 是否默认
+- 绑定状态
+
+### `pay_merchant_secret`
+
+- 商户 ID
+- 秘钥名称
+- 秘钥类型
+- 密文
+- 脱敏值
+- 指纹
+- 版本号
+- 生效区间
+- 状态
 
 ## 5. API 分组
 
@@ -132,6 +178,7 @@ workhub-bootstrap/
 - `/api/releases/*`
 - `/api/work-items/*`
 - `/api/intake/*`
+- `/api/payment/*`
 - `/api/attachments/*`
 - `/api/users/*`
 - `/api/wecom/callback/*`
@@ -153,6 +200,7 @@ workhub-bootstrap/
 - 登录成功返回 JWT
 - 网关能力先不引入
 - 细粒度权限先不做，先做登录拦截和基础身份识别
+- 支付敏感参数和秘钥采用应用层加密落库，接口只返回脱敏值
 
 ## 7. 企业微信接入设计
 
@@ -198,10 +246,17 @@ workhub-bootstrap/
 
 - 增强结果只更新 `structured_data_json` 和 enrichment 状态，不直接写正式表。
 - 增强过程必须保留原始文本和附件，便于回溯。
-- 需求管理列表展示的 `demandStatus` 优先使用人工维护的需求阶段状态；历史数据或未维护数据再回退到系统按 enrichment 状态、结构化结果和是否已转工作项推导的结果。
+- 需求管理列表展示的 `demandStatus` 优先使用人工维护的需求阶段状态；历史数据或未维护数据再回退到系统按 enrichment 状态和结构化结果推导的结果。
 - 需求管理通过显式阶段动作推进需求状态，不提供通用大而全编辑接口；动作执行过程中可补录工时和关键时间，并需记录修改历史。
 
-## 9. 工程约束
+## 9. 支付接入配置原则
+
+- 支付配置域只负责“渠道/商户/参数/秘钥/项目绑定”的管理，不直接承担真实支付交易编排。
+- 商户号按渠道和环境维度管理，生产与测试配置不得混用在同一条商户记录中。
+- 项目与商户是多对多关系，通过用途绑定表达“某项目在某支付能力下使用哪个商户”。
+- 秘钥采用版本化保存，新增秘钥默认视为轮换行为，需要保留历史版本和审计日志。
+
+## 10. 工程约束
 
 1. Controller 不写核心业务编排。
 2. Service 层按业务动作拆分，不写超长万能方法。

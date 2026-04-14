@@ -2,16 +2,16 @@ package cn.aslight.workhub.service.intake;
 
 import cn.aslight.workhub.dao.intake.IntakeMapper;
 import cn.aslight.workhub.dao.intake.IntakeHistoryMapper;
+import cn.aslight.workhub.model.intake.IntakeHistoryEntity;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeStageActionRequest;
 import cn.aslight.workhub.model.intake.IntakeZentaoLinkRequest;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
 import cn.aslight.workhub.service.attachment.AttachmentService;
-import cn.aslight.workhub.service.workitem.WorkItemFollowUpService;
-import cn.aslight.workhub.service.workitem.WorkItemService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import tools.jackson.databind.ObjectMapper;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,18 +32,14 @@ class IntakeServiceTest {
     void list_shouldFlattenStructuredDataFromJsonInsteadOfDatabaseJsonFunctions() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
-        WorkItemService workItemService = mock(WorkItemService.class);
         AttachmentService attachmentService = mock(AttachmentService.class);
-        WorkItemFollowUpService workItemFollowUpService = mock(WorkItemFollowUpService.class);
         IntakeStructuredDataExtractor intakeStructuredDataExtractor = new IntakeStructuredDataExtractor();
         IntakeEnrichmentService intakeEnrichmentService = mock(IntakeEnrichmentService.class);
 
         IntakeService service = new IntakeService(
                 intakeMapper,
                 intakeHistoryMapper,
-                workItemService,
                 attachmentService,
-                workItemFollowUpService,
                 intakeStructuredDataExtractor,
                 intakeEnrichmentService,
                 new ObjectMapper()
@@ -110,18 +106,14 @@ class IntakeServiceTest {
     void advanceStage_shouldEvaluateEffortAndMoveToEvaluated() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
-        WorkItemService workItemService = mock(WorkItemService.class);
         AttachmentService attachmentService = mock(AttachmentService.class);
-        WorkItemFollowUpService workItemFollowUpService = mock(WorkItemFollowUpService.class);
         IntakeStructuredDataExtractor intakeStructuredDataExtractor = new IntakeStructuredDataExtractor();
         IntakeEnrichmentService intakeEnrichmentService = mock(IntakeEnrichmentService.class);
 
         IntakeService service = new IntakeService(
                 intakeMapper,
                 intakeHistoryMapper,
-                workItemService,
                 attachmentService,
-                workItemFollowUpService,
                 intakeStructuredDataExtractor,
                 intakeEnrichmentService,
                 new ObjectMapper()
@@ -165,21 +157,128 @@ class IntakeServiceTest {
     }
 
     @Test
-    void detail_shouldNormalizeLegacyRequirementTypeGenerateBranchAndBackfillProposer() {
+    void advanceStage_shouldRequireDevelopmentOwnerWhenStartDevelopment() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
-        WorkItemService workItemService = mock(WorkItemService.class);
         AttachmentService attachmentService = mock(AttachmentService.class);
-        WorkItemFollowUpService workItemFollowUpService = mock(WorkItemFollowUpService.class);
         IntakeStructuredDataExtractor intakeStructuredDataExtractor = new IntakeStructuredDataExtractor();
         IntakeEnrichmentService intakeEnrichmentService = mock(IntakeEnrichmentService.class);
 
         IntakeService service = new IntakeService(
                 intakeMapper,
                 intakeHistoryMapper,
-                workItemService,
                 attachmentService,
-                workItemFollowUpService,
+                intakeStructuredDataExtractor,
+                intakeEnrichmentService,
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity before = new IntakeRecordEntity();
+        before.setId(211L);
+        before.setSenderName("zhoutuo");
+        before.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        before.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"周拓的系统开发2.0","proposerName":"周拓","approvalCode":"202603250009","submittedTime":"2026/3/25 16:17","requirementType":"研发需求","requirementDigest":"沃橙绑卡","requirementName":"沃橙绑卡需求","requirementSummary":"描述","department":"供应链业务部","businessLine":"供应链科技","remark":"高优","estimatedEffort":"2d","plannedDueDate":"2026/04/05","developmentStartedDate":null,"actualEffort":null,"testingStartedDate":null,"actualCompletedTime":null,"acceptanceTime":null,"releasedTime":null,"projectHint":"供应链科技","fields":[],"attachmentSummaries":[]}
+                """);
+        before.setDemandStatus("已评估");
+
+        IntakeRecordEntity after = new IntakeRecordEntity();
+        after.setId(211L);
+        after.setSenderName("zhoutuo");
+        after.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        after.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"周拓的系统开发2.0","proposerName":"周拓","developmentOwnerUserName":"dev-a","approvalCode":"202603250009","submittedTime":"2026/3/25 16:17","requirementType":"研发需求","requirementDigest":"沃橙绑卡","requirementName":"沃橙绑卡需求","requirementSummary":"描述","department":"供应链业务部","businessLine":"供应链科技","remark":"高优","estimatedEffort":"2d","plannedDueDate":"2026/04/05","developmentStartedDate":"2026/04/06","actualEffort":null,"testingStartedDate":null,"actualCompletedTime":null,"acceptanceTime":null,"releasedTime":null,"projectHint":"供应链科技","fields":[],"attachmentSummaries":[]}
+                """);
+        after.setDemandStatus("研发中");
+
+        when(intakeMapper.findById(211L)).thenReturn(before, after);
+        when(attachmentService.listIntakeAttachments(211L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(211L, 20)).thenReturn(List.of());
+
+        IntakeStageActionRequest request = new IntakeStageActionRequest();
+        request.setAction("START_DEVELOPMENT");
+        request.setDevelopmentOwnerUserName("dev-a");
+        request.setOccurredAt("2026/04/06");
+
+        service.advanceStage(211L, request, "admin");
+
+        ArgumentCaptor<String> structuredJsonCaptor = ArgumentCaptor.forClass(String.class);
+        verify(intakeMapper).updateManagementFields(eq(211L), structuredJsonCaptor.capture(), eq("研发中"));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"developmentOwnerUserName\":\"dev-a\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"developmentStartedDate\":\"2026/04/06\""));
+        ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
+        verify(intakeHistoryMapper).insert(historyCaptor.capture());
+        assertTrue(historyCaptor.getValue().getDetailText().contains("研发人员：- -> dev-a"));
+    }
+
+    @Test
+    void advanceStage_shouldCompleteOperationsDemandWithoutTestingStages() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeStructuredDataExtractor intakeStructuredDataExtractor = new IntakeStructuredDataExtractor();
+        IntakeEnrichmentService intakeEnrichmentService = mock(IntakeEnrichmentService.class);
+
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                intakeStructuredDataExtractor,
+                intakeEnrichmentService,
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity before = new IntakeRecordEntity();
+        before.setId(202L);
+        before.setSenderName("ops-user");
+        before.setReceivedAt(LocalDateTime.of(2026, 4, 2, 10, 0));
+        before.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"数据修复申请","proposerName":"运维同学","approvalCode":"OPS-001","submittedTime":"2026/4/2 10:00","requirementType":"数据提取/运维","requirementDigest":"批量修复历史放款数据","requirementName":"批量修复历史放款数据","requirementSummary":"描述","department":"运营支持部","businessLine":"资产业务","remark":"紧急处理","estimatedEffort":"4h","plannedDueDate":"2026/04/02","developmentStartedDate":"2026/04/02","actualEffort":null,"testingStartedDate":null,"actualCompletedTime":null,"acceptanceTime":null,"releasedTime":null,"projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
+                """);
+        before.setDemandStatus("研发中");
+
+        IntakeRecordEntity after = new IntakeRecordEntity();
+        after.setId(202L);
+        after.setSenderName("ops-user");
+        after.setReceivedAt(LocalDateTime.of(2026, 4, 2, 10, 0));
+        after.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"数据修复申请","proposerName":"运维同学","approvalCode":"OPS-001","submittedTime":"2026/4/2 10:00","requirementType":"数据提取/运维","requirementDigest":"批量修复历史放款数据","requirementName":"批量修复历史放款数据","requirementSummary":"描述","department":"运营支持部","businessLine":"资产业务","remark":"紧急处理","estimatedEffort":"4h","plannedDueDate":"2026/04/02","developmentStartedDate":"2026/04/02","actualEffort":"5h","testingStartedDate":null,"actualCompletedTime":"2026/04/03","acceptanceTime":null,"releasedTime":"2026/04/03","projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
+                """);
+        after.setDemandStatus("已上线");
+
+        when(intakeMapper.findById(202L)).thenReturn(before, after);
+        when(attachmentService.listIntakeAttachments(202L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(202L, 20)).thenReturn(List.of());
+
+        IntakeStageActionRequest request = new IntakeStageActionRequest();
+        request.setAction("COMPLETE_DELIVERY");
+        request.setActualEffort("5h");
+        request.setActualCompletedTime("2026/04/03");
+        request.setOccurredAt("2026/04/03");
+
+        service.advanceStage(202L, request, "admin");
+
+        ArgumentCaptor<String> structuredJsonCaptor = ArgumentCaptor.forClass(String.class);
+        verify(intakeMapper).updateManagementFields(eq(202L), structuredJsonCaptor.capture(), eq("已上线"));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"actualEffort\":\"5h\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"actualCompletedTime\":\"2026/04/03\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"releasedTime\":\"2026/04/03\""));
+        verify(intakeHistoryMapper).insert(any());
+        verify(intakeHistoryMapper).findRecentByIntakeId(202L, 20);
+    }
+
+    @Test
+    void detail_shouldNormalizeLegacyRequirementTypeGenerateBranchAndBackfillProposer() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeStructuredDataExtractor intakeStructuredDataExtractor = new IntakeStructuredDataExtractor();
+        IntakeEnrichmentService intakeEnrichmentService = mock(IntakeEnrichmentService.class);
+
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
                 intakeStructuredDataExtractor,
                 intakeEnrichmentService,
                 new ObjectMapper()
@@ -211,18 +310,14 @@ class IntakeServiceTest {
     void updateZentaoLink_shouldPersistUrlAndRecordHistory() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
-        WorkItemService workItemService = mock(WorkItemService.class);
         AttachmentService attachmentService = mock(AttachmentService.class);
-        WorkItemFollowUpService workItemFollowUpService = mock(WorkItemFollowUpService.class);
         IntakeStructuredDataExtractor intakeStructuredDataExtractor = new IntakeStructuredDataExtractor();
         IntakeEnrichmentService intakeEnrichmentService = mock(IntakeEnrichmentService.class);
 
         IntakeService service = new IntakeService(
                 intakeMapper,
                 intakeHistoryMapper,
-                workItemService,
                 attachmentService,
-                workItemFollowUpService,
                 intakeStructuredDataExtractor,
                 intakeEnrichmentService,
                 new ObjectMapper()
@@ -264,5 +359,65 @@ class IntakeServiceTest {
         assertTrue(structuredJsonCaptor.getValue().contains("\"zentaoUrl\":\"https://zentao.example.com/story-view-123.html\""));
         verify(intakeHistoryMapper).insert(any());
         assertEquals("https://zentao.example.com/story-view-123.html", detail.structuredData().zentaoUrl());
+    }
+
+    @Test
+    void advanceStage_shouldSaveDeliveryFilesForOperationsDemandCompletion() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeStructuredDataExtractor intakeStructuredDataExtractor = new IntakeStructuredDataExtractor();
+        IntakeEnrichmentService intakeEnrichmentService = mock(IntakeEnrichmentService.class);
+
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                intakeStructuredDataExtractor,
+                intakeEnrichmentService,
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity before = new IntakeRecordEntity();
+        before.setId(501L);
+        before.setSenderName("ops-user");
+        before.setReceivedAt(LocalDateTime.of(2026, 4, 2, 10, 0));
+        before.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"数据修复申请","proposerName":"运维同学","approvalCode":"OPS-002","submittedTime":"2026/4/2 10:00","requirementType":"数据提取/运维","requirementDigest":"批量修复历史还款数据","requirementName":"批量修复历史还款数据","requirementSummary":"描述","department":"运营支持部","businessLine":"资产业务","remark":"紧急处理","estimatedEffort":"4h","plannedDueDate":"2026/04/02","developmentStartedDate":"2026/04/02","actualEffort":null,"testingStartedDate":null,"actualCompletedTime":null,"acceptanceTime":null,"releasedTime":null,"projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
+                """);
+        before.setDemandStatus("研发中");
+
+        IntakeRecordEntity after = new IntakeRecordEntity();
+        after.setId(501L);
+        after.setSenderName("ops-user");
+        after.setReceivedAt(LocalDateTime.of(2026, 4, 2, 10, 0));
+        after.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"数据修复申请","proposerName":"运维同学","approvalCode":"OPS-002","submittedTime":"2026/4/2 10:00","requirementType":"数据提取/运维","requirementDigest":"批量修复历史还款数据","requirementName":"批量修复历史还款数据","requirementSummary":"描述","department":"运营支持部","businessLine":"资产业务","remark":"紧急处理","estimatedEffort":"4h","plannedDueDate":"2026/04/02","developmentStartedDate":"2026/04/02","actualEffort":"5h","testingStartedDate":null,"actualCompletedTime":"2026/04/03","acceptanceTime":null,"releasedTime":"2026/04/03","projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
+                """);
+        after.setDemandStatus("已上线");
+
+        when(intakeMapper.findById(501L)).thenReturn(before, after);
+        when(attachmentService.listIntakeAttachments(501L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(501L, 20)).thenReturn(List.of());
+
+        IntakeStageActionRequest request = new IntakeStageActionRequest();
+        request.setAction("COMPLETE_DELIVERY");
+        request.setActualEffort("5h");
+        request.setActualCompletedTime("2026/04/03");
+        request.setOccurredAt("2026/04/03");
+
+        MockMultipartFile dataFile = new MockMultipartFile(
+                "dataFiles",
+                "delivery-result.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "demo".getBytes()
+        );
+
+        service.advanceStage(501L, request, List.of(dataFile), "admin");
+
+        verify(attachmentService).saveIntakeDeliveryFiles(eq(501L), any());
+        ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
+        verify(intakeHistoryMapper).insert(historyCaptor.capture());
+        assertTrue(historyCaptor.getValue().getDetailText().contains("上传数据文件：delivery-result.xlsx"));
     }
 }
