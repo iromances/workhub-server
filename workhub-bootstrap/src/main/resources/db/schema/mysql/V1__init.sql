@@ -10,11 +10,59 @@ CREATE TABLE `sys_user` (
   UNIQUE KEY `uk_sys_user_user_name` (`user_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `sys_config_item` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `config_group` VARCHAR(128) NOT NULL,
+  `config_key` VARCHAR(128) NOT NULL,
+  `config_name` VARCHAR(128) NOT NULL,
+  `value_type` VARCHAR(32) NOT NULL,
+  `plain_value` TEXT NULL,
+  `encrypted_value` TEXT NULL,
+  `masked_value` VARCHAR(255) NULL,
+  `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `remark` VARCHAR(255) NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sys_config_group_key` (`config_group`, `config_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `sys_config_item` (
+  `config_group`, `config_key`, `config_name`, `value_type`, `plain_value`, `enabled`, `remark`
+) VALUES (
+  'knowledge.project',
+  'vaultPath',
+  '项目知识库地址',
+  'TEXT',
+  '/Users/aslight/Obsidian Vault/Company Obsidian Vault',
+  1,
+  'AI 任务评估遇到不确定业务口径时可参考的本地 Obsidian Vault 路径'
+), (
+  'ai.codexCli',
+  'model',
+  'Codex CLI 模型',
+  'TEXT',
+  'gpt-5.5',
+  1,
+  'AI 任务评估调用 Codex CLI 时使用的模型，优先级高于 application.yml'
+), (
+  'ai.codexCli',
+  'reasoningEffort',
+  'Codex CLI 推理强度',
+  'TEXT',
+  'xhigh',
+  1,
+  'AI 任务评估调用 Codex CLI 时使用的推理强度，xhigh 表示最高'
+);
+
 CREATE TABLE `pm_project` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `business_line_code` VARCHAR(64) NOT NULL DEFAULT '',
+  `business_line_name` VARCHAR(128) NOT NULL DEFAULT '',
   `project_code` VARCHAR(64) NOT NULL,
   `project_name` VARCHAR(128) NOT NULL,
   `project_type` VARCHAR(32) NOT NULL,
+  `project_group` VARCHAR(128) NOT NULL DEFAULT '',
   `project_status` VARCHAR(32) NOT NULL,
   `owner_user_name` VARCHAR(64) NOT NULL,
   `description` TEXT NULL,
@@ -22,6 +70,30 @@ CREATE TABLE `pm_project` (
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_pm_project_code` (`project_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pm_project_group_member` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `project_group` VARCHAR(128) NOT NULL,
+  `member_user_name` VARCHAR(64) NOT NULL,
+  `member_display_name` VARCHAR(128) NOT NULL,
+  `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pm_project_group_member` (`project_group`, `member_user_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pm_project_group` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `group_name` VARCHAR(128) NOT NULL,
+  `gitlab_group_name` VARCHAR(255) NULL,
+  `description` TEXT NULL,
+  `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pm_project_group_name` (`group_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `pay_channel` (
@@ -107,6 +179,49 @@ CREATE TABLE `pay_project_merchant_binding` (
   UNIQUE KEY `uk_pay_binding_project_merchant_purpose` (`project_id`, `merchant_id`, `purpose_code`),
   KEY `idx_pay_binding_project_purpose` (`project_id`, `purpose_code`, `binding_status`, `is_default`, `priority`),
   KEY `idx_pay_binding_merchant_id` (`merchant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pay_project_merchant_binding_purpose` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `binding_id` BIGINT NOT NULL,
+  `purpose_code` VARCHAR(32) NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pay_binding_purpose` (`binding_id`, `purpose_code`),
+  KEY `idx_pay_binding_purpose_code` (`purpose_code`, `binding_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pay_project_merchant_binding_relation` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `binding_id` BIGINT NOT NULL,
+  `merchant_id` BIGINT NOT NULL,
+  `relation_role` VARCHAR(32) NOT NULL,
+  `relation_name` VARCHAR(128) NULL,
+  `priority` INT NOT NULL DEFAULT 1,
+  `remark` VARCHAR(255) NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_pay_binding_relation_binding` (`binding_id`, `relation_role`, `priority`),
+  KEY `idx_pay_binding_relation_merchant` (`merchant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pay_merchant_credential` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `merchant_id` BIGINT NOT NULL,
+  `credential_key` VARCHAR(128) NOT NULL,
+  `credential_name` VARCHAR(128) NOT NULL,
+  `credential_type` VARCHAR(32) NOT NULL,
+  `encrypted_value` TEXT NOT NULL,
+  `masked_value` VARCHAR(255) NOT NULL,
+  `fingerprint` VARCHAR(128) NOT NULL,
+  `status` VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
+  `remark` VARCHAR(255) NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pay_merchant_credential_key` (`merchant_id`, `credential_key`),
+  KEY `idx_pay_merchant_credential_merchant` (`merchant_id`, `status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `pay_operation_log` (
@@ -203,14 +318,18 @@ CREATE TABLE `pm_intake_record` (
   `sender_name` VARCHAR(128) NULL,
   `received_at` DATETIME NOT NULL,
   `raw_content` TEXT NOT NULL,
-  `structured_data_json` TEXT NULL,
-  `ai_draft_json` TEXT NULL,
+  `development_owner_user_name` VARCHAR(64) NULL,
+  `structured_data_json` MEDIUMTEXT NULL,
+  `ai_draft_json` MEDIUMTEXT NULL,
   `intake_status` VARCHAR(32) NOT NULL,
   `demand_status` VARCHAR(32) NULL,
   `enrichment_status` VARCHAR(16) NULL,
   `enrichment_error_summary` VARCHAR(255) NULL,
   `enrichment_updated_at` DATETIME NULL,
   `converted_work_item_id` BIGINT NULL,
+  `deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `deleted_at` DATETIME NULL,
+  `deleted_by` VARCHAR(64) NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -227,6 +346,25 @@ CREATE TABLE `pm_intake_history` (
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_pm_intake_history_intake_id` (`intake_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pm_intake_development_analysis` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `intake_id` BIGINT NOT NULL,
+  `project_id` BIGINT NULL,
+  `project_group` VARCHAR(128) NULL,
+  `repository_url` VARCHAR(512) NULL,
+  `analysis_status` VARCHAR(32) NOT NULL,
+  `analysis_message` VARCHAR(255) NULL,
+  `draft_json` TEXT NULL,
+  `zentao_sync_status` VARCHAR(32) NULL,
+  `zentao_sync_message` VARCHAR(255) NULL,
+  `created_by` VARCHAR(64) NOT NULL,
+  `updated_by` VARCHAR(64) NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_pm_intake_development_analysis_intake_id` (`intake_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `pm_attachment` (

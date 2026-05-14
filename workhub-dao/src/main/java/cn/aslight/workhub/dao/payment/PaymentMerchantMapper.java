@@ -45,7 +45,7 @@ public interface PaymentMerchantMapper {
             "AND b.project_id = #{projectId}",
             "</if>",
             "<if test='purposeCode != null and purposeCode != \"\"'>",
-            "AND b.purpose_code = #{purposeCode}",
+            "AND EXISTS (SELECT 1 FROM pay_project_merchant_binding_purpose bp WHERE bp.binding_id = b.id AND bp.purpose_code = #{purposeCode})",
             "</if>",
             "<if test='keyword != null and keyword != \"\"'>",
             "AND (m.merchant_code LIKE CONCAT('%', #{keyword}, '%')",

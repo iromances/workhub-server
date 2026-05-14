@@ -36,6 +36,10 @@ public class IntakeRecordEntity {
      */
     private String rawContent;
     /**
+     * 研发负责人用户名。
+     */
+    private String developmentOwnerUserName;
+    /**
      * 结构化需求 JSON。
      */
     private String structuredDataJson;
@@ -67,6 +71,18 @@ public class IntakeRecordEntity {
      * 已转换的正式工作项 ID。
      */
     private Long convertedWorkItemId;
+    /**
+     * 是否逻辑删除。
+     */
+    private Boolean deleted;
+    /**
+     * 逻辑删除时间。
+     */
+    private LocalDateTime deletedAt;
+    /**
+     * 逻辑删除人。
+     */
+    private String deletedBy;
     /**
      * 创建时间。
      */
@@ -132,6 +148,14 @@ public class IntakeRecordEntity {
         this.rawContent = rawContent;
     }
 
+    public String getDevelopmentOwnerUserName() {
+        return developmentOwnerUserName;
+    }
+
+    public void setDevelopmentOwnerUserName(String developmentOwnerUserName) {
+        this.developmentOwnerUserName = developmentOwnerUserName;
+    }
+
     public String getStructuredDataJson() {
         return structuredDataJson;
     }
@@ -194,6 +218,30 @@ public class IntakeRecordEntity {
 
     public void setConvertedWorkItemId(Long convertedWorkItemId) {
         this.convertedWorkItemId = convertedWorkItemId;
+    }
+
+    public Boolean getDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(Boolean deleted) {
+        this.deleted = deleted;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public String getDeletedBy() {
+        return deletedBy;
+    }
+
+    public void setDeletedBy(String deletedBy) {
+        this.deletedBy = deletedBy;
     }
 
     public LocalDateTime getCreatedAt() {

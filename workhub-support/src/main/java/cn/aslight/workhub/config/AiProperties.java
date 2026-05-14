@@ -135,8 +135,8 @@ public class AiProperties {
 
         private boolean enabled;
         private String command = "codex";
-        private String model = "gpt-5.3-codex";
-        private String reasoningEffort = "low";
+        private String model = "gpt-5.5";
+        private String reasoningEffort = "xhigh";
         private int timeoutSeconds = 0;
         private boolean disablePlugins = true;
 

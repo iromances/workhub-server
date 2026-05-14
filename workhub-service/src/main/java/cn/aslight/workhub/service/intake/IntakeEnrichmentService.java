@@ -62,7 +62,7 @@ public class IntakeEnrichmentService {
         intakeMapper.updateEnrichmentState(
                 intakeId,
                 IntakeEnrichmentStatus.PENDING,
-                IntakeDemandStatusRules.resolve(existing, readStructuredData(existing.getStructuredDataJson())),
+                IntakeDemandStatusRules.resolveWhenRunning(existing.getDemandStatus()),
                 null,
                 LocalDateTime.now()
         );
@@ -129,9 +129,10 @@ public class IntakeEnrichmentService {
                     merged == null || merged.fields() == null ? 0 : merged.fields().size(),
                     merged == null || merged.attachmentSummaries() == null ? 0 : merged.attachmentSummaries().size());
 
-            boolean shouldMarkFailed = codexResult.failureSummary() != null && !hasMeaningfulStructuredData(merged);
+            boolean shouldMarkFailed = codexResult.failureSummary() != null;
             String nextStatus = shouldMarkFailed ? IntakeEnrichmentStatus.FAILED : IntakeEnrichmentStatus.SUCCEEDED;
             String warningSummary = summarizeWarnings(warnings);
+            merged = normalizeDevelopmentBranchName(merged);
             String nextDemandStatus = IntakeDemandStatusRules.resolveAfterEnrichment(entity.getDemandStatus(), nextStatus, merged);
 
             intakeMapper.updateStructuredDataAndEnrichment(
@@ -185,8 +186,11 @@ public class IntakeEnrichmentService {
                     null,
                     null,
                     null,
+                    null,
+                    null,
                     List.of(),
-                    safeSummaries
+                    safeSummaries,
+                    null
             );
         }
         return new IntakeStructuredData(
@@ -213,9 +217,12 @@ public class IntakeEnrichmentService {
                 structuredData.actualCompletedTime(),
                 structuredData.acceptanceTime(),
                 structuredData.releasedTime(),
+                structuredData.closedTime(),
+                structuredData.closeReason(),
                 structuredData.projectHint(),
                 safeFields(structuredData.fields()),
-                safeSummaries
+                safeSummaries,
+                structuredData.sqlDraft()
         );
     }
 
@@ -250,9 +257,61 @@ public class IntakeEnrichmentService {
                 firstNonBlank(enriched.actualCompletedTime(), baseline.actualCompletedTime()),
                 firstNonBlank(enriched.acceptanceTime(), baseline.acceptanceTime()),
                 firstNonBlank(enriched.releasedTime(), baseline.releasedTime()),
+                firstNonBlank(enriched.closedTime(), baseline.closedTime()),
+                firstNonBlank(enriched.closeReason(), baseline.closeReason()),
                 firstNonBlank(enriched.projectHint(), baseline.projectHint()),
                 mergeFields(baseline.fields(), enriched.fields()),
-                mergeAttachmentSummaries(baseline.attachmentSummaries(), enriched.attachmentSummaries())
+                mergeAttachmentSummaries(baseline.attachmentSummaries(), enriched.attachmentSummaries()),
+                enriched.sqlDraft() == null ? baseline.sqlDraft() : enriched.sqlDraft()
+        );
+    }
+
+    private IntakeStructuredData normalizeDevelopmentBranchName(IntakeStructuredData structuredData) {
+        if (structuredData == null) {
+            return null;
+        }
+        String developmentBranchName = DevelopmentBranchNameGenerator.normalize(
+                structuredData.developmentBranchName(),
+                structuredData.requirementType(),
+                structuredData.approvalCode(),
+                structuredData.submittedTime(),
+                structuredData.requirementName(),
+                structuredData.requirementDigest(),
+                structuredData.requirementSummary()
+        );
+        if (java.util.Objects.equals(developmentBranchName, structuredData.developmentBranchName())) {
+            return structuredData;
+        }
+        return new IntakeStructuredData(
+                structuredData.category(),
+                structuredData.approvalTitle(),
+                structuredData.proposerName(),
+                structuredData.developmentOwnerUserName(),
+                structuredData.approvalCode(),
+                structuredData.submittedTime(),
+                structuredData.requirementType(),
+                developmentBranchName,
+                structuredData.zentaoUrl(),
+                structuredData.requirementDigest(),
+                structuredData.requirementName(),
+                structuredData.requirementSummary(),
+                structuredData.department(),
+                structuredData.businessLine(),
+                structuredData.remark(),
+                structuredData.estimatedEffort(),
+                structuredData.plannedDueDate(),
+                structuredData.developmentStartedDate(),
+                structuredData.actualEffort(),
+                structuredData.testingStartedDate(),
+                structuredData.actualCompletedTime(),
+                structuredData.acceptanceTime(),
+                structuredData.releasedTime(),
+                structuredData.closedTime(),
+                structuredData.closeReason(),
+                structuredData.projectHint(),
+                structuredData.fields(),
+                structuredData.attachmentSummaries(),
+                structuredData.sqlDraft()
         );
     }
 
@@ -284,7 +343,7 @@ public class IntakeEnrichmentService {
             return null;
         }
         try {
-            return objectMapper.readValue(structuredDataJson, IntakeStructuredData.class);
+            return EffortUnitNormalizer.normalizeStructuredData(objectMapper.readValue(structuredDataJson, IntakeStructuredData.class));
         } catch (JacksonException ex) {
             throw new IllegalStateException("结构化需求解析失败", ex);
         }
@@ -295,7 +354,7 @@ public class IntakeEnrichmentService {
             return null;
         }
         try {
-            return objectMapper.writeValueAsString(structuredData);
+            return objectMapper.writeValueAsString(EffortUnitNormalizer.normalizeStructuredData(structuredData));
         } catch (JacksonException ex) {
             throw new IllegalStateException("结构化需求写入失败", ex);
         }
@@ -355,42 +414,6 @@ public class IntakeEnrichmentService {
 
     private boolean isBlank(String value) {
         return trimToNull(value) == null;
-    }
-
-    private boolean hasMeaningfulStructuredData(IntakeStructuredData structuredData) {
-        if (structuredData == null) {
-            return false;
-        }
-        return firstNonBlank(
-                structuredData.approvalTitle(),
-                firstNonBlank(
-                        structuredData.proposerName(),
-                        firstNonBlank(
-                                structuredData.approvalCode(),
-                                firstNonBlank(
-                                        structuredData.submittedTime(),
-                                        firstNonBlank(
-                                                structuredData.requirementType(),
-                                                firstNonBlank(
-                                                        structuredData.requirementDigest(),
-                                                        firstNonBlank(
-                                                structuredData.requirementName(),
-                                                firstNonBlank(
-                                                        structuredData.requirementSummary(),
-                                                        firstNonBlank(
-                                                                structuredData.department(),
-                                                                firstNonBlank(
-                                                                        structuredData.businessLine(),
-                                                                        firstNonBlank(structuredData.remark(), structuredData.estimatedEffort())
-                                                                )
-                                                        )
-                                                )
-                                                ))
-                                        )
-                                )
-                        )
-                )
-        ) != null;
     }
 
     private String truncate(String value, int maxLength) {

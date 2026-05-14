@@ -38,6 +38,12 @@ class PaymentSchemaPatchRunnerTest {
         ResultSet payMerchantSecretMissingUpper = resultSet(false);
         ResultSet payBindingMissing = resultSet(false);
         ResultSet payBindingMissingUpper = resultSet(false);
+        ResultSet payBindingPurposeMissing = resultSet(false);
+        ResultSet payBindingPurposeMissingUpper = resultSet(false);
+        ResultSet payBindingRelationMissing = resultSet(false);
+        ResultSet payBindingRelationMissingUpper = resultSet(false);
+        ResultSet payMerchantCredentialMissing = resultSet(false);
+        ResultSet payMerchantCredentialMissingUpper = resultSet(false);
         ResultSet payOperationLogMissing = resultSet(false);
         ResultSet payOperationLogMissingUpper = resultSet(false);
 
@@ -51,6 +57,12 @@ class PaymentSchemaPatchRunnerTest {
         when(metaData.getTables("workhub", null, "PAY_MERCHANT_SECRET", new String[]{"TABLE"})).thenReturn(payMerchantSecretMissingUpper);
         when(metaData.getTables("workhub", null, "pay_project_merchant_binding", new String[]{"TABLE"})).thenReturn(payBindingMissing);
         when(metaData.getTables("workhub", null, "PAY_PROJECT_MERCHANT_BINDING", new String[]{"TABLE"})).thenReturn(payBindingMissingUpper);
+        when(metaData.getTables("workhub", null, "pay_project_merchant_binding_purpose", new String[]{"TABLE"})).thenReturn(payBindingPurposeMissing);
+        when(metaData.getTables("workhub", null, "PAY_PROJECT_MERCHANT_BINDING_PURPOSE", new String[]{"TABLE"})).thenReturn(payBindingPurposeMissingUpper);
+        when(metaData.getTables("workhub", null, "pay_project_merchant_binding_relation", new String[]{"TABLE"})).thenReturn(payBindingRelationMissing);
+        when(metaData.getTables("workhub", null, "PAY_PROJECT_MERCHANT_BINDING_RELATION", new String[]{"TABLE"})).thenReturn(payBindingRelationMissingUpper);
+        when(metaData.getTables("workhub", null, "pay_merchant_credential", new String[]{"TABLE"})).thenReturn(payMerchantCredentialMissing);
+        when(metaData.getTables("workhub", null, "PAY_MERCHANT_CREDENTIAL", new String[]{"TABLE"})).thenReturn(payMerchantCredentialMissingUpper);
         when(metaData.getTables("workhub", null, "pay_operation_log", new String[]{"TABLE"})).thenReturn(payOperationLogMissing);
         when(metaData.getTables("workhub", null, "PAY_OPERATION_LOG", new String[]{"TABLE"})).thenReturn(payOperationLogMissingUpper);
 
@@ -62,6 +74,9 @@ class PaymentSchemaPatchRunnerTest {
         verify(statement).execute(org.mockito.ArgumentMatchers.contains("CREATE TABLE `pay_merchant_param`"));
         verify(statement).execute(org.mockito.ArgumentMatchers.contains("CREATE TABLE `pay_merchant_secret`"));
         verify(statement).execute(org.mockito.ArgumentMatchers.contains("CREATE TABLE `pay_project_merchant_binding`"));
+        verify(statement).execute(org.mockito.ArgumentMatchers.contains("CREATE TABLE `pay_project_merchant_binding_purpose`"));
+        verify(statement).execute(org.mockito.ArgumentMatchers.contains("CREATE TABLE `pay_project_merchant_binding_relation`"));
+        verify(statement).execute(org.mockito.ArgumentMatchers.contains("CREATE TABLE `pay_merchant_credential`"));
         verify(statement).execute(org.mockito.ArgumentMatchers.contains("CREATE TABLE `pay_operation_log`"));
     }
 
@@ -82,19 +97,28 @@ class PaymentSchemaPatchRunnerTest {
         ResultSet payMerchantParamExists = resultSet(true);
         ResultSet payMerchantSecretExists = resultSet(true);
         ResultSet payBindingExists = resultSet(true);
+        ResultSet payBindingPurposeExists = resultSet(true);
+        ResultSet payBindingRelationExists = resultSet(true);
+        ResultSet payMerchantCredentialExists = resultSet(true);
         ResultSet payOperationLogExists = resultSet(true);
+        ResultSet payBindingExistsForBackfill = resultSet(true);
+        ResultSet payBindingPurposeExistsForBackfill = resultSet(true);
 
         when(metaData.getTables("workhub", null, "pay_channel", new String[]{"TABLE"})).thenReturn(payChannelExists);
         when(metaData.getTables("workhub", null, "pay_merchant_account", new String[]{"TABLE"})).thenReturn(payMerchantAccountExists);
         when(metaData.getTables("workhub", null, "pay_merchant_param", new String[]{"TABLE"})).thenReturn(payMerchantParamExists);
         when(metaData.getTables("workhub", null, "pay_merchant_secret", new String[]{"TABLE"})).thenReturn(payMerchantSecretExists);
-        when(metaData.getTables("workhub", null, "pay_project_merchant_binding", new String[]{"TABLE"})).thenReturn(payBindingExists);
+        when(metaData.getTables("workhub", null, "pay_project_merchant_binding", new String[]{"TABLE"})).thenReturn(payBindingExists, payBindingExistsForBackfill);
+        when(metaData.getTables("workhub", null, "pay_project_merchant_binding_purpose", new String[]{"TABLE"})).thenReturn(payBindingPurposeExists, payBindingPurposeExistsForBackfill);
+        when(metaData.getTables("workhub", null, "pay_project_merchant_binding_relation", new String[]{"TABLE"})).thenReturn(payBindingRelationExists);
+        when(metaData.getTables("workhub", null, "pay_merchant_credential", new String[]{"TABLE"})).thenReturn(payMerchantCredentialExists);
         when(metaData.getTables("workhub", null, "pay_operation_log", new String[]{"TABLE"})).thenReturn(payOperationLogExists);
 
         PaymentSchemaPatchRunner runner = new PaymentSchemaPatchRunner(dataSource);
         runner.run(new DefaultApplicationArguments(new String[0]));
 
-        verify(statement, never()).execute(org.mockito.ArgumentMatchers.anyString());
+        verify(statement, never()).execute(org.mockito.ArgumentMatchers.contains("CREATE TABLE"));
+        verify(statement).execute(org.mockito.ArgumentMatchers.contains("INSERT IGNORE INTO `pay_project_merchant_binding_purpose`"));
     }
 
     private ResultSet resultSet(boolean firstNext) throws Exception {

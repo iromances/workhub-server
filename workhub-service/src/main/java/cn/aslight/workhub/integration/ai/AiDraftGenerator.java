@@ -4,6 +4,7 @@ import cn.aslight.workhub.config.AiProperties;
 import cn.aslight.workhub.model.intake.IntakeAIDraft;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeTaskBreakdownItem;
+import cn.aslight.workhub.service.intake.EffortUnitNormalizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -268,7 +269,7 @@ public class AiDraftGenerator {
             }
             suggestions.add(new IntakeTaskBreakdownItem(
                     taskName,
-                    textOrNull(item, "estimatedEffort"),
+                    EffortUnitNormalizer.normalizeEffort(textOrNull(item, "estimatedEffort")),
                     textOrNull(item, "ownerUserName"),
                     textOrNull(item, "status"),
                     textOrNull(item, "notes")
@@ -283,27 +284,27 @@ public class AiDraftGenerator {
         List<IntakeTaskBreakdownItem> items = new ArrayList<>();
         items.add(new IntakeTaskBreakdownItem(
                 "需求澄清与方案确认",
-                effort == null ? "0.5d" : effort,
+                effort == null ? "4h" : effort,
                 null,
                 "待开始",
                 structuredData == null ? "结合原始需求和附件澄清范围" : "结合审批字段和附件确认需求边界"
         ));
         items.add(new IntakeTaskBreakdownItem(
                 "开发实现与联调",
-                "1d",
+                "8h",
                 null,
                 "待开始",
                 plannedDueDate == null ? "完成核心逻辑开发并联调" : "预计在 " + plannedDueDate + " 前完成开发和联调"
         ));
         items.add(new IntakeTaskBreakdownItem(
                 "验证与上线准备",
-                "0.5d",
+                "4h",
                 null,
                 "待验证",
                 "补充回归验证与上线检查项"
         ));
         if ("缺陷".equals(type)) {
-            items.set(0, new IntakeTaskBreakdownItem("问题复现与原因定位", "0.5d", null, "待开始", "先复现场景并确认影响范围"));
+            items.set(0, new IntakeTaskBreakdownItem("问题复现与原因定位", "4h", null, "待开始", "先复现场景并确认影响范围"));
         }
         return items;
     }

@@ -5,7 +5,9 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
@@ -65,4 +67,37 @@ public interface AttachmentMapper {
             WHERE id = #{id}
             """)
     AttachmentEntity findById(Long id);
+
+    /**
+     * 按 ID 删除附件记录。
+     *
+     * @param id 附件 ID
+     * @return 影响行数
+     */
+    @Delete("""
+            DELETE FROM pm_attachment
+            WHERE id = #{id}
+            """)
+    int deleteById(Long id);
+
+    /**
+     * 替换附件文件元数据。
+     *
+     * @param id 附件 ID
+     * @param fileName 新原始文件名
+     * @param storagePath 新存储路径
+     * @param contentType 新内容类型
+     * @return 影响行数
+     */
+    @Update("""
+            UPDATE pm_attachment
+            SET file_name = #{fileName},
+                storage_path = #{storagePath},
+                content_type = #{contentType}
+            WHERE id = #{id}
+            """)
+    int updateFile(@Param("id") Long id,
+                   @Param("fileName") String fileName,
+                   @Param("storagePath") String storagePath,
+                   @Param("contentType") String contentType);
 }

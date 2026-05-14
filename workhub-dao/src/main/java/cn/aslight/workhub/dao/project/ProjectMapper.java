@@ -3,6 +3,7 @@ package cn.aslight.workhub.dao.project;
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
 import cn.aslight.workhub.model.project.ProjectSummaryResponse;
 import cn.aslight.workhub.model.project.ProjectEntity;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
@@ -21,9 +22,12 @@ public interface ProjectMapper {
     @Select({
             "<script>",
             "SELECT id,",
+            "business_line_code AS businessLineCode,",
+            "business_line_name AS businessLineName,",
             "project_code AS code,",
             "project_name AS name,",
             "project_type AS type,",
+            "project_group AS `group`,",
             "owner_user_name AS ownerUserName,",
             "project_status AS status",
             "FROM pm_project",
@@ -32,8 +36,11 @@ public interface ProjectMapper {
             "AND project_status = #{status}",
             "</if>",
             "<if test='keyword != null and keyword != \"\"'>",
-            "AND (project_code LIKE CONCAT('%', #{keyword}, '%')",
-            "OR project_name LIKE CONCAT('%', #{keyword}, '%'))",
+            "AND (business_line_code LIKE CONCAT('%', #{keyword}, '%')",
+            "OR business_line_name LIKE CONCAT('%', #{keyword}, '%')",
+            "OR project_code LIKE CONCAT('%', #{keyword}, '%')",
+            "OR project_name LIKE CONCAT('%', #{keyword}, '%')",
+            "OR project_group LIKE CONCAT('%', #{keyword}, '%'))",
             "</if>",
             "</where>",
             "ORDER BY id DESC",
@@ -43,9 +50,12 @@ public interface ProjectMapper {
 
     @Select("""
             SELECT id,
+                   business_line_code AS businessLineCode,
+                   business_line_name AS businessLineName,
                    project_code AS code,
                    project_name AS name,
                    project_type AS type,
+                   project_group AS `group`,
                    owner_user_name AS ownerUserName,
                    project_status AS status,
                    description,
@@ -58,9 +68,12 @@ public interface ProjectMapper {
 
     @Select("""
             SELECT id,
+                   business_line_code,
+                   business_line_name,
                    project_code,
                    project_name,
                    project_type,
+                   project_group,
                    project_status,
                    owner_user_name,
                    description
@@ -71,9 +84,12 @@ public interface ProjectMapper {
 
     @Select("""
             SELECT id,
+                   business_line_code,
+                   business_line_name,
                    project_code,
                    project_name,
                    project_type,
+                   project_group,
                    project_status,
                    owner_user_name,
                    description
@@ -82,18 +98,44 @@ public interface ProjectMapper {
             """)
     ProjectEntity findEntityByCode(String projectCode);
 
+    @Select("""
+            SELECT id,
+                   business_line_code AS businessLineCode,
+                   business_line_name AS businessLineName,
+                   project_code AS code,
+                   project_name AS name,
+                   project_type AS type,
+                   project_group AS `group`,
+                   owner_user_name AS ownerUserName,
+                   project_status AS status,
+                   description,
+                   created_at AS createdAt,
+                   updated_at AS updatedAt
+            FROM pm_project
+            WHERE project_group = #{projectGroup}
+            ORDER BY id ASC
+            LIMIT 1
+            """)
+    ProjectDetailResponse findFirstDetailByGroup(String projectGroup);
+
     @Insert("""
             INSERT INTO pm_project (
                 project_code,
                 project_name,
+                business_line_code,
+                business_line_name,
                 project_type,
+                project_group,
                 project_status,
                 owner_user_name,
                 description
             ) VALUES (
                 #{projectCode},
                 #{projectName},
+                #{businessLineCode},
+                #{businessLineName},
                 #{projectType},
+                #{projectGroup},
                 #{projectStatus},
                 #{ownerUserName},
                 #{description}
@@ -106,11 +148,62 @@ public interface ProjectMapper {
             UPDATE pm_project
             SET project_code = #{projectCode},
                 project_name = #{projectName},
+                business_line_code = #{businessLineCode},
+                business_line_name = #{businessLineName},
                 project_type = #{projectType},
+                project_group = #{projectGroup},
                 project_status = #{projectStatus},
                 owner_user_name = #{ownerUserName},
                 description = #{description}
             WHERE id = #{id}
             """)
     int update(ProjectEntity entity);
+
+    @Delete("""
+            DELETE FROM pm_project
+            WHERE id = #{id}
+            """)
+    int deleteById(Long id);
+
+    @Select("""
+            SELECT COUNT(1)
+            FROM pm_work_item
+            WHERE project_id = #{id}
+            """)
+    int countWorkItems(Long id);
+
+    @Select("""
+            SELECT COUNT(1)
+            FROM pm_sprint
+            WHERE project_id = #{id}
+            """)
+    int countSprints(Long id);
+
+    @Select("""
+            SELECT COUNT(1)
+            FROM pm_release
+            WHERE project_id = #{id}
+            """)
+    int countReleases(Long id);
+
+    @Select("""
+            SELECT COUNT(1)
+            FROM pay_project_merchant_binding
+            WHERE project_id = #{id}
+            """)
+    int countPaymentBindings(Long id);
+
+    @Select("""
+            SELECT COUNT(1)
+            FROM pm_intake_development_analysis
+            WHERE project_id = #{id}
+            """)
+    int countDevelopmentAnalyses(Long id);
+
+    @Select("""
+            SELECT COUNT(1)
+            FROM pm_project
+            WHERE project_group = #{groupName}
+            """)
+    int countByProjectGroup(String groupName);
 }

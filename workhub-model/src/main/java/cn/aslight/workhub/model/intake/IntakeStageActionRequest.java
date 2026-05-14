@@ -34,9 +34,9 @@ public class IntakeStageActionRequest {
      */
     private String occurredAt;
     /**
-     * 研发人员用户名。
+     * 需求关闭原因。
      */
-    private String developmentOwnerUserName;
+    private String closeReason;
 
     public String getAction() {
         return action;
@@ -94,11 +94,11 @@ public class IntakeStageActionRequest {
         this.occurredAt = occurredAt;
     }
 
-    public String getDevelopmentOwnerUserName() {
-        return developmentOwnerUserName;
+    public String getCloseReason() {
+        return closeReason;
     }
 
-    public void setDevelopmentOwnerUserName(String developmentOwnerUserName) {
-        this.developmentOwnerUserName = developmentOwnerUserName;
+    public void setCloseReason(String closeReason) {
+        this.closeReason = closeReason;
     }
 }

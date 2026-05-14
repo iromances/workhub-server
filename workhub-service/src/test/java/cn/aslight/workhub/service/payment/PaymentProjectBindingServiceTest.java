@@ -43,6 +43,9 @@ class PaymentProjectBindingServiceTest {
         when(bindingMapper.findResponseById(100L)).thenReturn(new PaymentProjectBindingResponse(
                 100L,
                 3L,
+                "DEMO-BIZ",
+                "演示业务线",
+                "演示业务",
                 "DEMO",
                 "演示项目",
                 8L,
@@ -53,10 +56,12 @@ class PaymentProjectBindingServiceTest {
                 "易宝",
                 "PROD",
                 "WITHHOLD",
+                java.util.List.of("WITHHOLD"),
                 1,
                 true,
                 "ACTIVE",
                 null,
+                java.util.List.of(),
                 null,
                 null
         ));

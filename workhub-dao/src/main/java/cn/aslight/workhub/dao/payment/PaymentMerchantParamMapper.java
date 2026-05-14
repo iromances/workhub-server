@@ -21,7 +21,7 @@ public interface PaymentMerchantParamMapper {
             SELECT id,
                    param_key AS paramKey,
                    value_type AS valueType,
-                   sensitive_flag AS sensitive,
+                   sensitive_flag AS `sensitive`,
                    CASE WHEN sensitive_flag = 1 THEN masked_value ELSE plain_value END AS displayValue,
                    remark,
                    created_at AS createdAt,

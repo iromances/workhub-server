@@ -72,8 +72,8 @@ workhub:
     codex-cli:
       enabled: true
       command: codex
-      model: gpt-5.3-codex
-      reasoning-effort: low
+      model: gpt-5.5
+      reasoning-effort: xhigh
       timeout-seconds: 0
       disable-plugins: true
   storage:

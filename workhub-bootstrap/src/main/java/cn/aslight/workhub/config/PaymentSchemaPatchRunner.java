@@ -130,6 +130,61 @@ public class PaymentSchemaPatchRunner implements ApplicationRunner {
                             """
             ),
             new TablePatch(
+                    "pay_project_merchant_binding_purpose",
+                    """
+                            CREATE TABLE `pay_project_merchant_binding_purpose` (
+                              `id` BIGINT NOT NULL AUTO_INCREMENT,
+                              `binding_id` BIGINT NOT NULL,
+                              `purpose_code` VARCHAR(32) NOT NULL,
+                              `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                              PRIMARY KEY (`id`),
+                              UNIQUE KEY `uk_pay_binding_purpose` (`binding_id`, `purpose_code`),
+                              KEY `idx_pay_binding_purpose_code` (`purpose_code`, `binding_id`)
+                            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                            """
+            ),
+            new TablePatch(
+                    "pay_project_merchant_binding_relation",
+                    """
+                            CREATE TABLE `pay_project_merchant_binding_relation` (
+                              `id` BIGINT NOT NULL AUTO_INCREMENT,
+                              `binding_id` BIGINT NOT NULL,
+                              `merchant_id` BIGINT NOT NULL,
+                              `relation_role` VARCHAR(32) NOT NULL,
+                              `relation_name` VARCHAR(128) NULL,
+                              `priority` INT NOT NULL DEFAULT 1,
+                              `remark` VARCHAR(255) NULL,
+                              `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                              `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                              PRIMARY KEY (`id`),
+                              KEY `idx_pay_binding_relation_binding` (`binding_id`, `relation_role`, `priority`),
+                              KEY `idx_pay_binding_relation_merchant` (`merchant_id`)
+                            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                            """
+            ),
+            new TablePatch(
+                    "pay_merchant_credential",
+                    """
+                            CREATE TABLE `pay_merchant_credential` (
+                              `id` BIGINT NOT NULL AUTO_INCREMENT,
+                              `merchant_id` BIGINT NOT NULL,
+                              `credential_key` VARCHAR(128) NOT NULL,
+                              `credential_name` VARCHAR(128) NOT NULL,
+                              `credential_type` VARCHAR(32) NOT NULL,
+                              `encrypted_value` TEXT NOT NULL,
+                              `masked_value` VARCHAR(255) NOT NULL,
+                              `fingerprint` VARCHAR(128) NOT NULL,
+                              `status` VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
+                              `remark` VARCHAR(255) NULL,
+                              `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                              `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                              PRIMARY KEY (`id`),
+                              UNIQUE KEY `uk_pay_merchant_credential_key` (`merchant_id`, `credential_key`),
+                              KEY `idx_pay_merchant_credential_merchant` (`merchant_id`, `status`)
+                            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                            """
+            ),
+            new TablePatch(
                     "pay_operation_log",
                     """
                             CREATE TABLE `pay_operation_log` (
@@ -160,6 +215,23 @@ public class PaymentSchemaPatchRunner implements ApplicationRunner {
             for (TablePatch patch : TABLE_PATCHES) {
                 ensureTable(connection, patch);
             }
+            ensureBindingPurposeBackfill(connection);
+        }
+    }
+
+    private void ensureBindingPurposeBackfill(Connection connection) throws SQLException {
+        if (!tableExists(connection, "pay_project_merchant_binding")
+                || !tableExists(connection, "pay_project_merchant_binding_purpose")) {
+            return;
+        }
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("""
+                    INSERT IGNORE INTO `pay_project_merchant_binding_purpose` (`binding_id`, `purpose_code`)
+                    SELECT `id`, `purpose_code`
+                    FROM `pay_project_merchant_binding`
+                    WHERE `purpose_code` IS NOT NULL
+                      AND `purpose_code` <> ''
+                    """);
         }
     }
 

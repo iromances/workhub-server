@@ -34,9 +34,11 @@ public class PaymentChannelController {
 
     @GetMapping
     public ApiResponse<PageResponse<PaymentChannelSummaryResponse>> list(@RequestParam(required = false) String status,
-                                                                         @RequestParam(required = false) String keyword) {
+                                                                         @RequestParam(required = false) String keyword,
+                                                                         @RequestParam(defaultValue = "1") int page,
+                                                                         @RequestParam(defaultValue = "10") int pageSize) {
         List<PaymentChannelSummaryResponse> items = paymentChannelService.list(status, keyword);
-        return ApiResponse.success(new PageResponse<>(items.size(), items));
+        return ApiResponse.success(page(items, page, pageSize));
     }
 
     @GetMapping("/{id}")
@@ -59,5 +61,13 @@ public class PaymentChannelController {
 
     private String operator(Principal principal) {
         return principal == null ? "system" : principal.getName();
+    }
+
+    private <T> PageResponse<T> page(List<T> items, int page, int pageSize) {
+        int normalizedPage = Math.max(page, 1);
+        int normalizedPageSize = Math.max(pageSize, 1);
+        int fromIndex = Math.min((normalizedPage - 1) * normalizedPageSize, items.size());
+        int toIndex = Math.min(fromIndex + normalizedPageSize, items.size());
+        return new PageResponse<>(items.size(), items.subList(fromIndex, toIndex));
     }
 }

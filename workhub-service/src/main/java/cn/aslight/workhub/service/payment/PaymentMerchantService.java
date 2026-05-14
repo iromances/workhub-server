@@ -3,6 +3,7 @@ package cn.aslight.workhub.service.payment;
 import cn.aslight.workhub.dao.payment.PaymentChannelMapper;
 import cn.aslight.workhub.dao.payment.PaymentMerchantMapper;
 import cn.aslight.workhub.dao.payment.PaymentMerchantParamMapper;
+import cn.aslight.workhub.dao.payment.PaymentMerchantCredentialMapper;
 import cn.aslight.workhub.dao.payment.PaymentSecretMapper;
 import cn.aslight.workhub.model.payment.PaymentChannelEntity;
 import cn.aslight.workhub.model.payment.PaymentMerchantDetailResponse;
@@ -24,17 +25,20 @@ public class PaymentMerchantService {
     private final PaymentMerchantMapper paymentMerchantMapper;
     private final PaymentChannelMapper paymentChannelMapper;
     private final PaymentMerchantParamMapper paymentMerchantParamMapper;
+    private final PaymentMerchantCredentialMapper paymentMerchantCredentialMapper;
     private final PaymentSecretMapper paymentSecretMapper;
     private final PaymentAuditService paymentAuditService;
 
     public PaymentMerchantService(PaymentMerchantMapper paymentMerchantMapper,
-                                  PaymentChannelMapper paymentChannelMapper,
-                                  PaymentMerchantParamMapper paymentMerchantParamMapper,
-                                  PaymentSecretMapper paymentSecretMapper,
-                                  PaymentAuditService paymentAuditService) {
+	                                  PaymentChannelMapper paymentChannelMapper,
+	                                  PaymentMerchantParamMapper paymentMerchantParamMapper,
+                                      PaymentMerchantCredentialMapper paymentMerchantCredentialMapper,
+	                                  PaymentSecretMapper paymentSecretMapper,
+	                                  PaymentAuditService paymentAuditService) {
         this.paymentMerchantMapper = paymentMerchantMapper;
         this.paymentChannelMapper = paymentChannelMapper;
         this.paymentMerchantParamMapper = paymentMerchantParamMapper;
+        this.paymentMerchantCredentialMapper = paymentMerchantCredentialMapper;
         this.paymentSecretMapper = paymentSecretMapper;
         this.paymentAuditService = paymentAuditService;
     }
@@ -72,6 +76,7 @@ public class PaymentMerchantService {
                 detail.remark(),
                 paymentMerchantParamMapper.findByMerchantId(id),
                 paymentSecretMapper.findByMerchantId(id),
+                paymentMerchantCredentialMapper.findByMerchantId(id),
                 detail.createdAt(),
                 detail.updatedAt()
         );

@@ -1,9 +1,11 @@
 package cn.aslight.workhub.controller.payment;
 
 import cn.aslight.workhub.model.payment.PaymentMerchantDetailResponse;
+import cn.aslight.workhub.model.payment.PaymentMerchantCredentialResponse;
 import cn.aslight.workhub.model.payment.PaymentMerchantParamResponse;
 import cn.aslight.workhub.model.payment.PaymentSecretSummaryResponse;
 import cn.aslight.workhub.model.payment.PaymentMerchantSummaryResponse;
+import cn.aslight.workhub.service.payment.PaymentMerchantCredentialService;
 import cn.aslight.workhub.service.payment.PaymentMerchantParamService;
 import cn.aslight.workhub.service.payment.PaymentMerchantService;
 import cn.aslight.workhub.service.payment.PaymentSecretService;
@@ -28,6 +30,7 @@ class PaymentMerchantControllerTest {
     void detail_shouldExposeMaskedParamsAndSecrets() throws Exception {
         PaymentMerchantService merchantService = mock(PaymentMerchantService.class);
         PaymentMerchantParamService paramService = mock(PaymentMerchantParamService.class);
+        PaymentMerchantCredentialService credentialService = mock(PaymentMerchantCredentialService.class);
         PaymentSecretService secretService = mock(PaymentSecretService.class);
         when(merchantService.detail(8L)).thenReturn(new PaymentMerchantDetailResponse(
                 8L,
@@ -65,18 +68,31 @@ class PaymentMerchantControllerTest {
                         null,
                         LocalDateTime.of(2026, 4, 3, 12, 0)
                 )),
+                List.of(new PaymentMerchantCredentialResponse(
+                        31L,
+                        "tradePassword",
+                        "交易密码",
+                        "TRADE_PASSWORD",
+                        "********1234",
+                        "fingerprint",
+                        "ACTIVE",
+                        null,
+                        LocalDateTime.of(2026, 4, 3, 12, 0),
+                        LocalDateTime.of(2026, 4, 3, 12, 0)
+                )),
                 LocalDateTime.of(2026, 4, 3, 12, 0),
                 LocalDateTime.of(2026, 4, 3, 12, 30)
         ));
 
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
-                new PaymentMerchantController(merchantService, paramService, secretService)
+                new PaymentMerchantController(merchantService, paramService, credentialService, secretService)
         ).build();
 
         mockMvc.perform(get("/api/payment/merchants/8").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.channelCode").value("YEEPAY"))
                 .andExpect(jsonPath("$.data.parameters[0].paramKey").value("notifyUrl"))
+                .andExpect(jsonPath("$.data.credentials[0].credentialType").value("TRADE_PASSWORD"))
                 .andExpect(jsonPath("$.data.secrets[0].maskedValue").value("********ABCD"))
                 .andExpect(jsonPath("$.data.secrets[0].versionNo").value(3));
     }
@@ -85,13 +101,14 @@ class PaymentMerchantControllerTest {
     void list_shouldSupportProjectAndPurposeFilter() throws Exception {
         PaymentMerchantService merchantService = mock(PaymentMerchantService.class);
         PaymentMerchantParamService paramService = mock(PaymentMerchantParamService.class);
+        PaymentMerchantCredentialService credentialService = mock(PaymentMerchantCredentialService.class);
         PaymentSecretService secretService = mock(PaymentSecretService.class);
         when(merchantService.list(eq("ACTIVE"), eq(1L), eq(10L), eq("WITHHOLD"), eq("M0"))).thenReturn(List.of(
                 new PaymentMerchantSummaryResponse(8L, 1L, "YEEPAY", "易宝支付", "M0001", "易宝主商户", "PROD", "app-prod", "ACTIVE")
         ));
 
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
-                new PaymentMerchantController(merchantService, paramService, secretService)
+                new PaymentMerchantController(merchantService, paramService, credentialService, secretService)
         ).build();
 
         mockMvc.perform(get("/api/payment/merchants")

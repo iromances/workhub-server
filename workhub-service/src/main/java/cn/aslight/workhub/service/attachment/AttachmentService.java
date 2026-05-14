@@ -46,6 +46,18 @@ public class AttachmentService {
     }
 
     /**
+     * 保存需求补充材料。
+     *
+     * @param intakeId 待整理需求 ID
+     * @param screenshots 需求截图
+     * @param attachments 需求附件
+     */
+    @Transactional
+    public void appendIntakeFiles(Long intakeId, List<MultipartFile> screenshots, List<MultipartFile> attachments) {
+        saveIntakeFiles(intakeId, screenshots, attachments);
+    }
+
+    /**
      * 保存需求阶段推进过程中补充上传的数据文件。
      *
      * @param intakeId 待整理需求 ID
@@ -92,6 +104,65 @@ public class AttachmentService {
         return new AttachmentResource(entity, new FileSystemResource(path));
     }
 
+    /**
+     * 删除需求截图或需求附件。
+     *
+     * <p>只允许删除需求原始材料，不删除阶段产出的数据文件。</p>
+     *
+     * @param intakeId 待整理需求 ID
+     * @param attachmentId 附件 ID
+     * @return 被删除的附件信息
+     */
+    @Transactional
+    public AttachmentResponse deleteIntakeMaterial(Long intakeId, Long attachmentId) {
+        AttachmentEntity entity = attachmentMapper.findById(attachmentId);
+        if (entity == null
+                || !intakeId.equals(entity.getBizId())
+                || (!INTAKE_SCREENSHOT.equals(entity.getBizType()) && !INTAKE_ATTACHMENT.equals(entity.getBizType()))) {
+            throw new IllegalArgumentException("需求附件不存在或不属于当前需求");
+        }
+        AttachmentResponse response = toResponse(entity);
+        attachmentMapper.deleteById(attachmentId);
+        deletePhysicalFile(entity.getStoragePath());
+        return response;
+    }
+
+    /**
+     * 替换需求截图或需求附件文件。
+     *
+     * <p>替换时保留附件 ID 和原附件类型，只更新文件内容和文件名。</p>
+     *
+     * @param intakeId 待整理需求 ID
+     * @param attachmentId 附件 ID
+     * @param file 新文件
+     * @return 替换前后的附件信息
+     */
+    @Transactional
+    public AttachmentReplaceResult replaceIntakeMaterial(Long intakeId, Long attachmentId, MultipartFile file) {
+        AttachmentEntity entity = attachmentMapper.findById(attachmentId);
+        if (entity == null
+                || !intakeId.equals(entity.getBizId())
+                || (!INTAKE_SCREENSHOT.equals(entity.getBizType()) && !INTAKE_ATTACHMENT.equals(entity.getBizType()))) {
+            throw new IllegalArgumentException("需求附件不存在或不属于当前需求");
+        }
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("替换文件不能为空");
+        }
+
+        AttachmentResponse before = toResponse(entity);
+        String oldStoragePath = entity.getStoragePath();
+        StoredFile storedFile = storeFileToDisk(intakeId, file);
+        attachmentMapper.updateFile(
+                attachmentId,
+                storedFile.fileName(),
+                storedFile.storagePath(),
+                storedFile.contentType()
+        );
+        deletePhysicalFile(oldStoragePath);
+        AttachmentEntity updated = attachmentMapper.findById(attachmentId);
+        return new AttachmentReplaceResult(before, toResponse(updated));
+    }
+
     private void storeFiles(Long intakeId, List<MultipartFile> files, String bizType) {
         if (files == null || files.isEmpty()) {
             return;
@@ -105,6 +176,18 @@ public class AttachmentService {
     }
 
     private void storeSingleFile(Long intakeId, MultipartFile file, String bizType) {
+        StoredFile storedFile = storeFileToDisk(intakeId, file);
+
+        AttachmentEntity entity = new AttachmentEntity();
+        entity.setBizType(bizType);
+        entity.setBizId(intakeId);
+        entity.setFileName(storedFile.fileName());
+        entity.setStoragePath(storedFile.storagePath());
+        entity.setContentType(storedFile.contentType());
+        attachmentMapper.insert(entity);
+    }
+
+    private StoredFile storeFileToDisk(Long intakeId, MultipartFile file) {
         String originalFilename = sanitizeFileName(file.getOriginalFilename());
         if (originalFilename == null || originalFilename.isBlank()) {
             throw new IllegalArgumentException("附件文件名不能为空");
@@ -122,14 +205,19 @@ public class AttachmentService {
         } catch (IOException ex) {
             throw new IllegalStateException("附件保存失败: " + originalFilename, ex);
         }
+        return new StoredFile(originalFilename, target.toString(), trimToNull(file.getContentType()));
+    }
 
-        AttachmentEntity entity = new AttachmentEntity();
-        entity.setBizType(bizType);
-        entity.setBizId(intakeId);
-        entity.setFileName(originalFilename);
-        entity.setStoragePath(target.toString());
-        entity.setContentType(trimToNull(file.getContentType()));
-        attachmentMapper.insert(entity);
+    private void deletePhysicalFile(String storagePath) {
+        String normalized = trimToNull(storagePath);
+        if (normalized == null) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(Path.of(normalized));
+        } catch (IOException ex) {
+            throw new IllegalStateException("附件文件删除失败", ex);
+        }
     }
 
     private AttachmentResponse toResponse(AttachmentEntity entity) {
@@ -171,10 +259,16 @@ public class AttachmentService {
     public record AttachmentResource(AttachmentEntity entity, Resource resource) {
     }
 
+    public record AttachmentReplaceResult(AttachmentResponse before, AttachmentResponse after) {
+    }
+
     public record AttachmentFileContext(Long id,
                                         String category,
                                         String fileName,
                                         String storagePath,
                                         String contentType) {
+    }
+
+    private record StoredFile(String fileName, String storagePath, String contentType) {
     }
 }

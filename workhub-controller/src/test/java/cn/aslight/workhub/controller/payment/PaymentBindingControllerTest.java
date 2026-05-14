@@ -28,6 +28,9 @@ class PaymentBindingControllerTest {
         when(bindingService.resolve(10L, "WITHHOLD")).thenReturn(new PaymentProjectBindingResponse(
                 100L,
                 10L,
+                "ASSET",
+                "资产平台",
+                "资产业务",
                 "WOCHENG",
                 "沃橙项目",
                 8L,
@@ -38,10 +41,12 @@ class PaymentBindingControllerTest {
                 "易宝支付",
                 "PROD",
                 "WITHHOLD",
+                List.of("WITHHOLD"),
                 1,
                 true,
                 "ACTIVE",
                 null,
+                List.of(),
                 LocalDateTime.of(2026, 4, 3, 12, 0),
                 LocalDateTime.of(2026, 4, 3, 12, 30)
         ));

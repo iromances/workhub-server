@@ -2,8 +2,10 @@ package cn.aslight.workhub.controller.intake;
 
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakeHistoryResponse;
+import cn.aslight.workhub.model.intake.DevelopmentAnalysisResponse;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
+import cn.aslight.workhub.service.intake.DevelopmentAnalysisService;
 import cn.aslight.workhub.service.intake.IntakeService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -18,23 +20,57 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class IntakeControllerTest {
 
+    private IntakeController controller(IntakeService intakeService) {
+        return new IntakeController(intakeService, mock(DevelopmentAnalysisService.class));
+    }
+
+    @Test
+    void analyzeDevelopment_shouldReturnPendingResponseQuickly() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        DevelopmentAnalysisService developmentAnalysisService = mock(DevelopmentAnalysisService.class);
+        when(developmentAnalysisService.analyze(5L, "账单管理", "admin")).thenReturn(
+                new DevelopmentAnalysisResponse(
+                        9L,
+                        5L,
+                        "PENDING",
+                        "任务评估已提交，系统正在后台处理中",
+                        null,
+                        LocalDateTime.of(2026, 4, 24, 12, 0),
+                        LocalDateTime.of(2026, 4, 24, 12, 0)
+                )
+        );
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new IntakeController(intakeService, developmentAnalysisService)).build();
+
+        mockMvc.perform(post("/api/intake/5/development-analysis")
+                        .principal(new UsernamePasswordAuthenticationToken("admin", "N/A"))
+                        .param("projectGroup", "账单管理"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.message").value("任务评估已提交，系统正在后台处理中"));
+    }
+
     @Test
     void list_shouldExposeStructuredColumnsInApiResponse() throws Exception {
         IntakeService intakeService = mock(IntakeService.class);
-        when(intakeService.list(eq(null), eq(null), eq(null), eq(null), eq(null))).thenReturn(List.of(
+        when(intakeService.list(eq(null), eq(null), eq(null), eq(null), eq(null), eq(null), eq(null))).thenReturn(List.of(
                 new IntakeSummaryResponse(
                         1L,
                         "需求截图附件录入",
                         "需求截图录入",
                         "zhoutuo",
+                        "石浩",
                         LocalDateTime.of(2026, 3, 31, 12, 0),
                         "已收录",
                         "周拓",
@@ -47,19 +83,20 @@ class IntakeControllerTest {
                         "为避免单一支付通道暂停风险，需要补充嘉泰保理易宝商户号绑卡方案。",
                         "供应链科技",
                         "涉及沃诚项目额度释放，最高优先级。",
-                        "2d",
+                        "16h",
                         "2026/3/31",
                         "无",
                         "无",
                         "无",
                         "无",
+                        "供应链科技",
                         "SUCCEEDED",
                         "待整理",
                         null
                 )
         ));
 
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new IntakeController(intakeService)).build();
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
 
         mockMvc.perform(get("/api/intake").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -71,7 +108,7 @@ class IntakeControllerTest {
                 .andExpect(jsonPath("$.data.items[0].requirementDigest").value("沃橙绑卡至嘉泰保理"))
                 .andExpect(jsonPath("$.data.items[0].department").value("供应链业务部"))
                 .andExpect(jsonPath("$.data.items[0].requirementName").value("沃橙项目增加客户绑卡至嘉泰保理的需求0325"))
-                .andExpect(jsonPath("$.data.items[0].estimatedEffort").value("2d"))
+                .andExpect(jsonPath("$.data.items[0].estimatedEffort").value("16h"))
                 .andExpect(jsonPath("$.data.items[0].releasedTime").value("无"))
                 .andExpect(jsonPath("$.data.items[0].enrichmentStatus").value("SUCCEEDED"));
     }
@@ -85,14 +122,15 @@ class IntakeControllerTest {
                 "需求录入",
                 null,
                 "zhoutuo",
+                "石浩",
                 LocalDateTime.of(2026, 4, 1, 12, 0),
-                "已评估",
+                "待排期",
                 "原始内容",
                 new IntakeStructuredData(
                         "需求审批",
                         "周拓的系统开发2.0",
                         "周拓",
-                        "dev-user",
+                        null,
                         "202603250009",
                         "2026/3/25 16:17",
                         "研发需求",
@@ -104,8 +142,10 @@ class IntakeControllerTest {
                         "供应链业务部",
                         "供应链科技",
                         "高优",
-                        "2d",
+                        "16h",
                         "2026/04/05",
+                        null,
+                        null,
                         null,
                         null,
                         null,
@@ -114,7 +154,8 @@ class IntakeControllerTest {
                         null,
                         "供应链科技",
                         List.of(),
-                        List.of()
+                        List.of(),
+                        null
                 ),
                 List.<IntakeHistoryResponse>of(),
                 "待整理",
@@ -128,17 +169,17 @@ class IntakeControllerTest {
                 LocalDateTime.of(2026, 4, 1, 12, 1)
         ));
 
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new IntakeController(intakeService)).build();
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
 
         mockMvc.perform(post("/api/intake/1/stage-actions")
                         .principal(new UsernamePasswordAuthenticationToken("admin", "N/A"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"action":"EVALUATE_EFFORT","estimatedEffort":"2d","plannedDueDate":"2026/04/05"}
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                                {"action":"COMPLETE_EVALUATION","estimatedEffort":"2d","plannedDueDate":"2026/04/05"}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.demandStatus").value("已评估"))
-                .andExpect(jsonPath("$.data.structuredData.estimatedEffort").value("2d"))
+                .andExpect(jsonPath("$.data.demandStatus").value("待排期"))
+                .andExpect(jsonPath("$.data.structuredData.estimatedEffort").value("16h"))
                 .andExpect(jsonPath("$.data.structuredData.plannedDueDate").value("2026/04/05"));
     }
 
@@ -151,8 +192,9 @@ class IntakeControllerTest {
                 "需求录入",
                 null,
                 "ops-user",
+                "石浩",
                 LocalDateTime.of(2026, 4, 2, 12, 0),
-                "已上线",
+                "已完成",
                 "原始内容",
                 new IntakeStructuredData(
                         "需求审批",
@@ -176,11 +218,14 @@ class IntakeControllerTest {
                         "5h",
                         null,
                         "2026/04/03",
+                        "2026/04/04",
                         null,
-                        "2026/04/03",
+                        null,
+                        null,
                         "资产业务",
                         List.of(),
-                        List.of()
+                        List.of(),
+                        null
                 ),
                 List.of(),
                 "待整理",
@@ -194,7 +239,7 @@ class IntakeControllerTest {
                 LocalDateTime.of(2026, 4, 2, 12, 1)
         ));
 
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new IntakeController(intakeService)).build();
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
         MockMultipartFile dataFile = new MockMultipartFile(
                 "dataFiles",
                 "delivery-result.xlsx",
@@ -204,13 +249,162 @@ class IntakeControllerTest {
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/intake/2/stage-actions")
                         .file(dataFile)
-                        .param("action", "COMPLETE_DELIVERY")
-                        .param("actualEffort", "5h")
-                        .param("actualCompletedTime", "2026/04/03")
-                        .param("occurredAt", "2026/04/03")
+                        .param("action", "CONFIRM_ACCEPTANCE")
+                        .param("acceptanceTime", "2026/04/04")
                         .principal(new UsernamePasswordAuthenticationToken("admin", "N/A")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.demandStatus").value("已上线"))
-                .andExpect(jsonPath("$.data.structuredData.actualEffort").value("5h"));
+                .andExpect(jsonPath("$.data.demandStatus").value("已完成"))
+                .andExpect(jsonPath("$.data.structuredData.acceptanceTime").value("2026/04/04"));
+    }
+
+    @Test
+    void generateSqlDraft_shouldCallService() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        when(intakeService.generateSqlDraft(eq(3L), eq("admin"))).thenReturn(new IntakeDetailResponse(
+                3L,
+                "需求截图附件录入",
+                "需求录入",
+                null,
+                "ops-user",
+                "石浩",
+                LocalDateTime.of(2026, 4, 2, 12, 0),
+                "已收录",
+                "原始内容",
+                null,
+                List.of(),
+                "待整理",
+                "SUCCEEDED",
+                null,
+                LocalDateTime.of(2026, 4, 2, 12, 1),
+                null,
+                List.of(),
+                null,
+                LocalDateTime.of(2026, 4, 2, 12, 0),
+                LocalDateTime.of(2026, 4, 2, 12, 1)
+        ));
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
+
+        mockMvc.perform(post("/api/intake/3/sql-draft")
+                        .principal(new UsernamePasswordAuthenticationToken("admin", "N/A")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(3));
+        verify(intakeService).generateSqlDraft(3L, "admin");
+    }
+
+    @Test
+    void appendAttachments_shouldAcceptMultipartRequest() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        when(intakeService.appendAttachments(eq(5L), any(), any(), eq("admin"))).thenReturn(simpleDetail(5L));
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
+
+        MockMultipartFile screenshot = new MockMultipartFile(
+                "screenshots",
+                "需求截图.png",
+                "image/png",
+                "image".getBytes()
+        );
+        MockMultipartFile attachment = new MockMultipartFile(
+                "attachments",
+                "需求说明.docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "doc".getBytes()
+        );
+
+        mockMvc.perform(multipart("/api/intake/5/attachments")
+                        .file(screenshot)
+                        .file(attachment)
+                        .principal(new UsernamePasswordAuthenticationToken("admin", "N/A")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(5));
+
+        verify(intakeService).appendAttachments(eq(5L), any(), any(), eq("admin"));
+    }
+
+    @Test
+    void deleteAttachment_shouldCallService() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        when(intakeService.deleteAttachment(5L, 11L, "admin")).thenReturn(simpleDetail(5L));
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
+
+        mockMvc.perform(delete("/api/intake/5/attachments/11")
+                        .principal(new UsernamePasswordAuthenticationToken("admin", "N/A")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(5));
+
+        verify(intakeService).deleteAttachment(5L, 11L, "admin");
+    }
+
+    @Test
+    void replaceAttachment_shouldAcceptMultipartRequest() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        when(intakeService.replaceAttachment(eq(5L), eq(11L), any(), eq("admin"))).thenReturn(simpleDetail(5L));
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "新需求说明.docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "doc".getBytes()
+        );
+
+        mockMvc.perform(multipart("/api/intake/5/attachments/11/replace")
+                        .file(file)
+                        .principal(new UsernamePasswordAuthenticationToken("admin", "N/A")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(5));
+
+        verify(intakeService).replaceAttachment(eq(5L), eq(11L), any(), eq("admin"));
+    }
+
+    @Test
+    void retryEnrichment_shouldCallService() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        when(intakeService.retryEnrichment(5L, "admin")).thenReturn(simpleDetail(5L));
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
+
+        mockMvc.perform(post("/api/intake/5/enrichment/retry")
+                        .principal(new UsernamePasswordAuthenticationToken("admin", "N/A")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(5));
+
+        verify(intakeService).retryEnrichment(5L, "admin");
+    }
+
+    @Test
+    void delete_shouldReturnOk() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
+
+        mockMvc.perform(delete("/api/intake/9")
+                        .principal(new UsernamePasswordAuthenticationToken("admin", "N/A")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.message").value("OK"));
+    }
+
+    private IntakeDetailResponse simpleDetail(Long id) {
+        return new IntakeDetailResponse(
+                id,
+                "需求截图附件录入",
+                "需求录入",
+                null,
+                "admin",
+                "石浩",
+                LocalDateTime.of(2026, 4, 2, 12, 0),
+                "已收录",
+                "原始内容",
+                null,
+                List.of(),
+                "待整理",
+                "SUCCEEDED",
+                null,
+                LocalDateTime.of(2026, 4, 2, 12, 1),
+                null,
+                List.of(),
+                null,
+                LocalDateTime.of(2026, 4, 2, 12, 0),
+                LocalDateTime.of(2026, 4, 2, 12, 1)
+        );
     }
 }

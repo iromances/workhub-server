@@ -3,6 +3,8 @@ package cn.aslight.workhub.model.payment;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import java.util.List;
+
 /**
  * 项目商户绑定保存请求。
  */
@@ -16,6 +18,9 @@ public class PaymentProjectBindingSaveRequest {
 
     @NotBlank(message = "不能为空")
     private String purposeCode;
+
+    private List<String> purposeCodes;
+    private List<PaymentBindingRelationSaveRequest> relations;
 
     @NotNull(message = "不能为空")
     private Integer priority;
@@ -49,6 +54,22 @@ public class PaymentProjectBindingSaveRequest {
 
     public void setPurposeCode(String purposeCode) {
         this.purposeCode = purposeCode;
+    }
+
+    public List<String> getPurposeCodes() {
+        return purposeCodes;
+    }
+
+    public void setPurposeCodes(List<String> purposeCodes) {
+        this.purposeCodes = purposeCodes;
+    }
+
+    public List<PaymentBindingRelationSaveRequest> getRelations() {
+        return relations;
+    }
+
+    public void setRelations(List<PaymentBindingRelationSaveRequest> relations) {
+        this.relations = relations;
     }
 
     public Integer getPriority() {

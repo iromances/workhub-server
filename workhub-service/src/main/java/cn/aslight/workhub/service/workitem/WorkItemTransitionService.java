@@ -52,11 +52,17 @@ public class WorkItemTransitionService {
         if (toStatus.equals(workItem.getStatus())) {
             throw new IllegalArgumentException("工作项已经处于目标状态");
         }
+        if (WorkItemStatusRules.isTerminalStatus(workItem.getStatus())) {
+            throw new IllegalArgumentException("终态工作项不允许继续流转");
+        }
+        if (!WorkItemStatusRules.canTransition(workItem.getStatus(), toStatus)) {
+            throw new IllegalArgumentException("当前状态不允许流转到目标状态");
+        }
         if (WorkItemStatusRules.requiresReason(toStatus) && reason == null) {
             throw new IllegalArgumentException("关闭类状态必须填写结论说明");
         }
 
-        LocalDateTime finishedAt = "已完成".equals(toStatus) ? LocalDateTime.now() : null;
+        LocalDateTime finishedAt = WorkItemStatusRules.STATUS_COMPLETED.equals(toStatus) ? LocalDateTime.now() : null;
         workItemService.updateStatus(workItemId, toStatus, finishedAt);
 
         WorkItemTransitionLogEntity entity = new WorkItemTransitionLogEntity();

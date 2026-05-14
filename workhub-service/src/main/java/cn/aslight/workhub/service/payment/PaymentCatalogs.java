@@ -25,6 +25,26 @@ public final class PaymentCatalogs {
             "SIGN_SECRET",
             "APP_SECRET"
     );
+    static final Set<String> RELATION_ROLES = Set.of(
+            "MAIN",
+            "SHARED_AGREEMENT",
+            "NORMAL_SPLIT",
+            "COMPENSATION_REPURCHASE",
+            "SPLIT_RECEIVER",
+            "REFUND_MAIN",
+            "SUB_MERCHANT"
+    );
+    static final Set<String> CREDENTIAL_TYPES = Set.of(
+            "USERNAME",
+            "PASSWORD",
+            "TRADE_PASSWORD",
+            "AES_KEY",
+            "SIGN_KEY",
+            "PRIVATE_KEY_PASSWORD",
+            "CERT_PASSWORD",
+            "TOKEN",
+            "OTHER_SECRET"
+    );
 
     private static final Map<String, PaymentPurposeOptionResponse> PURPOSES = Map.ofEntries(
             Map.entry("BIND_CARD", new PaymentPurposeOptionResponse("BIND_CARD", "绑卡", "银行卡签约、绑卡、预绑卡等场景")),
@@ -41,7 +61,16 @@ public final class PaymentCatalogs {
             Map.entry("WITHDRAW", new PaymentPurposeOptionResponse("WITHDRAW", "提现", "提现、出金")),
             Map.entry("TRANSFER", new PaymentPurposeOptionResponse("TRANSFER", "转账", "转账、划拨")),
             Map.entry("BALANCE_QUERY", new PaymentPurposeOptionResponse("BALANCE_QUERY", "余额查询", "账户余额查询")),
-            Map.entry("CALLBACK_VERIFY", new PaymentPurposeOptionResponse("CALLBACK_VERIFY", "回调验签", "回调报文验签、通知验签"))
+            Map.entry("CALLBACK_VERIFY", new PaymentPurposeOptionResponse("CALLBACK_VERIFY", "回调验签", "回调报文验签、通知验签")),
+            Map.entry("WITHHOLD_SPLIT_SETTLEMENT", new PaymentPurposeOptionResponse("WITHHOLD_SPLIT_SETTLEMENT", "代收分账", "代收后按规则分账、清分")),
+            Map.entry("WITHHOLD_SUB_MERCHANT", new PaymentPurposeOptionResponse("WITHHOLD_SUB_MERCHANT", "代收子商户", "代收场景下的子商户")),
+            Map.entry("WITHHOLD_SUB_MERCHANT_BEIJING", new PaymentPurposeOptionResponse("WITHHOLD_SUB_MERCHANT_BEIJING", "北京代收子商户", "北京地区代收子商户")),
+            Map.entry("WITHHOLD_SUB_MERCHANT_TIANJIN", new PaymentPurposeOptionResponse("WITHHOLD_SUB_MERCHANT_TIANJIN", "天津代收子商户", "天津地区代收子商户")),
+            Map.entry("WITHHOLD_SUB_MERCHANT_PROD_TEST", new PaymentPurposeOptionResponse("WITHHOLD_SUB_MERCHANT_PROD_TEST", "生产测试代收子商户", "会实际扣款的生产测试子商户")),
+            Map.entry("SPLIT_RECEIVER_XXT", new PaymentPurposeOptionResponse("SPLIT_RECEIVER_XXT", "先行通被分账商户", "先行通作为被分账方")),
+            Map.entry("SPLIT_RECEIVER_LIYI", new PaymentPurposeOptionResponse("SPLIT_RECEIVER_LIYI", "里易被分账商户", "里易作为被分账方")),
+            Map.entry("REFUND_MAIN_ACCOUNT", new PaymentPurposeOptionResponse("REFUND_MAIN_ACCOUNT", "退款主户", "退款资金主账户")),
+            Map.entry("ACCOUNT_SYSTEM", new PaymentPurposeOptionResponse("ACCOUNT_SYSTEM", "账户体系", "支付渠道账户体系能力"))
     );
 
     private PaymentCatalogs() {
@@ -69,6 +98,14 @@ public final class PaymentCatalogs {
 
     public static String normalizeSecretType(String value) {
         return ensureAllowed(uppercase(value), SECRET_TYPES, "secretType 不支持");
+    }
+
+    public static String normalizeRelationRole(String value) {
+        return ensureAllowed(uppercase(value), RELATION_ROLES, "relationRole 不支持");
+    }
+
+    public static String normalizeCredentialType(String value) {
+        return ensureAllowed(uppercase(value), CREDENTIAL_TYPES, "credentialType 不支持");
     }
 
     public static String trimToNull(String value) {

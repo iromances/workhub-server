@@ -3,10 +3,13 @@ package cn.aslight.workhub.controller.project;
 import cn.aslight.workhub.common.api.ApiResponse;
 import cn.aslight.workhub.common.api.PageResponse;
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
+import cn.aslight.workhub.model.project.ProjectGroupResponse;
+import cn.aslight.workhub.model.project.ProjectGroupSaveRequest;
 import cn.aslight.workhub.model.project.ProjectSaveRequest;
 import cn.aslight.workhub.model.project.ProjectSummaryResponse;
 import cn.aslight.workhub.service.project.ProjectService;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,6 +46,54 @@ public class ProjectController {
     }
 
     /**
+     * 查询项目组列表。
+     *
+     * @param keyword 关键字
+     * @return 项目组列表
+     */
+    @GetMapping("/groups")
+    public ApiResponse<PageResponse<ProjectGroupResponse>> listGroups(@RequestParam(required = false) String keyword) {
+        List<ProjectGroupResponse> items = projectService.listGroups(keyword);
+        return ApiResponse.success(new PageResponse<>(items.size(), items));
+    }
+
+    /**
+     * 新增项目组。
+     *
+     * @param request 项目组保存请求
+     * @return 项目组详情
+     */
+    @PostMapping("/groups")
+    public ApiResponse<ProjectGroupResponse> createGroup(@Valid @RequestBody ProjectGroupSaveRequest request) {
+        return ApiResponse.success(projectService.createGroup(request));
+    }
+
+    /**
+     * 更新项目组。
+     *
+     * @param id      项目组 ID
+     * @param request 项目组保存请求
+     * @return 项目组详情
+     */
+    @PutMapping("/groups/{id}")
+    public ApiResponse<ProjectGroupResponse> updateGroup(@PathVariable Long id,
+                                                         @Valid @RequestBody ProjectGroupSaveRequest request) {
+        return ApiResponse.success(projectService.updateGroup(id, request));
+    }
+
+    /**
+     * 删除项目组。
+     *
+     * @param id 项目组 ID
+     * @return 删除结果
+     */
+    @DeleteMapping("/groups/{id}")
+    public ApiResponse<Void> deleteGroup(@PathVariable Long id) {
+        projectService.deleteGroup(id);
+        return ApiResponse.success(null);
+    }
+
+    /**
      * 查询详情数据。
      *
      * @param id 业务 ID
@@ -75,5 +126,17 @@ public class ProjectController {
     public ApiResponse<ProjectDetailResponse> update(@PathVariable Long id,
                                                      @Valid @RequestBody ProjectSaveRequest request) {
         return ApiResponse.success(projectService.update(id, request));
+    }
+
+    /**
+     * 删除业务数据。
+     *
+     * @param id 业务 ID
+     * @return 删除结果
+     */
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        projectService.delete(id);
+        return ApiResponse.success(null);
     }
 }

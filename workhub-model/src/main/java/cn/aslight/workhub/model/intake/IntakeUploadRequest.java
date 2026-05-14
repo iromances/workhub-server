@@ -12,11 +12,16 @@ public class IntakeUploadRequest {
     @NotBlank(message = "不能为空")
     private String senderName;
 
+    @NotBlank(message = "不能为空")
+    private String developmentOwnerUserName;
+
     private String sourceChannel;
 
     private LocalDateTime receivedAt;
 
     private String rawContent;
+
+    private String projectGroup;
 
     public String getSenderName() {
         return senderName;
@@ -24,6 +29,14 @@ public class IntakeUploadRequest {
 
     public void setSenderName(String senderName) {
         this.senderName = senderName;
+    }
+
+    public String getDevelopmentOwnerUserName() {
+        return developmentOwnerUserName;
+    }
+
+    public void setDevelopmentOwnerUserName(String developmentOwnerUserName) {
+        this.developmentOwnerUserName = developmentOwnerUserName;
     }
 
     public String getSourceChannel() {
@@ -48,5 +61,13 @@ public class IntakeUploadRequest {
 
     public void setRawContent(String rawContent) {
         this.rawContent = rawContent;
+    }
+
+    public String getProjectGroup() {
+        return projectGroup;
+    }
+
+    public void setProjectGroup(String projectGroup) {
+        this.projectGroup = projectGroup;
     }
 }

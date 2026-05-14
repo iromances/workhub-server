@@ -12,6 +12,8 @@ public class IntakeCreateRequest {
     @NotBlank(message = "不能为空")
     private String senderName;
 
+    private String developmentOwnerUserName;
+
     private String sourceChannel;
 
     private LocalDateTime receivedAt;
@@ -25,6 +27,14 @@ public class IntakeCreateRequest {
 
     public void setSenderName(String senderName) {
         this.senderName = senderName;
+    }
+
+    public String getDevelopmentOwnerUserName() {
+        return developmentOwnerUserName;
+    }
+
+    public void setDevelopmentOwnerUserName(String developmentOwnerUserName) {
+        this.developmentOwnerUserName = developmentOwnerUserName;
     }
 
     public String getSourceChannel() {

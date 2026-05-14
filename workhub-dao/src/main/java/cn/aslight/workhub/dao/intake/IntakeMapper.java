@@ -25,6 +25,7 @@ public interface IntakeMapper {
             "sender_name,",
             "received_at,",
             "raw_content,",
+            "development_owner_user_name,",
             "structured_data_json,",
             "ai_draft_json,",
             "intake_status,",
@@ -33,32 +34,45 @@ public interface IntakeMapper {
             "enrichment_error_summary,",
             "enrichment_updated_at,",
             "converted_work_item_id,",
+            "deleted,",
+            "deleted_at,",
+            "deleted_by,",
             "created_at,",
             "updated_at",
             "FROM pm_intake_record",
             "<where>",
+            "deleted = 0",
             "<if test='status != null and status != \"\"'>",
             "AND intake_status = #{status}",
             "</if>",
-            "<if test='sourceType != null and sourceType != \"\"'>",
-            "AND source_type = #{sourceType}",
-            "</if>",
-            "<if test='enrichmentStatus != null and enrichmentStatus != \"\"'>",
-            "AND enrichment_status = #{enrichmentStatus}",
-            "</if>",
-            "<if test='keyword != null and keyword != \"\"'>",
-            "AND (sender_name LIKE CONCAT('%', #{keyword}, '%')",
-            "OR raw_content LIKE CONCAT('%', #{keyword}, '%')",
-            "OR external_message_id LIKE CONCAT('%', #{keyword}, '%'))",
-            "</if>",
             "</where>",
-            "ORDER BY received_at DESC, id DESC",
+            "ORDER BY CASE WHEN demand_status IN ('已完成', '终止关闭') THEN 1 ELSE 0 END, received_at DESC, id DESC",
             "</script>"
     })
-    List<IntakeRecordEntity> findAll(@Param("status") String status,
-                                     @Param("sourceType") String sourceType,
-                                     @Param("keyword") String keyword,
-                                     @Param("enrichmentStatus") String enrichmentStatus);
+    List<IntakeRecordEntity> findAll(@Param("status") String status);
+
+    @Select("""
+            SELECT id,
+                   development_owner_user_name,
+                   demand_status,
+                   structured_data_json,
+                   ai_draft_json
+            FROM pm_intake_record
+            WHERE structured_data_json IS NOT NULL
+               OR ai_draft_json IS NOT NULL
+            ORDER BY id ASC
+            """)
+    List<IntakeRecordEntity> findAllForEffortNormalization();
+
+    @Select("""
+            SELECT id,
+                   development_owner_user_name,
+                   demand_status,
+                   structured_data_json
+            FROM pm_intake_record
+            ORDER BY id ASC
+            """)
+    List<IntakeRecordEntity> findAllForLifecycleMigration();
 
     @Select("""
             SELECT id,
@@ -68,6 +82,7 @@ public interface IntakeMapper {
                    sender_name,
                    received_at,
                    raw_content,
+                   development_owner_user_name,
                    structured_data_json,
                    ai_draft_json,
                    intake_status,
@@ -76,10 +91,14 @@ public interface IntakeMapper {
                    enrichment_error_summary,
                    enrichment_updated_at,
                    converted_work_item_id,
+                   deleted,
+                   deleted_at,
+                   deleted_by,
                    created_at,
                    updated_at
             FROM pm_intake_record
             WHERE id = #{id}
+              AND deleted = 0
             """)
     IntakeRecordEntity findById(Long id);
 
@@ -91,6 +110,7 @@ public interface IntakeMapper {
                    sender_name,
                    received_at,
                    raw_content,
+                   development_owner_user_name,
                    structured_data_json,
                    ai_draft_json,
                    intake_status,
@@ -99,10 +119,14 @@ public interface IntakeMapper {
                    enrichment_error_summary,
                    enrichment_updated_at,
                    converted_work_item_id,
+                   deleted,
+                   deleted_at,
+                   deleted_by,
                    created_at,
                    updated_at
             FROM pm_intake_record
             WHERE external_message_id = #{externalMessageId}
+              AND deleted = 0
             ORDER BY id DESC
             LIMIT 1
             """)
@@ -116,6 +140,7 @@ public interface IntakeMapper {
                 sender_name,
                 received_at,
                 raw_content,
+                development_owner_user_name,
                 structured_data_json,
                 ai_draft_json,
                 intake_status,
@@ -123,7 +148,10 @@ public interface IntakeMapper {
                 enrichment_status,
                 enrichment_error_summary,
                 enrichment_updated_at,
-                converted_work_item_id
+                converted_work_item_id,
+                deleted,
+                deleted_at,
+                deleted_by
             ) VALUES (
                 #{sourceType},
                 #{sourceChannel},
@@ -131,6 +159,7 @@ public interface IntakeMapper {
                 #{senderName},
                 #{receivedAt},
                 #{rawContent},
+                #{developmentOwnerUserName},
                 #{structuredDataJson},
                 #{aiDraftJson},
                 #{intakeStatus},
@@ -138,7 +167,10 @@ public interface IntakeMapper {
                 #{enrichmentStatus},
                 #{enrichmentErrorSummary},
                 #{enrichmentUpdatedAt},
-                #{convertedWorkItemId}
+                #{convertedWorkItemId},
+                #{deleted},
+                #{deletedAt},
+                #{deletedBy}
             )
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
@@ -210,11 +242,50 @@ public interface IntakeMapper {
     @Update("""
             UPDATE pm_intake_record
             SET structured_data_json = #{structuredDataJson},
+                development_owner_user_name = #{developmentOwnerUserName},
                 demand_status = #{demandStatus},
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = #{id}
             """)
     int updateManagementFields(@Param("id") Long id,
                                @Param("structuredDataJson") String structuredDataJson,
+                               @Param("developmentOwnerUserName") String developmentOwnerUserName,
                                @Param("demandStatus") String demandStatus);
+
+    @Update("""
+            UPDATE pm_intake_record
+            SET structured_data_json = #{structuredDataJson},
+                development_owner_user_name = #{developmentOwnerUserName},
+                demand_status = #{demandStatus},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+            """)
+    int updateLifecycleFields(@Param("id") Long id,
+                              @Param("structuredDataJson") String structuredDataJson,
+                              @Param("developmentOwnerUserName") String developmentOwnerUserName,
+                              @Param("demandStatus") String demandStatus);
+
+    @Update("""
+            UPDATE pm_intake_record
+            SET structured_data_json = #{structuredDataJson},
+                ai_draft_json = #{aiDraftJson},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+            """)
+    int updateEffortPayloads(@Param("id") Long id,
+                             @Param("structuredDataJson") String structuredDataJson,
+                             @Param("aiDraftJson") String aiDraftJson);
+
+    @Update("""
+            UPDATE pm_intake_record
+            SET deleted = 1,
+                deleted_at = #{deletedAt},
+                deleted_by = #{deletedBy},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+              AND deleted = 0
+            """)
+    int markDeleted(@Param("id") Long id,
+                    @Param("deletedAt") java.time.LocalDateTime deletedAt,
+                    @Param("deletedBy") String deletedBy);
 }

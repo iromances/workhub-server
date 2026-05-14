@@ -28,9 +28,12 @@ public record IntakeStructuredData(String category,
                                    String actualCompletedTime,
                                    String acceptanceTime,
                                    String releasedTime,
+                                   String closedTime,
+                                   String closeReason,
                                    String projectHint,
                                    List<IntakeStructuredField> fields,
-                                   List<IntakeAttachmentSummary> attachmentSummaries) {
+                                   List<IntakeAttachmentSummary> attachmentSummaries,
+                                   IntakeSqlDraft sqlDraft) {
 
     public String requirementNameOrTitle() {
         if (requirementName != null && !requirementName.trim().isEmpty()) {

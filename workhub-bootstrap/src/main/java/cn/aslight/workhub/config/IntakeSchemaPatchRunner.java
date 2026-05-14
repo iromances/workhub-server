@@ -4,11 +4,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -16,6 +18,7 @@ import java.util.List;
 import java.util.Locale;
 
 @Component
+@Order(0)
 /**
  * IntakeSchemaPatchRunner 模型。
  */
@@ -26,11 +29,15 @@ public class IntakeSchemaPatchRunner implements ApplicationRunner {
     private static final String TABLE_NAME = "pm_intake_record";
     private static final String HISTORY_TABLE_NAME = "pm_intake_history";
     private static final List<ColumnPatch> COLUMN_PATCHES = List.of(
-            new ColumnPatch("structured_data_json", "TEXT NULL"),
+            new ColumnPatch("structured_data_json", "MEDIUMTEXT NULL"),
             new ColumnPatch("demand_status", "VARCHAR(32) NULL"),
             new ColumnPatch("enrichment_status", "VARCHAR(16) NULL"),
             new ColumnPatch("enrichment_error_summary", "VARCHAR(255) NULL"),
-            new ColumnPatch("enrichment_updated_at", "DATETIME NULL")
+            new ColumnPatch("enrichment_updated_at", "DATETIME NULL"),
+            new ColumnPatch("development_owner_user_name", "VARCHAR(64) NULL"),
+            new ColumnPatch("deleted", "TINYINT(1) NOT NULL DEFAULT 0"),
+            new ColumnPatch("deleted_at", "DATETIME NULL"),
+            new ColumnPatch("deleted_by", "VARCHAR(64) NULL")
     );
 
     private final DataSource dataSource;
@@ -50,6 +57,9 @@ public class IntakeSchemaPatchRunner implements ApplicationRunner {
             for (ColumnPatch patch : COLUMN_PATCHES) {
                 ensureColumn(connection, TABLE_NAME, patch);
             }
+            ensureUtf8mb4(connection, TABLE_NAME);
+            ensureMediumText(connection, TABLE_NAME, "structured_data_json");
+            ensureMediumText(connection, TABLE_NAME, "ai_draft_json");
             ensureExternalMessageUniqueIndex(connection);
             ensureHistoryTable(connection);
         }
@@ -64,6 +74,59 @@ public class IntakeSchemaPatchRunner implements ApplicationRunner {
                 "ALTER TABLE `" + tableName + "` ADD COLUMN `" + patch.name() + "` " + patch.definition(),
                 "Added missing column {} to {}",
                 patch.name(),
+                tableName
+        );
+    }
+
+    void ensureUtf8mb4(Connection connection, String tableName) throws SQLException {
+        String sql = """
+                SELECT 1
+                FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = ?
+                  AND CHARACTER_SET_NAME IS NOT NULL
+                  AND CHARACTER_SET_NAME <> 'utf8mb4'
+                LIMIT 1
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, tableName);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return;
+                }
+            }
+        }
+        executeAlter(
+                connection,
+                "ALTER TABLE `" + tableName + "` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
+                "Converted table {} to utf8mb4",
+                tableName,
+                null
+        );
+    }
+
+    void ensureMediumText(Connection connection, String tableName, String columnName) throws SQLException {
+        String sql = """
+                SELECT DATA_TYPE
+                FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = ?
+                  AND COLUMN_NAME = ?
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, tableName);
+            statement.setString(2, columnName);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next() || "mediumtext".equalsIgnoreCase(resultSet.getString("DATA_TYPE"))) {
+                    return;
+                }
+            }
+        }
+        executeAlter(
+                connection,
+                "ALTER TABLE `" + tableName + "` MODIFY COLUMN `" + columnName + "` MEDIUMTEXT NULL",
+                "Changed column {} on {} to MEDIUMTEXT",
+                columnName,
                 tableName
         );
     }

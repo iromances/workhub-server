@@ -10,17 +10,29 @@ public class ProjectEntity {
      */
     private Long id;
     /**
-     * 项目编码。
+     * 业务线编码。
+     */
+    private String businessLineCode;
+    /**
+     * 业务线名称。
+     */
+    private String businessLineName;
+    /**
+     * 系统编码。
      */
     private String projectCode;
     /**
-     * 项目名称。
+     * 系统名称。
      */
     private String projectName;
     /**
      * 项目类型。
      */
     private String projectType;
+    /**
+     * 项目组。
+     */
+    private String projectGroup;
     /**
      * 项目状态。
      */
@@ -40,6 +52,22 @@ public class ProjectEntity {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getBusinessLineCode() {
+        return businessLineCode;
+    }
+
+    public void setBusinessLineCode(String businessLineCode) {
+        this.businessLineCode = businessLineCode;
+    }
+
+    public String getBusinessLineName() {
+        return businessLineName;
+    }
+
+    public void setBusinessLineName(String businessLineName) {
+        this.businessLineName = businessLineName;
     }
 
     public String getProjectCode() {
@@ -64,6 +92,14 @@ public class ProjectEntity {
 
     public void setProjectType(String projectType) {
         this.projectType = projectType;
+    }
+
+    public String getProjectGroup() {
+        return projectGroup;
+    }
+
+    public void setProjectGroup(String projectGroup) {
+        this.projectGroup = projectGroup;
     }
 
     public String getProjectStatus() {

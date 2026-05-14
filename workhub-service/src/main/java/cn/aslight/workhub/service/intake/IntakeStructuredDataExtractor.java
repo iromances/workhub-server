@@ -27,7 +27,6 @@ public class IntakeStructuredDataExtractor {
 
         String approvalTitle = firstValue(fields, "审批标题", "标题");
         String proposerName = firstNonBlank(firstValue(fields, "提出人", "提报人", "申请人", "提交人"), extractProposerName(approvalTitle));
-        String developmentOwnerUserName = firstValue(fields, "研发人员", "研发负责人", "开发人员", "开发负责人");
         String approvalCode = firstValue(fields, "审批编号", "单号", "审批单号");
         String submittedTime = firstValue(fields, "提交时间", "提报时间", "申请时间");
         String requirementType = firstNonBlank(firstValue(fields, "需求类型", "事项类型"), inferRequirementType(normalized));
@@ -36,23 +35,24 @@ public class IntakeStructuredDataExtractor {
         String requirementDigest = firstNonBlank(firstValue(fields, "需求摘要", "摘要"), buildRequirementDigest(requirementName, requirementSummary, approvalTitle));
         String department = firstValue(fields, "所在部门", "申请部门");
         String businessLine = firstValue(fields, "需求所属业务线", "业务线");
+        String projectGroup = firstValue(fields, "项目组", "所属项目组");
         String remark = firstValue(fields, "备注");
-        String estimatedEffort = firstValue(fields, "预估工时", "工时");
+        String estimatedEffort = EffortUnitNormalizer.normalizeEffort(firstValue(fields, "预估工时", "工时"));
         String plannedDueDate = firstValue(fields, "预估完成时间", "计划完成时间", "预计完成时间");
         String developmentStartedDate = firstValue(fields, "研发开始日期", "开始研发时间", "研发开始时间");
-        String actualEffort = firstValue(fields, "实际工时");
+        String actualEffort = EffortUnitNormalizer.normalizeEffort(firstValue(fields, "实际工时"));
         String testingStartedDate = firstValue(fields, "测试开始日期", "开始测试时间", "测试开始时间");
         String actualCompletedTime = firstValue(fields, "实际完成时间", "实际上线时间");
         String acceptanceTime = firstValue(fields, "验收时间", "实际验收完成时间", "实际验收时间", "验收完成时间");
         String releasedTime = firstValue(fields, "上线时间", "实际上线时间");
-        String projectHint = firstNonBlank(businessLine, department);
+        String projectHint = firstNonBlank(projectGroup, firstNonBlank(businessLine, department));
         String category = requirementName != null || requirementSummary != null ? "需求审批" : "待整理项";
 
         return new IntakeStructuredData(
                 category,
                 approvalTitle,
                 proposerName,
-                developmentOwnerUserName,
+                null,
                 approvalCode,
                 submittedTime,
                 requirementType,
@@ -72,9 +72,12 @@ public class IntakeStructuredDataExtractor {
                 actualCompletedTime,
                 acceptanceTime,
                 releasedTime,
+                null,
+                null,
                 projectHint,
                 fields,
-                List.of()
+                List.of(),
+                null
         );
     }
 

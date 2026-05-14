@@ -1,8 +1,10 @@
 package cn.aslight.workhub.service.intake;
 
 import cn.aslight.workhub.config.AiProperties;
+import cn.aslight.workhub.service.system.SysConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedWriter;
@@ -26,11 +28,21 @@ import java.util.concurrent.TimeUnit;
 public class CodexCliClient {
 
     private static final Logger log = LoggerFactory.getLogger(CodexCliClient.class);
+    private static final String CONFIG_GROUP_CODEX_CLI = "ai.codexCli";
+    private static final String CONFIG_KEY_MODEL = "model";
+    private static final String CONFIG_KEY_REASONING_EFFORT = "reasoningEffort";
 
     private final AiProperties aiProperties;
+    private final SysConfigService sysConfigService;
 
     public CodexCliClient(AiProperties aiProperties) {
+        this(aiProperties, null);
+    }
+
+    @Autowired
+    public CodexCliClient(AiProperties aiProperties, SysConfigService sysConfigService) {
         this.aiProperties = aiProperties;
+        this.sysConfigService = sysConfigService;
     }
 
     public boolean isEnabled() {
@@ -39,6 +51,7 @@ public class CodexCliClient {
 
     public CodexCliResult execute(CodexCliRequest request) {
         AiProperties.CodexCli config = aiProperties.getCodexCli();
+        EffectiveCodexCliConfig effectiveConfig = resolveEffectiveConfig(config);
         Path outputSchema = null;
         Path outputFile = null;
         Path isolatedCodexHome = null;
@@ -49,13 +62,13 @@ public class CodexCliClient {
             outputSchema = Files.createTempFile("workhub-codex-schema-", ".json");
             outputFile = Files.createTempFile("workhub-codex-output-", ".json");
             Files.writeString(outputSchema, request.outputSchema(), StandardCharsets.UTF_8);
-            isolatedCodexHome = prepareIsolatedCodexHome(config);
+            isolatedCodexHome = prepareIsolatedCodexHome(effectiveConfig);
 
-            List<String> command = buildCommand(request, outputSchema, outputFile);
+            List<String> command = buildCommand(request, outputSchema, outputFile, effectiveConfig);
             log.info("Codex CLI execution started. executable={}, model={}, reasoningEffort={}, workingDirectory={}, addDirCount={}, imageCount={}, promptLength={}",
                     command.isEmpty() ? null : command.getFirst(),
-                    config.getModel(),
-                    config.getReasoningEffort(),
+                    effectiveConfig.model(),
+                    effectiveConfig.reasoningEffort(),
                     request.workingDirectory(),
                     request.addDirs().size(),
                     request.imagePaths().size(),
@@ -121,6 +134,14 @@ public class CodexCliClient {
 
     List<String> buildCommand(CodexCliRequest request, Path outputSchema, Path outputFile) {
         AiProperties.CodexCli config = aiProperties.getCodexCli();
+        return buildCommand(request, outputSchema, outputFile, resolveEffectiveConfig(config));
+    }
+
+    private List<String> buildCommand(CodexCliRequest request,
+                                      Path outputSchema,
+                                      Path outputFile,
+                                      EffectiveCodexCliConfig effectiveConfig) {
+        AiProperties.CodexCli config = aiProperties.getCodexCli();
         List<String> command = new ArrayList<>();
         command.add(config.getCommand());
         command.add("exec");
@@ -141,13 +162,13 @@ public class CodexCliClient {
         }
         command.add("--color");
         command.add("never");
-        if (config.getModel() != null && !config.getModel().trim().isEmpty()) {
+        if (effectiveConfig.model() != null && !effectiveConfig.model().trim().isEmpty()) {
             command.add("-m");
-            command.add(config.getModel().trim());
+            command.add(effectiveConfig.model().trim());
         }
-        if (config.getReasoningEffort() != null && !config.getReasoningEffort().trim().isEmpty()) {
+        if (effectiveConfig.reasoningEffort() != null && !effectiveConfig.reasoningEffort().trim().isEmpty()) {
             command.add("-c");
-            command.add("model_reasoning_effort=\"" + config.getReasoningEffort().trim() + "\"");
+            command.add("model_reasoning_effort=\"" + effectiveConfig.reasoningEffort().trim() + "\"");
         }
         command.add("--output-schema");
         command.add(outputSchema.toString());
@@ -167,7 +188,7 @@ public class CodexCliClient {
         }
     }
 
-    private Path prepareIsolatedCodexHome(AiProperties.CodexCli config) {
+    private Path prepareIsolatedCodexHome(EffectiveCodexCliConfig config) {
         Path sourceAuthFile = locateCodexAuthFile();
         if (sourceAuthFile == null || !Files.exists(sourceAuthFile)) {
             log.warn("Codex auth file not found. Falling back to inherited CODEX_HOME.");
@@ -181,8 +202,8 @@ public class CodexCliClient {
                     model_reasoning_effort = "%s"
                     personality = "pragmatic"
                     """.formatted(
-                    safeTomlString(config.getModel()),
-                    safeTomlString(config.getReasoningEffort())
+                    safeTomlString(config.model()),
+                    safeTomlString(config.reasoningEffort())
             );
             Files.writeString(isolatedHome.resolve("config.toml"), minimalConfig, StandardCharsets.UTF_8);
             return isolatedHome;
@@ -213,6 +234,38 @@ public class CodexCliClient {
             return "";
         }
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private EffectiveCodexCliConfig resolveEffectiveConfig(AiProperties.CodexCli config) {
+        String model = trimToNull(readSystemConfig(CONFIG_KEY_MODEL));
+        String reasoningEffort = trimToNull(readSystemConfig(CONFIG_KEY_REASONING_EFFORT));
+        return new EffectiveCodexCliConfig(
+                model == null ? trimToNull(config.getModel()) : model,
+                reasoningEffort == null ? trimToNull(config.getReasoningEffort()) : reasoningEffort
+        );
+    }
+
+    private String readSystemConfig(String configKey) {
+        if (sysConfigService == null) {
+            return null;
+        }
+        try {
+            return sysConfigService.findPlainValue(CONFIG_GROUP_CODEX_CLI, configKey);
+        } catch (Exception ex) {
+            log.warn("Failed to read system config {}.{}. Falling back to application config.",
+                    CONFIG_GROUP_CODEX_CLI,
+                    configKey,
+                    ex);
+            return null;
+        }
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private Thread startOutputPump(Process process, StringBuffer processOutput) {
@@ -317,5 +370,8 @@ public class CodexCliClient {
         static CodexCliResult failed(String failureSummary) {
             return new CodexCliResult(false, null, failureSummary);
         }
+    }
+
+    private record EffectiveCodexCliConfig(String model, String reasoningEffort) {
     }
 }

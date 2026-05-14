@@ -19,6 +19,7 @@ public record PaymentMerchantDetailResponse(Long id,
                                             String remark,
                                             List<PaymentMerchantParamResponse> parameters,
                                             List<PaymentSecretSummaryResponse> secrets,
+                                            List<PaymentMerchantCredentialResponse> credentials,
                                             LocalDateTime createdAt,
                                             LocalDateTime updatedAt) {
 }
