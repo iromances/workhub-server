@@ -3,6 +3,8 @@ package cn.aslight.workhub.model.payment;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import java.util.List;
+
 /**
  * 商户保存请求。
  */
@@ -25,6 +27,7 @@ public class PaymentMerchantSaveRequest {
 
     private String appId;
     private String settlementSubject;
+    private List<String> purposeCodes;
     private String remark;
 
     public Long getChannelId() {
@@ -81,6 +84,14 @@ public class PaymentMerchantSaveRequest {
 
     public void setSettlementSubject(String settlementSubject) {
         this.settlementSubject = settlementSubject;
+    }
+
+    public List<String> getPurposeCodes() {
+        return purposeCodes;
+    }
+
+    public void setPurposeCodes(List<String> purposeCodes) {
+        this.purposeCodes = purposeCodes;
     }
 
     public String getRemark() {

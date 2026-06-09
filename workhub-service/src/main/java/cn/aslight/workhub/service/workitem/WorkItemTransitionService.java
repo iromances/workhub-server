@@ -9,6 +9,7 @@ import cn.aslight.workhub.integration.wecom.WecomRobotNotifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -42,6 +43,7 @@ public class WorkItemTransitionService {
         WorkItemEntity workItem = workItemService.requireExisting(workItemId);
         String toStatus = request.getToStatus().trim();
         String reason = trimToNull(request.getReason());
+        LocalDate pauseDate = request.getPauseDate();
 
         if (!WorkItemStatusRules.isAllowedFormalStatus(toStatus)) {
             throw new IllegalArgumentException("目标状态不合法");
@@ -55,23 +57,27 @@ public class WorkItemTransitionService {
         if (WorkItemStatusRules.isTerminalStatus(workItem.getStatus())) {
             throw new IllegalArgumentException("终态工作项不允许继续流转");
         }
+        if (WorkItemStatusRules.STATUS_PAUSED.equals(workItem.getStatus())) {
+            return restorePausedWorkItem(workItem, toStatus, reason, operatorUserName);
+        }
         if (!WorkItemStatusRules.canTransition(workItem.getStatus(), toStatus)) {
             throw new IllegalArgumentException("当前状态不允许流转到目标状态");
         }
         if (WorkItemStatusRules.requiresReason(toStatus) && reason == null) {
-            throw new IllegalArgumentException("关闭类状态必须填写结论说明");
+            throw new IllegalArgumentException("暂停或关闭类状态必须填写原因说明");
+        }
+        if (WorkItemStatusRules.STATUS_PAUSED.equals(toStatus) && pauseDate == null) {
+            throw new IllegalArgumentException("暂停状态必须填写暂停日期");
         }
 
         LocalDateTime finishedAt = WorkItemStatusRules.STATUS_COMPLETED.equals(toStatus) ? LocalDateTime.now() : null;
-        workItemService.updateStatus(workItemId, toStatus, finishedAt);
+        if (WorkItemStatusRules.STATUS_PAUSED.equals(toStatus)) {
+            workItemService.pauseStatus(workItemId, workItem.getStatus(), reason, pauseDate);
+        } else {
+            workItemService.updateStatus(workItemId, toStatus, finishedAt);
+        }
 
-        WorkItemTransitionLogEntity entity = new WorkItemTransitionLogEntity();
-        entity.setWorkItemId(workItemId);
-        entity.setFromStatus(workItem.getStatus());
-        entity.setToStatus(toStatus);
-        entity.setReason(reason);
-        entity.setOperatorUserName(operatorUserName);
-        workItemTransitionLogMapper.insert(entity);
+        WorkItemTransitionLogEntity entity = insertTransitionLog(workItemId, workItem.getStatus(), toStatus, reason, operatorUserName);
 
         wecomRobotNotifier.notifyStatusChanged(
                 workItemService.detail(workItemId),
@@ -85,6 +91,56 @@ public class WorkItemTransitionService {
                 .filter(item -> item.id().equals(entity.getId()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("状态流转写入后读取失败"));
+    }
+
+    private WorkItemTransitionResponse restorePausedWorkItem(WorkItemEntity workItem,
+                                                             String toStatus,
+                                                             String reason,
+                                                             String operatorUserName) {
+        String previousStatus = trimToNull(workItem.getPausePreviousStatus());
+        if (previousStatus == null) {
+            throw new IllegalArgumentException("暂停前状态缺失，不能恢复");
+        }
+        if (!previousStatus.equals(toStatus)) {
+            throw new IllegalArgumentException("暂停工作项只能恢复到暂停前状态");
+        }
+
+        workItemService.restorePausedStatus(workItem.getId(), toStatus);
+        WorkItemTransitionLogEntity entity = insertTransitionLog(
+                workItem.getId(),
+                WorkItemStatusRules.STATUS_PAUSED,
+                toStatus,
+                reason,
+                operatorUserName
+        );
+
+        wecomRobotNotifier.notifyStatusChanged(
+                workItemService.detail(workItem.getId()),
+                WorkItemStatusRules.STATUS_PAUSED,
+                toStatus,
+                reason,
+                operatorUserName
+        );
+
+        return workItemTransitionLogMapper.findByWorkItemId(workItem.getId()).stream()
+                .filter(item -> item.id().equals(entity.getId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("状态流转写入后读取失败"));
+    }
+
+    private WorkItemTransitionLogEntity insertTransitionLog(Long workItemId,
+                                                            String fromStatus,
+                                                            String toStatus,
+                                                            String reason,
+                                                            String operatorUserName) {
+        WorkItemTransitionLogEntity entity = new WorkItemTransitionLogEntity();
+        entity.setWorkItemId(workItemId);
+        entity.setFromStatus(fromStatus);
+        entity.setToStatus(toStatus);
+        entity.setReason(reason);
+        entity.setOperatorUserName(operatorUserName);
+        workItemTransitionLogMapper.insert(entity);
+        return entity;
     }
 
     private String trimToNull(String value) {

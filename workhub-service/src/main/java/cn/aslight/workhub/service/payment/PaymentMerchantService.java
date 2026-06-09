@@ -14,6 +14,7 @@ import cn.aslight.workhub.model.payment.PaymentMerchantSummaryResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,7 +55,7 @@ public class PaymentMerchantService {
                 projectId,
                 PaymentCatalogs.trimToNull(purposeCode) == null ? null : PaymentCatalogs.normalizePurpose(purposeCode),
                 PaymentCatalogs.trimToNull(keyword)
-        );
+        ).stream().map(this::withPurposeCodes).toList();
     }
 
     public PaymentMerchantDetailResponse detail(Long id) {
@@ -74,6 +75,7 @@ public class PaymentMerchantService {
                 detail.settlementSubject(),
                 detail.status(),
                 detail.remark(),
+                paymentMerchantMapper.findPurposeCodes(id),
                 paymentMerchantParamMapper.findByMerchantId(id),
                 paymentSecretMapper.findByMerchantId(id),
                 paymentMerchantCredentialMapper.findByMerchantId(id),
@@ -96,6 +98,7 @@ public class PaymentMerchantService {
         ensureUniqueKey(request.getChannelId(), request.getMerchantCode(), request.getEnvironment(), null);
         PaymentMerchantEntity entity = toEntity(request);
         paymentMerchantMapper.insert(entity);
+        savePurposes(entity.getId(), normalizePurposeCodes(request.getPurposeCodes()));
         paymentAuditService.record(
                 "MERCHANT",
                 entity.getId(),
@@ -115,6 +118,7 @@ public class PaymentMerchantService {
         PaymentMerchantEntity entity = toEntity(request);
         entity.setId(id);
         paymentMerchantMapper.update(entity);
+        savePurposes(id, normalizePurposeCodes(request.getPurposeCodes()));
         paymentAuditService.record(
                 "MERCHANT",
                 id,
@@ -155,5 +159,46 @@ public class PaymentMerchantService {
         entity.setSettlementSubject(PaymentCatalogs.trimToNull(request.getSettlementSubject()));
         entity.setRemark(PaymentCatalogs.trimToNull(request.getRemark()));
         return entity;
+    }
+
+    public List<String> listPurposeCodes(Long merchantId) {
+        requireExisting(merchantId);
+        return paymentMerchantMapper.findPurposeCodes(merchantId);
+    }
+
+    private PaymentMerchantSummaryResponse withPurposeCodes(PaymentMerchantSummaryResponse response) {
+        return new PaymentMerchantSummaryResponse(
+                response.id(),
+                response.channelId(),
+                response.channelCode(),
+                response.channelName(),
+                response.merchantCode(),
+                response.merchantName(),
+                response.environment(),
+                response.appId(),
+                paymentMerchantMapper.findPurposeCodes(response.id()),
+                response.status()
+        );
+    }
+
+    private List<String> normalizePurposeCodes(List<String> source) {
+        if (source == null || source.isEmpty()) {
+            return List.of();
+        }
+        List<String> normalized = new ArrayList<>();
+        for (String item : source) {
+            String purposeCode = PaymentCatalogs.normalizePurpose(item);
+            if (!normalized.contains(purposeCode)) {
+                normalized.add(purposeCode);
+            }
+        }
+        return normalized;
+    }
+
+    private void savePurposes(Long merchantId, List<String> purposeCodes) {
+        paymentMerchantMapper.deletePurposes(merchantId);
+        for (String purposeCode : purposeCodes) {
+            paymentMerchantMapper.insertPurpose(merchantId, purposeCode);
+        }
     }
 }

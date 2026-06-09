@@ -26,10 +26,10 @@ public class PaymentChannelService {
         this.paymentAuditService = paymentAuditService;
     }
 
-    public List<PaymentChannelSummaryResponse> list(String status, String keyword) {
+    public List<PaymentChannelSummaryResponse> list(Long channelId, String status) {
         return paymentChannelMapper.findAll(
-                PaymentCatalogs.trimToNull(status) == null ? null : PaymentCatalogs.normalizeStatus(status, "status"),
-                PaymentCatalogs.trimToNull(keyword)
+                channelId,
+                PaymentCatalogs.trimToNull(status) == null ? null : PaymentCatalogs.normalizeStatus(status, "status")
         );
     }
 

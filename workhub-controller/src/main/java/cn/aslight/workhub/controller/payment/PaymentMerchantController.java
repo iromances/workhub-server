@@ -9,6 +9,7 @@ import cn.aslight.workhub.model.payment.PaymentMerchantParamResponse;
 import cn.aslight.workhub.model.payment.PaymentMerchantParamSaveRequest;
 import cn.aslight.workhub.model.payment.PaymentMerchantSaveRequest;
 import cn.aslight.workhub.model.payment.PaymentMerchantSummaryResponse;
+import cn.aslight.workhub.model.payment.PaymentSecretFileUploadRequest;
 import cn.aslight.workhub.model.payment.PaymentSecretSaveRequest;
 import cn.aslight.workhub.model.payment.PaymentSecretSummaryResponse;
 import cn.aslight.workhub.service.payment.PaymentMerchantCredentialService;
@@ -17,6 +18,8 @@ import cn.aslight.workhub.service.payment.PaymentMerchantService;
 import cn.aslight.workhub.service.payment.PaymentSecretService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -24,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.List;
@@ -130,6 +134,14 @@ public class PaymentMerchantController {
                                                                         @Valid @RequestBody PaymentSecretSaveRequest request,
                                                                         Principal principal) {
         return ApiResponse.success(paymentSecretService.create(merchantId, request, operator(principal)));
+    }
+
+    @PostMapping(value = "/{merchantId}/secrets/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<List<PaymentSecretSummaryResponse>> createSecretFromFile(@PathVariable Long merchantId,
+                                                                                @Valid @ModelAttribute PaymentSecretFileUploadRequest request,
+                                                                                @RequestParam(name = "file") MultipartFile file,
+                                                                                Principal principal) {
+        return ApiResponse.success(paymentSecretService.createFromFile(merchantId, request, file, operator(principal)));
     }
 
     private String operator(Principal principal) {

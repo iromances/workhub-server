@@ -4,9 +4,14 @@ import cn.aslight.workhub.dao.payment.PaymentMerchantMapper;
 import cn.aslight.workhub.dao.payment.PaymentSecretMapper;
 import cn.aslight.workhub.model.payment.PaymentMerchantEntity;
 import cn.aslight.workhub.model.payment.PaymentSecretEntity;
+import cn.aslight.workhub.model.payment.PaymentSecretFileUploadRequest;
 import cn.aslight.workhub.model.payment.PaymentSecretSaveRequest;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.mock.web.MockMultipartFile;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -82,5 +87,82 @@ class PaymentSecretServiceTest {
         verify(secretMapper).insert(captor.capture());
         assertEquals("INACTIVE", captor.getValue().getStatus());
         assertEquals(1, captor.getValue().getVersionNo());
+    }
+
+    @Test
+    void createFromFile_shouldStoreUtf8TextFileContentAsSecretValue() {
+        PaymentMerchantMapper merchantMapper = mock(PaymentMerchantMapper.class);
+        PaymentSecretMapper secretMapper = mock(PaymentSecretMapper.class);
+        PaymentCryptoService cryptoService = mock(PaymentCryptoService.class);
+        PaymentAuditService auditService = mock(PaymentAuditService.class);
+        PaymentSecretService service = new PaymentSecretService(merchantMapper, secretMapper, cryptoService, auditService);
+
+        PaymentMerchantEntity merchantEntity = new PaymentMerchantEntity();
+        merchantEntity.setId(12L);
+        when(merchantMapper.findEntityById(12L)).thenReturn(merchantEntity);
+        when(secretMapper.findMaxVersion(12L, "merchant-private-key")).thenReturn(0);
+        when(cryptoService.encrypt("pem-content")).thenReturn("cipher");
+        when(cryptoService.mask("pem-content")).thenReturn("******tent");
+        when(cryptoService.fingerprint("pem-content")).thenReturn("fingerprint");
+        when(cryptoService.algorithm()).thenReturn("AES/GCM/NoPadding");
+
+        PaymentSecretFileUploadRequest request = new PaymentSecretFileUploadRequest();
+        request.setSecretName("merchant-private-key");
+        request.setSecretType("PRIVATE_KEY");
+        request.setFileValueType("TEXT");
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "merchant.pem",
+                "application/x-pem-file",
+                "pem-content".getBytes(StandardCharsets.UTF_8)
+        );
+
+        service.createFromFile(12L, request, file, "admin");
+
+        ArgumentCaptor<PaymentSecretEntity> captor = ArgumentCaptor.forClass(PaymentSecretEntity.class);
+        verify(secretMapper).insert(captor.capture());
+        assertEquals("cipher", captor.getValue().getEncryptedValue());
+        verify(cryptoService).encrypt("pem-content");
+    }
+
+    @Test
+    void createFromFile_shouldStoreBinaryFileContentAsBase64SecretValue() {
+        PaymentMerchantMapper merchantMapper = mock(PaymentMerchantMapper.class);
+        PaymentSecretMapper secretMapper = mock(PaymentSecretMapper.class);
+        PaymentCryptoService cryptoService = mock(PaymentCryptoService.class);
+        PaymentAuditService auditService = mock(PaymentAuditService.class);
+        PaymentSecretService service = new PaymentSecretService(merchantMapper, secretMapper, cryptoService, auditService);
+
+        PaymentMerchantEntity merchantEntity = new PaymentMerchantEntity();
+        merchantEntity.setId(13L);
+        when(merchantMapper.findEntityById(13L)).thenReturn(merchantEntity);
+        when(secretMapper.findMaxVersion(13L, "merchant-cert")).thenReturn(1);
+        byte[] bytes = new byte[]{0x01, 0x02, 0x03, 0x04};
+        String base64Value = Base64.getEncoder().encodeToString(bytes);
+        when(cryptoService.encrypt(base64Value)).thenReturn("cipher-binary");
+        when(cryptoService.mask(base64Value)).thenReturn("****");
+        when(cryptoService.fingerprint(base64Value)).thenReturn("fingerprint-binary");
+        when(cryptoService.algorithm()).thenReturn("AES/GCM/NoPadding");
+
+        PaymentSecretFileUploadRequest request = new PaymentSecretFileUploadRequest();
+        request.setSecretName("merchant-cert");
+        request.setSecretType("CERTIFICATE");
+        request.setFileValueType("BINARY");
+        request.setActivateNow(false);
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "merchant.p12",
+                "application/x-pkcs12",
+                bytes
+        );
+
+        service.createFromFile(13L, request, file, "admin");
+
+        ArgumentCaptor<PaymentSecretEntity> captor = ArgumentCaptor.forClass(PaymentSecretEntity.class);
+        verify(secretMapper).insert(captor.capture());
+        assertEquals(2, captor.getValue().getVersionNo());
+        assertEquals("INACTIVE", captor.getValue().getStatus());
+        assertEquals("cipher-binary", captor.getValue().getEncryptedValue());
+        verify(cryptoService).encrypt(base64Value);
     }
 }

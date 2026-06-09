@@ -27,19 +27,17 @@ public interface PaymentChannelMapper {
             "status",
             "FROM pay_channel",
             "<where>",
+            "<if test='channelId != null'>",
+            "AND id = #{channelId}",
+            "</if>",
             "<if test='status != null and status != \"\"'>",
             "AND status = #{status}",
-            "</if>",
-            "<if test='keyword != null and keyword != \"\"'>",
-            "AND (channel_code LIKE CONCAT('%', #{keyword}, '%')",
-            "OR channel_name LIKE CONCAT('%', #{keyword}, '%')",
-            "OR vendor_name LIKE CONCAT('%', #{keyword}, '%'))",
             "</if>",
             "</where>",
             "ORDER BY id DESC",
             "</script>"
     })
-    List<PaymentChannelSummaryResponse> findAll(@Param("status") String status, @Param("keyword") String keyword);
+    List<PaymentChannelSummaryResponse> findAll(@Param("channelId") Long channelId, @Param("status") String status);
 
     @Select("""
             SELECT id,

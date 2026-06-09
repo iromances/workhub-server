@@ -8,20 +8,34 @@ import cn.aslight.workhub.model.intake.DevelopmentAnalysisDraftUpdateRequest;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisOwnerUpdateRequest;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisResponse;
 import cn.aslight.workhub.model.intake.IntakeDevelopmentBranchRequest;
+import cn.aslight.workhub.model.intake.IntakeClarificationAnalysisResponse;
+import cn.aslight.workhub.model.intake.IntakeClarificationReplyRequest;
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
+import cn.aslight.workhub.model.intake.IntakePauseRequest;
+import cn.aslight.workhub.model.intake.IntakeRequirementFolderResponse;
 import cn.aslight.workhub.model.intake.IntakeStageActionRequest;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
+import cn.aslight.workhub.model.intake.IntakeTodoCreateRequest;
+import cn.aslight.workhub.model.intake.IntakeTodoResponse;
+import cn.aslight.workhub.model.intake.IntakeTodoStatusRequest;
+import cn.aslight.workhub.model.intake.IntakeTodoUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeUploadRequest;
 import cn.aslight.workhub.model.intake.IntakeZentaoLinkRequest;
 import cn.aslight.workhub.service.intake.DevelopmentAnalysisService;
+import cn.aslight.workhub.service.intake.DevelopmentPlanFolderService;
+import cn.aslight.workhub.service.intake.IntakeClarificationAnalysisService;
 import cn.aslight.workhub.service.intake.IntakeService;
+import cn.aslight.workhub.service.intake.IntakeTodoService;
+import cn.aslight.workhub.service.intake.RequirementFolderService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,11 +53,35 @@ public class IntakeController {
 
     private final IntakeService intakeService;
     private final DevelopmentAnalysisService developmentAnalysisService;
+    private final IntakeClarificationAnalysisService intakeClarificationAnalysisService;
+    private final RequirementFolderService requirementFolderService;
+    private final DevelopmentPlanFolderService developmentPlanFolderService;
+    private final IntakeTodoService intakeTodoService;
 
+    @Autowired
     public IntakeController(IntakeService intakeService,
-                            DevelopmentAnalysisService developmentAnalysisService) {
+                            DevelopmentAnalysisService developmentAnalysisService,
+                            IntakeClarificationAnalysisService intakeClarificationAnalysisService,
+                            RequirementFolderService requirementFolderService,
+                            DevelopmentPlanFolderService developmentPlanFolderService,
+                            IntakeTodoService intakeTodoService) {
         this.intakeService = intakeService;
         this.developmentAnalysisService = developmentAnalysisService;
+        this.intakeClarificationAnalysisService = intakeClarificationAnalysisService;
+        this.requirementFolderService = requirementFolderService;
+        this.developmentPlanFolderService = developmentPlanFolderService;
+        this.intakeTodoService = intakeTodoService;
+    }
+
+    IntakeController(IntakeService intakeService,
+                     DevelopmentAnalysisService developmentAnalysisService) {
+        this(intakeService, developmentAnalysisService, null, null, null, null);
+    }
+
+    IntakeController(IntakeService intakeService,
+                     DevelopmentAnalysisService developmentAnalysisService,
+                     IntakeTodoService intakeTodoService) {
+        this(intakeService, developmentAnalysisService, null, null, null, intakeTodoService);
     }
 
     /**
@@ -82,6 +120,117 @@ public class IntakeController {
                                                     @RequestParam(defaultValue = "true") boolean recordView,
                                                     Authentication authentication) {
         return ApiResponse.success(intakeService.detail(id, authentication == null ? null : authentication.getName(), recordView));
+    }
+
+    /**
+     * 暂停需求。
+     *
+     * @param id 需求 ID
+     * @param request 暂停请求
+     * @param authentication 当前认证信息
+     * @return 更新后的需求详情
+     */
+    @PostMapping("/{id}/pause")
+    public ApiResponse<IntakeDetailResponse> pauseDemand(@PathVariable Long id,
+                                                         @Valid @RequestBody IntakePauseRequest request,
+                                                         Authentication authentication) {
+        return ApiResponse.success(intakeService.pauseDemand(id, request, authentication.getName()));
+    }
+
+    /**
+     * 恢复暂停中的需求。
+     *
+     * @param id 需求 ID
+     * @param authentication 当前认证信息
+     * @return 更新后的需求详情
+     */
+    @PostMapping("/{id}/resume")
+    public ApiResponse<IntakeDetailResponse> resumeDemand(@PathVariable Long id,
+                                                          Authentication authentication) {
+        return ApiResponse.success(intakeService.resumeDemand(id, authentication.getName()));
+    }
+
+    /**
+     * 查询需求待办列表。
+     *
+     * @param id 需求 ID
+     * @return 待办列表
+     */
+    @GetMapping("/{id}/todos")
+    public ApiResponse<PageResponse<IntakeTodoResponse>> listTodos(@PathVariable Long id) {
+        List<IntakeTodoResponse> items = intakeTodoService.list(id);
+        return ApiResponse.success(new PageResponse<>(items.size(), items));
+    }
+
+    /**
+     * 新增需求待办。
+     *
+     * @param id 需求 ID
+     * @param request 新增请求
+     * @param authentication 当前认证信息
+     * @return 新增后的待办
+     */
+    @PostMapping("/{id}/todos")
+    public ApiResponse<IntakeTodoResponse> createTodo(@PathVariable Long id,
+                                                      @Valid @RequestBody IntakeTodoCreateRequest request,
+                                                      Authentication authentication) {
+        return ApiResponse.success(intakeTodoService.create(id, request, authentication.getName()));
+    }
+
+    /**
+     * 更新需求待办内容。
+     *
+     * @param id 需求 ID
+     * @param todoId 待办 ID
+     * @param request 更新请求
+     * @param authentication 当前认证信息
+     * @return 更新后的待办
+     */
+    @PutMapping("/{id}/todos/{todoId}")
+    public ApiResponse<IntakeTodoResponse> updateTodo(@PathVariable Long id,
+                                                      @PathVariable Long todoId,
+                                                      @Valid @RequestBody IntakeTodoUpdateRequest request,
+                                                      Authentication authentication) {
+        return ApiResponse.success(intakeTodoService.update(id, todoId, request, authentication.getName()));
+    }
+
+    /**
+     * 更新需求待办处理状态和处理结果。
+     *
+     * @param id 需求 ID
+     * @param todoId 待办 ID
+     * @param request 状态请求
+     * @param authentication 当前认证信息
+     * @return 更新后的待办
+     */
+    @PostMapping("/{id}/todos/{todoId}/status")
+    public ApiResponse<IntakeTodoResponse> updateTodoStatus(@PathVariable Long id,
+                                                            @PathVariable Long todoId,
+                                                            @Valid @RequestBody IntakeTodoStatusRequest request,
+                                                            Authentication authentication) {
+        return ApiResponse.success(intakeTodoService.updateStatus(id, todoId, request, authentication.getName()));
+    }
+
+    /**
+     * 创建并打开需求本地文件夹。
+     *
+     * @param id 待整理记录 ID
+     * @return 文件夹路径
+     */
+    @PostMapping("/{id}/requirement-folder/open")
+    public ApiResponse<IntakeRequirementFolderResponse> openRequirementFolder(@PathVariable Long id) {
+        return ApiResponse.success(requirementFolderService.open(id));
+    }
+
+    /**
+     * 创建并打开知识库开发方案文件夹。
+     *
+     * @param id 待整理记录 ID
+     * @return 文件夹路径
+     */
+    @PostMapping("/{id}/development-plan-folder/open")
+    public ApiResponse<IntakeRequirementFolderResponse> openDevelopmentPlanFolder(@PathVariable Long id) {
+        return ApiResponse.success(developmentPlanFolderService.open(id));
     }
 
     /**
@@ -238,6 +387,24 @@ public class IntakeController {
         return ApiResponse.success(intakeService.generateSqlDraft(id, authentication.getName()));
     }
 
+    @GetMapping("/{id}/clarification-analysis")
+    public ApiResponse<IntakeClarificationAnalysisResponse> clarificationAnalysis(@PathVariable Long id) {
+        return ApiResponse.success(intakeClarificationAnalysisService.detail(id));
+    }
+
+    @PostMapping("/{id}/clarification-analysis")
+    public ApiResponse<IntakeClarificationAnalysisResponse> analyzeClarification(@PathVariable Long id,
+                                                                                 Authentication authentication) {
+        return ApiResponse.success(intakeClarificationAnalysisService.analyze(id, authentication.getName()));
+    }
+
+    @PostMapping("/{id}/clarification-analysis/items/reply")
+    public ApiResponse<IntakeClarificationAnalysisResponse> replyClarificationItem(@PathVariable Long id,
+                                                                                  @Valid @RequestBody IntakeClarificationReplyRequest request,
+                                                                                  Authentication authentication) {
+        return ApiResponse.success(intakeClarificationAnalysisService.reply(id, request, authentication.getName()));
+    }
+
     @GetMapping("/{id}/development-analysis")
     public ApiResponse<DevelopmentAnalysisResponse> developmentAnalysis(@PathVariable Long id) {
         return ApiResponse.success(developmentAnalysisService.detail(id));
@@ -245,9 +412,9 @@ public class IntakeController {
 
     @PostMapping("/{id}/development-analysis")
     public ApiResponse<DevelopmentAnalysisResponse> analyzeDevelopment(@PathVariable Long id,
-                                                                       @RequestParam(required = false) String projectGroup,
+                                                                       @RequestParam(required = false) String businessLine,
                                                                        Authentication authentication) {
-        return ApiResponse.success(developmentAnalysisService.analyze(id, projectGroup, authentication.getName()));
+        return ApiResponse.success(developmentAnalysisService.analyze(id, businessLine, authentication.getName()));
     }
 
     @PostMapping("/{id}/development-analysis/chat")

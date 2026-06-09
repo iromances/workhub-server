@@ -1,5 +1,6 @@
 package cn.aslight.workhub.model.intake;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -56,6 +57,18 @@ public class IntakeRecordEntity {
      */
     private String demandStatus;
     /**
+     * 暂停前需求管理状态。
+     */
+    private String pausePreviousDemandStatus;
+    /**
+     * 暂停原因。
+     */
+    private String pauseReason;
+    /**
+     * 暂停日期。
+     */
+    private LocalDate pauseDate;
+    /**
      * enrichment 状态。
      */
     private String enrichmentStatus;
@@ -71,6 +84,22 @@ public class IntakeRecordEntity {
      * 已转换的正式工作项 ID。
      */
     private Long convertedWorkItemId;
+    /**
+     * 最新任务评估草稿中的总预估工时。
+     */
+    private String totalEstimatedEffort;
+    /**
+     * 最新任务评估草稿中的开发预估工时。
+     */
+    private String developmentEstimatedEffort;
+    /**
+     * 最新任务评估草稿中的测试预估工时。
+     */
+    private String testingEstimatedEffort;
+    /**
+     * 最新任务评估草稿 JSON。
+     */
+    private String latestDevelopmentDraftJson;
     /**
      * 是否逻辑删除。
      */
@@ -188,6 +217,30 @@ public class IntakeRecordEntity {
         this.demandStatus = demandStatus;
     }
 
+    public String getPausePreviousDemandStatus() {
+        return pausePreviousDemandStatus;
+    }
+
+    public void setPausePreviousDemandStatus(String pausePreviousDemandStatus) {
+        this.pausePreviousDemandStatus = pausePreviousDemandStatus;
+    }
+
+    public String getPauseReason() {
+        return pauseReason;
+    }
+
+    public void setPauseReason(String pauseReason) {
+        this.pauseReason = pauseReason;
+    }
+
+    public LocalDate getPauseDate() {
+        return pauseDate;
+    }
+
+    public void setPauseDate(LocalDate pauseDate) {
+        this.pauseDate = pauseDate;
+    }
+
     public String getEnrichmentStatus() {
         return enrichmentStatus;
     }
@@ -218,6 +271,38 @@ public class IntakeRecordEntity {
 
     public void setConvertedWorkItemId(Long convertedWorkItemId) {
         this.convertedWorkItemId = convertedWorkItemId;
+    }
+
+    public String getTotalEstimatedEffort() {
+        return totalEstimatedEffort;
+    }
+
+    public void setTotalEstimatedEffort(String totalEstimatedEffort) {
+        this.totalEstimatedEffort = totalEstimatedEffort;
+    }
+
+    public String getDevelopmentEstimatedEffort() {
+        return developmentEstimatedEffort;
+    }
+
+    public void setDevelopmentEstimatedEffort(String developmentEstimatedEffort) {
+        this.developmentEstimatedEffort = developmentEstimatedEffort;
+    }
+
+    public String getTestingEstimatedEffort() {
+        return testingEstimatedEffort;
+    }
+
+    public void setTestingEstimatedEffort(String testingEstimatedEffort) {
+        this.testingEstimatedEffort = testingEstimatedEffort;
+    }
+
+    public String getLatestDevelopmentDraftJson() {
+        return latestDevelopmentDraftJson;
+    }
+
+    public void setLatestDevelopmentDraftJson(String latestDevelopmentDraftJson) {
+        this.latestDevelopmentDraftJson = latestDevelopmentDraftJson;
     }
 
     public Boolean getDeleted() {

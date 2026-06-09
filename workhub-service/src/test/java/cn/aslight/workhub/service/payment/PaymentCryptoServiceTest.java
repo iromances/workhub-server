@@ -23,4 +23,20 @@ class PaymentCryptoServiceTest {
         assertTrue(service.mask("merchant-secret-123456").endsWith("3456"));
         assertEquals(64, service.fingerprint("merchant-secret-123456").length());
     }
+
+    @Test
+    void mask_shouldNotGrowWithLongSecretContent() {
+        PaymentProperties properties = new PaymentProperties();
+        properties.setMasterKey("test-master-key");
+        properties.setMaskVisibleSuffix(4);
+        PaymentCryptoService service = new PaymentCryptoService(properties);
+        String publicKey = "-----BEGIN PUBLIC KEY-----\n"
+                + "A".repeat(1024)
+                + "\n-----END PUBLIC KEY-----";
+
+        String maskedValue = service.mask(publicKey);
+
+        assertEquals("**********----", maskedValue);
+        assertTrue(maskedValue.length() <= 255);
+    }
 }

@@ -1,5 +1,6 @@
 package cn.aslight.workhub.model.workitem;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -91,6 +92,18 @@ public class WorkItemEntity {
      * 实际完成时间。
      */
     private LocalDateTime finishedAt;
+    /**
+     * 暂停前状态。
+     */
+    private String pausePreviousStatus;
+    /**
+     * 暂停原因。
+     */
+    private String pauseReason;
+    /**
+     * 暂停日期。
+     */
+    private LocalDate pauseDate;
 
     public Long getId() {
         return id;
@@ -258,5 +271,29 @@ public class WorkItemEntity {
 
     public void setFinishedAt(LocalDateTime finishedAt) {
         this.finishedAt = finishedAt;
+    }
+
+    public String getPausePreviousStatus() {
+        return pausePreviousStatus;
+    }
+
+    public void setPausePreviousStatus(String pausePreviousStatus) {
+        this.pausePreviousStatus = pausePreviousStatus;
+    }
+
+    public String getPauseReason() {
+        return pauseReason;
+    }
+
+    public void setPauseReason(String pauseReason) {
+        this.pauseReason = pauseReason;
+    }
+
+    public LocalDate getPauseDate() {
+        return pauseDate;
+    }
+
+    public void setPauseDate(LocalDate pauseDate) {
+        this.pauseDate = pauseDate;
     }
 }

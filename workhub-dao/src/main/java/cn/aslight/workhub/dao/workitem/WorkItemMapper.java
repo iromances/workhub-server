@@ -11,6 +11,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -80,6 +81,9 @@ public interface WorkItemMapper {
                    w.planned_start_at AS plannedStartAt,
                    w.planned_end_at AS plannedEndAt,
                    w.finished_at AS finishedAt,
+                   w.pause_previous_status AS pausePreviousStatus,
+                   w.pause_reason AS pauseReason,
+                   w.pause_date AS pauseDate,
                    w.created_at AS createdAt,
                    w.updated_at AS updatedAt
             FROM pm_work_item w
@@ -111,7 +115,10 @@ public interface WorkItemMapper {
                    acceptance_criteria,
                    planned_start_at,
                    planned_end_at,
-                   finished_at
+                   finished_at,
+                   pause_previous_status,
+                   pause_reason,
+                   pause_date
             FROM pm_work_item
             WHERE id = #{id}
             """)
@@ -191,6 +198,32 @@ public interface WorkItemMapper {
 
     @Update("""
             UPDATE pm_work_item
+            SET status = '已暂停',
+                pause_previous_status = #{previousStatus},
+                pause_reason = #{pauseReason},
+                pause_date = #{pauseDate},
+                finished_at = NULL
+            WHERE id = #{id}
+            """)
+    int pauseStatus(@Param("id") Long id,
+                    @Param("previousStatus") String previousStatus,
+                    @Param("pauseReason") String pauseReason,
+                    @Param("pauseDate") LocalDate pauseDate);
+
+    @Update("""
+            UPDATE pm_work_item
+            SET status = #{restoredStatus},
+                pause_previous_status = NULL,
+                pause_reason = NULL,
+                pause_date = NULL,
+                finished_at = NULL
+            WHERE id = #{id}
+            """)
+    int restorePausedStatus(@Param("id") Long id,
+                            @Param("restoredStatus") String restoredStatus);
+
+    @Update("""
+            UPDATE pm_work_item
             SET owner_user_name = #{ownerUserName},
                 follower_user_name = #{followerUserName}
             WHERE id = #{id}
@@ -212,7 +245,7 @@ public interface WorkItemMapper {
             JOIN pm_project p ON p.id = w.project_id
             WHERE w.planned_end_at IS NOT NULL
               AND w.planned_end_at <= #{deadline}
-              AND w.status NOT IN ('已完成', '已拒绝', '已挂起')
+              AND w.status NOT IN ('已完成', '已拒绝', '已挂起', '已暂停')
             ORDER BY w.planned_end_at ASC, w.id ASC
             """)
     List<WorkItemReminderCandidate> findDueSoonItems(@Param("deadline") LocalDateTime deadline);

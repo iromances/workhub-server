@@ -21,7 +21,8 @@ public class IntakeUploadRequest {
 
     private String rawContent;
 
-    private String projectGroup;
+    @NotBlank(message = "不能为空")
+    private String businessLine;
 
     public String getSenderName() {
         return senderName;
@@ -63,11 +64,11 @@ public class IntakeUploadRequest {
         this.rawContent = rawContent;
     }
 
-    public String getProjectGroup() {
-        return projectGroup;
+    public String getBusinessLine() {
+        return businessLine;
     }
 
-    public void setProjectGroup(String projectGroup) {
-        this.projectGroup = projectGroup;
+    public void setBusinessLine(String businessLine) {
+        this.businessLine = businessLine;
     }
 }

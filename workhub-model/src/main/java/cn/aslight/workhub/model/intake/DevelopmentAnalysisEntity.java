@@ -10,7 +10,7 @@ public class DevelopmentAnalysisEntity {
     private Long id;
     private Long intakeId;
     private Long projectId;
-    private String projectGroup;
+    private String businessLine;
     private String repositoryUrl;
     private String analysisStatus;
     private String analysisMessage;
@@ -46,12 +46,12 @@ public class DevelopmentAnalysisEntity {
         this.projectId = projectId;
     }
 
-    public String getProjectGroup() {
-        return projectGroup;
+    public String getBusinessLine() {
+        return businessLine;
     }
 
-    public void setProjectGroup(String projectGroup) {
-        this.projectGroup = projectGroup;
+    public void setBusinessLine(String businessLine) {
+        this.businessLine = businessLine;
     }
 
     public String getRepositoryUrl() {

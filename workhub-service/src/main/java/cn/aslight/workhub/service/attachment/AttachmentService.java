@@ -232,13 +232,25 @@ public class AttachmentService {
                 entity.getFileName(),
                 entity.getContentType(),
                 "/api/attachments/" + entity.getId() + "/download",
-                isPreviewable(entity.getContentType()),
+                isPreviewable(entity.getFileName(), entity.getContentType()),
                 entity.getCreatedAt()
         );
     }
 
-    private boolean isPreviewable(String contentType) {
-        return contentType != null && contentType.startsWith("image/");
+    private boolean isPreviewable(String fileName, String contentType) {
+        String normalizedContentType = contentType == null ? "" : contentType.toLowerCase();
+        if (normalizedContentType.startsWith("image/") || normalizedContentType.equals("application/pdf")) {
+            return true;
+        }
+        String normalizedFileName = fileName == null ? "" : fileName.toLowerCase();
+        return normalizedFileName.endsWith(".png")
+                || normalizedFileName.endsWith(".jpg")
+                || normalizedFileName.endsWith(".jpeg")
+                || normalizedFileName.endsWith(".gif")
+                || normalizedFileName.endsWith(".webp")
+                || normalizedFileName.endsWith(".bmp")
+                || normalizedFileName.endsWith(".svg")
+                || normalizedFileName.endsWith(".pdf");
     }
 
     private String sanitizeFileName(String value) {

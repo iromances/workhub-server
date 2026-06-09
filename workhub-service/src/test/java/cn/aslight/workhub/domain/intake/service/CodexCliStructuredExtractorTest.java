@@ -148,7 +148,6 @@ class CodexCliStructuredExtractorTest {
                 null,
                 null,
                 null,
-                null,
                 "资产业务",
                 List.of(),
                 List.of(new IntakeAttachmentSummary("说明.docx", "DOCX", "筛选条件：支付失败，时间为 4 月")),

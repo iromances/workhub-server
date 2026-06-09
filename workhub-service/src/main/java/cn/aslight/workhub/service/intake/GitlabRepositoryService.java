@@ -1,7 +1,7 @@
 package cn.aslight.workhub.service.intake;
 
-import cn.aslight.workhub.dao.project.ProjectGroupMapper;
-import cn.aslight.workhub.model.project.ProjectGroupEntity;
+import cn.aslight.workhub.dao.project.BusinessLineMapper;
+import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.service.system.SysConfigService;
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
 import org.slf4j.Logger;
@@ -40,23 +40,23 @@ public class GitlabRepositoryService {
     private static final String GLOBAL_CONFIG_GROUP = "gitlab.global";
 
     private final SysConfigService sysConfigService;
-    private final ProjectGroupMapper projectGroupMapper;
+    private final BusinessLineMapper businessLineMapper;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
 
     public GitlabRepositoryService(SysConfigService sysConfigService,
-                                   ProjectGroupMapper projectGroupMapper,
+                                   BusinessLineMapper businessLineMapper,
                                    ObjectMapper objectMapper) {
         this.sysConfigService = sysConfigService;
-        this.projectGroupMapper = projectGroupMapper;
+        this.businessLineMapper = businessLineMapper;
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(GITLAB_API_TIMEOUT)
                 .build();
     }
 
-    public GitlabRepository resolveAndFetch(String projectGroup) {
-        String group = requireText(projectGroup, "项目组不能为空");
+    public GitlabRepository resolveAndFetch(String businessLine) {
+        String group = requireText(businessLine, "业务线不能为空");
         ConfiguredRepository repository = resolveConfiguredRepository(group);
         if (repository == null) {
             throw new IllegalArgumentException("系统配置不存在或未启用：gitlab." + group + ".repoUrl");
@@ -70,7 +70,7 @@ public class GitlabRepositoryService {
         if (project == null) {
             throw new IllegalArgumentException("项目不能为空");
         }
-        String group = requireText(project.group(), "项目组不能为空");
+        String group = requireText(project.businessLine(), "业务线不能为空");
         ConfiguredRepository repository = resolveConfiguredRepository(group);
         if (repository == null) {
             repository = discoverRepository(project);
@@ -81,19 +81,19 @@ public class GitlabRepositoryService {
     }
 
     /**
-     * 按项目组拉取 GitLab 命名空间下全部可访问仓库，用于跨微服务任务评估。
+     * 按业务线拉取 GitLab 命名空间下全部可访问仓库，用于跨微服务任务评估。
      *
      * @param project 需求归属项目
-     * @return 项目组仓库集合
+     * @return 业务线仓库集合
      */
     public GitlabRepositoryBundle resolveAndFetchGroup(ProjectDetailResponse project) {
         if (project == null) {
             throw new IllegalArgumentException("项目不能为空");
         }
-        String projectGroup = requireText(project.group(), "项目组不能为空");
-        String gitlabGroupName = findGitlabGroupName(projectGroup);
+        String businessLine = requireText(project.businessLine(), "业务线不能为空");
+        String gitlabGroupName = findGitlabGroupName(businessLine);
         if (gitlabGroupName == null) {
-            throw new IllegalArgumentException("项目组未维护 GitLab 组名，请在项目管理中维护项目组对应的 gitlabGroupName：" + projectGroup);
+            throw new IllegalArgumentException("业务线未维护 GitLab 组名，请在项目管理中维护业务线对应的 gitlabGroupName：" + businessLine);
         }
         String webApiUrl = sysConfigService.requirePlainValue(GLOBAL_CONFIG_GROUP, "webApiUrl");
         String accessToken = sysConfigService.requirePlainValue(GLOBAL_CONFIG_GROUP, "accessToken");
@@ -101,7 +101,7 @@ public class GitlabRepositoryService {
                 .filter(item -> item != null && firstNonBlank(item.httpUrlToRepo(), item.webUrl()) != null)
                 .toList();
         if (projects.isEmpty()) {
-            throw new IllegalArgumentException("GitLab 项目组下未找到可访问仓库：" + gitlabGroupName);
+            throw new IllegalArgumentException("GitLab 业务线下未找到可访问仓库：" + gitlabGroupName);
         }
 
         Path groupRoot = Path.of("data", "git-cache", "group-" + safeHash(gitlabGroupName)).toAbsolutePath().normalize();
@@ -116,15 +116,45 @@ public class GitlabRepositoryService {
             fetchRepository(repositoryUrl, accessToken, repoPath);
             repositories.add(new GitlabRepository(repositoryUrl, repoPath));
         }
-        log.info("GitLab group repositories synced. projectGroup={}, gitlabGroupName={}, repositoryCount={}",
-                projectGroup,
+        log.info("GitLab group repositories synced. businessLine={}, gitlabGroupName={}, repositoryCount={}",
+                businessLine,
                 gitlabGroupName,
                 repositories.size());
         return new GitlabRepositoryBundle(gitlabGroupName, groupRoot, repositories);
     }
 
-    private ConfiguredRepository resolveConfiguredRepository(String projectGroup) {
-        String configGroup = "gitlab." + requireText(projectGroup, "项目组不能为空");
+    /**
+     * 查询业务线 GitLab 命名空间下的仓库，用作业务线涉及系统清单来源。
+     *
+     * @param businessLine 业务线名称
+     * @return GitLab 仓库系统候选项
+     */
+    public List<GitlabProjectSystem> listGroupProjectSystems(String businessLine) {
+        String group = requireText(businessLine, "业务线不能为空");
+        String gitlabGroupName = findGitlabGroupName(group);
+        if (gitlabGroupName == null) {
+            throw new IllegalArgumentException("业务线未维护 GitLab 组名，请在项目管理中维护业务线对应的 gitlabGroupName：" + group);
+        }
+        String webApiUrl = sysConfigService.requirePlainValue(GLOBAL_CONFIG_GROUP, "webApiUrl");
+        String accessToken = sysConfigService.requirePlainValue(GLOBAL_CONFIG_GROUP, "accessToken");
+        List<GitlabProjectSystem> systems = listGroupProjects(webApiUrl, accessToken, gitlabGroupName).stream()
+                .filter(Objects::nonNull)
+                .map(item -> new GitlabProjectSystem(
+                        firstNonBlank(item.name(), item.path()),
+                        item.path(),
+                        item.pathWithNamespace(),
+                        item.webUrl()
+                ))
+                .filter(item -> trimToNull(item.systemName()) != null)
+                .toList();
+        if (systems.isEmpty()) {
+            throw new IllegalArgumentException("GitLab 业务线下未找到可访问仓库：" + gitlabGroupName);
+        }
+        return systems;
+    }
+
+    private ConfiguredRepository resolveConfiguredRepository(String businessLine) {
+        String configGroup = "gitlab." + requireText(businessLine, "业务线不能为空");
         String repoUrl = sysConfigService.findPlainValue(configGroup, "repoUrl");
         if (repoUrl == null) {
             return null;
@@ -148,14 +178,14 @@ public class GitlabRepositoryService {
         }
         GitlabProject selected = chooseBestProject(project, candidates);
         if (selected == null) {
-            throw new IllegalArgumentException("GitLab 未找到匹配项目仓库，请维护 gitlab." + project.group() + ".repoUrl 或检查项目编码/名称/项目组");
+            throw new IllegalArgumentException("GitLab 未找到匹配项目仓库，请维护 gitlab." + project.businessLine() + ".repoUrl 或检查项目编码/名称/业务线");
         }
         String repoUrl = firstNonBlank(selected.httpUrlToRepo(), selected.webUrl() == null ? null : selected.webUrl() + ".git");
         if (repoUrl == null) {
             throw new IllegalArgumentException("GitLab 项目缺少 HTTP 仓库地址：" + selected.pathWithNamespace());
         }
-        log.info("GitLab repository discovered. projectGroup={}, projectCode={}, projectName={}, repository={}, pathWithNamespace={}",
-                project.group(),
+        log.info("GitLab repository discovered. businessLine={}, projectCode={}, projectName={}, repository={}, pathWithNamespace={}",
+                project.businessLine(),
                 project.code(),
                 project.name(),
                 repoUrl,
@@ -167,17 +197,17 @@ public class GitlabRepositoryService {
         LinkedHashSet<String> keywords = new LinkedHashSet<>();
         addKeyword(keywords, project.code());
         addKeyword(keywords, project.name());
-        addKeyword(keywords, project.group());
-        addKeyword(keywords, findGitlabGroupName(project.group()));
+        addKeyword(keywords, project.businessLine());
+        addKeyword(keywords, findGitlabGroupName(project.businessLine()));
         return new ArrayList<>(keywords);
     }
 
-    private String findGitlabGroupName(String projectGroup) {
-        String group = trimToNull(projectGroup);
+    private String findGitlabGroupName(String businessLine) {
+        String group = trimToNull(businessLine);
         if (group == null) {
             return null;
         }
-        ProjectGroupEntity entity = projectGroupMapper.findByName(group);
+        BusinessLineEntity entity = businessLineMapper.findByName(group);
         return entity == null || Boolean.FALSE.equals(entity.getEnabled()) ? null : trimToNull(entity.getGitlabGroupName());
     }
 
@@ -213,12 +243,12 @@ public class GitlabRepositoryService {
     List<GitlabProject> listGroupProjects(String webApiUrl, String accessToken, String gitlabGroupName) {
         try {
             String baseUrl = trimTrailingSlash(requireText(webApiUrl, "GitLab Web/API 地址不能为空"));
-            String encodedGroupName = URLEncoder.encode(requireText(gitlabGroupName, "GitLab 组名不能为空"), StandardCharsets.UTF_8)
+            String encodedBusinessLineName = URLEncoder.encode(requireText(gitlabGroupName, "GitLab 组名不能为空"), StandardCharsets.UTF_8)
                     .replace("+", "%20");
             List<GitlabProject> projects = new ArrayList<>();
             int page = 1;
             while (true) {
-                URI uri = URI.create(baseUrl + "/api/v4/groups/" + encodedGroupName + "/projects?include_subgroups=true&simple=true&per_page=100&page=" + page);
+                URI uri = URI.create(baseUrl + "/api/v4/groups/" + encodedBusinessLineName + "/projects?include_subgroups=true&simple=true&per_page=100&page=" + page);
                 HttpRequest request = HttpRequest.newBuilder(uri)
                         .timeout(GITLAB_API_TIMEOUT)
                         .header("PRIVATE-TOKEN", requireText(accessToken, "GitLab Access Token 不能为空"))
@@ -238,7 +268,7 @@ public class GitlabRepositoryService {
                 page = Integer.parseInt(nextPage);
             }
         } catch (Exception ex) {
-            throw new IllegalStateException("GitLab 项目组仓库查询失败：" + summarizeException(ex), ex);
+            throw new IllegalStateException("GitLab 业务线仓库查询失败：" + summarizeException(ex), ex);
         }
     }
 
@@ -283,8 +313,8 @@ public class GitlabRepositoryService {
         ));
         score += scoreToken(combined, project.code(), 80);
         score += scoreToken(combined, project.name(), 60);
-        score += scoreToken(combined, project.group(), 30);
-        score += scoreToken(combined, findGitlabGroupName(project.group()), 50);
+        score += scoreToken(combined, project.businessLine(), 30);
+        score += scoreToken(combined, findGitlabGroupName(project.businessLine()), 50);
         if (normalizeSearchText(value(candidate.path())).equals(normalizeSearchText(value(project.code())))) {
             score += 100;
         }
@@ -423,6 +453,12 @@ public class GitlabRepositoryService {
     }
 
     public record GitlabRepository(String repositoryUrl, Path localPath) {
+    }
+
+    public record GitlabProjectSystem(String systemName,
+                                      String path,
+                                      String pathWithNamespace,
+                                      String webUrl) {
     }
 
     public record GitlabRepositoryBundle(String gitlabGroupName, Path localRoot, List<GitlabRepository> repositories) {

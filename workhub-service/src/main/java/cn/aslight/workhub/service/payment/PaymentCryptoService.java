@@ -22,6 +22,7 @@ public class PaymentCryptoService {
     private static final String ALGORITHM = "AES/GCM/NoPadding";
     private static final int IV_SIZE = 12;
     private static final int TAG_SIZE_BITS = 128;
+    private static final int MASK_PREFIX_LENGTH = 10;
 
     private final PaymentProperties paymentProperties;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -65,7 +66,7 @@ public class PaymentCryptoService {
         if (value.length() <= visible) {
             return "*".repeat(value.length());
         }
-        return "*".repeat(Math.max(4, value.length() - visible)) + value.substring(value.length() - visible);
+        return "*".repeat(MASK_PREFIX_LENGTH) + value.substring(value.length() - visible);
     }
 
     public String fingerprint(String rawValue) {

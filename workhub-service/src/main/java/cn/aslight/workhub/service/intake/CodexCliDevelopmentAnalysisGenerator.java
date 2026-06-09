@@ -42,10 +42,22 @@ public class CodexCliDevelopmentAnalysisGenerator {
                     "properties": {
                       "title": { "type": "string" },
                       "description": { "type": ["string", "null"] },
+                      "requirementChangePoint": { "type": ["string", "null"] },
+                      "taskType": { "type": ["string", "null"] },
+                      "targetResources": { "type": "array", "items": { "type": "string" } },
+                      "changePoints": { "type": "array", "items": { "type": "string" } },
+                      "systemTags": { "type": "array", "items": { "type": "string" } },
+                      "evidenceRefs": { "type": "array", "items": { "type": "string" } },
+                      "confidence": { "type": ["string", "null"] },
+                      "moduleName": { "type": ["string", "null"] },
+                      "relatedFiles": { "type": "array", "items": { "type": "string" } },
                       "estimatedEffort": { "type": ["string", "null"] },
-                      "ownerUserName": { "type": ["string", "null"] }
+                      "ownerUserName": { "type": ["string", "null"] },
+                      "priority": { "type": ["string", "null"] },
+                      "dependency": { "type": ["string", "null"] },
+                      "risk": { "type": ["string", "null"] }
                     },
-                    "required": ["title", "description", "estimatedEffort", "ownerUserName"],
+                    "required": ["title", "description", "requirementChangePoint", "taskType", "targetResources", "changePoints", "systemTags", "evidenceRefs", "confidence", "moduleName", "relatedFiles", "estimatedEffort", "ownerUserName", "priority", "dependency", "risk"],
                     "additionalProperties": false
                   }
                 }
@@ -108,7 +120,7 @@ public class CodexCliDevelopmentAnalysisGenerator {
             int totalEffortHours = sumEstimatedEffortHours(workItems);
             return new DevelopmentAnalysisDraft(
                     "DRAFT",
-                    project.group(),
+                    project.businessLine(),
                     project.id(),
                     project.name(),
                     repositoryBundle.repositorySummary(),
@@ -126,13 +138,14 @@ public class CodexCliDevelopmentAnalysisGenerator {
                     totalEffortHours <= 0 ? null : totalEffortHours + "h",
                     null,
                     null,
-                    chinaWorkdayCalendar.estimateFinishDate(LocalDate.now(), totalEffortHours),
+                    null,
                     null,
                     null,
                     "RESERVED",
                     "禅道同步接口已预留，当前不会调用禅道。",
                     LocalDateTime.now().toString(),
-                    "Codex CLI"
+                    "Codex CLI",
+                    null
             );
         } catch (Exception ex) {
             throw new IllegalArgumentException("代码影响分析结果解析失败：" + summarizeException(ex), ex);
@@ -149,32 +162,30 @@ public class CodexCliDevelopmentAnalysisGenerator {
                                String extraInstruction) {
         return """
                 你是 WorkHub 的需求评估与交付方案架构师。
-                请按“先阅读需求材料 Markdown，再提炼需求点，再判断是否需要查阅项目组代码，最后拆解研发任务”的工作流，生成可交付任务评估草稿和工时估算。
+                输出必须符合 JSON Schema，只生成评估草稿，不修改代码、不创建工作项。
 
-                分析流程：
-                1. 第一步只阅读“需求 Markdown 文件”。该文件只是把需求截图、附件、文档、结构化字段和原始内容归档到一起，不是需求点总结；这一步只建立对完整材料的理解，不读取代码，不输出任务项，不按 Controller/Service/DAO 或页面目录拆任务。
-                2. 第二步基于“需求 Markdown 文件”提炼并输出需求点 requirementChangePoints；需求点必须来自材料本身，不把实现方式、系统名、页面名、接口名当需求点。
-                3. 第三步由你自行判断是否需要查阅项目组 Git 仓库代码：如果需求已足够明确，可以直接拆解研发任务；如果需要确认现有系统边界、接口、配置、表或页面，再按需查阅代码。
-                4. 第四步仅根据需求点输出研发任务 workItems；每个任务输出 title、description、estimatedEffort、ownerUserName。
+                工作流：
+                1. 先读需求 Markdown 和补充材料，提炼业务需求点 requirementChangePoints。
+                2. 再查业务线 Git 代码，确认现有系统、页面、接口、配置、表、定时任务和可复用逻辑；纯文案/运营需求可不查代码，但要在 evidenceRefs 说明。
+                3. 最后按可排期研发任务拆 workItems，不按 Controller/Service/DAO 这类代码层级拆。
 
-                约束：
-                1. 只生成分析草稿，不修改代码，不创建工作项。
-                2. 必须先完成材料理解，再输出需求点 requirementChangePoints，再根据需求点列出研发任务。
-                3. 研发任务只输出 title、description、estimatedEffort、ownerUserName，不输出需求变化点、任务类型、改动对象、改动点、判断依据、系统标签、置信度、优先级、预计开始日期、截止日期、风险。
-                4. 预估工时必须是人类交付工时，配置、数据、代码、脚本、验证都可以估工时，统一用小时，例如 1h、4h、8h。
-                5. 如果缺少配置中心 key、表结构、接口说明、数据口径或业务边界，请写入 questions，不要把证据不足的判断硬拆成代码任务。
-                6. requirementChangePoints 必须从业务需求角度总结“需求点”，要求内敛、互斥、无重复：每一项只描述一个业务变化，不写实现方式，不按系统/页面/接口拆分，不把同一变化用近义句重复表达；不限制条数，但宁可少而准，不要为了凑数泛化拆碎。
-                7. title 必须是一件独立可执行研发任务的摘要，例如“补充平台账户切换配置”“调整账单账户取数逻辑”“验证商户端收款展示”，不要写“实现接口”“修改 Service”这类代码层任务名。
-                8. estimatedEffort 是单个任务的人类交付工时，统一用小时，例如 1h、4h、8h；不要估算机器运行时间、AI处理时间或等待时间。
-                9. ownerUserName 只能从候选研发人员中选择；如果无法判断负责人，可以为 null。
-                10. 如遇到业务口径、历史背景、系统边界不确定，可以参考“项目知识库参考”；但如果知识库与需求或代码冲突，以需求和代码为准，并把冲突或疑问写入 questions。
+                任务要求：
+                - title 用 Jira/禅道风格，格式类似“系统名 + 动词 + 业务对象 + 能力/规则”。
+                - systemTags 只能写真实涉及系统，优先从“可选改造系统”中选择。
+                - changePoints 表示“改地点”，必须按有序列表顺序列出，覆盖配置/SQL、接口/服务、任务调度、页面/权限、导出/核销、幂等/验证等真实工作。
+                - relatedFiles/evidenceRefs 写代码或材料证据；涉及系统改造却没有代码证据时，confidence 置 LOW，并在 risks/questions 说明。
+                - questions 只写真正影响实现或验收的问题，不要把需求已明确的事实列为疑问。
+                - estimatedEffort 用小时，例如 1h、4h、8h；ownerUserName 只能从候选研发人员中选，无法判断填 null。
 
                 项目信息：
                 - 项目：%s
-                - 项目组：%s
+                - 业务线：%s
                 - 负责人：%s
 
                 候选研发人员：
+                %s
+
+                可选改造系统：
                 %s
 
                 需求 Markdown 文件：
@@ -202,9 +213,10 @@ public class CodexCliDevelopmentAnalysisGenerator {
                 %s
                 """.formatted(
                 project.name(),
-                project.group(),
+                project.businessLine(),
                 project.ownerUserName(),
                 formatDevelopers(developers),
+                formatAvailableSystemTags(repositoryBundle),
                 value(requirementMarkdownContext),
                 value(structuredData.approvalCode()),
                 value(structuredData.requirementNameOrTitle()),
@@ -264,14 +276,14 @@ public class CodexCliDevelopmentAnalysisGenerator {
         try {
             return """
                     你是 WorkHub 的研发拆解调整助手。
-                    请根据用户反馈重新理解需求变化，先形成待验证问题，再结合当前草稿和相关代码证据调整研发工作项草稿，并重新输出完整草稿。
+                    根据用户反馈调整当前研发评估草稿，并重新输出完整 JSON 草稿；不要修改代码、不要创建工作项。
 
-                    约束：
-                    1. 只调整工作项草稿，不修改代码，不创建工作项。
-                    2. 先维护完整 requirementChangePoints，再由你自行判断是否需要查阅项目组代码；不要按代码目录或技术层级直接拆任务。
-                    3. 根据需求点逐个拆解独立可执行研发任务，workItems 只输出 title、description、estimatedEffort、ownerUserName。
-                    4. 如果用户反馈指出原草稿偏离实际评估，要优先复核需求，必要时按需查阅代码，删除无依据或不必要的研发任务。
-                    5. 保留合理的 risks、questions。
+                    调整规则：
+                    - 先修正 requirementChangePoints，再调整 workItems。
+                    - 任务按可排期交付项拆，不按 Controller/Service/DAO 等代码层拆。
+                    - title 用 Jira/禅道风格；systemTags 写真实涉及系统；changePoints 表示“改地点”，必须按有序列表顺序列出。
+                    - relatedFiles/evidenceRefs 保留或补充代码证据；删除无依据、过细或偏离需求的任务。
+                    - questions 只保留真正影响实现或验收的问题，不重复追问需求已明确的事实。
 
                     候选研发人员：
                     %s
@@ -317,22 +329,22 @@ public class CodexCliDevelopmentAnalysisGenerator {
                 .map(item -> new DevelopmentWorkItemDraft(
                         item.title().trim(),
                         trimToNull(item.description()),
-                        null,
-                        null,
-                        List.of(),
-                        List.of(),
-                        List.of(),
-                        List.of(),
-                        null,
-                        null,
-                        List.of(),
+                        trimToNull(item.requirementChangePoint()),
+                        normalizeTaskType(item.taskType()),
+                        deriveTargetResources(item),
+                        deriveChangePoints(item),
+                        deriveSystemTags(item, project, repositoryBundle),
+                        deriveEvidenceRefs(item),
+                        normalizeConfidence(item.confidence()),
+                        trimToNull(item.moduleName()),
+                        safeList(item.relatedFiles()),
                         EffortUnitNormalizer.normalizeEffort(item.estimatedEffort()),
                         trimToNull(item.ownerUserName()),
+                        normalizePriority(item.priority()),
                         null,
                         null,
-                        null,
-                        null,
-                        null
+                        trimToNull(item.dependency()),
+                        trimToNull(item.risk())
                 ))
                 .toList();
     }
@@ -442,7 +454,7 @@ public class CodexCliDevelopmentAnalysisGenerator {
         if (normalized == null) {
             return false;
         }
-        if (equalsIgnoreCase(normalized, project == null ? null : project.group())
+        if (equalsIgnoreCase(normalized, project == null ? null : project.businessLine())
                 || equalsIgnoreCase(normalized, project == null ? null : project.name())
                 || equalsIgnoreCase(normalized, item.moduleName())) {
             return false;

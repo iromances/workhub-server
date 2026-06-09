@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 
 /**
- * 系统用户与项目组成员数据访问接口。
+ * 用户候选数据访问接口。
  */
 @Mapper
 public interface UserMapper {
@@ -17,9 +17,9 @@ public interface UserMapper {
     @Select("""
             SELECT user_name AS userName,
                    display_name AS displayName,
-                   NULL AS projectGroup
-            FROM sys_user
-            WHERE status = 'ACTIVE'
+                   NULL AS businessLine
+            FROM pm_developer_resource
+            WHERE enabled = 1
             ORDER BY user_name ASC
             """)
     List<UserOptionResponse> findActiveUsers();
@@ -27,29 +27,27 @@ public interface UserMapper {
     @Select("""
             SELECT member_user_name AS userName,
                    member_display_name AS displayName,
-                   project_group AS projectGroup
-            FROM pm_project_group_member
-            WHERE project_group = #{projectGroup}
+                   business_line AS businessLine
+            FROM pm_business_line_member
+            WHERE business_line = #{businessLine}
               AND enabled = 1
             ORDER BY id ASC
             """)
-    List<UserOptionResponse> findProjectGroupMembers(@Param("projectGroup") String projectGroup);
+    List<UserOptionResponse> findBusinessLineMembers(@Param("businessLine") String businessLine);
 
     @Insert("""
-            INSERT INTO sys_user (
+            INSERT INTO pm_developer_resource (
                 user_name,
                 display_name,
-                password_hash,
-                status
+                enabled
             ) VALUES (
                 #{userName},
                 #{displayName},
-                '',
-                'ACTIVE'
+                1
             )
             ON DUPLICATE KEY UPDATE
                 display_name = IF(display_name IS NULL OR display_name = '', VALUES(display_name), display_name),
-                status = 'ACTIVE',
+                enabled = 1,
                 updated_at = CURRENT_TIMESTAMP
             """)
     void upsertActiveUser(@Param("userName") String userName, @Param("displayName") String displayName);

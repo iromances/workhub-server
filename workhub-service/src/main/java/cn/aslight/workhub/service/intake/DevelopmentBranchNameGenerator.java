@@ -65,35 +65,41 @@ final class DevelopmentBranchNameGenerator {
             return null;
         }
         String textSource = firstNonBlank(requirementName, firstNonBlank(requirementDigest, requirementSummary));
-        String dateToken = resolveDateToken(submittedTime, approvalCode);
-        String normalizedExistingBranchName = normalizeExistingBranchName(existingBranchName, dateToken);
+        String suffixToken = resolveSuffixToken(approvalCode, submittedTime);
+        String normalizedExistingBranchName = normalizeExistingBranchName(existingBranchName, suffixToken);
         if (normalizedExistingBranchName != null) {
             return normalizedExistingBranchName;
         }
-        String generatedBranchName = buildGeneratedBranchName(textSource, dateToken);
+        String generatedBranchName = buildGeneratedBranchName(textSource, suffixToken);
         if (generatedBranchName != null) {
             return generatedBranchName;
         }
-        return buildBranchName("requirement", dateToken);
+        return buildBranchName("requirement", suffixToken);
     }
 
-    private static String buildGeneratedBranchName(String textSource, String dateToken) {
+    private static String buildGeneratedBranchName(String textSource, String suffixToken) {
         String subjectToken = buildSubject(textSource);
         String summaryToken = buildSummary(textSource);
         if (summaryToken == null) {
             return null;
         }
         String branchToken = compactBranchToken(subjectToken, summaryToken);
-        return buildBranchName(branchToken, dateToken);
+        return buildBranchName(branchToken, suffixToken);
     }
 
-    private static String normalizeExistingBranchName(String existingBranchName, String dateToken) {
+    private static String normalizeExistingBranchName(String existingBranchName, String suffixToken) {
         String normalized = trimToNull(existingBranchName);
         if (normalized == null) {
             return null;
         }
         if ("feature/requirement".equals(normalized) || "requirement".equals(normalized)) {
             return null;
+        }
+        if (suffixToken != null) {
+            String normalizedSuffix = sanitizeAsciiToken(suffixToken);
+            if (normalizedSuffix != null) {
+                return normalized.replaceFirst("_(20\\d{6})$", "_" + normalizedSuffix);
+            }
         }
         return normalized;
     }
@@ -105,11 +111,11 @@ final class DevelopmentBranchNameGenerator {
         return firstWords(words, MAX_BRANCH_WORDS);
     }
 
-    private static String buildBranchName(String branchToken, String dateToken) {
-        if (dateToken == null) {
+    private static String buildBranchName(String branchToken, String suffixToken) {
+        if (suffixToken == null) {
             return "feature/" + branchToken;
         }
-        return "feature/" + branchToken + "_" + dateToken;
+        return "feature/" + branchToken + "_" + suffixToken;
     }
 
     private static String buildSubject(String value) {
@@ -177,13 +183,16 @@ final class DevelopmentBranchNameGenerator {
         return words.stream().limit(limit).collect(java.util.stream.Collectors.joining("_"));
     }
 
-    private static String resolveDateToken(String submittedTime, String approvalCode) {
+    private static String resolveSuffixToken(String approvalCode, String submittedTime) {
+        String fromApprovalCode = sanitizeAsciiToken(trimToNull(approvalCode));
+        if (fromApprovalCode != null) {
+            return fromApprovalCode;
+        }
         String fromSubmittedTime = formatDate(trimToNull(submittedTime));
         if (fromSubmittedTime != null) {
             return fromSubmittedTime;
         }
-        String fromApprovalCode = firstRegexGroup(trimToNull(approvalCode), "(20\\d{6})");
-        return fromApprovalCode == null ? null : fromApprovalCode;
+        return null;
     }
 
     private static String formatDate(String value) {
@@ -197,14 +206,6 @@ final class DevelopmentBranchNameGenerator {
             return null;
         }
         return matcher.group(1) + padDatePart(matcher.group(2)) + padDatePart(matcher.group(3));
-    }
-
-    private static String firstRegexGroup(String value, String regex) {
-        if (value == null) {
-            return null;
-        }
-        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(regex).matcher(value);
-        return matcher.find() ? matcher.group(1) : null;
     }
 
     private static String padDatePart(String value) {

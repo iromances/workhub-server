@@ -5,5 +5,5 @@ package cn.aslight.workhub.model.system;
  */
 public record UserOptionResponse(String userName,
                                  String displayName,
-                                 String projectGroup) {
+                                 String businessLine) {
 }

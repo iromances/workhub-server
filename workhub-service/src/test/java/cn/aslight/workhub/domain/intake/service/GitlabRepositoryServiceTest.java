@@ -1,7 +1,7 @@
 package cn.aslight.workhub.service.intake;
 
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
-import cn.aslight.workhub.dao.project.ProjectGroupMapper;
+import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.service.system.SysConfigService;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
@@ -18,13 +18,11 @@ class GitlabRepositoryServiceTest {
     void chooseBestProject_shouldPreferProjectCodeAndNameMatch() {
         GitlabRepositoryService service = new GitlabRepositoryService(
                 mock(SysConfigService.class),
-                mock(ProjectGroupMapper.class),
+                mock(BusinessLineMapper.class),
                 new ObjectMapper()
         );
         ProjectDetailResponse project = new ProjectDetailResponse(
                 8L,
-                "SCM",
-                "供应链科技",
                 "WCH-PAY",
                 "沃橙支付项目",
                 "研发",

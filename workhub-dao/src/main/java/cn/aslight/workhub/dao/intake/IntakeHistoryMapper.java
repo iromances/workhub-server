@@ -48,4 +48,22 @@ public interface IntakeHistoryMapper {
             """)
     List<IntakeHistoryEntity> findRecentByIntakeId(@Param("intakeId") Long intakeId,
                                                    @Param("limit") int limit);
+
+    @Select("""
+            SELECT id,
+                   intake_id,
+                   action_type,
+                   action_summary,
+                   detail_text,
+                   operator_user_name,
+                   created_at
+            FROM pm_intake_history
+            WHERE intake_id = #{intakeId}
+              AND action_type = 'UPDATE'
+              AND action_summary = #{actionSummary}
+            ORDER BY id DESC
+            LIMIT 1
+            """)
+    IntakeHistoryEntity findLatestUpdateBySummary(@Param("intakeId") Long intakeId,
+                                                  @Param("actionSummary") String actionSummary);
 }

@@ -39,7 +39,6 @@ class EffortUnitNormalizerTest {
                 null,
                 null,
                 null,
-                "2d",
                 null,
                 null,
                 "1.5d",
@@ -73,7 +72,6 @@ class EffortUnitNormalizerTest {
         IntakeStructuredData normalizedStructuredData = EffortUnitNormalizer.normalizeStructuredData(structuredData);
         IntakeAIDraft normalizedDraft = EffortUnitNormalizer.normalizeDraft(draft);
 
-        assertEquals("16h", normalizedStructuredData.estimatedEffort());
         assertEquals("12h", normalizedStructuredData.actualEffort());
         assertEquals("4h", normalizedDraft.taskBreakdownSuggestions().get(0).estimatedEffort());
         assertEquals("8h", normalizedDraft.taskBreakdownSuggestions().get(1).estimatedEffort());

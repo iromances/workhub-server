@@ -26,15 +26,15 @@ class PaymentChannelControllerTest {
     @Test
     void list_shouldExposeChannelItems() throws Exception {
         PaymentChannelService paymentChannelService = mock(PaymentChannelService.class);
-        when(paymentChannelService.list(eq("ACTIVE"), eq("yee"))).thenReturn(List.of(
+        when(paymentChannelService.list(eq(1L), eq("ACTIVE"))).thenReturn(List.of(
                 new PaymentChannelSummaryResponse(1L, "YEEPAY", "易宝支付", "易宝", "ACTIVE")
         ));
 
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new PaymentChannelController(paymentChannelService)).build();
 
         mockMvc.perform(get("/api/payment/channels")
+                        .param("channelId", "1")
                         .param("status", "ACTIVE")
-                        .param("keyword", "yee")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(1))

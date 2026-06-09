@@ -33,11 +33,11 @@ public class PaymentChannelController {
     }
 
     @GetMapping
-    public ApiResponse<PageResponse<PaymentChannelSummaryResponse>> list(@RequestParam(required = false) String status,
-                                                                         @RequestParam(required = false) String keyword,
+    public ApiResponse<PageResponse<PaymentChannelSummaryResponse>> list(@RequestParam(required = false) Long channelId,
+                                                                         @RequestParam(required = false) String status,
                                                                          @RequestParam(defaultValue = "1") int page,
                                                                          @RequestParam(defaultValue = "10") int pageSize) {
-        List<PaymentChannelSummaryResponse> items = paymentChannelService.list(status, keyword);
+        List<PaymentChannelSummaryResponse> items = paymentChannelService.list(channelId, status);
         return ApiResponse.success(page(items, page, pageSize));
     }
 

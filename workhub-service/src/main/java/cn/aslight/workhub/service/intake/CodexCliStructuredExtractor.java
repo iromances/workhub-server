@@ -36,7 +36,6 @@ public class CodexCliStructuredExtractor {
                 "department": { "type": ["string", "null"] },
                 "businessLine": { "type": ["string", "null"] },
                 "remark": { "type": ["string", "null"] },
-                "estimatedEffort": { "type": ["string", "null"] },
                 "plannedDueDate": { "type": ["string", "null"] },
                 "actualEffort": { "type": ["string", "null"] },
                 "actualCompletedTime": { "type": ["string", "null"] },
@@ -70,7 +69,6 @@ public class CodexCliStructuredExtractor {
                 "department",
                 "businessLine",
                 "remark",
-                "estimatedEffort",
                 "plannedDueDate",
                 "actualEffort",
                 "actualCompletedTime",
@@ -172,7 +170,7 @@ public class CodexCliStructuredExtractor {
                 5. 非图片附件已经预先提取为纯文本摘要，请优先基于这些摘要判断，不要猜测如何打开二进制文件。
                 6. requirementType 只能输出“数据提取/运维”或“研发需求”。
                 7. requirementDigest 输出给列表展示的极短摘要，尽量不超过 24 个字。
-                8. 如果 requirementType 为“研发需求”，请在 developmentBranchName 中给出推荐研发分支名，格式优先使用 feature/subject_summary_yyyyMMdd；subject 和 summary 都使用英文单词或缩写，整体控制在 3 个英文单词以内，超过时使用常见缩写，所有单词和日期之间统一用下划线连接，日期使用 yyyyMMdd。非研发需求不要输出研发分支名。
+                8. 如果 requirementType 为“研发需求”，请在 developmentBranchName 中给出推荐研发分支名，格式优先使用 feature/summary_words_approvalCode；summary_words 使用英文单词或缩写，整体控制在 3 个英文单词以内，超过时使用常见缩写，所有单词和审批编号之间统一用下划线连接。非研发需求不要输出研发分支名。
 
 
                 来源渠道：%s

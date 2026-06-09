@@ -28,8 +28,6 @@ class PaymentBindingControllerTest {
         when(bindingService.resolve(10L, "WITHHOLD")).thenReturn(new PaymentProjectBindingResponse(
                 100L,
                 10L,
-                "ASSET",
-                "资产平台",
                 "资产业务",
                 "WOCHENG",
                 "沃橙项目",

@@ -1,8 +1,11 @@
 package cn.aslight.workhub.service.intake;
 
 import cn.aslight.workhub.dao.intake.DevelopmentAnalysisMapper;
+import cn.aslight.workhub.dao.intake.IntakeClarificationAnalysisMapper;
 import cn.aslight.workhub.dao.intake.IntakeHistoryMapper;
 import cn.aslight.workhub.dao.intake.IntakeMapper;
+import cn.aslight.workhub.dao.intake.IntakeWorkItemRelationMapper;
+import cn.aslight.workhub.dao.project.ProjectInvolvedSystemMapper;
 import cn.aslight.workhub.dao.project.ProjectMapper;
 import cn.aslight.workhub.dao.system.UserMapper;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisChatRequest;
@@ -13,18 +16,24 @@ import cn.aslight.workhub.model.intake.DevelopmentAnalysisEntity;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisOwnerUpdateRequest;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisResponse;
 import cn.aslight.workhub.model.intake.DevelopmentWorkItemDraft;
+import cn.aslight.workhub.model.intake.IntakeClarificationAnalysisEntity;
+import cn.aslight.workhub.model.intake.IntakeClarificationItem;
 import cn.aslight.workhub.model.intake.IntakeHistoryEntity;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
+import cn.aslight.workhub.model.intake.IntakeWorkItemRelationEntity;
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
+import cn.aslight.workhub.model.project.ProjectInvolvedSystemEntity;
 import cn.aslight.workhub.model.system.UserOptionResponse;
 import cn.aslight.workhub.model.workitem.WorkItemCreateRequest;
 import cn.aslight.workhub.model.workitem.WorkItemDetailResponse;
 import cn.aslight.workhub.service.workitem.WorkItemService;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
@@ -36,6 +45,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -62,7 +72,10 @@ public class DevelopmentAnalysisService {
     private final IntakeMapper intakeMapper;
     private final IntakeHistoryMapper intakeHistoryMapper;
     private final DevelopmentAnalysisMapper developmentAnalysisMapper;
+    private final IntakeWorkItemRelationMapper intakeWorkItemRelationMapper;
+    private final IntakeClarificationAnalysisMapper intakeClarificationAnalysisMapper;
     private final ProjectMapper projectMapper;
+    private final ProjectInvolvedSystemMapper involvedSystemMapper;
     private final UserMapper userMapper;
     private final GitlabRepositoryService gitlabRepositoryService;
     private final ProjectKnowledgeBaseService projectKnowledgeBaseService;
@@ -71,10 +84,14 @@ public class DevelopmentAnalysisService {
     private final Executor workhubTaskExecutor;
     private final ObjectMapper objectMapper;
 
+    @Autowired
     public DevelopmentAnalysisService(IntakeMapper intakeMapper,
                                       IntakeHistoryMapper intakeHistoryMapper,
                                       DevelopmentAnalysisMapper developmentAnalysisMapper,
+                                      IntakeWorkItemRelationMapper intakeWorkItemRelationMapper,
+                                      IntakeClarificationAnalysisMapper intakeClarificationAnalysisMapper,
                                       ProjectMapper projectMapper,
+                                      ProjectInvolvedSystemMapper involvedSystemMapper,
                                       UserMapper userMapper,
                                       GitlabRepositoryService gitlabRepositoryService,
                                       ProjectKnowledgeBaseService projectKnowledgeBaseService,
@@ -85,7 +102,10 @@ public class DevelopmentAnalysisService {
         this.intakeMapper = intakeMapper;
         this.intakeHistoryMapper = intakeHistoryMapper;
         this.developmentAnalysisMapper = developmentAnalysisMapper;
+        this.intakeWorkItemRelationMapper = intakeWorkItemRelationMapper;
+        this.intakeClarificationAnalysisMapper = intakeClarificationAnalysisMapper;
         this.projectMapper = projectMapper;
+        this.involvedSystemMapper = involvedSystemMapper;
         this.userMapper = userMapper;
         this.gitlabRepositoryService = gitlabRepositoryService;
         this.projectKnowledgeBaseService = projectKnowledgeBaseService;
@@ -95,20 +115,141 @@ public class DevelopmentAnalysisService {
         this.objectMapper = objectMapper;
     }
 
+    DevelopmentAnalysisService(IntakeMapper intakeMapper,
+                               IntakeHistoryMapper intakeHistoryMapper,
+                               DevelopmentAnalysisMapper developmentAnalysisMapper,
+                               ProjectMapper projectMapper,
+                               ProjectInvolvedSystemMapper involvedSystemMapper,
+                               UserMapper userMapper,
+                               GitlabRepositoryService gitlabRepositoryService,
+                               ProjectKnowledgeBaseService projectKnowledgeBaseService,
+                               CodexCliDevelopmentAnalysisGenerator analysisGenerator,
+                               WorkItemService workItemService,
+                               @Qualifier("workhubTaskExecutor") Executor workhubTaskExecutor,
+                               ObjectMapper objectMapper) {
+        this(
+                intakeMapper,
+                intakeHistoryMapper,
+                developmentAnalysisMapper,
+                new NoopIntakeWorkItemRelationMapper(),
+                new NoopIntakeClarificationAnalysisMapper(),
+                projectMapper,
+                involvedSystemMapper,
+                userMapper,
+                gitlabRepositoryService,
+                projectKnowledgeBaseService,
+                analysisGenerator,
+                workItemService,
+                workhubTaskExecutor,
+                objectMapper
+        );
+    }
+
+    private static class NoopIntakeWorkItemRelationMapper implements IntakeWorkItemRelationMapper {
+        @Override
+        public int upsert(IntakeWorkItemRelationEntity entity) {
+            return 0;
+        }
+
+        @Override
+        public List<cn.aslight.workhub.model.intake.IntakeRelatedWorkItemResponse> findByIntakeId(Long intakeId) {
+            return List.of();
+        }
+
+        @Override
+        public IntakeWorkItemRelationEntity findLatestByWorkItemId(Long workItemId) {
+            return null;
+        }
+    }
+
+    private static class NoopIntakeClarificationAnalysisMapper implements IntakeClarificationAnalysisMapper {
+        @Override
+        public IntakeClarificationAnalysisEntity findById(Long id) {
+            return null;
+        }
+
+        @Override
+        public IntakeClarificationAnalysisEntity findLatestByIntakeId(Long intakeId) {
+            return null;
+        }
+
+        @Override
+        public int insert(IntakeClarificationAnalysisEntity entity) {
+            return 0;
+        }
+
+        @Override
+        public int update(IntakeClarificationAnalysisEntity entity) {
+            return 0;
+        }
+
+        @Override
+        public int updateExecutionState(IntakeClarificationAnalysisEntity entity) {
+            return 0;
+        }
+    }
+
     public DevelopmentAnalysisResponse detail(Long intakeId) {
         DevelopmentAnalysisEntity entity = developmentAnalysisMapper.findLatestByIntakeId(intakeId);
-        return entity == null ? null : toResponse(entity);
+        if (entity != null) {
+            return toResponse(entity);
+        }
+        IntakeRecordEntity intake = requireIntake(intakeId);
+        IntakeStructuredData structuredData = readStructuredData(intake.getStructuredDataJson());
+        if (structuredData == null || !"研发需求".equals(structuredData.requirementType())) {
+            return null;
+        }
+        ProjectDetailResponse project = resolveProjectOrNull(structuredData);
+        List<String> developerPool = resolveDevelopers(
+                        project == null ? structuredData.projectHint() : project.businessLine(),
+                        project == null ? intake.getDevelopmentOwnerUserName() : project.ownerUserName()
+                ).stream()
+                .map(UserOptionResponse::userName)
+                .distinct()
+                .toList();
+        DevelopmentAnalysisDraft draft = new DevelopmentAnalysisDraft(
+                STATUS_DRAFT,
+                project == null ? structuredData.projectHint() : project.businessLine(),
+                project == null ? null : project.id(),
+                project == null ? null : project.name(),
+                null,
+                null,
+                null,
+                null,
+                firstNonBlank(structuredData.requirementSummary(), structuredData.requirementDigest()),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                developerPool,
+                List.of(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "RESERVED",
+                "禅道同步接口已预留，当前不会调用禅道。",
+                LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                "manual",
+                null
+        );
+        LocalDateTime now = LocalDateTime.now();
+        return new DevelopmentAnalysisResponse(0L, intakeId, STATUS_DRAFT, "人工录入研发任务草稿", draft, now, now);
     }
 
     public DevelopmentAnalysisResponse analyze(Long intakeId, String operatorUserName) {
         return analyze(intakeId, null, operatorUserName);
     }
 
-    public DevelopmentAnalysisResponse analyze(Long intakeId, String projectGroupOverride, String operatorUserName) {
+    public DevelopmentAnalysisResponse analyze(Long intakeId, String businessLineOverride, String operatorUserName) {
         IntakeRecordEntity intake = requireIntake(intakeId);
         IntakeStructuredData structuredData = readStructuredData(intake.getStructuredDataJson());
         requireDevelopmentRequirement(structuredData);
-        structuredData = withProjectGroupOverride(structuredData, projectGroupOverride);
+        requirePendingEvaluation(intake, structuredData, "仅待评估需求允许生成任务评估");
+        structuredData = withBusinessLineOverride(structuredData, businessLineOverride);
         IntakeStructuredData nextStructuredData = structuredData;
         String nextStructuredDataJson = writeStructuredDataJson(nextStructuredData);
         intakeMapper.updateStructuredData(intakeId, nextStructuredDataJson);
@@ -139,8 +280,8 @@ public class DevelopmentAnalysisService {
         if (currentDraft == null) {
             throw new IllegalArgumentException("当前任务评估尚未生成可调整的草稿");
         }
-        ProjectDetailResponse project = resolveProject(currentDraft);
-        List<UserOptionResponse> developers = resolveDevelopers(project.group(), project.ownerUserName());
+        ProjectDetailResponse project = resolveProjectForDraft(currentDraft);
+        List<UserOptionResponse> developers = resolveDevelopers(project.businessLine(), project.ownerUserName());
         GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle = gitlabRepositoryService.resolveAndFetchGroup(project);
         DevelopmentAnalysisDraft adjusted = analysisGenerator.adjust(currentDraft, request.getMessage().trim(), project, repositoryBundle, developers);
         entity.setDraftJson(writeDraftJson(adjusted));
@@ -155,21 +296,35 @@ public class DevelopmentAnalysisService {
     @Transactional
     public DevelopmentAnalysisConfirmResponse confirm(Long intakeId, String operatorUserName) {
         IntakeRecordEntity intake = requireIntake(intakeId);
+        IntakeStructuredData structuredData = readStructuredData(intake.getStructuredDataJson());
+        requirePendingEvaluation(intake, structuredData, "仅待评估需求允许确认研发评估");
         DevelopmentAnalysisEntity entity = requireAnalysis(intakeId);
+        if (STATUS_CONFIRMED.equals(entity.getAnalysisStatus())) {
+            throw new IllegalArgumentException("当前任务评估已确认，不能重复确认");
+        }
+        if (!STATUS_DRAFT.equals(entity.getAnalysisStatus())) {
+            throw new IllegalArgumentException("当前任务评估尚未生成可确认的草稿");
+        }
         DevelopmentAnalysisDraft draft = readDraft(entity.getDraftJson());
         if (draft == null) {
             throw new IllegalArgumentException("当前任务评估尚未生成可确认的草稿");
         }
+        validateConfirmableDraft(draft);
+        if (draft.businessLine() != null) {
+            validateDraftSystemTags(draft, draft.businessLine(), draft);
+        }
         List<Long> workItemIds = new ArrayList<>();
-        if (draft.workItems() != null && !draft.workItems().isEmpty()) {
-            for (DevelopmentWorkItemDraft item : draft.workItems()) {
+        if (draft.projectId() != null && draft.workItems() != null && !draft.workItems().isEmpty()) {
+            for (int i = 0; i < draft.workItems().size(); i++) {
+                DevelopmentWorkItemDraft item = draft.workItems().get(i);
                 WorkItemDetailResponse created = workItemService.create(toWorkItemCreateRequest(draft, item), operatorUserName);
                 workItemIds.add(created.id());
+                linkWorkItem(intakeId, created.id(), i);
             }
         }
         intakeMapper.updateManagementFields(
                 intakeId,
-                intake.getStructuredDataJson(),
+                writeStructuredDataJson(structuredData),
                 intake.getDevelopmentOwnerUserName(),
                 IntakeDemandStatusRules.PENDING_SCHEDULING
         );
@@ -182,10 +337,26 @@ public class DevelopmentAnalysisService {
                 operatorUserName
         );
         String historySummary = workItemIds.isEmpty()
-                ? "已确认研发预估工时，未创建正式工作项。"
+                ? "已确认研发评估，未创建正式工作项。"
                 : "已创建正式工作项：" + workItemIds;
         recordHistory(intakeId, "确认研发评估", historySummary, operatorUserName);
         return new DevelopmentAnalysisConfirmResponse(intakeId, workItemIds, "RESERVED", historySummary);
+    }
+
+    private void validateConfirmableDraft(DevelopmentAnalysisDraft draft) {
+        requireConfirmEffort(draft.totalEstimatedEffort(), "确认研发评估前必须填写总评估工时", "总评估工时格式不正确，请输入如 8h 或 1d");
+        requireConfirmEffort(draft.testingEstimatedEffort(), "确认研发评估前必须填写测试工时", "测试工时格式不正确，请输入如 4h 或 0.5d");
+        validateOptionalWorkItemEfforts(draft.workItems());
+    }
+
+    private void requireConfirmEffort(String value, String blankMessage, String formatMessage) {
+        String normalized = EffortUnitNormalizer.normalizeEffort(value);
+        if (normalized == null) {
+            throw new IllegalArgumentException(blankMessage);
+        }
+        if (parseNormalizedHours(normalized) == null) {
+            throw new IllegalArgumentException(formatMessage);
+        }
     }
 
     @Transactional
@@ -239,8 +410,8 @@ public class DevelopmentAnalysisService {
         }
 
         DevelopmentAnalysisDraft updated = new DevelopmentAnalysisDraft(
-                draft.status(),
-                draft.projectGroup(),
+                resolveEditableAnalysisStatus(entity),
+                draft.businessLine(),
                 draft.projectId(),
                 draft.projectName(),
                 draft.repositoryUrl(),
@@ -264,10 +435,11 @@ public class DevelopmentAnalysisService {
                 draft.zentaoSyncStatus(),
                 draft.zentaoSyncMessage(),
                 draft.generatedAt(),
-                draft.generator()
+                draft.generator(),
+                draft.plannedDevelopmentStartDate()
         );
         entity.setDraftJson(writeDraftJson(updated));
-        entity.setAnalysisStatus(STATUS_DRAFT);
+        entity.setAnalysisStatus(updated.status());
         entity.setAnalysisMessage(null);
         entity.setUpdatedBy(operatorUserName);
         developmentAnalysisMapper.update(entity);
@@ -282,15 +454,18 @@ public class DevelopmentAnalysisService {
         IntakeRecordEntity intake = requireIntake(intakeId);
         IntakeStructuredData structuredData = readStructuredData(intake.getStructuredDataJson());
         requireDevelopmentRequirement(structuredData);
+        requireEditableDevelopmentTasks(intake, structuredData);
         DevelopmentAnalysisEntity entity = developmentAnalysisMapper.findLatestByIntakeId(intakeId);
+        String analysisStatus = resolveEditableAnalysisStatus(entity);
         DevelopmentAnalysisDraft draft = readDraft(entity == null ? null : entity.getDraftJson());
         List<DevelopmentAnalysisDraftUpdateRequest.WorkItemDraft> requestItems =
                 request.workItems() == null ? List.of() : request.workItems();
-        String projectGroup = firstNonBlank(
-                request.projectGroup(),
-                firstNonBlank(draft == null ? null : draft.projectGroup(), structuredData.projectHint())
+        String businessLine = firstNonBlank(
+                request.businessLine(),
+                firstNonBlank(draft == null ? null : draft.businessLine(), structuredData.projectHint())
         );
-        ProjectDetailResponse project = requestItems.isEmpty() ? null : requireProjectGroupProject(projectGroup);
+        ProjectDetailResponse project = requestItems.isEmpty() ? null : findBusinessLineProject(businessLine);
+        DevelopmentAnalysisDraft existingDraft = draft;
 
         List<String> developerPool = new ArrayList<>(draft == null || draft.developerPool() == null ? List.of() : draft.developerPool());
         List<DevelopmentWorkItemDraft> workItems = new ArrayList<>();
@@ -309,6 +484,10 @@ public class DevelopmentAnalysisService {
             String owner = trimToNull(item.ownerUserName());
             addDeveloperIfMissing(developerPool, owner);
             persistDeveloperCandidate(owner);
+            List<String> systemTags = sanitizeList(item.systemTags());
+            if (systemTags.isEmpty()) {
+                throw new IllegalArgumentException("研发任务必须选择涉及系统");
+            }
             workItems.add(new DevelopmentWorkItemDraft(
                     firstNonBlank(title, description),
                     description,
@@ -316,7 +495,7 @@ public class DevelopmentAnalysisService {
                     normalizeTaskType(item.taskType()),
                     sanitizeList(item.targetResources()),
                     sanitizeList(item.changePoints()),
-                    sanitizeList(item.systemTags()),
+                    systemTags,
                     sanitizeList(item.evidenceRefs()),
                     normalizeConfidence(item.confidence()),
                     trimToNull(item.moduleName()),
@@ -330,6 +509,7 @@ public class DevelopmentAnalysisService {
                     trimToNull(item.risk())
             ));
         }
+        validateWorkItemSystemTags(workItems, project == null ? businessLine : project.businessLine(), existingDraft);
 
         validateOptionalWorkItemEfforts(workItems);
         String developmentEstimatedEffort = sumEstimatedEffort(workItems, null);
@@ -344,17 +524,14 @@ public class DevelopmentAnalysisService {
         if (totalEstimatedEffort == null) {
             totalEstimatedEffort = sumEstimatedEffort(workItems, draft == null ? null : draft.totalEstimatedEffort());
         }
-        String plannedDueDate = null;
-        String plannedTestingStartDate = normalizeDate(request.plannedTestingStartDate(), "预估提测日期");
-        String plannedTestingEndDate = null;
-        String plannedReleaseDate = normalizeDate(request.plannedReleaseDate(), "预估上线日期");
-        validateDraftPlanDateRange(plannedDueDate, plannedTestingStartDate, plannedTestingEndDate, plannedReleaseDate);
-
+        String updatedBusinessLine = project == null ? businessLine : project.businessLine();
+        Long updatedProjectId = project == null ? retainedProjectId(draft, updatedBusinessLine) : project.id();
+        String updatedProjectName = project == null ? retainedProjectName(draft, updatedBusinessLine) : project.name();
         DevelopmentAnalysisDraft updated = new DevelopmentAnalysisDraft(
-                "DRAFT",
-                project == null ? projectGroup : project.group(),
-                project == null ? (draft == null ? null : draft.projectId()) : project.id(),
-                project == null ? (draft == null ? null : draft.projectName()) : project.name(),
+                analysisStatus,
+                updatedBusinessLine,
+                updatedProjectId,
+                updatedProjectName,
                 draft == null ? null : draft.repositoryUrl(),
                 draft == null ? null : draft.requirementRawPath(),
                 draft == null ? null : draft.requirementWikiPath(),
@@ -369,14 +546,15 @@ public class DevelopmentAnalysisService {
                 totalEstimatedEffort,
                 developmentEstimatedEffort,
                 testingEstimatedEffort,
-                plannedDueDate,
-                plannedTestingStartDate,
-                plannedTestingEndDate,
-                plannedReleaseDate,
+                null,
+                null,
+                null,
+                null,
                 draft == null ? "RESERVED" : draft.zentaoSyncStatus(),
                 draft == null ? "禅道同步接口已预留，当前不会调用禅道。" : draft.zentaoSyncMessage(),
                 draft == null ? LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : draft.generatedAt(),
-                draft == null ? "manual" : draft.generator()
+                draft == null ? "manual" : draft.generator(),
+                null
         );
         if (entity == null) {
             entity = new DevelopmentAnalysisEntity();
@@ -386,10 +564,10 @@ public class DevelopmentAnalysisService {
             entity.setZentaoSyncMessage("禅道同步接口已预留，当前不会调用禅道。");
         }
         entity.setProjectId(updated.projectId());
-        entity.setProjectGroup(updated.projectGroup());
+        entity.setBusinessLine(updated.businessLine());
         entity.setRepositoryUrl(updated.repositoryUrl());
         entity.setDraftJson(writeDraftJson(updated));
-        entity.setAnalysisStatus(STATUS_DRAFT);
+        entity.setAnalysisStatus(updated.status());
         entity.setAnalysisMessage(null);
         entity.setZentaoSyncStatus(updated.zentaoSyncStatus());
         entity.setZentaoSyncMessage(updated.zentaoSyncMessage());
@@ -399,7 +577,7 @@ public class DevelopmentAnalysisService {
         } else {
             developmentAnalysisMapper.update(entity);
         }
-        recordHistory(intakeId, "调整研发拆解草稿", "已人工更新研发拆解草稿，共 " + workItems.size() + " 项。", operatorUserName);
+        recordHistory(intakeId, "调整研发任务", "已人工更新研发任务，共 " + workItems.size() + " 项。", operatorUserName);
         return toResponse(developmentAnalysisMapper.findLatestByIntakeId(intakeId));
     }
 
@@ -426,12 +604,15 @@ public class DevelopmentAnalysisService {
             IntakeRecordEntity intake = requireIntake(intakeId);
             IntakeStructuredData structuredData = readStructuredData(intake.getStructuredDataJson());
             requireDevelopmentRequirement(structuredData);
-            ProjectDetailResponse project = resolveProject(structuredData);
-            List<UserOptionResponse> developers = resolveDevelopers(project.group(), project.ownerUserName());
+            ProjectDetailResponse project = resolveProjectForStructuredData(structuredData);
+            List<UserOptionResponse> developers = resolveDevelopers(project.businessLine(), project.ownerUserName());
             GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle = gitlabRepositoryService.resolveAndFetchGroup(project);
             ProjectKnowledgeBaseService.RequirementKnowledgeNote requirementNote =
                     projectKnowledgeBaseService.upsertRequirementIterationNote(intake, structuredData, project);
-            String knowledgeBaseContext = projectKnowledgeBaseService.buildContext(structuredData, project);
+            String knowledgeBaseContext = appendClarificationContext(
+                    projectKnowledgeBaseService.buildContext(structuredData, project),
+                    readClarificationItems(intakeId)
+            );
             DevelopmentAnalysisDraft draft = attachRequirementKnowledgeNote(
                     analysisGenerator.generate(intake, structuredData, project, repositoryBundle, developers, requirementNote.asPromptContext(), knowledgeBaseContext),
                     requirementNote
@@ -444,7 +625,7 @@ public class DevelopmentAnalysisService {
             );
             DevelopmentAnalysisEntity completed = requireAnalysisEntity(analysisId);
             completed.setProjectId(project.id());
-            completed.setProjectGroup(project.group());
+            completed.setBusinessLine(project.businessLine());
             completed.setRepositoryUrl(repositoryBundle.repositorySummary());
             completed.setAnalysisStatus(STATUS_DRAFT);
             completed.setAnalysisMessage(null);
@@ -473,7 +654,7 @@ public class DevelopmentAnalysisService {
         }
         return new DevelopmentAnalysisDraft(
                 draft.status(),
-                draft.projectGroup(),
+                draft.businessLine(),
                 draft.projectId(),
                 draft.projectName(),
                 draft.repositoryUrl(),
@@ -497,7 +678,8 @@ public class DevelopmentAnalysisService {
                 draft.zentaoSyncStatus(),
                 draft.zentaoSyncMessage(),
                 draft.generatedAt(),
-                draft.generator()
+                draft.generator(),
+                draft.plannedDevelopmentStartDate()
         );
     }
 
@@ -516,6 +698,15 @@ public class DevelopmentAnalysisService {
         request.setPlannedStartAt(parseDraftDate(item.plannedStartDate()));
         request.setPlannedEndAt(parseDraftDate(item.plannedEndDate()));
         return request;
+    }
+
+    private void linkWorkItem(Long intakeId, Long workItemId, int draftIndex) {
+        IntakeWorkItemRelationEntity relation = new IntakeWorkItemRelationEntity();
+        relation.setIntakeId(intakeId);
+        relation.setWorkItemId(workItemId);
+        relation.setDraftIndex(draftIndex);
+        relation.setRelationType("DEVELOPMENT_TASK");
+        intakeWorkItemRelationMapper.upsert(relation);
     }
 
     private String buildWorkItemDescription(DevelopmentWorkItemDraft item) {
@@ -540,7 +731,7 @@ public class DevelopmentAnalysisService {
             lines.add("置信度：" + item.confidence());
         }
         if (item.changePoints() != null && !item.changePoints().isEmpty()) {
-            lines.add("改动点：");
+            lines.add("改地点：");
             for (int i = 0; i < item.changePoints().size(); i++) {
                 lines.add((i + 1) + ". " + item.changePoints().get(i));
             }
@@ -582,7 +773,7 @@ public class DevelopmentAnalysisService {
             entity.setCreatedBy(operatorUserName);
         }
         entity.setProjectId(project.id());
-        entity.setProjectGroup(project.group());
+        entity.setBusinessLine(project.businessLine());
         entity.setRepositoryUrl(repositoryUrl);
         entity.setAnalysisStatus(status);
         entity.setAnalysisMessage(null);
@@ -600,7 +791,7 @@ public class DevelopmentAnalysisService {
 
     private DevelopmentAnalysisEntity upsertExecutionState(DevelopmentAnalysisEntity existing,
                                                            Long intakeId,
-                                                           String projectGroup,
+                                                           String businessLine,
                                                            String status,
                                                            String message,
                                                            String draftJson,
@@ -614,7 +805,7 @@ public class DevelopmentAnalysisService {
             entity.setZentaoSyncMessage("禅道同步接口已预留，当前不会调用禅道。");
         }
         entity.setProjectId(null);
-        entity.setProjectGroup(projectGroup);
+        entity.setBusinessLine(businessLine);
         entity.setRepositoryUrl(null);
         entity.setAnalysisStatus(status);
         entity.setAnalysisMessage(message);
@@ -658,7 +849,43 @@ public class DevelopmentAnalysisService {
         }
     }
 
-    private ProjectDetailResponse resolveProject(IntakeStructuredData structuredData) {
+    private void requirePendingEvaluation(IntakeRecordEntity intake, IntakeStructuredData structuredData, String message) {
+        String currentStatus = IntakeDemandStatusRules.resolve(intake, structuredData);
+        if (!IntakeDemandStatusRules.PENDING_EVALUATION.equals(currentStatus)) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    private void requireEditableDevelopmentTasks(IntakeRecordEntity intake, IntakeStructuredData structuredData) {
+        String currentStatus = IntakeDemandStatusRules.resolve(intake, structuredData);
+        if (currentStatus == null) {
+            throw new IllegalArgumentException("需求尚未进入业务生命周期，不能调整研发任务");
+        }
+    }
+
+    private String resolveEditableAnalysisStatus(DevelopmentAnalysisEntity entity) {
+        if (entity == null || trimToNull(entity.getAnalysisStatus()) == null) {
+            return STATUS_DRAFT;
+        }
+        String analysisStatus = entity.getAnalysisStatus().trim();
+        if (STATUS_RUNNING.equals(analysisStatus)) {
+            throw new IllegalArgumentException("AI 任务评估运行中，不能同时调整研发任务");
+        }
+        if (STATUS_CONFIRMED.equals(analysisStatus)) {
+            return STATUS_CONFIRMED;
+        }
+        return STATUS_DRAFT;
+    }
+
+    private ProjectDetailResponse resolveProjectForStructuredData(IntakeStructuredData structuredData) {
+        ProjectDetailResponse project = resolveProjectOrNull(structuredData);
+        if (project != null) {
+            return project;
+        }
+        return syntheticProject(resolveBusinessLine(structuredData));
+    }
+
+    private ProjectDetailResponse resolveProjectOrNull(IntakeStructuredData structuredData) {
         List<String> candidates = new ArrayList<>();
         addCandidate(candidates, structuredData.projectHint());
         addCandidate(candidates, structuredData.businessLine());
@@ -668,12 +895,12 @@ public class DevelopmentAnalysisService {
             if (group == null) {
                 continue;
             }
-            ProjectDetailResponse project = projectMapper.findFirstDetailByGroup(group);
+            ProjectDetailResponse project = projectMapper.findFirstDetailByBusinessLine(group);
             if (project != null) {
                 return project;
             }
         }
-        throw new IllegalArgumentException("未找到与需求项目组匹配的项目，请先在项目管理中维护项目组");
+        return null;
     }
 
     private void addCandidate(List<String> candidates, String value) {
@@ -683,29 +910,70 @@ public class DevelopmentAnalysisService {
         }
     }
 
-    private ProjectDetailResponse resolveProject(DevelopmentAnalysisDraft draft) {
-        ProjectDetailResponse project = projectMapper.findFirstDetailByGroup(draft.projectGroup());
+    private ProjectDetailResponse resolveProjectForDraft(DevelopmentAnalysisDraft draft) {
+        ProjectDetailResponse project = projectMapper.findFirstDetailByBusinessLine(draft.businessLine());
         if (project == null) {
-            throw new IllegalArgumentException("研发分析对应项目不存在");
+            return syntheticProject(draft.businessLine());
         }
         return project;
     }
 
-    private ProjectDetailResponse requireProjectGroupProject(String projectGroup) {
-        String normalizedProjectGroup = trimToNull(projectGroup);
-        if (normalizedProjectGroup == null) {
-            throw new IllegalArgumentException("请先选择项目组");
+    private ProjectDetailResponse syntheticProject(String businessLine) {
+        String group = trimToNull(businessLine);
+        if (group == null) {
+            throw new IllegalArgumentException("请先选择业务线");
         }
-        ProjectDetailResponse project = projectMapper.findFirstDetailByGroup(normalizedProjectGroup);
+        LocalDateTime now = LocalDateTime.now();
+        return new ProjectDetailResponse(null, null, group, "BUSINESS_LINE", group, null, "进行中", null, now, now);
+    }
+
+    private String resolveBusinessLine(IntakeStructuredData structuredData) {
+        return firstNonBlank(
+                structuredData == null ? null : structuredData.projectHint(),
+                firstNonBlank(
+                        structuredData == null ? null : structuredData.businessLine(),
+                        structuredData == null ? null : structuredData.department()
+                )
+        );
+    }
+
+    private ProjectDetailResponse requireBusinessLineProject(String businessLine) {
+        String normalizedBusinessLine = trimToNull(businessLine);
+        if (normalizedBusinessLine == null) {
+            throw new IllegalArgumentException("请先选择业务线");
+        }
+        ProjectDetailResponse project = findBusinessLineProject(normalizedBusinessLine);
         if (project == null) {
-            throw new IllegalArgumentException("未找到与需求项目组匹配的项目，请先在项目管理中维护项目组");
+            throw new IllegalArgumentException("未找到与需求业务线匹配的项目，请先在项目管理中维护业务线");
         }
         return project;
     }
 
-    private IntakeStructuredData withProjectGroupOverride(IntakeStructuredData baseline, String projectGroupOverride) {
-        String projectGroup = trimToNull(projectGroupOverride);
-        if (projectGroup == null) {
+    private ProjectDetailResponse findBusinessLineProject(String businessLine) {
+        String normalizedBusinessLine = trimToNull(businessLine);
+        if (normalizedBusinessLine == null) {
+            return null;
+        }
+        return projectMapper.findFirstDetailByBusinessLine(normalizedBusinessLine);
+    }
+
+    private Long retainedProjectId(DevelopmentAnalysisDraft draft, String businessLine) {
+        if (draft == null || !Objects.equals(trimToNull(draft.businessLine()), trimToNull(businessLine))) {
+            return null;
+        }
+        return draft.projectId();
+    }
+
+    private String retainedProjectName(DevelopmentAnalysisDraft draft, String businessLine) {
+        if (draft == null || !Objects.equals(trimToNull(draft.businessLine()), trimToNull(businessLine))) {
+            return null;
+        }
+        return draft.projectName();
+    }
+
+    private IntakeStructuredData withBusinessLineOverride(IntakeStructuredData baseline, String businessLineOverride) {
+        String businessLine = trimToNull(businessLineOverride);
+        if (businessLine == null) {
             return baseline;
         }
         return new IntakeStructuredData(
@@ -724,8 +992,10 @@ public class DevelopmentAnalysisService {
                 baseline.department(),
                 baseline.businessLine(),
                 baseline.remark(),
-                baseline.estimatedEffort(),
                 baseline.plannedDueDate(),
+                baseline.plannedDevelopmentStartDate(),
+                baseline.plannedTestingStartDate(),
+                baseline.plannedReleaseDate(),
                 baseline.developmentStartedDate(),
                 baseline.actualEffort(),
                 baseline.testingStartedDate(),
@@ -734,36 +1004,86 @@ public class DevelopmentAnalysisService {
                 baseline.releasedTime(),
                 baseline.closedTime(),
                 baseline.closeReason(),
-                projectGroup,
+                businessLine,
                 baseline.fields() == null ? List.of() : baseline.fields(),
                 baseline.attachmentSummaries() == null ? List.of() : baseline.attachmentSummaries(),
                 baseline.sqlDraft()
         );
     }
 
-    private List<UserOptionResponse> resolveDevelopers(String projectGroup, String projectOwner) {
+    private List<UserOptionResponse> resolveDevelopers(String businessLine, String projectOwner) {
         Map<String, UserOptionResponse> merged = new LinkedHashMap<>();
-        for (UserOptionResponse item : userMapper.findProjectGroupMembers(projectGroup)) {
-            merged.put(item.userName(), item);
-        }
-        for (UserOptionResponse item : userMapper.findActiveUsers()) {
-            merged.putIfAbsent(item.userName(), item);
+        List<UserOptionResponse> activeUsers = userMapper.findActiveUsers();
+        if (activeUsers != null) {
+            for (UserOptionResponse item : activeUsers) {
+                merged.putIfAbsent(item.userName(), new UserOptionResponse(item.userName(), item.displayName(), null));
+            }
         }
         if (merged.isEmpty()) {
-            merged.put(firstNonBlank(projectOwner, "admin"), new UserOptionResponse(firstNonBlank(projectOwner, "admin"), firstNonBlank(projectOwner, "admin"), projectGroup));
+            merged.put("admin", new UserOptionResponse("admin", "admin", null));
         }
         return new ArrayList<>(merged.values());
     }
 
     private DevelopmentAnalysisResponse toResponse(DevelopmentAnalysisEntity entity) {
+        DevelopmentAnalysisDraft draft = enrichDeveloperPool(readDraft(entity.getDraftJson()));
         return new DevelopmentAnalysisResponse(
                 entity.getId(),
                 entity.getIntakeId(),
                 entity.getAnalysisStatus(),
                 entity.getAnalysisMessage(),
-                readDraft(entity.getDraftJson()),
+                draft,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
+        );
+    }
+
+    private DevelopmentAnalysisDraft enrichDeveloperPool(DevelopmentAnalysisDraft draft) {
+        if (draft == null) {
+            return null;
+        }
+        List<String> developerPool = new ArrayList<>(draft.developerPool() == null ? List.of() : draft.developerPool());
+        if (draft.workItems() != null) {
+            for (DevelopmentWorkItemDraft item : draft.workItems()) {
+                addDeveloperIfMissing(developerPool, item == null ? null : item.ownerUserName());
+            }
+        }
+        String projectOwner = null;
+        if (trimToNull(draft.businessLine()) != null) {
+            ProjectDetailResponse project = projectMapper.findFirstDetailByBusinessLine(draft.businessLine());
+            projectOwner = project == null ? null : project.ownerUserName();
+        }
+        for (UserOptionResponse developer : resolveDevelopers(draft.businessLine(), projectOwner)) {
+            addDeveloperIfMissing(developerPool, developer.userName());
+        }
+        return new DevelopmentAnalysisDraft(
+                draft.status(),
+                draft.businessLine(),
+                draft.projectId(),
+                draft.projectName(),
+                draft.repositoryUrl(),
+                draft.requirementRawPath(),
+                draft.requirementWikiPath(),
+                draft.requirementWikiUrl(),
+                draft.summary(),
+                draft.requirementChangePoints(),
+                draft.impactedModules(),
+                draft.risks(),
+                draft.questions(),
+                developerPool,
+                draft.workItems(),
+                draft.totalEstimatedEffort(),
+                draft.developmentEstimatedEffort(),
+                draft.testingEstimatedEffort(),
+                draft.plannedDueDate(),
+                draft.plannedTestingStartDate(),
+                draft.plannedTestingEndDate(),
+                draft.plannedReleaseDate(),
+                draft.zentaoSyncStatus(),
+                draft.zentaoSyncMessage(),
+                draft.generatedAt(),
+                draft.generator(),
+                draft.plannedDevelopmentStartDate()
         );
     }
 
@@ -776,6 +1096,55 @@ public class DevelopmentAnalysisService {
         } catch (JacksonException ex) {
             throw new IllegalStateException("结构化需求解析失败", ex);
         }
+    }
+
+    private List<IntakeClarificationItem> readClarificationItems(Long intakeId) {
+        IntakeClarificationAnalysisEntity entity = intakeClarificationAnalysisMapper.findLatestByIntakeId(intakeId);
+        if (entity == null || entity.getItemsJson() == null || entity.getItemsJson().isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(entity.getItemsJson(), new TypeReference<List<IntakeClarificationItem>>() {
+            });
+        } catch (JacksonException ex) {
+            throw new IllegalStateException("需求澄清项解析失败", ex);
+        }
+    }
+
+    private String appendClarificationContext(String knowledgeBaseContext, List<IntakeClarificationItem> clarificationItems) {
+        if (clarificationItems == null || clarificationItems.isEmpty()) {
+            return knowledgeBaseContext;
+        }
+        StringBuilder builder = new StringBuilder(valueOrEmpty(knowledgeBaseContext));
+        builder.append("\n\n需求澄清确认结果：\n");
+        for (IntakeClarificationItem item : clarificationItems) {
+            if (item == null) {
+                continue;
+            }
+            builder.append("- ")
+                    .append("QUESTION".equals(item.itemType()) ? "待确认项" : "风险项")
+                    .append("：")
+                    .append(defaultText(item.title()));
+            if (trimToNull(item.responseText()) != null) {
+                builder.append("；人工回复/确认：").append(item.responseText().trim());
+            } else {
+                builder.append("；尚未回复/确认");
+            }
+            if (trimToNull(item.evidence()) != null) {
+                builder.append("；依据：").append(item.evidence().trim());
+            }
+            builder.append('\n');
+        }
+        return builder.toString();
+    }
+
+    private String valueOrEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    private String defaultText(String value) {
+        String normalized = trimToNull(value);
+        return normalized == null ? "-" : normalized;
     }
 
     private DevelopmentAnalysisDraft readDraft(String json) {
@@ -854,6 +1223,62 @@ public class DevelopmentAnalysisService {
             }
         }
         return sanitized;
+    }
+
+    private void validateDraftSystemTags(DevelopmentAnalysisDraft draft,
+                                         String businessLine,
+                                         DevelopmentAnalysisDraft existingDraft) {
+        if (draft == null || draft.workItems() == null || draft.workItems().isEmpty()) {
+            return;
+        }
+        validateWorkItemSystemTags(draft.workItems(), businessLine, existingDraft);
+    }
+
+    private void validateWorkItemSystemTags(List<DevelopmentWorkItemDraft> workItems,
+                                            String businessLine,
+                                            DevelopmentAnalysisDraft existingDraft) {
+        if (workItems == null || workItems.isEmpty()) {
+            return;
+        }
+        String normalizedBusinessLine = trimToNull(businessLine);
+        if (normalizedBusinessLine == null) {
+            throw new IllegalArgumentException("请先选择业务线");
+        }
+        List<String> allowedSystems = involvedSystemMapper.findSelectableByBusinessLine(normalizedBusinessLine).stream()
+                .map(ProjectInvolvedSystemEntity::getSystemName)
+                .toList();
+        List<String> existingSystems = collectExistingSystemTags(existingDraft);
+        for (int i = 0; i < workItems.size(); i++) {
+            DevelopmentWorkItemDraft item = workItems.get(i);
+            List<String> systemTags = item == null ? List.of() : sanitizeList(item.systemTags());
+            if (systemTags.isEmpty()) {
+                throw new IllegalArgumentException("第 " + (i + 1) + " 个研发任务必须选择涉及系统");
+            }
+            for (String systemTag : systemTags) {
+                if (!allowedSystems.contains(systemTag) && !existingSystems.contains(systemTag)) {
+                    throw new IllegalArgumentException("涉及系统不在当前业务线或中台系统清单中：" + systemTag);
+                }
+            }
+        }
+    }
+
+    private List<String> collectExistingSystemTags(DevelopmentAnalysisDraft draft) {
+        if (draft == null || draft.workItems() == null || draft.workItems().isEmpty()) {
+            return List.of();
+        }
+        List<String> existing = new ArrayList<>();
+        for (DevelopmentWorkItemDraft item : draft.workItems()) {
+            if (item == null || item.systemTags() == null) {
+                continue;
+            }
+            for (String systemTag : item.systemTags()) {
+                String normalized = trimToNull(systemTag);
+                if (normalized != null && !existing.contains(normalized)) {
+                    existing.add(normalized);
+                }
+            }
+        }
+        return existing;
     }
 
     private List<String> mergeRequirementChangePoints(List<String> existing, List<DevelopmentWorkItemDraft> workItems) {
@@ -999,13 +1424,6 @@ public class DevelopmentAnalysisService {
         if (end.isBefore(start)) {
             throw new IllegalArgumentException("截止日期不能早于预计开始日期");
         }
-    }
-
-    private void validateDraftPlanDateRange(String plannedDueDate,
-                                            String plannedTestingStartDate,
-                                            String plannedTestingEndDate,
-                                            String plannedReleaseDate) {
-        validateOrderedDate(plannedTestingStartDate, plannedReleaseDate, "预估上线日期不能早于预估提测日期");
     }
 
     private void validateOrderedDate(String earlier, String later, String message) {

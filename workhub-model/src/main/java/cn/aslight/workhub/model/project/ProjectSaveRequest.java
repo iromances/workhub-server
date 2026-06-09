@@ -8,12 +8,6 @@ import jakarta.validation.constraints.NotBlank;
 public class ProjectSaveRequest {
 
     @NotBlank(message = "不能为空")
-    private String businessLineCode;
-
-    @NotBlank(message = "不能为空")
-    private String businessLineName;
-
-    @NotBlank(message = "不能为空")
     private String code;
 
     @NotBlank(message = "不能为空")
@@ -23,7 +17,7 @@ public class ProjectSaveRequest {
     private String type;
 
     @NotBlank(message = "不能为空")
-    private String group;
+    private String businessLine;
 
     @NotBlank(message = "不能为空")
     private String ownerUserName;
@@ -32,22 +26,6 @@ public class ProjectSaveRequest {
     private String status;
 
     private String description;
-
-    public String getBusinessLineCode() {
-        return businessLineCode;
-    }
-
-    public void setBusinessLineCode(String businessLineCode) {
-        this.businessLineCode = businessLineCode;
-    }
-
-    public String getBusinessLineName() {
-        return businessLineName;
-    }
-
-    public void setBusinessLineName(String businessLineName) {
-        this.businessLineName = businessLineName;
-    }
 
     public String getCode() {
         return code;
@@ -73,12 +51,12 @@ public class ProjectSaveRequest {
         this.type = type;
     }
 
-    public String getGroup() {
-        return group;
+    public String getBusinessLine() {
+        return businessLine;
     }
 
-    public void setGroup(String group) {
-        this.group = group;
+    public void setBusinessLine(String businessLine) {
+        this.businessLine = businessLine;
     }
 
     public String getOwnerUserName() {

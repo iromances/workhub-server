@@ -3,6 +3,7 @@ package cn.aslight.workhub.dao.payment;
 import cn.aslight.workhub.model.payment.PaymentMerchantDetailView;
 import cn.aslight.workhub.model.payment.PaymentMerchantEntity;
 import cn.aslight.workhub.model.payment.PaymentMerchantSummaryResponse;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
@@ -28,10 +29,11 @@ public interface PaymentMerchantMapper {
             "m.merchant_name AS merchantName,",
             "m.environment,",
             "m.app_id AS appId,",
+            "NULL AS purposeCodes,",
             "m.status",
             "FROM pay_merchant_account m",
             "JOIN pay_channel c ON c.id = m.channel_id",
-            "<if test='projectId != null or purposeCode != null'>",
+            "<if test='projectId != null'>",
             "LEFT JOIN pay_project_merchant_binding b ON b.merchant_id = m.id",
             "</if>",
             "<where>",
@@ -45,12 +47,10 @@ public interface PaymentMerchantMapper {
             "AND b.project_id = #{projectId}",
             "</if>",
             "<if test='purposeCode != null and purposeCode != \"\"'>",
-            "AND EXISTS (SELECT 1 FROM pay_project_merchant_binding_purpose bp WHERE bp.binding_id = b.id AND bp.purpose_code = #{purposeCode})",
+            "AND EXISTS (SELECT 1 FROM pay_merchant_purpose mp WHERE mp.merchant_id = m.id AND mp.purpose_code = #{purposeCode})",
             "</if>",
             "<if test='keyword != null and keyword != \"\"'>",
-            "AND (m.merchant_code LIKE CONCAT('%', #{keyword}, '%')",
-            "OR m.merchant_name LIKE CONCAT('%', #{keyword}, '%')",
-            "OR c.channel_name LIKE CONCAT('%', #{keyword}, '%'))",
+            "AND (m.merchant_code LIKE CONCAT('%', #{keyword}, '%') OR m.merchant_name LIKE CONCAT('%', #{keyword}, '%'))",
             "</if>",
             "</where>",
             "ORDER BY m.id DESC",
@@ -61,6 +61,26 @@ public interface PaymentMerchantMapper {
                                                  @Param("projectId") Long projectId,
                                                  @Param("purposeCode") String purposeCode,
                                                  @Param("keyword") String keyword);
+
+    @Select("""
+            SELECT purpose_code
+            FROM pay_merchant_purpose
+            WHERE merchant_id = #{merchantId}
+            ORDER BY id ASC
+            """)
+    List<String> findPurposeCodes(Long merchantId);
+
+    @Delete("""
+            DELETE FROM pay_merchant_purpose
+            WHERE merchant_id = #{merchantId}
+            """)
+    int deletePurposes(Long merchantId);
+
+    @Insert("""
+            INSERT INTO pay_merchant_purpose (merchant_id, purpose_code)
+            VALUES (#{merchantId}, #{purposeCode})
+            """)
+    int insertPurpose(@Param("merchantId") Long merchantId, @Param("purposeCode") String purposeCode);
 
     @Select("""
             SELECT m.id,

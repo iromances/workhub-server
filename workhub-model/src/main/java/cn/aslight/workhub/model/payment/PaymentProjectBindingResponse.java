@@ -8,9 +8,7 @@ import java.util.List;
  */
 public record PaymentProjectBindingResponse(Long id,
                                             Long projectId,
-                                            String businessLineCode,
-                                            String businessLineName,
-                                            String projectGroup,
+                                            String businessLine,
                                             String projectCode,
                                             String projectName,
                                             Long merchantId,

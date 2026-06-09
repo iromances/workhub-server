@@ -38,13 +38,13 @@ public class PaymentBindingController {
 
     @GetMapping("/bindings")
     public ApiResponse<PageResponse<PaymentProjectBindingResponse>> list(@RequestParam(required = false) Long projectId,
-                                                                         @RequestParam(required = false) String projectGroup,
+                                                                         @RequestParam(required = false) String businessLine,
                                                                          @RequestParam(required = false) Long merchantId,
                                                                          @RequestParam(required = false) String purposeCode,
                                                                          @RequestParam(required = false) String status,
                                                                          @RequestParam(defaultValue = "1") int page,
                                                                          @RequestParam(defaultValue = "10") int pageSize) {
-        List<PaymentProjectBindingResponse> items = paymentProjectBindingService.list(projectId, projectGroup, merchantId, purposeCode, status);
+        List<PaymentProjectBindingResponse> items = paymentProjectBindingService.list(projectId, businessLine, merchantId, purposeCode, status);
         return ApiResponse.success(page(items, page, pageSize));
     }
 

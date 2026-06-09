@@ -48,10 +48,8 @@ public final class EffortUnitNormalizer {
         if (structuredData == null) {
             return null;
         }
-        String estimatedEffort = normalizeEffort(structuredData.estimatedEffort());
         String actualEffort = normalizeEffort(structuredData.actualEffort());
-        if (Objects.equals(estimatedEffort, structuredData.estimatedEffort())
-                && Objects.equals(actualEffort, structuredData.actualEffort())) {
+        if (Objects.equals(actualEffort, structuredData.actualEffort())) {
             return structuredData;
         }
         return new IntakeStructuredData(
@@ -70,8 +68,10 @@ public final class EffortUnitNormalizer {
                 structuredData.department(),
                 structuredData.businessLine(),
                 structuredData.remark(),
-                estimatedEffort,
                 structuredData.plannedDueDate(),
+                structuredData.plannedDevelopmentStartDate(),
+                structuredData.plannedTestingStartDate(),
+                structuredData.plannedReleaseDate(),
                 structuredData.developmentStartedDate(),
                 actualEffort,
                 structuredData.testingStartedDate(),

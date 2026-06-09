@@ -4,11 +4,16 @@ import cn.aslight.workhub.dao.payment.PaymentMerchantMapper;
 import cn.aslight.workhub.dao.payment.PaymentSecretMapper;
 import cn.aslight.workhub.model.payment.PaymentMerchantEntity;
 import cn.aslight.workhub.model.payment.PaymentSecretEntity;
+import cn.aslight.workhub.model.payment.PaymentSecretFileUploadRequest;
 import cn.aslight.workhub.model.payment.PaymentSecretSaveRequest;
 import cn.aslight.workhub.model.payment.PaymentSecretSummaryResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -74,11 +79,43 @@ public class PaymentSecretService {
         return list(merchantId);
     }
 
+    @Transactional
+    public List<PaymentSecretSummaryResponse> createFromFile(Long merchantId,
+                                                             PaymentSecretFileUploadRequest request,
+                                                             MultipartFile file,
+                                                             String operatorUserName) {
+        PaymentSecretSaveRequest saveRequest = new PaymentSecretSaveRequest();
+        saveRequest.setSecretName(request.getSecretName());
+        saveRequest.setSecretType(request.getSecretType());
+        saveRequest.setSecretValue(readSecretFileValue(request.getFileValueType(), file));
+        saveRequest.setActivateNow(request.getActivateNow());
+        saveRequest.setValidFrom(request.getValidFrom());
+        saveRequest.setValidTo(request.getValidTo());
+        saveRequest.setRemark(request.getRemark());
+        return create(merchantId, saveRequest, operatorUserName);
+    }
+
     private PaymentMerchantEntity requireMerchant(Long merchantId) {
         PaymentMerchantEntity merchantEntity = paymentMerchantMapper.findEntityById(merchantId);
         if (merchantEntity == null) {
             throw new IllegalArgumentException("支付商户不存在");
         }
         return merchantEntity;
+    }
+
+    private String readSecretFileValue(String fileValueType, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("秘钥文件不能为空");
+        }
+        String normalizedType = PaymentCatalogs.normalizeSecretFileValueType(fileValueType);
+        try {
+            byte[] bytes = file.getBytes();
+            if ("TEXT".equals(normalizedType)) {
+                return PaymentCatalogs.requireText(new String(bytes, StandardCharsets.UTF_8), "secretValue");
+            }
+            return Base64.getEncoder().encodeToString(bytes);
+        } catch (IOException ex) {
+            throw new IllegalArgumentException("秘钥文件读取失败", ex);
+        }
     }
 }

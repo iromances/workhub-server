@@ -2,12 +2,19 @@ package cn.aslight.workhub.service.intake;
 
 import cn.aslight.workhub.model.attachment.AttachmentResponse;
 import cn.aslight.workhub.service.attachment.AttachmentService;
+import cn.aslight.workhub.model.intake.DevelopmentAnalysisDraft;
+import cn.aslight.workhub.model.intake.DevelopmentWorkItemDraft;
 import cn.aslight.workhub.model.intake.IntakeAIDraft;
 import cn.aslight.workhub.model.intake.IntakeCreateRequest;
 import cn.aslight.workhub.model.intake.IntakeDevelopmentBranchRequest;
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakeHistoryEntity;
 import cn.aslight.workhub.model.intake.IntakeHistoryResponse;
+import cn.aslight.workhub.model.intake.IntakePauseRequest;
+import cn.aslight.workhub.model.intake.IntakeRelatedWorkItemResponse;
+import cn.aslight.workhub.model.intake.IntakeTodoEntity;
+import cn.aslight.workhub.model.intake.IntakeTodoResponse;
+import cn.aslight.workhub.model.intake.IntakeWorkItemRelationEntity;
 import cn.aslight.workhub.model.intake.IntakeStageActionRequest;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSqlDraft;
@@ -17,11 +24,19 @@ import cn.aslight.workhub.model.intake.WecomCallbackRequest;
 import cn.aslight.workhub.model.intake.IntakeZentaoLinkRequest;
 import cn.aslight.workhub.dao.intake.IntakeHistoryMapper;
 import cn.aslight.workhub.dao.intake.IntakeMapper;
+import cn.aslight.workhub.dao.intake.IntakeTodoMapper;
+import cn.aslight.workhub.dao.intake.IntakeWorkItemRelationMapper;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -38,6 +53,8 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @Service
 public class IntakeService {
+
+    private static final Logger log = LoggerFactory.getLogger(IntakeService.class);
 
     private static final List<Map.Entry<String, String>> BRANCH_SUBJECT_TRANSLATIONS = List.of(
             Map.entry("里易二轮车", "liyi_ebike"),
@@ -80,39 +97,140 @@ public class IntakeService {
     private static final List<String> DEMAND_STATUS_SORT_ORDER = List.of(
             IntakeDemandStatusRules.RECORDED,
             IntakeDemandStatusRules.CLARIFYING,
+            IntakeDemandStatusRules.PENDING_PROCESSING,
+            IntakeDemandStatusRules.PROCESSING,
             IntakeDemandStatusRules.PENDING_EVALUATION,
             IntakeDemandStatusRules.PENDING_SCHEDULING,
             IntakeDemandStatusRules.PENDING_DESIGN,
             IntakeDemandStatusRules.IN_DEVELOPMENT,
             IntakeDemandStatusRules.TESTING,
-            IntakeDemandStatusRules.PENDING_RELEASE,
             IntakeDemandStatusRules.PENDING_ACCEPTANCE,
+            IntakeDemandStatusRules.PENDING_RELEASE,
+            IntakeDemandStatusRules.PAUSED,
             IntakeDemandStatusRules.COMPLETED,
             IntakeDemandStatusRules.TERMINATED
     );
 
     private final IntakeMapper intakeMapper;
     private final IntakeHistoryMapper intakeHistoryMapper;
+    private final IntakeWorkItemRelationMapper intakeWorkItemRelationMapper;
+    private final IntakeTodoMapper intakeTodoMapper;
     private final AttachmentService attachmentService;
     private final IntakeStructuredDataExtractor intakeStructuredDataExtractor;
     private final IntakeEnrichmentService intakeEnrichmentService;
     private final CodexCliSqlDraftGenerator codexCliSqlDraftGenerator;
+    private final IntakeClarificationAnalysisService intakeClarificationAnalysisService;
     private final ObjectMapper objectMapper;
 
+    @Autowired
     public IntakeService(IntakeMapper intakeMapper,
                          IntakeHistoryMapper intakeHistoryMapper,
+                         IntakeWorkItemRelationMapper intakeWorkItemRelationMapper,
+                         IntakeTodoMapper intakeTodoMapper,
                          AttachmentService attachmentService,
                          IntakeStructuredDataExtractor intakeStructuredDataExtractor,
                          IntakeEnrichmentService intakeEnrichmentService,
                          CodexCliSqlDraftGenerator codexCliSqlDraftGenerator,
+                         IntakeClarificationAnalysisService intakeClarificationAnalysisService,
                          ObjectMapper objectMapper) {
         this.intakeMapper = intakeMapper;
         this.intakeHistoryMapper = intakeHistoryMapper;
+        this.intakeWorkItemRelationMapper = intakeWorkItemRelationMapper;
+        this.intakeTodoMapper = intakeTodoMapper;
         this.attachmentService = attachmentService;
         this.intakeStructuredDataExtractor = intakeStructuredDataExtractor;
         this.intakeEnrichmentService = intakeEnrichmentService;
         this.codexCliSqlDraftGenerator = codexCliSqlDraftGenerator;
+        this.intakeClarificationAnalysisService = intakeClarificationAnalysisService;
         this.objectMapper = objectMapper;
+    }
+
+    IntakeService(IntakeMapper intakeMapper,
+                  IntakeHistoryMapper intakeHistoryMapper,
+                  AttachmentService attachmentService,
+                  IntakeStructuredDataExtractor intakeStructuredDataExtractor,
+                  IntakeEnrichmentService intakeEnrichmentService,
+                  CodexCliSqlDraftGenerator codexCliSqlDraftGenerator,
+                  ObjectMapper objectMapper) {
+        this(
+                intakeMapper,
+                intakeHistoryMapper,
+                new NoopIntakeWorkItemRelationMapper(),
+                new NoopIntakeTodoMapper(),
+                attachmentService,
+                intakeStructuredDataExtractor,
+                intakeEnrichmentService,
+                codexCliSqlDraftGenerator,
+                null,
+                objectMapper
+        );
+    }
+
+    IntakeService(IntakeMapper intakeMapper,
+                  IntakeHistoryMapper intakeHistoryMapper,
+                  IntakeWorkItemRelationMapper intakeWorkItemRelationMapper,
+                  AttachmentService attachmentService,
+                  IntakeStructuredDataExtractor intakeStructuredDataExtractor,
+                  IntakeEnrichmentService intakeEnrichmentService,
+                  CodexCliSqlDraftGenerator codexCliSqlDraftGenerator,
+                  IntakeClarificationAnalysisService intakeClarificationAnalysisService,
+                  ObjectMapper objectMapper) {
+        this(
+                intakeMapper,
+                intakeHistoryMapper,
+                intakeWorkItemRelationMapper,
+                new NoopIntakeTodoMapper(),
+                attachmentService,
+                intakeStructuredDataExtractor,
+                intakeEnrichmentService,
+                codexCliSqlDraftGenerator,
+                intakeClarificationAnalysisService,
+                objectMapper
+        );
+    }
+
+    private static class NoopIntakeWorkItemRelationMapper implements IntakeWorkItemRelationMapper {
+        @Override
+        public int upsert(IntakeWorkItemRelationEntity entity) {
+            return 0;
+        }
+
+        @Override
+        public List<IntakeRelatedWorkItemResponse> findByIntakeId(Long intakeId) {
+            return List.of();
+        }
+
+        @Override
+        public IntakeWorkItemRelationEntity findLatestByWorkItemId(Long workItemId) {
+            return null;
+        }
+    }
+
+    private static class NoopIntakeTodoMapper implements IntakeTodoMapper {
+        @Override
+        public List<IntakeTodoEntity> findByIntakeId(Long intakeId) {
+            return List.of();
+        }
+
+        @Override
+        public IntakeTodoEntity findById(Long id) {
+            return null;
+        }
+
+        @Override
+        public int insert(IntakeTodoEntity entity) {
+            return 0;
+        }
+
+        @Override
+        public int updateEditableFields(IntakeTodoEntity entity) {
+            return 0;
+        }
+
+        @Override
+        public int updateStatus(IntakeTodoEntity entity) {
+            return 0;
+        }
     }
 
     public List<IntakeSummaryResponse> list(String status,
@@ -135,7 +253,8 @@ public class IntakeService {
                 .filter(item -> matchesProposerName(item, normalizedProposerName))
                 .filter(item -> normalizedDemandStatus == null || normalizedDemandStatus.equals(item.demandStatus()))
                 .filter(item -> matchesReleasedDate(item, normalizedReleasedStartDate, normalizedReleasedEndDate))
-                .sorted(Comparator.comparingInt(this::demandStatusSortOrder)
+                .sorted(Comparator.comparingInt(this::enrichmentSortOrder)
+                        .thenComparingInt(this::demandStatusSortOrder)
                         .thenComparing(IntakeSummaryResponse::receivedAt, Comparator.nullsLast(Comparator.reverseOrder()))
                         .thenComparing(IntakeSummaryResponse::id, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
@@ -147,7 +266,62 @@ public class IntakeService {
 
     public IntakeDetailResponse detail(Long id, String operatorUserName, boolean recordView) {
         IntakeRecordEntity entity = requireExisting(id);
+        if (recordView) {
+            recordHistory(id, "VIEW", "查看需求详情", "查看需求详情。", operatorUserName);
+        }
         return toDetailResponse(entity);
+    }
+
+    @Transactional
+    public IntakeDetailResponse pauseDemand(Long id,
+                                            IntakePauseRequest request,
+                                            String operatorUserName) {
+        IntakeRecordEntity entity = requireExisting(id);
+        IntakeStructuredData structuredData = readStructuredData(entity.getStructuredDataJson());
+        String currentDemandStatus = IntakeDemandStatusRules.resolve(entity, structuredData);
+        if (currentDemandStatus == null) {
+            throw new IllegalArgumentException("需求尚未识别成功，暂不能暂停");
+        }
+        if (IntakeDemandStatusRules.PAUSED.equals(currentDemandStatus)) {
+            throw new IllegalArgumentException("需求已经处于暂停状态");
+        }
+        if (IntakeDemandStatusRules.isTerminalStatus(currentDemandStatus)) {
+            throw new IllegalArgumentException("终态需求不允许暂停");
+        }
+        String reason = requireValue(request == null ? null : request.getReason(), "暂停原因不能为空");
+        LocalDate pauseDate = request == null ? null : request.getPauseDate();
+        if (pauseDate == null) {
+            throw new IllegalArgumentException("暂停日期不能为空");
+        }
+
+        intakeMapper.pauseDemand(id, currentDemandStatus, reason, pauseDate);
+        recordHistory(id,
+                "UPDATE",
+                "暂停需求",
+                buildPauseDemandHistory(currentDemandStatus, reason, pauseDate),
+                operatorUserName);
+        return detail(id, null, false);
+    }
+
+    @Transactional
+    public IntakeDetailResponse resumeDemand(Long id, String operatorUserName) {
+        IntakeRecordEntity entity = requireExisting(id);
+        IntakeStructuredData structuredData = readStructuredData(entity.getStructuredDataJson());
+        String currentDemandStatus = IntakeDemandStatusRules.resolve(entity, structuredData);
+        if (!IntakeDemandStatusRules.PAUSED.equals(currentDemandStatus)) {
+            throw new IllegalArgumentException("仅暂停中的需求允许恢复");
+        }
+        String previousDemandStatus = trimToNull(entity.getPausePreviousDemandStatus());
+        if (previousDemandStatus == null) {
+            throw new IllegalArgumentException("暂停前状态缺失，不能恢复");
+        }
+        intakeMapper.restorePausedDemand(id, previousDemandStatus);
+        recordHistory(id,
+                "UPDATE",
+                "恢复需求",
+                buildResumeDemandHistory(previousDemandStatus),
+                operatorUserName);
+        return detail(id, null, false);
     }
 
     @Transactional
@@ -157,7 +331,7 @@ public class IntakeService {
     }
 
     /**
-     * 重新触发识别中或失败需求的结构化识别。
+     * 重新触发识别失败需求的结构化识别。
      *
      * <p>该动作只重新执行 intake enrichment，结果仍然只回写待整理记录的结构化字段和识别状态，
      * 不会绕过人工确认创建正式工作项。</p>
@@ -170,9 +344,8 @@ public class IntakeService {
     public IntakeDetailResponse retryEnrichment(Long id, String operatorUserName) {
         IntakeRecordEntity entity = requireExisting(id);
         String enrichmentStatus = IntakeDemandStatusRules.resolveEnrichmentStatus(entity);
-        if (!IntakeEnrichmentStatus.RUNNING.equals(enrichmentStatus)
-                && !IntakeEnrichmentStatus.FAILED.equals(enrichmentStatus)) {
-            throw new IllegalArgumentException("当前需求不是识别中或识别失败状态，不能重新识别");
+        if (!IntakeEnrichmentStatus.FAILED.equals(enrichmentStatus)) {
+            throw new IllegalArgumentException("当前需求不是识别失败状态，不能重新识别");
         }
         recordHistory(id,
                 "UPDATE",
@@ -294,7 +467,7 @@ public class IntakeService {
         intakeCreateRequest.setDevelopmentOwnerUserName(request.getDevelopmentOwnerUserName());
         intakeCreateRequest.setSourceChannel(defaultChannel(request.getSourceChannel(), "需求截图录入"));
         intakeCreateRequest.setReceivedAt(request.getReceivedAt());
-        intakeCreateRequest.setRawContent(buildUploadRawContent(request.getRawContent(), request.getProjectGroup(), screenshots, attachments));
+        intakeCreateRequest.setRawContent(buildUploadRawContent(request.getRawContent(), request.getBusinessLine(), screenshots, attachments));
 
         // 先落待整理主记录，确保即使后续附件处理或异步增强失败，原始需求也不会丢失。
         IntakeDetailResponse detail = createIntakeRecord("需求截图附件录入",
@@ -358,6 +531,7 @@ public class IntakeService {
         String action = IntakeDemandStatusRules.normalizeAction(request.getAction());
         String nextDemandStatus = IntakeDemandStatusRules.resolveNextStatus(
                 currentDemandStatus,
+                currentStructuredData == null ? null : currentStructuredData.requirementType(),
                 action
         );
         IntakeStructuredData nextStructuredData = applyStageAction(currentStructuredData, request, action);
@@ -379,6 +553,7 @@ public class IntakeService {
         if (historyDetail != null) {
             recordHistory(id, "UPDATE", resolveStageActionSummary(action), historyDetail, operatorUserName);
         }
+        schedulePostStageAutomation(id, action, nextStructuredData, request, operatorUserName);
         return detail(id, null, false);
     }
 
@@ -497,8 +672,13 @@ public class IntakeService {
                 entity.getDevelopmentOwnerUserName(),
                 entity.getReceivedAt(),
                 IntakeDemandStatusRules.resolve(entity, structuredData),
+                entity.getPausePreviousDemandStatus(),
+                entity.getPauseReason(),
+                entity.getPauseDate(),
                 entity.getRawContent(),
                 structuredData,
+                summarizeInvolvedSystems(entity.getLatestDevelopmentDraftJson()),
+                intakeWorkItemRelationMapper.findByIntakeId(entity.getId()),
                 histories,
                 entity.getIntakeStatus(),
                 IntakeDemandStatusRules.resolveEnrichmentStatus(entity),
@@ -506,7 +686,26 @@ public class IntakeService {
                 entity.getEnrichmentUpdatedAt(),
                 readDraft(entity.getAiDraftJson()),
                 attachments,
+                intakeTodoMapper.findByIntakeId(entity.getId()).stream()
+                        .map(this::toTodoResponse)
+                        .toList(),
                 entity.getConvertedWorkItemId(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
+        );
+    }
+
+    private IntakeTodoResponse toTodoResponse(IntakeTodoEntity entity) {
+        return new IntakeTodoResponse(
+                entity.getId(),
+                entity.getIntakeId(),
+                entity.getTitle(),
+                entity.getContent(),
+                entity.getTodoStatus(),
+                entity.getAssigneeUserName(),
+                entity.getPlannedAt(),
+                entity.getCompletedAt(),
+                entity.getProcessResult(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
@@ -516,6 +715,20 @@ public class IntakeService {
         IntakeStructuredData structuredData = tryReadStructuredData(entity.getStructuredDataJson());
         if (structuredData == null) {
             structuredData = intakeStructuredDataExtractor.extract(entity.getRawContent());
+        }
+        String totalEstimatedEffort = normalizeJsonText(entity.getTotalEstimatedEffort());
+        String developmentEstimatedEffort = normalizeJsonText(entity.getDevelopmentEstimatedEffort());
+        String testingEstimatedEffort = normalizeJsonText(entity.getTestingEstimatedEffort());
+        String legacyEstimatedEffort = legacyEstimatedEffort(entity.getStructuredDataJson());
+        boolean operationsRequirement = structuredData != null && isOperationsRequirement(structuredData.requirementType());
+        if (operationsRequirement) {
+            String operationsEffort = firstNonBlank(legacyEstimatedEffort, structuredData.actualEffort());
+            totalEstimatedEffort = firstNonBlank(totalEstimatedEffort, operationsEffort);
+            developmentEstimatedEffort = firstNonBlank(developmentEstimatedEffort, operationsEffort);
+        }
+        String testingStartedDate = structuredData == null ? null : structuredData.testingStartedDate();
+        if (operationsRequirement) {
+            testingStartedDate = firstNonBlank(testingStartedDate, structuredData.actualCompletedTime());
         }
         return new IntakeSummaryResponse(
                 entity.getId(),
@@ -529,23 +742,71 @@ public class IntakeService {
                 structuredData == null ? null : structuredData.approvalCode(),
                 structuredData == null ? null : structuredData.submittedTime(),
                 structuredData == null ? null : structuredData.requirementType(),
+                structuredData == null ? null : structuredData.developmentBranchName(),
+                structuredData == null ? null : structuredData.zentaoUrl(),
                 structuredData == null ? null : structuredData.requirementDigest(),
                 structuredData == null ? null : structuredData.department(),
                 structuredData == null ? null : structuredData.requirementName(),
                 structuredData == null ? null : structuredData.requirementSummary(),
                 structuredData == null ? null : structuredData.businessLine(),
                 structuredData == null ? null : structuredData.remark(),
-                structuredData == null ? null : structuredData.estimatedEffort(),
+                totalEstimatedEffort,
+                developmentEstimatedEffort,
+                testingEstimatedEffort,
                 structuredData == null ? null : structuredData.plannedDueDate(),
+                structuredData == null ? null : structuredData.plannedDevelopmentStartDate(),
+                structuredData == null ? null : structuredData.plannedTestingStartDate(),
+                structuredData == null ? null : structuredData.plannedReleaseDate(),
+                structuredData == null ? null : structuredData.developmentStartedDate(),
                 structuredData == null ? null : structuredData.actualEffort(),
+                testingStartedDate,
                 structuredData == null ? null : structuredData.actualCompletedTime(),
+                structuredData == null ? null : structuredData.scheduledAcceptanceDate(),
+                structuredData == null ? null : structuredData.actualTestingEffort(),
+                structuredData == null ? null : structuredData.actualTestingCompletedDate(),
                 structuredData == null ? null : structuredData.acceptanceTime(),
                 structuredData == null ? null : structuredData.releasedTime(),
                 structuredData == null ? null : structuredData.projectHint(),
+                summarizeInvolvedSystems(entity.getLatestDevelopmentDraftJson()),
                 IntakeDemandStatusRules.resolveEnrichmentStatus(entity),
                 entity.getIntakeStatus(),
                 entity.getConvertedWorkItemId()
         );
+    }
+
+    private List<String> summarizeInvolvedSystems(String draftJson) {
+        DevelopmentAnalysisDraft draft = readDevelopmentAnalysisDraft(draftJson);
+        return summarizeInvolvedSystems(draft);
+    }
+
+    private List<String> summarizeInvolvedSystems(DevelopmentAnalysisDraft draft) {
+        if (draft == null || draft.workItems() == null || draft.workItems().isEmpty()) {
+            return List.of();
+        }
+        List<String> systems = new ArrayList<>();
+        for (DevelopmentWorkItemDraft item : draft.workItems()) {
+            if (item == null || item.systemTags() == null) {
+                continue;
+            }
+            for (String tag : item.systemTags()) {
+                String normalized = trimToNull(tag);
+                if (normalized != null && !systems.contains(normalized)) {
+                    systems.add(normalized);
+                }
+            }
+        }
+        return systems;
+    }
+
+    private DevelopmentAnalysisDraft readDevelopmentAnalysisDraft(String draftJson) {
+        if (draftJson == null || draftJson.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(draftJson, DevelopmentAnalysisDraft.class);
+        } catch (JacksonException ex) {
+            throw new IllegalStateException("研发拆解草稿解析失败", ex);
+        }
     }
 
     private IntakeStructuredData tryReadStructuredData(String structuredDataJson) {
@@ -577,13 +838,13 @@ public class IntakeService {
     }
 
     private String buildUploadRawContent(String rawContent,
-                                         String projectGroup,
+                                         String businessLine,
                                          List<MultipartFile> screenshots,
                                          List<MultipartFile> attachments) {
         StringBuilder builder = new StringBuilder();
-        String normalizedProjectGroup = trimToNull(projectGroup);
-        if (normalizedProjectGroup != null) {
-            builder.append("项目组：").append(normalizedProjectGroup);
+        String normalizedBusinessLine = trimToNull(businessLine);
+        if (normalizedBusinessLine != null) {
+            builder.append("业务线：").append(normalizedBusinessLine);
         }
         String content = trimToNull(rawContent);
         if (content != null) {
@@ -669,8 +930,10 @@ public class IntakeService {
                 structuredData.department(),
                 structuredData.businessLine(),
                 structuredData.remark(),
-                structuredData.estimatedEffort(),
                 structuredData.plannedDueDate(),
+                structuredData.plannedDevelopmentStartDate(),
+                structuredData.plannedTestingStartDate(),
+                structuredData.plannedReleaseDate(),
                 structuredData.developmentStartedDate(),
                 structuredData.actualEffort(),
                 structuredData.testingStartedDate(),
@@ -768,8 +1031,10 @@ public class IntakeService {
                 structuredData.department(),
                 structuredData.businessLine(),
                 structuredData.remark(),
-                structuredData.estimatedEffort(),
                 structuredData.plannedDueDate(),
+                structuredData.plannedDevelopmentStartDate(),
+                structuredData.plannedTestingStartDate(),
+                structuredData.plannedReleaseDate(),
                 structuredData.developmentStartedDate(),
                 structuredData.actualEffort(),
                 structuredData.testingStartedDate(),
@@ -982,43 +1247,70 @@ public class IntakeService {
                     null,
                     null,
                     null,
-                    null,
                     List.of(),
                     List.of(),
                     null
             );
         }
-        String estimatedEffort = baseline.estimatedEffort();
         String plannedDueDate = baseline.plannedDueDate();
+        String plannedDevelopmentStartDate = baseline.plannedDevelopmentStartDate();
+        String plannedTestingStartDate = baseline.plannedTestingStartDate();
+        String plannedReleaseDate = baseline.plannedReleaseDate();
         String developmentStartedDate = baseline.developmentStartedDate();
         String actualEffort = baseline.actualEffort();
         String testingStartedDate = baseline.testingStartedDate();
         String actualCompletedTime = baseline.actualCompletedTime();
+        String scheduledAcceptanceDate = baseline.scheduledAcceptanceDate();
+        String actualTestingEffort = baseline.actualTestingEffort();
+        String actualTestingCompletedDate = baseline.actualTestingCompletedDate();
         String acceptanceTime = baseline.acceptanceTime();
         String releasedTime = baseline.releasedTime();
         String closedTime = baseline.closedTime();
         String closeReason = baseline.closeReason();
 
         switch (action) {
-            case IntakeDemandStatusRules.ACTION_START_CLARIFICATION, IntakeDemandStatusRules.ACTION_CONFIRM_CLARIFICATION,
-                    IntakeDemandStatusRules.ACTION_CONFIRM_SCHEDULING -> {
+            case IntakeDemandStatusRules.ACTION_START_CLARIFICATION,
+                    IntakeDemandStatusRules.ACTION_CONFIRM_RECORDED,
+                    IntakeDemandStatusRules.ACTION_CONFIRM_CLARIFICATION -> {
             }
-            case IntakeDemandStatusRules.ACTION_COMPLETE_EVALUATION -> {
-                estimatedEffort = requireEffortValue(request.getEstimatedEffort(), "预估工时不能为空");
-                plannedDueDate = requireValue(request.getPlannedDueDate(), "预估完成时间不能为空");
+            case IntakeDemandStatusRules.ACTION_START_PROCESSING -> {
+                if (isOperationsRequirement(baseline.requirementType())) {
+                    developmentStartedDate = resolveActionDate(request.getOccurredAt());
+                }
             }
+            case IntakeDemandStatusRules.ACTION_CONFIRM_SCHEDULING -> {
+                plannedDevelopmentStartDate = normalizeBusinessDate(request.getPlannedDevelopmentStartDate(), "预估开发日期");
+                plannedTestingStartDate = normalizeBusinessDate(request.getPlannedTestingStartDate(), "预估提测日期");
+                plannedReleaseDate = normalizeBusinessDate(request.getPlannedReleaseDate(), "预估上线日期");
+                validateOrderedBusinessDate(plannedDevelopmentStartDate, plannedTestingStartDate, "预估提测日期不能早于预估开发日期");
+                validateOrderedBusinessDate(plannedTestingStartDate, plannedReleaseDate, "预估上线日期不能早于预估提测日期");
+            }
+            case IntakeDemandStatusRules.ACTION_COMPLETE_EVALUATION ->
+                    throw new IllegalArgumentException("待评估需求必须通过研发任务评估确认推进到待排期");
             case IntakeDemandStatusRules.ACTION_CONFIRM_DESIGN ->
                     developmentStartedDate = resolveActionDate(request.getOccurredAt());
             case IntakeDemandStatusRules.ACTION_SUBMIT_TESTING -> {
-                actualEffort = requireEffortValue(request.getActualEffort(), "实际工时不能为空");
-                actualCompletedTime = firstNonBlank(request.getActualCompletedTime(), resolveActionDate(request.getOccurredAt()));
+                actualEffort = requireEffortValue(request.getActualEffort(), "实际开发工时不能为空");
+                actualCompletedTime = requireBusinessDate(request.getActualCompletedTime(), "实际开发完成日期不能为空", "实际开发完成日期");
+                testingStartedDate = requireBusinessDate(request.getOccurredAt(), "实际提测日期不能为空", "实际提测日期");
             }
-            case IntakeDemandStatusRules.ACTION_PASS_TESTING ->
-                    testingStartedDate = resolveActionDate(request.getOccurredAt());
+            case IntakeDemandStatusRules.ACTION_SUBMIT_ACCEPTANCE -> {
+                actualEffort = normalizeEffortValue(request.getActualEffort());
+                actualCompletedTime = firstNonBlank(request.getActualCompletedTime(), resolveActionDate(request.getOccurredAt()));
+                if (isOperationsRequirement(baseline.requirementType())) {
+                    testingStartedDate = firstNonBlank(testingStartedDate, actualCompletedTime);
+                    releasedTime = actualCompletedTime;
+                }
+            }
+            case IntakeDemandStatusRules.ACTION_PASS_TESTING -> {
+                scheduledAcceptanceDate = requireBusinessDate(request.getScheduledAcceptanceDate(), "预约验收日期不能为空", "预约验收日期");
+                actualTestingEffort = requireEffortValue(request.getActualTestingEffort(), "实际测试工时不能为空");
+                actualTestingCompletedDate = requireBusinessDate(request.getActualTestingCompletedDate(), "实际测试完成日期不能为空", "实际测试完成日期");
+            }
             case IntakeDemandStatusRules.ACTION_CONFIRM_RELEASE ->
-                    releasedTime = resolveActionDate(request.getOccurredAt());
+                    releasedTime = requireBusinessDate(request.getOccurredAt(), "上线日期不能为空", "上线日期");
             case IntakeDemandStatusRules.ACTION_CONFIRM_ACCEPTANCE ->
-                    acceptanceTime = firstNonBlank(request.getAcceptanceTime(), resolveActionDate(request.getOccurredAt()));
+                    acceptanceTime = requireBusinessDate(request.getAcceptanceTime(), "实际验收日期不能为空", "实际验收日期");
             case IntakeDemandStatusRules.ACTION_CLOSE_REQUIREMENT -> {
                 closeReason = requireValue(request.getCloseReason(), "关闭原因不能为空");
                 closedTime = resolveActionDate(request.getOccurredAt());
@@ -1042,12 +1334,17 @@ public class IntakeService {
                 baseline.department(),
                 baseline.businessLine(),
                 baseline.remark(),
-                estimatedEffort,
                 plannedDueDate,
+                plannedDevelopmentStartDate,
+                plannedTestingStartDate,
+                plannedReleaseDate,
                 developmentStartedDate,
                 actualEffort,
                 testingStartedDate,
                 actualCompletedTime,
+                scheduledAcceptanceDate,
+                actualTestingEffort,
+                actualTestingCompletedDate,
                 acceptanceTime,
                 releasedTime,
                 closedTime,
@@ -1081,8 +1378,10 @@ public class IntakeService {
                 baseline.department(),
                 baseline.businessLine(),
                 baseline.remark(),
-                baseline.estimatedEffort(),
                 baseline.plannedDueDate(),
+                baseline.plannedDevelopmentStartDate(),
+                baseline.plannedTestingStartDate(),
+                baseline.plannedReleaseDate(),
                 baseline.developmentStartedDate(),
                 baseline.actualEffort(),
                 baseline.testingStartedDate(),
@@ -1104,6 +1403,15 @@ public class IntakeService {
         if (baseline == null) {
             throw new IllegalArgumentException("当前需求尚未生成结构化信息，不能更新研发分支");
         }
+        String normalizedBranchName = normalizeDevelopmentBranchName(
+                request.getDevelopmentBranchName(),
+                baseline.requirementType(),
+                baseline.approvalCode(),
+                baseline.submittedTime(),
+                baseline.requirementName(),
+                baseline.requirementDigest(),
+                baseline.requirementSummary()
+        );
         return new IntakeStructuredData(
                 baseline.category(),
                 baseline.approvalTitle(),
@@ -1112,7 +1420,7 @@ public class IntakeService {
                 baseline.approvalCode(),
                 baseline.submittedTime(),
                 baseline.requirementType(),
-                trimToNull(request.getDevelopmentBranchName()),
+                normalizedBranchName,
                 baseline.zentaoUrl(),
                 baseline.requirementDigest(),
                 baseline.requirementName(),
@@ -1120,8 +1428,10 @@ public class IntakeService {
                 baseline.department(),
                 baseline.businessLine(),
                 baseline.remark(),
-                baseline.estimatedEffort(),
                 baseline.plannedDueDate(),
+                baseline.plannedDevelopmentStartDate(),
+                baseline.plannedTestingStartDate(),
+                baseline.plannedReleaseDate(),
                 baseline.developmentStartedDate(),
                 baseline.actualEffort(),
                 baseline.testingStartedDate(),
@@ -1158,8 +1468,10 @@ public class IntakeService {
                 normalized.department(),
                 normalized.businessLine(),
                 normalized.remark(),
-                normalized.estimatedEffort(),
                 normalized.plannedDueDate(),
+                normalized.plannedDevelopmentStartDate(),
+                normalized.plannedTestingStartDate(),
+                normalized.plannedReleaseDate(),
                 normalized.developmentStartedDate(),
                 normalized.actualEffort(),
                 normalized.testingStartedDate(),
@@ -1179,6 +1491,35 @@ public class IntakeService {
         return firstNonBlank(preferredDate, LocalDate.now().toString().replace('-', '/'));
     }
 
+    private String requireBusinessDate(String value, String blankMessage, String fieldName) {
+        String normalized = requireValue(value, blankMessage);
+        LocalDate parsed = parseBusinessDate(normalized);
+        if (parsed == null) {
+            throw new IllegalArgumentException(fieldName + "格式不正确，请使用 yyyy/MM/dd");
+        }
+        return parsed.toString().replace('-', '/');
+    }
+
+    private String normalizeBusinessDate(String value, String fieldName) {
+        String normalized = trimToNull(value);
+        if (normalized == null) {
+            return null;
+        }
+        LocalDate parsed = parseBusinessDate(normalized);
+        if (parsed == null) {
+            throw new IllegalArgumentException(fieldName + "格式不正确，请使用 yyyy/MM/dd");
+        }
+        return parsed.toString().replace('-', '/');
+    }
+
+    private void validateOrderedBusinessDate(String earlier, String later, String message) {
+        LocalDate earlierDate = parseBusinessDate(earlier);
+        LocalDate laterDate = parseBusinessDate(later);
+        if (earlierDate != null && laterDate != null && laterDate.isBefore(earlierDate)) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
     private String requireValue(String value, String errorMessage) {
         String normalized = trimToNull(value);
         if (normalized == null) {
@@ -1188,7 +1529,36 @@ public class IntakeService {
     }
 
     private String requireEffortValue(String value, String errorMessage) {
-        return EffortUnitNormalizer.normalizeEffort(requireValue(value, errorMessage));
+        String normalized = EffortUnitNormalizer.normalizeEffort(requireValue(value, errorMessage));
+        if (!isNormalizedEffort(normalized)) {
+            throw new IllegalArgumentException(resolveEffortFormatMessage(errorMessage));
+        }
+        return normalized;
+    }
+
+    private String normalizeEffortValue(String value) {
+        String rawValue = trimToNull(value);
+        if (rawValue == null) {
+            return null;
+        }
+        String normalized = EffortUnitNormalizer.normalizeEffort(rawValue);
+        if (!isNormalizedEffort(normalized)) {
+            throw new IllegalArgumentException("实际工时格式不正确，请输入如 8h 或 1d");
+        }
+        return normalized;
+    }
+
+    private boolean isNormalizedEffort(String value) {
+        return value != null && java.util.regex.Pattern
+                .compile("^([0-9]+(?:\\.[0-9]+)?)h$")
+                .matcher(value)
+                .matches();
+    }
+
+    private String resolveEffortFormatMessage(String blankMessage) {
+        return blankMessage.startsWith("实际")
+                ? "实际工时格式不正确，请输入如 8h 或 1d"
+                : "预估工时格式不正确，请输入如 8h 或 1d";
     }
 
     private String buildStageActionHistory(IntakeStructuredData before,
@@ -1198,14 +1568,19 @@ public class IntakeService {
                                            List<String> uploadedFileNames) {
         List<String> changes = new java.util.ArrayList<>();
         appendChange(changes, "需求状态", beforeDemandStatus, afterDemandStatus);
-        appendChange(changes, "预估工时", before == null ? null : before.estimatedEffort(), after == null ? null : after.estimatedEffort());
         appendChange(changes, "预估完成时间", before == null ? null : before.plannedDueDate(), after == null ? null : after.plannedDueDate());
+        appendChange(changes, "预估开发日期", before == null ? null : before.plannedDevelopmentStartDate(), after == null ? null : after.plannedDevelopmentStartDate());
+        appendChange(changes, "预估提测日期", before == null ? null : before.plannedTestingStartDate(), after == null ? null : after.plannedTestingStartDate());
+        appendChange(changes, "预估上线日期", before == null ? null : before.plannedReleaseDate(), after == null ? null : after.plannedReleaseDate());
         appendChange(changes, "研发开始日期", before == null ? null : before.developmentStartedDate(), after == null ? null : after.developmentStartedDate());
-        appendChange(changes, "实际工时", before == null ? null : before.actualEffort(), after == null ? null : after.actualEffort());
-        appendChange(changes, "测试开始日期", before == null ? null : before.testingStartedDate(), after == null ? null : after.testingStartedDate());
-        appendChange(changes, "实际完成时间", before == null ? null : before.actualCompletedTime(), after == null ? null : after.actualCompletedTime());
-        appendChange(changes, "验收时间", before == null ? null : before.acceptanceTime(), after == null ? null : after.acceptanceTime());
-        appendChange(changes, "上线时间", before == null ? null : before.releasedTime(), after == null ? null : after.releasedTime());
+        appendChange(changes, "实际开发工时", before == null ? null : before.actualEffort(), after == null ? null : after.actualEffort());
+        appendChange(changes, "实际提测日期", before == null ? null : before.testingStartedDate(), after == null ? null : after.testingStartedDate());
+        appendChange(changes, "实际开发完成日期", before == null ? null : before.actualCompletedTime(), after == null ? null : after.actualCompletedTime());
+        appendChange(changes, "预约验收日期", before == null ? null : before.scheduledAcceptanceDate(), after == null ? null : after.scheduledAcceptanceDate());
+        appendChange(changes, "实际测试工时", before == null ? null : before.actualTestingEffort(), after == null ? null : after.actualTestingEffort());
+        appendChange(changes, "实际测试完成日期", before == null ? null : before.actualTestingCompletedDate(), after == null ? null : after.actualTestingCompletedDate());
+        appendChange(changes, "实际验收日期", before == null ? null : before.acceptanceTime(), after == null ? null : after.acceptanceTime());
+        appendChange(changes, "实际上线日期", before == null ? null : before.releasedTime(), after == null ? null : after.releasedTime());
         appendChange(changes, "关闭时间", before == null ? null : before.closedTime(), after == null ? null : after.closedTime());
         appendChange(changes, "关闭原因", before == null ? null : before.closeReason(), after == null ? null : after.closeReason());
         appendUploadedFiles(changes, uploadedFileNames);
@@ -1213,6 +1588,70 @@ public class IntakeService {
             return null;
         }
         return String.join("\n", changes);
+    }
+
+    private String buildPauseDemandHistory(String beforeDemandStatus,
+                                           String pauseReason,
+                                           LocalDate pauseDate) {
+        List<String> changes = new java.util.ArrayList<>();
+        appendChange(changes, "需求状态", beforeDemandStatus, IntakeDemandStatusRules.PAUSED);
+        appendChange(changes, "暂停日期", null, pauseDate == null ? null : pauseDate.toString());
+        appendChange(changes, "暂停原因", null, pauseReason);
+        return String.join("\n", changes);
+    }
+
+    private String buildResumeDemandHistory(String previousDemandStatus) {
+        List<String> changes = new java.util.ArrayList<>();
+        appendChange(changes, "需求状态", IntakeDemandStatusRules.PAUSED, previousDemandStatus);
+        changes.add("暂停前状态：" + defaultHistoryValue(previousDemandStatus));
+        return String.join("\n", changes);
+    }
+
+    private boolean isOperationsRequirement(String requirementType) {
+        return "数据提取/运维".equals(trimToNull(requirementType));
+    }
+
+    private boolean isDevelopmentRequirement(IntakeStructuredData structuredData) {
+        return structuredData != null && "研发需求".equals(trimToNull(structuredData.requirementType()));
+    }
+
+    private void schedulePostStageAutomation(Long intakeId,
+                                             String action,
+                                             IntakeStructuredData nextStructuredData,
+                                             IntakeStageActionRequest request,
+                                             String operatorUserName) {
+        if (intakeClarificationAnalysisService == null || !isDevelopmentRequirement(nextStructuredData)) {
+            return;
+        }
+        if (IntakeDemandStatusRules.ACTION_START_CLARIFICATION.equals(action)) {
+            if (request != null && Boolean.FALSE.equals(request.getAiClarificationEnabled())) {
+                return;
+            }
+            runAfterCommit(() -> intakeClarificationAnalysisService.analyze(intakeId, operatorUserName));
+        } else if (IntakeDemandStatusRules.ACTION_CONFIRM_CLARIFICATION.equals(action)) {
+            runAfterCommit(() -> intakeClarificationAnalysisService.triggerDevelopmentAnalysis(intakeId, operatorUserName));
+        }
+    }
+
+    private void runAfterCommit(Runnable runnable) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            runAutomationSafely(runnable);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                runAutomationSafely(runnable);
+            }
+        });
+    }
+
+    private void runAutomationSafely(Runnable runnable) {
+        try {
+            runnable.run();
+        } catch (Exception ex) {
+            log.warn("Post stage automation failed", ex);
+        }
     }
 
     private String buildZentaoLinkHistory(IntakeStructuredData before, IntakeStructuredData after) {
@@ -1250,7 +1689,10 @@ public class IntakeService {
     private String resolveStageActionSummary(String action) {
         return switch (action) {
             case IntakeDemandStatusRules.ACTION_START_CLARIFICATION -> "开始澄清";
+            case IntakeDemandStatusRules.ACTION_CONFIRM_RECORDED -> "确认收录";
             case IntakeDemandStatusRules.ACTION_CONFIRM_CLARIFICATION -> "澄清完成";
+            case IntakeDemandStatusRules.ACTION_START_PROCESSING -> "开始处理";
+            case IntakeDemandStatusRules.ACTION_SUBMIT_ACCEPTANCE -> "提交验收";
             case IntakeDemandStatusRules.ACTION_COMPLETE_EVALUATION -> "评估完成";
             case IntakeDemandStatusRules.ACTION_CONFIRM_SCHEDULING -> "排期确认";
             case IntakeDemandStatusRules.ACTION_CONFIRM_DESIGN -> "设计完成";
@@ -1340,6 +1782,35 @@ public class IntakeService {
         return trimToNull(fallback);
     }
 
+    private String normalizeJsonText(String value) {
+        String normalized = trimToNull(value);
+        if (normalized == null || "null".equalsIgnoreCase(normalized)) {
+            return null;
+        }
+        return normalized;
+    }
+
+    private String legacyEstimatedEffort(String structuredDataJson) {
+        String value = structuredJsonText(structuredDataJson, "estimatedEffort");
+        if (value == null) {
+            return null;
+        }
+        return normalizeJsonText(EffortUnitNormalizer.normalizeEffort(value));
+    }
+
+    private String structuredJsonText(String structuredDataJson, String fieldName) {
+        String normalizedJson = trimToNull(structuredDataJson);
+        if (normalizedJson == null) {
+            return null;
+        }
+        try {
+            JsonNode node = objectMapper.readTree(normalizedJson);
+            return normalizeJsonText(node.path(fieldName).asText(null));
+        } catch (JacksonException ex) {
+            return null;
+        }
+    }
+
     private boolean matchesRequirementName(IntakeSummaryResponse item, String requirementName) {
         if (requirementName == null) {
             return true;
@@ -1355,6 +1826,11 @@ public class IntakeService {
         }
         int order = DEMAND_STATUS_SORT_ORDER.indexOf(demandStatus);
         return order >= 0 ? order : DEMAND_STATUS_SORT_ORDER.size();
+    }
+
+    private int enrichmentSortOrder(IntakeSummaryResponse item) {
+        String enrichmentStatus = item == null ? null : trimToNull(item.enrichmentStatus());
+        return IntakeEnrichmentStatus.RUNNING.equals(enrichmentStatus) ? 0 : 1;
     }
 
     private boolean matchesApprovalCode(IntakeSummaryResponse item, String approvalCode) {

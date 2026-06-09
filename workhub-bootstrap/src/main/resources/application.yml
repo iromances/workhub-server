@@ -13,9 +13,9 @@ spring:
     date-format: yyyy-MM-dd HH:mm:ss
   datasource:
     druid:
-      url: jdbc:mysql://10.10.116.133:3306/workhub?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
-      username: root
-      password: amp_pre_%^888
+      url: jdbc:mysql://aslight.cn:30364/workhub?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      username: workhub
+      password: 'workhub123!@#'
       driver-class-name: com.mysql.cj.jdbc.Driver
       initial-size: 0
       min-idle: 0
@@ -33,7 +33,19 @@ mybatis:
 
 logging:
   file:
-    name: logs/workhub-server.log
+    name: ${WORKHUB_LOG_FILE:logs/workhub-server.log}
+  structured:
+    format:
+      file: ecs
+    ecs:
+      service:
+        name: ${spring.application.name}
+        environment: ${WORKHUB_OBSERVABILITY_ENV:local}
+  logback:
+    rollingpolicy:
+      max-file-size: ${WORKHUB_LOG_MAX_FILE_SIZE:50MB}
+      max-history: ${WORKHUB_LOG_MAX_HISTORY:14}
+      total-size-cap: ${WORKHUB_LOG_TOTAL_SIZE_CAP:1GB}
   level:
     root: INFO
     cn.aslight.workhub: INFO
@@ -81,3 +93,5 @@ workhub:
   payment:
     master-key: workhub-payment-dev-master-key
     mask-visible-suffix: 4
+  mcp:
+    master-key: ${WORKHUB_MCP_MASTER_KEY:workhub-mcp-dev-master-key}

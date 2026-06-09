@@ -24,9 +24,7 @@ public interface PaymentProjectBindingMapper {
             "<script>",
             "SELECT b.id,",
             "b.project_id AS projectId,",
-            "p.business_line_code AS businessLineCode,",
-            "p.business_line_name AS businessLineName,",
-            "p.project_group AS projectGroup,",
+            "p.business_line AS businessLine,",
             "p.project_code AS projectCode,",
             "p.project_name AS projectName,",
             "b.merchant_id AS merchantId,",
@@ -53,8 +51,8 @@ public interface PaymentProjectBindingMapper {
             "<if test='projectId != null'>",
             "AND b.project_id = #{projectId}",
             "</if>",
-            "<if test='projectGroup != null and projectGroup != \"\"'>",
-            "AND p.project_group = #{projectGroup}",
+            "<if test='businessLine != null and businessLine != \"\"'>",
+            "AND p.business_line = #{businessLine}",
             "</if>",
             "<if test='merchantId != null'>",
             "AND b.merchant_id = #{merchantId}",
@@ -70,7 +68,7 @@ public interface PaymentProjectBindingMapper {
             "</script>"
     })
     List<PaymentProjectBindingResponse> findAll(@Param("projectId") Long projectId,
-                                                @Param("projectGroup") String projectGroup,
+                                                @Param("businessLine") String businessLine,
                                                 @Param("merchantId") Long merchantId,
                                                 @Param("purposeCode") String purposeCode,
                                                 @Param("status") String status);
@@ -78,9 +76,7 @@ public interface PaymentProjectBindingMapper {
     @Select("""
             SELECT b.id,
                    b.project_id AS projectId,
-                   p.business_line_code AS businessLineCode,
-                   p.business_line_name AS businessLineName,
-                   p.project_group AS projectGroup,
+                   p.business_line AS businessLine,
                    p.project_code AS projectCode,
                    p.project_name AS projectName,
                    b.merchant_id AS merchantId,
@@ -198,9 +194,7 @@ public interface PaymentProjectBindingMapper {
     @Select("""
             SELECT b.id,
                    b.project_id AS projectId,
-                   p.business_line_code AS businessLineCode,
-                   p.business_line_name AS businessLineName,
-                   p.project_group AS projectGroup,
+                   p.business_line AS businessLine,
                    p.project_code AS projectCode,
                    p.project_name AS projectName,
                    b.merchant_id AS merchantId,

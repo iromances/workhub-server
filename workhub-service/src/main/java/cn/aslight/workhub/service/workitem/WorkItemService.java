@@ -14,6 +14,7 @@ import cn.aslight.workhub.model.workitem.WorkItemEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -115,6 +116,20 @@ public class WorkItemService {
     public WorkItemDetailResponse updateStatus(Long id, String status, LocalDateTime finishedAt) {
         requireExisting(id);
         workItemMapper.updateStatus(id, status, finishedAt);
+        return detail(id);
+    }
+
+    @Transactional
+    public WorkItemDetailResponse pauseStatus(Long id, String previousStatus, String pauseReason, LocalDate pauseDate) {
+        requireExisting(id);
+        workItemMapper.pauseStatus(id, previousStatus, pauseReason, pauseDate);
+        return detail(id);
+    }
+
+    @Transactional
+    public WorkItemDetailResponse restorePausedStatus(Long id, String restoredStatus) {
+        requireExisting(id);
+        workItemMapper.restorePausedStatus(id, restoredStatus);
         return detail(id);
     }
 

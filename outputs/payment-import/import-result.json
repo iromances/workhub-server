@@ -1,0 +1,129 @@
+{
+  "stats": {
+    "channelsUpdated": 8,
+    "projectsUpdated": 29,
+    "merchantsCreated": 106,
+    "paramsSaved": 189,
+    "credentialsSaved": 158,
+    "bindingsCreated": 105
+  },
+  "skipped": [
+    {
+      "sheet": "资产平台",
+      "row": 6,
+      "reason": "缺少业务/项目/用途/商户之一",
+      "business": "资产平台",
+      "project": "XXT-PRJ-GM-B/给米医美通汇诚泰保理（担保公司）",
+      "purpose": "代付",
+      "merchant": ""
+    },
+    {
+      "sheet": "资产平台",
+      "row": 20,
+      "reason": "缺少业务/项目/用途/商户之一",
+      "business": "资产平台",
+      "project": "XXT-PRJ-WKX-A",
+      "purpose": "代付",
+      "merchant": "复用强云"
+    },
+    {
+      "sheet": "资产平台",
+      "row": 27,
+      "reason": "缺少业务/项目/用途/商户之一",
+      "business": "资产平台",
+      "project": "XXT-PRJ-GM-C/给米医美通汇诚泰保理（再保理）",
+      "purpose": "代收",
+      "merchant": "同上"
+    },
+    {
+      "sheet": "资产平台",
+      "row": 38,
+      "reason": "缺少业务/项目/用途/商户之一",
+      "business": "资产平台",
+      "project": "XXT-PRJ-FD-B/分蛋教育通汇诚泰保理",
+      "purpose": "代收",
+      "merchant": ""
+    },
+    {
+      "sheet": "设备",
+      "row": 3,
+      "reason": "项目无法解析",
+      "project": ""
+    },
+    {
+      "sheet": "设备",
+      "row": 4,
+      "reason": "缺少业务/项目/用途/商户之一",
+      "business": "设备",
+      "project": "融资租赁",
+      "purpose": "代收",
+      "merchant": ""
+    },
+    {
+      "sheet": "设备",
+      "row": 5,
+      "reason": "缺少业务/项目/用途/商户之一",
+      "business": "设备",
+      "project": "融资租赁",
+      "purpose": "代收",
+      "merchant": ""
+    },
+    {
+      "sheet": "设备",
+      "row": 10,
+      "reason": "缺少业务/项目/用途/商户之一",
+      "business": "设备",
+      "project": "租售业务（暂未上线）",
+      "purpose": "代付",
+      "merchant": ""
+    },
+    {
+      "sheet": "设备",
+      "row": 63,
+      "reason": "缺少业务/项目/用途/商户之一",
+      "business": "设备",
+      "project": "里易换电",
+      "purpose": "代收子商户",
+      "merchant": ""
+    },
+    {
+      "sheet": "设备",
+      "row": 64,
+      "reason": "缺少业务/项目/用途/商户之一",
+      "business": "设备",
+      "project": "里易换电",
+      "purpose": "代收子商户",
+      "merchant": ""
+    },
+    {
+      "sheet": "设备",
+      "row": 65,
+      "reason": "缺少业务/项目/用途/商户之一",
+      "business": "设备",
+      "project": "里易换电",
+      "purpose": "代收子商户",
+      "merchant": ""
+    },
+    {
+      "sheet": "设备",
+      "row": 66,
+      "reason": "缺少业务/项目/用途/商户之一",
+      "business": "设备",
+      "project": "里易换电",
+      "purpose": "代收子商户",
+      "merchant": ""
+    }
+  ],
+  "errors": [],
+  "errorCount": 0,
+  "parsed": {
+    "businessLines": 6,
+    "projects": 29,
+    "channels": 8,
+    "merchants": 106,
+    "bindings": 105,
+    "credentials": 186,
+    "params": 205,
+    "relations": 69
+  }
+}

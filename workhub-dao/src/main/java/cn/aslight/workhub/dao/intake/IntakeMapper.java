@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -30,10 +31,29 @@ public interface IntakeMapper {
             "ai_draft_json,",
             "intake_status,",
             "demand_status,",
+            "pause_previous_demand_status,",
+            "pause_reason,",
+            "pause_date,",
             "enrichment_status,",
             "enrichment_error_summary,",
             "enrichment_updated_at,",
             "converted_work_item_id,",
+            "(SELECT JSON_UNQUOTE(JSON_EXTRACT(da.draft_json, '$.totalEstimatedEffort'))",
+            " FROM pm_intake_development_analysis da",
+            " WHERE da.intake_id = pm_intake_record.id",
+            " ORDER BY da.id DESC LIMIT 1) AS total_estimated_effort,",
+            "(SELECT JSON_UNQUOTE(JSON_EXTRACT(da.draft_json, '$.developmentEstimatedEffort'))",
+            " FROM pm_intake_development_analysis da",
+            " WHERE da.intake_id = pm_intake_record.id",
+            " ORDER BY da.id DESC LIMIT 1) AS development_estimated_effort,",
+            "(SELECT JSON_UNQUOTE(JSON_EXTRACT(da.draft_json, '$.testingEstimatedEffort'))",
+            " FROM pm_intake_development_analysis da",
+            " WHERE da.intake_id = pm_intake_record.id",
+            " ORDER BY da.id DESC LIMIT 1) AS testing_estimated_effort,",
+            "(SELECT da.draft_json",
+            " FROM pm_intake_development_analysis da",
+            " WHERE da.intake_id = pm_intake_record.id",
+            " ORDER BY da.id DESC LIMIT 1) AS latest_development_draft_json,",
             "deleted,",
             "deleted_at,",
             "deleted_by,",
@@ -87,10 +107,17 @@ public interface IntakeMapper {
                    ai_draft_json,
                    intake_status,
                    demand_status,
+                   pause_previous_demand_status,
+                   pause_reason,
+                   pause_date,
                    enrichment_status,
                    enrichment_error_summary,
                    enrichment_updated_at,
                    converted_work_item_id,
+                   (SELECT da.draft_json
+                    FROM pm_intake_development_analysis da
+                    WHERE da.intake_id = pm_intake_record.id
+                    ORDER BY da.id DESC LIMIT 1) AS latest_development_draft_json,
                    deleted,
                    deleted_at,
                    deleted_by,
@@ -115,10 +142,17 @@ public interface IntakeMapper {
                    ai_draft_json,
                    intake_status,
                    demand_status,
+                   pause_previous_demand_status,
+                   pause_reason,
+                   pause_date,
                    enrichment_status,
                    enrichment_error_summary,
                    enrichment_updated_at,
                    converted_work_item_id,
+                   (SELECT da.draft_json
+                    FROM pm_intake_development_analysis da
+                    WHERE da.intake_id = pm_intake_record.id
+                    ORDER BY da.id DESC LIMIT 1) AS latest_development_draft_json,
                    deleted,
                    deleted_at,
                    deleted_by,
@@ -251,6 +285,32 @@ public interface IntakeMapper {
                                @Param("structuredDataJson") String structuredDataJson,
                                @Param("developmentOwnerUserName") String developmentOwnerUserName,
                                @Param("demandStatus") String demandStatus);
+
+    @Update("""
+            UPDATE pm_intake_record
+            SET demand_status = '已暂停',
+                pause_previous_demand_status = #{previousDemandStatus},
+                pause_reason = #{pauseReason},
+                pause_date = #{pauseDate},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+            """)
+    int pauseDemand(@Param("id") Long id,
+                    @Param("previousDemandStatus") String previousDemandStatus,
+                    @Param("pauseReason") String pauseReason,
+                    @Param("pauseDate") LocalDate pauseDate);
+
+    @Update("""
+            UPDATE pm_intake_record
+            SET demand_status = #{restoredDemandStatus},
+                pause_previous_demand_status = NULL,
+                pause_reason = NULL,
+                pause_date = NULL,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+            """)
+    int restorePausedDemand(@Param("id") Long id,
+                            @Param("restoredDemandStatus") String restoredDemandStatus);
 
     @Update("""
             UPDATE pm_intake_record

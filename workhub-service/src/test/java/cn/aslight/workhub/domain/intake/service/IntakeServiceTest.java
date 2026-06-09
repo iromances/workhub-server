@@ -2,8 +2,10 @@ package cn.aslight.workhub.service.intake;
 
 import cn.aslight.workhub.dao.intake.IntakeMapper;
 import cn.aslight.workhub.dao.intake.IntakeHistoryMapper;
+import cn.aslight.workhub.dao.intake.IntakeWorkItemRelationMapper;
 import cn.aslight.workhub.model.intake.IntakeDevelopmentBranchRequest;
 import cn.aslight.workhub.model.intake.IntakeHistoryEntity;
+import cn.aslight.workhub.model.intake.IntakePauseRequest;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeSqlDraft;
 import cn.aslight.workhub.model.intake.IntakeStageActionRequest;
@@ -15,11 +17,13 @@ import org.mockito.ArgumentCaptor;
 import tools.jackson.databind.ObjectMapper;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -31,6 +35,80 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 class IntakeServiceTest {
+
+    @Test
+    void pauseDemand_shouldRecordPreviousStatusReasonPauseDateAndHistory() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                mock(AttachmentService.class),
+                new IntakeStructuredDataExtractor(),
+                mock(IntakeEnrichmentService.class),
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity entity = new IntakeRecordEntity();
+        entity.setId(901L);
+        entity.setDemandStatus("测试中");
+        entity.setEnrichmentStatus("SUCCEEDED");
+        entity.setStructuredDataJson("""
+                {"requirementType":"研发需求","requirementName":"暂停入口测试","fields":[],"attachmentSummaries":[]}
+                """);
+        when(intakeMapper.findById(901L)).thenReturn(entity);
+
+        IntakePauseRequest request = new IntakePauseRequest();
+        request.setReason("等待外部联调环境");
+        request.setPauseDate(LocalDate.of(2026, 6, 4));
+
+        service.pauseDemand(901L, request, "admin");
+
+        verify(intakeMapper).pauseDemand(901L, "测试中", "等待外部联调环境", LocalDate.of(2026, 6, 4));
+        ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
+        verify(intakeHistoryMapper).insert(historyCaptor.capture());
+        assertEquals("暂停需求", historyCaptor.getValue().getActionSummary());
+        assertTrue(historyCaptor.getValue().getDetailText().contains("需求状态：测试中 -> 已暂停"));
+        assertTrue(historyCaptor.getValue().getDetailText().contains("暂停日期：- -> 2026-06-04"));
+        assertTrue(historyCaptor.getValue().getDetailText().contains("暂停原因：- -> 等待外部联调环境"));
+    }
+
+    @Test
+    void resumeDemand_shouldRestorePreviousStatusAndRecordHistory() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                mock(AttachmentService.class),
+                new IntakeStructuredDataExtractor(),
+                mock(IntakeEnrichmentService.class),
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity entity = new IntakeRecordEntity();
+        entity.setId(902L);
+        entity.setDemandStatus("已暂停");
+        entity.setPausePreviousDemandStatus("待验收");
+        entity.setPauseReason("等待验收排期");
+        entity.setPauseDate(LocalDate.of(2026, 6, 3));
+        entity.setEnrichmentStatus("SUCCEEDED");
+        entity.setStructuredDataJson("""
+                {"requirementType":"研发需求","requirementName":"恢复入口测试","fields":[],"attachmentSummaries":[]}
+                """);
+        when(intakeMapper.findById(902L)).thenReturn(entity);
+
+        service.resumeDemand(902L, "admin");
+
+        verify(intakeMapper).restorePausedDemand(902L, "待验收");
+        ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
+        verify(intakeHistoryMapper).insert(historyCaptor.capture());
+        assertEquals("恢复需求", historyCaptor.getValue().getActionSummary());
+        assertTrue(historyCaptor.getValue().getDetailText().contains("需求状态：已暂停 -> 待验收"));
+        assertTrue(historyCaptor.getValue().getDetailText().contains("暂停前状态：待验收"));
+    }
 
     @Test
     void list_shouldFlattenStructuredDataFromJsonInsteadOfDatabaseJsonFunctions() {
@@ -57,7 +135,7 @@ class IntakeServiceTest {
         populated.setSenderName("zhoutuo");
         populated.setReceivedAt(LocalDateTime.of(2026, 3, 31, 10, 0));
         populated.setStructuredDataJson("""
-                {"category":"需求审批","approvalTitle":"周拓的系统开发2.0","proposerName":"周拓","approvalCode":"202603250009","submittedTime":"2026/3/25 16:17","requirementType":"研发需求","requirementDigest":"沃橙绑卡至嘉泰保理","requirementName":"沃橙项目增加客户绑卡至嘉泰保理的需求0325","requirementSummary":"为避免单一支付通道暂停风险，需要补充嘉泰保理易宝商户号绑卡方案。","department":"供应链业务部","businessLine":"供应链科技","remark":"涉及沃诚项目额度释放，最高优先级。","estimatedEffort":"2d","plannedDueDate":"2026/3/31","actualEffort":"无","actualCompletedTime":"无","acceptanceTime":"无","projectHint":"供应链科技","fields":[],"attachmentSummaries":[]}
+                {"category":"需求审批","approvalTitle":"周拓的系统开发2.0","proposerName":"周拓","approvalCode":"202603250009","submittedTime":"2026/3/25 16:17","requirementType":"研发需求","requirementDigest":"沃橙绑卡至嘉泰保理","requirementName":"沃橙项目增加客户绑卡至嘉泰保理的需求0325","requirementSummary":"为避免单一支付通道暂停风险，需要补充嘉泰保理易宝商户号绑卡方案。","department":"供应链业务部","businessLine":"供应链科技","remark":"涉及沃诚项目额度释放，最高优先级。","estimatedEffort":"2d","plannedDueDate":"2026/3/31","plannedDevelopmentStartDate":"2026/04/01","actualEffort":"无","actualCompletedTime":"无","acceptanceTime":"无","projectHint":"供应链科技","fields":[],"attachmentSummaries":[]}
                 """);
         populated.setDemandStatus("已收录");
         populated.setEnrichmentStatus("SUCCEEDED");
@@ -94,7 +172,7 @@ class IntakeServiceTest {
         assertEquals("2026/3/25 16:17", result.get(0).submittedTime());
         assertEquals("研发需求", result.get(0).requirementType());
         assertEquals("沃橙绑卡至嘉泰保理", result.get(0).requirementDigest());
-        assertEquals("16h", result.get(0).estimatedEffort());
+        assertEquals("2026/04/01", result.get(0).plannedDevelopmentStartDate());
         assertEquals("已收录", result.get(0).demandStatus());
         assertEquals("SUCCEEDED", result.get(0).enrichmentStatus());
 
@@ -103,9 +181,54 @@ class IntakeServiceTest {
         assertEquals("张三", result.get(1).proposerName());
         assertEquals("2026/3/31 11:00", result.get(1).submittedTime());
         assertEquals("研发需求", result.get(1).requirementType());
-        assertEquals("8h", result.get(1).estimatedEffort());
         assertNull(result.get(1).demandStatus());
         assertEquals("PENDING", result.get(1).enrichmentStatus());
+    }
+
+    @Test
+    void list_shouldFallbackOperationsEffortAndDatesFromStructuredData() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeStructuredDataExtractor intakeStructuredDataExtractor = new IntakeStructuredDataExtractor();
+        IntakeEnrichmentService intakeEnrichmentService = mock(IntakeEnrichmentService.class);
+
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                intakeStructuredDataExtractor,
+                intakeEnrichmentService,
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity operations = new IntakeRecordEntity();
+        operations.setId(103L);
+        operations.setSourceType("需求截图附件录入");
+        operations.setSourceChannel("需求录入");
+        operations.setSenderName("ops-user");
+        operations.setReceivedAt(LocalDateTime.of(2026, 4, 2, 10, 0));
+        operations.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"数据修复申请","proposerName":"运维同学","approvalCode":"OPS-004","submittedTime":"2026/4/2 10:00","requirementType":"数据提取/运维","requirementDigest":"批量修复历史还款数据","requirementName":"批量修复历史还款数据","requirementSummary":"描述","department":"运营支持部","businessLine":"资产业务","remark":"紧急处理","estimatedEffort":"4h","plannedDueDate":"2026/04/02","developmentStartedDate":"2026/04/02","actualEffort":"5h","testingStartedDate":null,"actualCompletedTime":"2026/04/03","acceptanceTime":"2026/04/03","releasedTime":"2026/04/03","projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
+                """);
+        operations.setDemandStatus("已完成");
+        operations.setEnrichmentStatus("SUCCEEDED");
+        operations.setIntakeStatus("待整理");
+
+        when(intakeMapper.findAll(eq(null))).thenReturn(List.of(operations));
+
+        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null);
+
+        assertEquals(1, result.size());
+        IntakeSummaryResponse item = result.getFirst();
+        assertEquals("数据提取/运维", item.requirementType());
+        assertEquals("4h", item.totalEstimatedEffort());
+        assertEquals("4h", item.developmentEstimatedEffort());
+        assertNull(item.testingEstimatedEffort());
+        assertEquals("2026/04/02", item.developmentStartedDate());
+        assertEquals("5h", item.actualEffort());
+        assertEquals("2026/04/03", item.testingStartedDate());
     }
 
     @Test
@@ -362,7 +485,40 @@ class IntakeServiceTest {
     }
 
     @Test
-    void advanceStage_shouldEvaluateEffortAndMoveToEvaluated() {
+    void retryEnrichment_shouldRejectRunningIntake() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeEnrichmentService intakeEnrichmentService = mock(IntakeEnrichmentService.class);
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                new IntakeStructuredDataExtractor(),
+                intakeEnrichmentService,
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity running = new IntakeRecordEntity();
+        running.setId(502L);
+        running.setSourceType("需求截图附件录入");
+        running.setSourceChannel("需求录入");
+        running.setSenderName("admin");
+        running.setReceivedAt(LocalDateTime.of(2026, 5, 5, 10, 0));
+        running.setEnrichmentStatus("RUNNING");
+        running.setIntakeStatus("待整理");
+        when(intakeMapper.findById(502L)).thenReturn(running);
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> service.retryEnrichment(502L, "admin"));
+
+        assertEquals("当前需求不是识别失败状态，不能重新识别", error.getMessage());
+        verify(intakeHistoryMapper, never()).insert(any());
+        verify(intakeEnrichmentService, never()).scheduleUploadedEnrichment(any(), any(), any());
+    }
+
+    @Test
+    void advanceStage_shouldRejectManualEvaluationStageAction() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
         AttachmentService attachmentService = mock(AttachmentService.class);
@@ -388,32 +544,198 @@ class IntakeServiceTest {
                 """);
         before.setDemandStatus("待评估");
 
-        IntakeRecordEntity after = new IntakeRecordEntity();
-        after.setId(201L);
-        after.setSenderName("zhoutuo");
-        after.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
-        after.setStructuredDataJson("""
-                {"category":"需求审批","approvalTitle":"周拓的系统开发2.0","proposerName":"周拓","approvalCode":"202603250009","submittedTime":"2026/3/25 16:17","requirementType":"研发需求","requirementDigest":"沃橙绑卡","requirementName":"沃橙绑卡需求","requirementSummary":"描述","department":"供应链业务部","businessLine":"供应链科技","remark":"高优","estimatedEffort":"2d","plannedDueDate":"2026/04/05","developmentStartedDate":null,"actualEffort":null,"testingStartedDate":null,"actualCompletedTime":null,"acceptanceTime":null,"releasedTime":null,"projectHint":"供应链科技","fields":[],"attachmentSummaries":[]}
-                """);
-        after.setDemandStatus("待排期");
-
-        when(intakeMapper.findById(201L)).thenReturn(before, after);
-        when(attachmentService.listIntakeAttachments(201L)).thenReturn(List.of());
-        when(intakeHistoryMapper.findRecentByIntakeId(201L, 20)).thenReturn(List.of());
+        when(intakeMapper.findById(201L)).thenReturn(before);
 
         IntakeStageActionRequest request = new IntakeStageActionRequest();
         request.setAction("COMPLETE_EVALUATION");
-        request.setEstimatedEffort("2d");
         request.setPlannedDueDate("2026/04/05");
 
-        service.advanceStage(201L, request, "admin");
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> service.advanceStage(201L, request, "admin"));
+
+        assertEquals("待评估需求必须通过研发任务评估确认推进到待排期", error.getMessage());
+        verify(intakeMapper, never()).updateManagementFields(any(), any(), any(), any());
+        verify(intakeHistoryMapper, never()).insert(any());
+    }
+
+    @Test
+    void advanceStage_shouldRejectInvalidEffortText() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                new IntakeStructuredDataExtractor(),
+                mock(IntakeEnrichmentService.class),
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity before = new IntakeRecordEntity();
+        before.setId(204L);
+        before.setSenderName("ops-user");
+        before.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        before.setStructuredDataJson("""
+                {"category":"需求审批","approvalCode":"REQ-204","requirementType":"研发需求","requirementName":"研发需求","estimatedEffort":null,"plannedDueDate":null,"fields":[],"attachmentSummaries":[]}
+                """);
+        before.setDemandStatus("待评估");
+        when(intakeMapper.findById(204L)).thenReturn(before);
+
+        IntakeStageActionRequest request = new IntakeStageActionRequest();
+        request.setAction("COMPLETE_EVALUATION");
+        request.setPlannedDueDate("2026/04/05");
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> service.advanceStage(204L, request, "admin"));
+
+        assertEquals("待评估需求必须通过研发任务评估确认推进到待排期", error.getMessage());
+        verify(intakeMapper, never()).updateManagementFields(any(), any(), any(), any());
+        verify(intakeHistoryMapper, never()).insert(any());
+    }
+
+    @Test
+    void advanceStage_shouldMoveOperationsDemandFromRecordedToPendingProcessing() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                new IntakeStructuredDataExtractor(),
+                mock(IntakeEnrichmentService.class),
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity before = new IntakeRecordEntity();
+        before.setId(205L);
+        before.setSenderName("ops-user");
+        before.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        before.setStructuredDataJson("""
+                {"category":"需求审批","approvalCode":"REQ-205","requirementType":"数据提取/运维","requirementName":"导数需求","fields":[],"attachmentSummaries":[]}
+                """);
+        before.setDemandStatus("已收录");
+
+        IntakeRecordEntity after = new IntakeRecordEntity();
+        after.setId(205L);
+        after.setSenderName("ops-user");
+        after.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        after.setStructuredDataJson(before.getStructuredDataJson());
+        after.setDemandStatus("待处理");
+
+        when(intakeMapper.findById(205L)).thenReturn(before, after);
+        when(attachmentService.listIntakeAttachments(205L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(205L, 20)).thenReturn(List.of());
+
+        IntakeStageActionRequest request = new IntakeStageActionRequest();
+        request.setAction("CONFIRM_RECORDED");
+
+        service.advanceStage(205L, request, "admin");
+
+        verify(intakeMapper).updateManagementFields(eq(205L), any(), any(), eq("待处理"));
+        ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
+        verify(intakeHistoryMapper).insert(historyCaptor.capture());
+        assertEquals("确认收录", historyCaptor.getValue().getActionSummary());
+    }
+
+    @Test
+    void advanceStage_shouldSkipAiClarificationWhenDisabled() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeClarificationAnalysisService clarificationAnalysisService = mock(IntakeClarificationAnalysisService.class);
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                mock(IntakeWorkItemRelationMapper.class),
+                attachmentService,
+                new IntakeStructuredDataExtractor(),
+                mock(IntakeEnrichmentService.class),
+                mock(CodexCliSqlDraftGenerator.class),
+                clarificationAnalysisService,
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity before = new IntakeRecordEntity();
+        before.setId(207L);
+        before.setSenderName("product-user");
+        before.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        before.setStructuredDataJson("""
+                {"category":"需求审批","approvalCode":"REQ-207","requirementType":"研发需求","requirementName":"研发澄清需求","fields":[],"attachmentSummaries":[]}
+                """);
+        before.setDemandStatus("已收录");
+
+        IntakeRecordEntity after = new IntakeRecordEntity();
+        after.setId(207L);
+        after.setSenderName("product-user");
+        after.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        after.setStructuredDataJson(before.getStructuredDataJson());
+        after.setDemandStatus("待澄清");
+
+        when(intakeMapper.findById(207L)).thenReturn(before, after);
+        when(attachmentService.listIntakeAttachments(207L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(207L, 20)).thenReturn(List.of());
+
+        IntakeStageActionRequest request = new IntakeStageActionRequest();
+        request.setAction("START_CLARIFICATION");
+        request.setAiClarificationEnabled(false);
+
+        service.advanceStage(207L, request, "admin");
+
+        verify(intakeMapper).updateManagementFields(eq(207L), any(), any(), eq("待澄清"));
+        verify(clarificationAnalysisService, never()).analyze(eq(207L), eq("admin"));
+    }
+
+    @Test
+    void advanceStage_shouldMoveOperationsDemandFromProcessingToPendingAcceptance() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                new IntakeStructuredDataExtractor(),
+                mock(IntakeEnrichmentService.class),
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity before = new IntakeRecordEntity();
+        before.setId(206L);
+        before.setSenderName("ops-user");
+        before.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        before.setStructuredDataJson("""
+                {"category":"需求审批","approvalCode":"REQ-206","requirementType":"数据提取/运维","requirementName":"导数需求","actualEffort":null,"actualCompletedTime":null,"fields":[],"attachmentSummaries":[]}
+                """);
+        before.setDemandStatus("处理中");
+
+        IntakeRecordEntity after = new IntakeRecordEntity();
+        after.setId(206L);
+        after.setSenderName("ops-user");
+        after.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        after.setStructuredDataJson("""
+                {"category":"需求审批","approvalCode":"REQ-206","requirementType":"数据提取/运维","requirementName":"导数需求","actualEffort":"3h","actualCompletedTime":"2026/04/03","releasedTime":"2026/04/03","fields":[],"attachmentSummaries":[]}
+                """);
+        after.setDemandStatus("待验收");
+
+        when(intakeMapper.findById(206L)).thenReturn(before, after);
+        when(attachmentService.listIntakeAttachments(206L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(206L, 20)).thenReturn(List.of());
+
+        IntakeStageActionRequest request = new IntakeStageActionRequest();
+        request.setAction("SUBMIT_ACCEPTANCE");
+        request.setActualEffort("3h");
+        request.setActualCompletedTime("2026/04/03");
+
+        service.advanceStage(206L, request, "admin");
 
         ArgumentCaptor<String> structuredJsonCaptor = ArgumentCaptor.forClass(String.class);
-        verify(intakeMapper).updateManagementFields(eq(201L), structuredJsonCaptor.capture(), any(), eq("待排期"));
-        assertEquals(true, structuredJsonCaptor.getValue().contains("\"estimatedEffort\":\"16h\""));
-        assertEquals(true, structuredJsonCaptor.getValue().contains("\"plannedDueDate\":\"2026/04/05\""));
-        verify(intakeHistoryMapper).insert(any());
-        verify(intakeHistoryMapper).findRecentByIntakeId(201L, 20);
+        verify(intakeMapper).updateManagementFields(eq(206L), structuredJsonCaptor.capture(), any(), eq("待验收"));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"actualEffort\":\"3h\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"actualCompletedTime\":\"2026/04/03\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"releasedTime\":\"2026/04/03\""));
     }
 
     @Test
@@ -472,7 +794,140 @@ class IntakeServiceTest {
     }
 
     @Test
-    void advanceStage_shouldConfirmAcceptanceAndMarkCompleted() {
+    void advanceStage_shouldSaveScheduleDatesWhenConfirmScheduling() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                new IntakeStructuredDataExtractor(),
+                mock(IntakeEnrichmentService.class),
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity before = new IntakeRecordEntity();
+        before.setId(212L);
+        before.setSenderName("product-user");
+        before.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        before.setStructuredDataJson("""
+                {"category":"需求审批","approvalCode":"REQ-212","requirementType":"研发需求","requirementName":"排期需求","plannedDevelopmentStartDate":null,"plannedTestingStartDate":null,"plannedReleaseDate":null,"fields":[],"attachmentSummaries":[]}
+                """);
+        before.setDemandStatus("待排期");
+
+        IntakeRecordEntity after = new IntakeRecordEntity();
+        after.setId(212L);
+        after.setSenderName("product-user");
+        after.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        after.setStructuredDataJson("""
+                {"category":"需求审批","approvalCode":"REQ-212","requirementType":"研发需求","requirementName":"排期需求","plannedDevelopmentStartDate":"2026/04/08","plannedTestingStartDate":"2026/04/09","plannedReleaseDate":"2026/04/12","fields":[],"attachmentSummaries":[]}
+                """);
+        after.setDemandStatus("待设计");
+
+        when(intakeMapper.findById(212L)).thenReturn(before, after);
+        when(attachmentService.listIntakeAttachments(212L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(212L, 20)).thenReturn(List.of());
+
+        IntakeStageActionRequest request = new IntakeStageActionRequest();
+        request.setAction("CONFIRM_SCHEDULING");
+        request.setPlannedDevelopmentStartDate("2026-04-08");
+        request.setPlannedTestingStartDate("2026-04-09");
+        request.setPlannedReleaseDate("2026/04/12");
+
+        service.advanceStage(212L, request, "admin");
+
+        ArgumentCaptor<String> structuredJsonCaptor = ArgumentCaptor.forClass(String.class);
+        verify(intakeMapper).updateManagementFields(eq(212L), structuredJsonCaptor.capture(), any(), eq("待设计"));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"plannedDevelopmentStartDate\":\"2026/04/08\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"plannedTestingStartDate\":\"2026/04/09\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"plannedReleaseDate\":\"2026/04/12\""));
+        ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
+        verify(intakeHistoryMapper).insert(historyCaptor.capture());
+        assertTrue(historyCaptor.getValue().getDetailText().contains("预估开发日期：- -> 2026/04/08"));
+        assertTrue(historyCaptor.getValue().getDetailText().contains("预估提测日期：- -> 2026/04/09"));
+        assertTrue(historyCaptor.getValue().getDetailText().contains("预估上线日期：- -> 2026/04/12"));
+    }
+
+    @Test
+    void advanceStage_shouldAllowOptionalScheduleDatesWhenConfirmScheduling() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                new IntakeStructuredDataExtractor(),
+                mock(IntakeEnrichmentService.class),
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity before = new IntakeRecordEntity();
+        before.setId(213L);
+        before.setStructuredDataJson("""
+                {"category":"需求审批","approvalCode":"REQ-213","requirementType":"研发需求","requirementName":"排期需求","fields":[],"attachmentSummaries":[]}
+                """);
+        before.setDemandStatus("待排期");
+
+        IntakeRecordEntity after = new IntakeRecordEntity();
+        after.setId(213L);
+        after.setStructuredDataJson("""
+                {"category":"需求审批","approvalCode":"REQ-213","requirementType":"研发需求","requirementName":"排期需求","plannedTestingStartDate":"2026/04/09","plannedReleaseDate":null,"fields":[],"attachmentSummaries":[]}
+                """);
+        after.setDemandStatus("待设计");
+
+        when(intakeMapper.findById(213L)).thenReturn(before, after);
+        when(attachmentService.listIntakeAttachments(213L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(213L, 20)).thenReturn(List.of());
+
+        IntakeStageActionRequest request = new IntakeStageActionRequest();
+        request.setAction("CONFIRM_SCHEDULING");
+        request.setPlannedTestingStartDate("2026/04/09");
+
+        service.advanceStage(213L, request, "admin");
+
+        ArgumentCaptor<String> structuredJsonCaptor = ArgumentCaptor.forClass(String.class);
+        verify(intakeMapper).updateManagementFields(eq(213L), structuredJsonCaptor.capture(), any(), eq("待设计"));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"plannedTestingStartDate\":\"2026/04/09\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"plannedReleaseDate\":null"));
+    }
+
+    @Test
+    void advanceStage_shouldRejectReleaseDateBeforeTestingDateWhenConfirmScheduling() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                mock(IntakeHistoryMapper.class),
+                mock(AttachmentService.class),
+                new IntakeStructuredDataExtractor(),
+                mock(IntakeEnrichmentService.class),
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity before = new IntakeRecordEntity();
+        before.setId(214L);
+        before.setStructuredDataJson("""
+                {"category":"需求审批","approvalCode":"REQ-214","requirementType":"研发需求","requirementName":"排期需求","fields":[],"attachmentSummaries":[]}
+                """);
+        before.setDemandStatus("待排期");
+        when(intakeMapper.findById(214L)).thenReturn(before);
+
+        IntakeStageActionRequest request = new IntakeStageActionRequest();
+        request.setAction("CONFIRM_SCHEDULING");
+        request.setPlannedTestingStartDate("2026/04/09");
+        request.setPlannedReleaseDate("2026/04/08");
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> service.advanceStage(214L, request, "admin"));
+
+        assertEquals("预估上线日期不能早于预估提测日期", error.getMessage());
+    }
+
+    @Test
+    void advanceStage_shouldConfirmAcceptanceAndMoveToPendingRelease() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
         AttachmentService attachmentService = mock(AttachmentService.class);
@@ -494,7 +949,7 @@ class IntakeServiceTest {
         before.setSenderName("product-user");
         before.setReceivedAt(LocalDateTime.of(2026, 4, 2, 10, 0));
         before.setStructuredDataJson("""
-                {"category":"需求审批","approvalTitle":"接口上线验收","proposerName":"产品同学","approvalCode":"REQ-001","submittedTime":"2026/4/2 10:00","requirementType":"研发需求","requirementDigest":"接口上线验收","requirementName":"接口上线验收","requirementSummary":"描述","department":"产品部","businessLine":"资产业务","remark":"普通","estimatedEffort":"4h","plannedDueDate":"2026/04/02","developmentStartedDate":"2026/04/02","actualEffort":"5h","testingStartedDate":"2026/04/03","actualCompletedTime":"2026/04/04","acceptanceTime":null,"releasedTime":"2026/04/05","projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
+                {"category":"需求审批","approvalTitle":"接口上线验收","proposerName":"产品同学","approvalCode":"REQ-001","submittedTime":"2026/4/2 10:00","requirementType":"研发需求","requirementDigest":"接口上线验收","requirementName":"接口上线验收","requirementSummary":"描述","department":"产品部","businessLine":"资产业务","remark":"普通","estimatedEffort":"4h","plannedDueDate":"2026/04/02","developmentStartedDate":"2026/04/02","actualEffort":"5h","testingStartedDate":"2026/04/03","actualCompletedTime":"2026/04/04","acceptanceTime":null,"releasedTime":null,"projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
                 """);
         before.setDemandStatus("待验收");
 
@@ -503,9 +958,9 @@ class IntakeServiceTest {
         after.setSenderName("product-user");
         after.setReceivedAt(LocalDateTime.of(2026, 4, 2, 10, 0));
         after.setStructuredDataJson("""
-                {"category":"需求审批","approvalTitle":"接口上线验收","proposerName":"产品同学","approvalCode":"REQ-001","submittedTime":"2026/4/2 10:00","requirementType":"研发需求","requirementDigest":"接口上线验收","requirementName":"接口上线验收","requirementSummary":"描述","department":"产品部","businessLine":"资产业务","remark":"普通","estimatedEffort":"4h","plannedDueDate":"2026/04/02","developmentStartedDate":"2026/04/02","actualEffort":"5h","testingStartedDate":"2026/04/03","actualCompletedTime":"2026/04/04","acceptanceTime":"2026/04/06","releasedTime":"2026/04/05","projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
+                {"category":"需求审批","approvalTitle":"接口上线验收","proposerName":"产品同学","approvalCode":"REQ-001","submittedTime":"2026/4/2 10:00","requirementType":"研发需求","requirementDigest":"接口上线验收","requirementName":"接口上线验收","requirementSummary":"描述","department":"产品部","businessLine":"资产业务","remark":"普通","estimatedEffort":"4h","plannedDueDate":"2026/04/02","developmentStartedDate":"2026/04/02","actualEffort":"5h","testingStartedDate":"2026/04/03","actualCompletedTime":"2026/04/04","acceptanceTime":"2026/04/06","releasedTime":null,"projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
                 """);
-        after.setDemandStatus("已完成");
+        after.setDemandStatus("待上线");
 
         when(intakeMapper.findById(202L)).thenReturn(before, after);
         when(attachmentService.listIntakeAttachments(202L)).thenReturn(List.of());
@@ -519,14 +974,71 @@ class IntakeServiceTest {
         service.advanceStage(202L, request, "admin");
 
         ArgumentCaptor<String> structuredJsonCaptor = ArgumentCaptor.forClass(String.class);
-        verify(intakeMapper).updateManagementFields(eq(202L), structuredJsonCaptor.capture(), any(), eq("已完成"));
+        verify(intakeMapper).updateManagementFields(eq(202L), structuredJsonCaptor.capture(), any(), eq("待上线"));
         assertTrue(structuredJsonCaptor.getValue().contains("\"acceptanceTime\":\"2026/04/06\""));
         verify(intakeHistoryMapper).insert(any());
         verify(intakeHistoryMapper).findRecentByIntakeId(202L, 20);
     }
 
     @Test
-    void advanceStage_shouldPassTestingAndMoveToPendingRelease() {
+    void advanceStage_shouldSubmitTestingAndRecordActualTestingDate() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeStructuredDataExtractor intakeStructuredDataExtractor = new IntakeStructuredDataExtractor();
+        IntakeEnrichmentService intakeEnrichmentService = mock(IntakeEnrichmentService.class);
+
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                intakeStructuredDataExtractor,
+                intakeEnrichmentService,
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity before = new IntakeRecordEntity();
+        before.setId(213L);
+        before.setSenderName("tester");
+        before.setReceivedAt(LocalDateTime.of(2026, 4, 8, 10, 0));
+        before.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"开发完成提交测试","proposerName":"产品同学","approvalCode":"REQ-213","submittedTime":"2026/4/8 10:00","requirementType":"研发需求","requirementDigest":"提交测试","requirementName":"提交测试需求","requirementSummary":"描述","department":"产品部","businessLine":"资产业务","remark":"普通","plannedDueDate":"2026/04/08","developmentStartedDate":"2026/04/08","actualEffort":null,"testingStartedDate":null,"actualCompletedTime":null,"acceptanceTime":null,"releasedTime":null,"projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
+                """);
+        before.setDemandStatus("开发中");
+
+        IntakeRecordEntity after = new IntakeRecordEntity();
+        after.setId(213L);
+        after.setSenderName("tester");
+        after.setReceivedAt(LocalDateTime.of(2026, 4, 8, 10, 0));
+        after.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"开发完成提交测试","proposerName":"产品同学","approvalCode":"REQ-213","submittedTime":"2026/4/8 10:00","requirementType":"研发需求","requirementDigest":"提交测试","requirementName":"提交测试需求","requirementSummary":"描述","department":"产品部","businessLine":"资产业务","remark":"普通","plannedDueDate":"2026/04/08","developmentStartedDate":"2026/04/08","actualEffort":"4h","testingStartedDate":"2026/04/09","actualCompletedTime":"2026/04/09","acceptanceTime":null,"releasedTime":null,"projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
+                """);
+        after.setDemandStatus("测试中");
+
+        when(intakeMapper.findById(213L)).thenReturn(before, after);
+        when(attachmentService.listIntakeAttachments(213L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(213L, 20)).thenReturn(List.of());
+
+        IntakeStageActionRequest request = new IntakeStageActionRequest();
+        request.setAction("SUBMIT_TESTING");
+        request.setActualEffort("4h");
+        request.setActualCompletedTime("2026/04/09");
+        request.setOccurredAt("2026/04/09");
+
+        service.advanceStage(213L, request, "admin");
+
+        ArgumentCaptor<String> structuredJsonCaptor = ArgumentCaptor.forClass(String.class);
+        verify(intakeMapper).updateManagementFields(eq(213L), structuredJsonCaptor.capture(), any(), eq("测试中"));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"testingStartedDate\":\"2026/04/09\""));
+        ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
+        verify(intakeHistoryMapper).insert(historyCaptor.capture());
+        assertEquals("提交测试", historyCaptor.getValue().getActionSummary());
+        assertTrue(historyCaptor.getValue().getDetailText().contains("实际提测日期：- -> 2026/04/09"));
+    }
+
+    @Test
+    void advanceStage_shouldPassTestingAndMoveToPendingAcceptance() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
         AttachmentService attachmentService = mock(AttachmentService.class);
@@ -548,7 +1060,7 @@ class IntakeServiceTest {
         before.setSenderName("tester");
         before.setReceivedAt(LocalDateTime.of(2026, 4, 8, 10, 0));
         before.setStructuredDataJson("""
-                {"category":"需求审批","approvalTitle":"测试完成提交验收","proposerName":"产品同学","approvalCode":"REQ-212","submittedTime":"2026/4/8 10:00","requirementType":"研发需求","requirementDigest":"提交验收","requirementName":"提交验收需求","requirementSummary":"描述","department":"产品部","businessLine":"资产业务","remark":"普通","estimatedEffort":"4h","plannedDueDate":"2026/04/08","developmentStartedDate":"2026/04/08","actualEffort":"4h","testingStartedDate":"2026/04/09","actualCompletedTime":null,"acceptanceTime":null,"releasedTime":null,"projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
+                {"category":"需求审批","approvalTitle":"测试完成提交验收","proposerName":"产品同学","approvalCode":"REQ-212","submittedTime":"2026/4/8 10:00","requirementType":"研发需求","requirementDigest":"提交验收","requirementName":"提交验收需求","requirementSummary":"描述","department":"产品部","businessLine":"资产业务","remark":"普通","estimatedEffort":"4h","plannedDueDate":"2026/04/08","developmentStartedDate":"2026/04/08","actualEffort":"4h","testingStartedDate":"2026/04/09","actualCompletedTime":"2026/04/09","acceptanceTime":null,"releasedTime":null,"projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
                 """);
         before.setDemandStatus("测试中");
 
@@ -557,9 +1069,9 @@ class IntakeServiceTest {
         after.setSenderName("tester");
         after.setReceivedAt(LocalDateTime.of(2026, 4, 8, 10, 0));
         after.setStructuredDataJson("""
-                {"category":"需求审批","approvalTitle":"测试完成提交验收","proposerName":"产品同学","approvalCode":"REQ-212","submittedTime":"2026/4/8 10:00","requirementType":"研发需求","requirementDigest":"提交验收","requirementName":"提交验收需求","requirementSummary":"描述","department":"产品部","businessLine":"资产业务","remark":"普通","estimatedEffort":"4h","plannedDueDate":"2026/04/08","developmentStartedDate":"2026/04/08","actualEffort":"4h","testingStartedDate":"2026/04/09","actualCompletedTime":"2026/04/10","acceptanceTime":null,"releasedTime":null,"projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
+                {"category":"需求审批","approvalTitle":"测试完成提交验收","proposerName":"产品同学","approvalCode":"REQ-212","submittedTime":"2026/4/8 10:00","requirementType":"研发需求","requirementDigest":"提交验收","requirementName":"提交验收需求","requirementSummary":"描述","department":"产品部","businessLine":"资产业务","remark":"普通","estimatedEffort":"4h","plannedDueDate":"2026/04/08","developmentStartedDate":"2026/04/08","actualEffort":"4h","testingStartedDate":"2026/04/09","actualCompletedTime":"2026/04/09","scheduledAcceptanceDate":"2026/04/11","actualTestingEffort":"2h","actualTestingCompletedDate":"2026/04/10","acceptanceTime":null,"releasedTime":null,"projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
                 """);
-        after.setDemandStatus("待上线");
+        after.setDemandStatus("待验收");
 
         when(intakeMapper.findById(212L)).thenReturn(before, after);
         when(attachmentService.listIntakeAttachments(212L)).thenReturn(List.of());
@@ -567,17 +1079,77 @@ class IntakeServiceTest {
 
         IntakeStageActionRequest request = new IntakeStageActionRequest();
         request.setAction("PASS_TESTING");
-        request.setOccurredAt("2026/04/10");
+        request.setScheduledAcceptanceDate("2026/04/11");
+        request.setActualTestingEffort("2h");
+        request.setActualTestingCompletedDate("2026/04/10");
 
         service.advanceStage(212L, request, "admin");
 
         ArgumentCaptor<String> structuredJsonCaptor = ArgumentCaptor.forClass(String.class);
-        verify(intakeMapper).updateManagementFields(eq(212L), structuredJsonCaptor.capture(), any(), eq("待上线"));
-        assertTrue(structuredJsonCaptor.getValue().contains("\"testingStartedDate\":\"2026/04/10\""));
+        verify(intakeMapper).updateManagementFields(eq(212L), structuredJsonCaptor.capture(), any(), eq("待验收"));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"testingStartedDate\":\"2026/04/09\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"scheduledAcceptanceDate\":\"2026/04/11\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"actualTestingEffort\":\"2h\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"actualTestingCompletedDate\":\"2026/04/10\""));
         ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
         verify(intakeHistoryMapper).insert(historyCaptor.capture());
         assertEquals("测试通过", historyCaptor.getValue().getActionSummary());
-        assertTrue(historyCaptor.getValue().getDetailText().contains("测试开始日期：2026/04/09 -> 2026/04/10"));
+        assertTrue(historyCaptor.getValue().getDetailText().contains("需求状态：测试中 -> 待验收"));
+    }
+
+    @Test
+    void advanceStage_shouldConfirmReleaseAndRecordReleaseDate() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeStructuredDataExtractor intakeStructuredDataExtractor = new IntakeStructuredDataExtractor();
+        IntakeEnrichmentService intakeEnrichmentService = mock(IntakeEnrichmentService.class);
+
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                intakeStructuredDataExtractor,
+                intakeEnrichmentService,
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity before = new IntakeRecordEntity();
+        before.setId(214L);
+        before.setSenderName("release-user");
+        before.setReceivedAt(LocalDateTime.of(2026, 4, 10, 10, 0));
+        before.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"确认上线测试","proposerName":"产品同学","approvalCode":"REQ-214","submittedTime":"2026/4/10 10:00","requirementType":"研发需求","requirementDigest":"确认上线","requirementName":"确认上线测试","requirementSummary":"描述","department":"产品部","businessLine":"资产业务","remark":"普通","plannedDueDate":"2026/04/10","developmentStartedDate":"2026/04/08","actualEffort":"4h","testingStartedDate":"2026/04/09","actualCompletedTime":"2026/04/09","acceptanceTime":null,"releasedTime":null,"projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
+                """);
+        before.setDemandStatus("待上线");
+
+        IntakeRecordEntity after = new IntakeRecordEntity();
+        after.setId(214L);
+        after.setSenderName("release-user");
+        after.setReceivedAt(LocalDateTime.of(2026, 4, 10, 10, 0));
+        after.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"确认上线测试","proposerName":"产品同学","approvalCode":"REQ-214","submittedTime":"2026/4/10 10:00","requirementType":"研发需求","requirementDigest":"确认上线","requirementName":"确认上线测试","requirementSummary":"描述","department":"产品部","businessLine":"资产业务","remark":"普通","plannedDueDate":"2026/04/10","developmentStartedDate":"2026/04/08","actualEffort":"4h","testingStartedDate":"2026/04/09","actualCompletedTime":"2026/04/09","acceptanceTime":null,"releasedTime":"2026/04/11","projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
+                """);
+        after.setDemandStatus("已完成");
+
+        when(intakeMapper.findById(214L)).thenReturn(before, after);
+        when(attachmentService.listIntakeAttachments(214L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(214L, 20)).thenReturn(List.of());
+
+        IntakeStageActionRequest request = new IntakeStageActionRequest();
+        request.setAction("CONFIRM_RELEASE");
+        request.setOccurredAt("2026/04/11");
+
+        service.advanceStage(214L, request, "admin");
+
+        ArgumentCaptor<String> structuredJsonCaptor = ArgumentCaptor.forClass(String.class);
+        verify(intakeMapper).updateManagementFields(eq(214L), structuredJsonCaptor.capture(), any(), eq("已完成"));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"releasedTime\":\"2026/04/11\""));
+        ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
+        verify(intakeHistoryMapper).insert(historyCaptor.capture());
+        assertEquals("确认上线", historyCaptor.getValue().getActionSummary());
+        assertTrue(historyCaptor.getValue().getDetailText().contains("实际上线日期：- -> 2026/04/11"));
     }
 
     @Test
@@ -674,7 +1246,7 @@ class IntakeServiceTest {
 
         assertEquals("范怡", detail.structuredData().proposerName());
         assertEquals("研发需求", detail.structuredData().requirementType());
-        assertEquals("feature/liyi_ebike_split_20260324", detail.structuredData().developmentBranchName());
+        assertEquals("feature/liyi_ebike_split_202603240005", detail.structuredData().developmentBranchName());
     }
 
     @Test
@@ -769,7 +1341,7 @@ class IntakeServiceTest {
         after.setSenderName("admin");
         after.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
         after.setStructuredDataJson("""
-                {"category":"需求审批","approvalTitle":"周拓的系统开发2.0","proposerName":"周拓","approvalCode":"202603250009","submittedTime":"2026/3/25 16:17","requirementType":"研发需求","developmentBranchName":"feature/custom_branch_20260325","zentaoUrl":"https://zentao.example.com/story-view-123.html","requirementDigest":"沃橙绑卡","requirementName":"沃橙绑卡需求","requirementSummary":"描述","department":"供应链业务部","businessLine":"供应链科技","remark":"高优","estimatedEffort":"2d","plannedDueDate":"2026/04/05","developmentStartedDate":null,"actualEffort":null,"testingStartedDate":null,"actualCompletedTime":null,"acceptanceTime":null,"releasedTime":null,"projectHint":"供应链科技","fields":[],"attachmentSummaries":[]}
+                {"category":"需求审批","approvalTitle":"周拓的系统开发2.0","proposerName":"周拓","approvalCode":"202603250009","submittedTime":"2026/3/25 16:17","requirementType":"研发需求","developmentBranchName":"feature/custom_branch_202603250009","zentaoUrl":"https://zentao.example.com/story-view-123.html","requirementDigest":"沃橙绑卡","requirementName":"沃橙绑卡需求","requirementSummary":"描述","department":"供应链业务部","businessLine":"供应链科技","remark":"高优","estimatedEffort":"2d","plannedDueDate":"2026/04/05","developmentStartedDate":null,"actualEffort":null,"testingStartedDate":null,"actualCompletedTime":null,"acceptanceTime":null,"releasedTime":null,"projectHint":"供应链科技","fields":[],"attachmentSummaries":[]}
                 """);
         after.setDemandStatus("待排期");
         after.setEnrichmentStatus("SUCCEEDED");
@@ -786,12 +1358,12 @@ class IntakeServiceTest {
 
         ArgumentCaptor<String> structuredJsonCaptor = ArgumentCaptor.forClass(String.class);
         verify(intakeMapper).updateStructuredData(eq(402L), structuredJsonCaptor.capture());
-        assertTrue(structuredJsonCaptor.getValue().contains("\"developmentBranchName\":\"feature/custom_branch_20260325\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"developmentBranchName\":\"feature/custom_branch_202603250009\""));
         assertTrue(structuredJsonCaptor.getValue().contains("\"zentaoUrl\":\"https://zentao.example.com/story-view-123.html\""));
         ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
         verify(intakeHistoryMapper).insert(historyCaptor.capture());
-        assertTrue(historyCaptor.getValue().getDetailText().contains("研发分支：feature/req-202603250009 -> feature/custom_branch_20260325"));
-        assertEquals("feature/custom_branch_20260325", detail.structuredData().developmentBranchName());
+        assertTrue(historyCaptor.getValue().getDetailText().contains("研发分支：feature/req-202603250009 -> feature/custom_branch_202603250009"));
+        assertEquals("feature/custom_branch_202603250009", detail.structuredData().developmentBranchName());
         assertEquals("https://zentao.example.com/story-view-123.html", detail.structuredData().zentaoUrl());
     }
 

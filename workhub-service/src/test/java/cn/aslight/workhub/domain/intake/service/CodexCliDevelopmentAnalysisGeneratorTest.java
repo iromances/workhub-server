@@ -57,7 +57,6 @@ class CodexCliDevelopmentAnalysisGeneratorTest {
                 null,
                 null,
                 null,
-                null,
                 "供应链科技",
                 List.of(new IntakeStructuredField("需求所属业务线", "供应链科技")),
                 List.of(new IntakeAttachmentSummary("方案.docx", "DOCX", "附件正文摘要：需要增加绑卡核验接口和异常提示。")),
@@ -65,8 +64,6 @@ class CodexCliDevelopmentAnalysisGeneratorTest {
         );
         ProjectDetailResponse project = new ProjectDetailResponse(
                 1L,
-                "SCM",
-                "供应链科技",
                 "SUPPLY",
                 "供应链项目",
                 "研发",
@@ -110,10 +107,11 @@ class CodexCliDevelopmentAnalysisGeneratorTest {
         assertTrue(codexCliClient.capturedRequest.prompt().contains("附件正文摘要：需要增加绑卡核验接口和异常提示。"));
         assertTrue(codexCliClient.capturedRequest.prompt().contains("项目知识库参考"));
         assertTrue(codexCliClient.capturedRequest.prompt().contains("嘉泰保理绑卡需要遵循商户号路由规则"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("先阅读需求材料 Markdown，再提炼需求点，再判断是否需要查阅项目组代码，最后拆解研发任务"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("该文件只是把需求截图、附件、文档、结构化字段和原始内容归档到一起，不是需求点总结"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("要求内敛、互斥、无重复"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("研发任务只输出 title、description、estimatedEffort、ownerUserName"));
+        assertTrue(codexCliClient.capturedRequest.prompt().contains("先读需求 Markdown 和补充材料"));
+        assertTrue(codexCliClient.capturedRequest.prompt().contains("再查业务线 Git 代码"));
+        assertTrue(codexCliClient.capturedRequest.prompt().contains("title 用 Jira/禅道风格"));
+        assertTrue(codexCliClient.capturedRequest.prompt().contains("changePoints 表示“改地点”，必须按有序列表顺序列出"));
+        assertTrue(codexCliClient.capturedRequest.prompt().contains("relatedFiles/evidenceRefs 写代码或材料证据"));
         assertEquals(2, codexCliClient.capturedRequest.addDirs().size());
     }
 

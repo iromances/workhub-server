@@ -5,8 +5,10 @@ import cn.aslight.workhub.model.intake.IntakeHistoryResponse;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisResponse;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
+import cn.aslight.workhub.model.intake.IntakeTodoResponse;
 import cn.aslight.workhub.service.intake.DevelopmentAnalysisService;
 import cn.aslight.workhub.service.intake.IntakeService;
+import cn.aslight.workhub.service.intake.IntakeTodoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -36,6 +38,60 @@ class IntakeControllerTest {
     }
 
     @Test
+    void pauseDemand_shouldExposePauseApi() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        when(intakeService.pauseDemand(eq(9L), any(), eq("admin"))).thenReturn(simpleDetail(9L, "已暂停"));
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
+
+        mockMvc.perform(post("/api/intake/9/pause")
+                        .principal(new UsernamePasswordAuthenticationToken("admin", "N/A"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"reason":"等待外部联调环境","pauseDate":"2026-06-04"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.demandStatus").value("已暂停"));
+
+        verify(intakeService).pauseDemand(eq(9L), any(), eq("admin"));
+    }
+
+    @Test
+    void createTodo_shouldExposeTodoApi() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        IntakeTodoService todoService = mock(IntakeTodoService.class);
+        when(todoService.create(eq(9L), any(), eq("admin"))).thenReturn(new IntakeTodoResponse(
+                1001L,
+                9L,
+                "确认资方接口口径",
+                "需要和资方确认还款状态映射。",
+                "待处理",
+                "shihao",
+                LocalDateTime.of(2026, 6, 5, 10, 0),
+                null,
+                null,
+                LocalDateTime.of(2026, 6, 4, 10, 0),
+                LocalDateTime.of(2026, 6, 4, 10, 0)
+        ));
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new IntakeController(
+                intakeService,
+                mock(DevelopmentAnalysisService.class),
+                todoService
+        )).build();
+
+        mockMvc.perform(post("/api/intake/9/todos")
+                        .principal(new UsernamePasswordAuthenticationToken("admin", "N/A"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"确认资方接口口径","content":"需要和资方确认还款状态映射。","assigneeUserName":"shihao","plannedAt":"2026-06-05T10:00:00"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(1001))
+                .andExpect(jsonPath("$.data.status").value("待处理"));
+    }
+
+    @Test
     void analyzeDevelopment_shouldReturnPendingResponseQuickly() throws Exception {
         IntakeService intakeService = mock(IntakeService.class);
         DevelopmentAnalysisService developmentAnalysisService = mock(DevelopmentAnalysisService.class);
@@ -55,7 +111,7 @@ class IntakeControllerTest {
 
         mockMvc.perform(post("/api/intake/5/development-analysis")
                         .principal(new UsernamePasswordAuthenticationToken("admin", "N/A"))
-                        .param("projectGroup", "账单管理"))
+                        .param("businessLine", "账单管理"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.message").value("任务评估已提交，系统正在后台处理中"));
@@ -83,13 +139,23 @@ class IntakeControllerTest {
                         "为避免单一支付通道暂停风险，需要补充嘉泰保理易宝商户号绑卡方案。",
                         "供应链科技",
                         "涉及沃诚项目额度释放，最高优先级。",
-                        "16h",
+                        "24h",
+                        "20h",
+                        "4h",
                         "2026/3/31",
+                        "2026/4/2",
+                        "2026/4/5",
+                        "2026/4/1",
+                        "无",
+                        "2026/4/2",
+                        "无",
+                        "无",
                         "无",
                         "无",
                         "无",
                         "无",
                         "供应链科技",
+                        List.of("支付服务"),
                         "SUCCEEDED",
                         "待整理",
                         null
@@ -108,7 +174,14 @@ class IntakeControllerTest {
                 .andExpect(jsonPath("$.data.items[0].requirementDigest").value("沃橙绑卡至嘉泰保理"))
                 .andExpect(jsonPath("$.data.items[0].department").value("供应链业务部"))
                 .andExpect(jsonPath("$.data.items[0].requirementName").value("沃橙项目增加客户绑卡至嘉泰保理的需求0325"))
-                .andExpect(jsonPath("$.data.items[0].estimatedEffort").value("16h"))
+                .andExpect(jsonPath("$.data.items[0].estimatedEffort").doesNotExist())
+                .andExpect(jsonPath("$.data.items[0].totalEstimatedEffort").value("24h"))
+                .andExpect(jsonPath("$.data.items[0].developmentEstimatedEffort").value("20h"))
+                .andExpect(jsonPath("$.data.items[0].testingEstimatedEffort").value("4h"))
+                .andExpect(jsonPath("$.data.items[0].plannedTestingStartDate").value("2026/4/2"))
+                .andExpect(jsonPath("$.data.items[0].plannedReleaseDate").value("2026/4/5"))
+                .andExpect(jsonPath("$.data.items[0].developmentStartedDate").value("2026/4/1"))
+                .andExpect(jsonPath("$.data.items[0].testingStartedDate").value("2026/4/2"))
                 .andExpect(jsonPath("$.data.items[0].releasedTime").value("无"))
                 .andExpect(jsonPath("$.data.items[0].enrichmentStatus").value("SUCCEEDED"));
     }
@@ -142,7 +215,6 @@ class IntakeControllerTest {
                         "供应链业务部",
                         "供应链科技",
                         "高优",
-                        "16h",
                         "2026/04/05",
                         null,
                         null,
@@ -157,6 +229,7 @@ class IntakeControllerTest {
                         List.of(),
                         null
                 ),
+                List.of("支付服务"),
                 List.<IntakeHistoryResponse>of(),
                 "待整理",
                 "SUCCEEDED",
@@ -179,7 +252,7 @@ class IntakeControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.demandStatus").value("待排期"))
-                .andExpect(jsonPath("$.data.structuredData.estimatedEffort").value("16h"))
+                .andExpect(jsonPath("$.data.structuredData.estimatedEffort").doesNotExist())
                 .andExpect(jsonPath("$.data.structuredData.plannedDueDate").value("2026/04/05"));
     }
 
@@ -212,7 +285,6 @@ class IntakeControllerTest {
                         "运营支持部",
                         "资产业务",
                         "紧急处理",
-                        "4h",
                         "2026/04/02",
                         "2026/04/02",
                         "5h",
@@ -227,6 +299,7 @@ class IntakeControllerTest {
                         List.of(),
                         null
                 ),
+                List.of(),
                 List.of(),
                 "待整理",
                 "SUCCEEDED",
@@ -271,6 +344,7 @@ class IntakeControllerTest {
                 "已收录",
                 "原始内容",
                 null,
+                List.of(),
                 List.of(),
                 "待整理",
                 "SUCCEEDED",
@@ -384,6 +458,10 @@ class IntakeControllerTest {
     }
 
     private IntakeDetailResponse simpleDetail(Long id) {
+        return simpleDetail(id, "已收录");
+    }
+
+    private IntakeDetailResponse simpleDetail(Long id, String demandStatus) {
         return new IntakeDetailResponse(
                 id,
                 "需求截图附件录入",
@@ -392,9 +470,10 @@ class IntakeControllerTest {
                 "admin",
                 "石浩",
                 LocalDateTime.of(2026, 4, 2, 12, 0),
-                "已收录",
+                demandStatus,
                 "原始内容",
                 null,
+                List.of(),
                 List.of(),
                 "待整理",
                 "SUCCEEDED",

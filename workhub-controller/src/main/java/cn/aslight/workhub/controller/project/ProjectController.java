@@ -3,8 +3,10 @@ package cn.aslight.workhub.controller.project;
 import cn.aslight.workhub.common.api.ApiResponse;
 import cn.aslight.workhub.common.api.PageResponse;
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
-import cn.aslight.workhub.model.project.ProjectGroupResponse;
-import cn.aslight.workhub.model.project.ProjectGroupSaveRequest;
+import cn.aslight.workhub.model.project.BusinessLineResponse;
+import cn.aslight.workhub.model.project.BusinessLineSaveRequest;
+import cn.aslight.workhub.model.project.ProjectInvolvedSystemResponse;
+import cn.aslight.workhub.model.project.ProjectInvolvedSystemSaveRequest;
 import cn.aslight.workhub.model.project.ProjectSaveRequest;
 import cn.aslight.workhub.model.project.ProjectSummaryResponse;
 import cn.aslight.workhub.service.project.ProjectService;
@@ -40,56 +42,141 @@ public class ProjectController {
      */
     @GetMapping
     public ApiResponse<PageResponse<ProjectSummaryResponse>> list(@RequestParam(required = false) String status,
-                                                                  @RequestParam(required = false) String keyword) {
-        List<ProjectSummaryResponse> items = projectService.list(status, keyword);
-        return ApiResponse.success(new PageResponse<>(items.size(), items));
+                                                                  @RequestParam(required = false) String keyword,
+                                                                  @RequestParam(required = false) String businessLine,
+                                                                  @RequestParam(required = false) Integer page,
+                                                                  @RequestParam(required = false) Integer pageSize) {
+        List<ProjectSummaryResponse> items = projectService.list(status, keyword, businessLine);
+        return ApiResponse.success(page(items, page, pageSize));
     }
 
     /**
-     * 查询项目组列表。
+     * 查询业务线列表。
      *
      * @param keyword 关键字
-     * @return 项目组列表
+     * @param page 页码
+     * @param pageSize 每页数量
+     * @return 业务线列表
      */
-    @GetMapping("/groups")
-    public ApiResponse<PageResponse<ProjectGroupResponse>> listGroups(@RequestParam(required = false) String keyword) {
-        List<ProjectGroupResponse> items = projectService.listGroups(keyword);
+    @GetMapping("/business-lines")
+    public ApiResponse<PageResponse<BusinessLineResponse>> listBusinessLines(@RequestParam(required = false) String keyword,
+                                                                             @RequestParam(required = false) Integer page,
+                                                                             @RequestParam(required = false) Integer pageSize) {
+        List<BusinessLineResponse> items = projectService.listBusinessLines(keyword);
+        return ApiResponse.success(page(items, page, pageSize));
+    }
+
+    /**
+     * 查询研发涉及系统清单。
+     *
+     * @param systemScope 系统范围
+     * @param businessLine 业务线
+     * @param enabledOnly 是否仅查启用项
+     * @param keyword 关键字
+     * @return 研发涉及系统清单
+     */
+    @GetMapping("/involved-systems")
+    public ApiResponse<PageResponse<ProjectInvolvedSystemResponse>> listInvolvedSystems(@RequestParam(required = false) String systemScope,
+                                                                                        @RequestParam(required = false) String businessLine,
+                                                                                        @RequestParam(required = false) Boolean enabledOnly,
+                                                                                        @RequestParam(required = false) String keyword) {
+        List<ProjectInvolvedSystemResponse> items = projectService.listInvolvedSystems(systemScope, businessLine, enabledOnly, keyword);
         return ApiResponse.success(new PageResponse<>(items.size(), items));
     }
 
     /**
-     * 新增项目组。
+     * 查询指定业务线可选择的研发涉及系统。
      *
-     * @param request 项目组保存请求
-     * @return 项目组详情
+     * @param businessLine 业务线
+     * @return 业务线系统和中台系统
      */
-    @PostMapping("/groups")
-    public ApiResponse<ProjectGroupResponse> createGroup(@Valid @RequestBody ProjectGroupSaveRequest request) {
-        return ApiResponse.success(projectService.createGroup(request));
+    @GetMapping("/involved-systems/selectable")
+    public ApiResponse<PageResponse<ProjectInvolvedSystemResponse>> selectableInvolvedSystems(@RequestParam String businessLine) {
+        List<ProjectInvolvedSystemResponse> items = projectService.listSelectableInvolvedSystems(businessLine);
+        return ApiResponse.success(new PageResponse<>(items.size(), items));
     }
 
     /**
-     * 更新项目组。
+     * 新增研发涉及系统。
      *
-     * @param id      项目组 ID
-     * @param request 项目组保存请求
-     * @return 项目组详情
+     * @param request 保存请求
+     * @return 研发涉及系统详情
      */
-    @PutMapping("/groups/{id}")
-    public ApiResponse<ProjectGroupResponse> updateGroup(@PathVariable Long id,
-                                                         @Valid @RequestBody ProjectGroupSaveRequest request) {
-        return ApiResponse.success(projectService.updateGroup(id, request));
+    @PostMapping("/involved-systems")
+    public ApiResponse<ProjectInvolvedSystemResponse> createInvolvedSystem(@Valid @RequestBody ProjectInvolvedSystemSaveRequest request) {
+        return ApiResponse.success(projectService.createInvolvedSystem(request));
     }
 
     /**
-     * 删除项目组。
+     * 更新研发涉及系统。
      *
-     * @param id 项目组 ID
+     * @param id 系统 ID
+     * @param request 保存请求
+     * @return 研发涉及系统详情
+     */
+    @PutMapping("/involved-systems/{id}")
+    public ApiResponse<ProjectInvolvedSystemResponse> updateInvolvedSystem(@PathVariable Long id,
+                                                                           @Valid @RequestBody ProjectInvolvedSystemSaveRequest request) {
+        return ApiResponse.success(projectService.updateInvolvedSystem(id, request));
+    }
+
+    /**
+     * 删除研发涉及系统。
+     *
+     * @param id 系统 ID
      * @return 删除结果
      */
-    @DeleteMapping("/groups/{id}")
-    public ApiResponse<Void> deleteGroup(@PathVariable Long id) {
-        projectService.deleteGroup(id);
+    @DeleteMapping("/involved-systems/{id}")
+    public ApiResponse<Void> deleteInvolvedSystem(@PathVariable Long id) {
+        projectService.deleteInvolvedSystem(id);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * 从业务线配置的 GitLab 组同步研发涉及系统清单。
+     *
+     * @param id 业务线 ID
+     * @return 同步后的业务线系统清单
+     */
+    @PostMapping("/business-lines/{id}/involved-systems/sync-git")
+    public ApiResponse<PageResponse<ProjectInvolvedSystemResponse>> syncBusinessLineInvolvedSystemsFromGit(@PathVariable Long id) {
+        List<ProjectInvolvedSystemResponse> items = projectService.syncInvolvedSystemsFromGit(id);
+        return ApiResponse.success(new PageResponse<>(items.size(), items));
+    }
+
+    /**
+     * 新增业务线。
+     *
+     * @param request 业务线保存请求
+     * @return 业务线详情
+     */
+    @PostMapping("/business-lines")
+    public ApiResponse<BusinessLineResponse> createBusinessLine(@Valid @RequestBody BusinessLineSaveRequest request) {
+        return ApiResponse.success(projectService.createBusinessLine(request));
+    }
+
+    /**
+     * 更新业务线。
+     *
+     * @param id      业务线 ID
+     * @param request 业务线保存请求
+     * @return 业务线详情
+     */
+    @PutMapping("/business-lines/{id}")
+    public ApiResponse<BusinessLineResponse> updateBusinessLine(@PathVariable Long id,
+                                                                @Valid @RequestBody BusinessLineSaveRequest request) {
+        return ApiResponse.success(projectService.updateBusinessLine(id, request));
+    }
+
+    /**
+     * 删除业务线。
+     *
+     * @param id 业务线 ID
+     * @return 删除结果
+     */
+    @DeleteMapping("/business-lines/{id}")
+    public ApiResponse<Void> deleteBusinessLine(@PathVariable Long id) {
+        projectService.deleteBusinessLine(id);
         return ApiResponse.success(null);
     }
 
@@ -138,5 +225,16 @@ public class ProjectController {
     public ApiResponse<Void> delete(@PathVariable Long id) {
         projectService.delete(id);
         return ApiResponse.success(null);
+    }
+
+    private <T> PageResponse<T> page(List<T> items, Integer page, Integer pageSize) {
+        if (page == null && pageSize == null) {
+            return new PageResponse<>(items.size(), items);
+        }
+        int normalizedPage = Math.max(page == null ? 1 : page, 1);
+        int normalizedPageSize = Math.max(pageSize == null ? 10 : pageSize, 1);
+        int fromIndex = Math.min((normalizedPage - 1) * normalizedPageSize, items.size());
+        int toIndex = Math.min(fromIndex + normalizedPageSize, items.size());
+        return new PageResponse<>(items.size(), items.subList(fromIndex, toIndex));
     }
 }

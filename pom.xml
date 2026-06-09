@@ -25,6 +25,7 @@
         <module>workhub-service</module>
         <module>workhub-controller</module>
         <module>workhub-job</module>
+        <module>workhub-mcp-server</module>
         <module>workhub-bootstrap</module>
     </modules>
 

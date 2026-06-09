@@ -1,5 +1,6 @@
 package cn.aslight.workhub.model.workitem;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -29,6 +30,9 @@ public record WorkItemDetailResponse(Long id,
                                      LocalDateTime plannedStartAt,
                                      LocalDateTime plannedEndAt,
                                      LocalDateTime finishedAt,
+                                     String pausePreviousStatus,
+                                     String pauseReason,
+                                     LocalDate pauseDate,
                                      LocalDateTime createdAt,
                                      LocalDateTime updatedAt) {
 }

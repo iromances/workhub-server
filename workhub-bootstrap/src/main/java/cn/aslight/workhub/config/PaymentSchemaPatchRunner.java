@@ -63,6 +63,20 @@ public class PaymentSchemaPatchRunner implements ApplicationRunner {
                             """
             ),
             new TablePatch(
+                    "pay_merchant_purpose",
+                    """
+                            CREATE TABLE `pay_merchant_purpose` (
+                              `id` BIGINT NOT NULL AUTO_INCREMENT,
+                              `merchant_id` BIGINT NOT NULL,
+                              `purpose_code` VARCHAR(32) NOT NULL,
+                              `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                              PRIMARY KEY (`id`),
+                              UNIQUE KEY `uk_pay_merchant_purpose` (`merchant_id`, `purpose_code`),
+                              KEY `idx_pay_merchant_purpose_code` (`purpose_code`, `merchant_id`)
+                            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                            """
+            ),
+            new TablePatch(
                     "pay_merchant_param",
                     """
                             CREATE TABLE `pay_merchant_param` (
@@ -216,6 +230,8 @@ public class PaymentSchemaPatchRunner implements ApplicationRunner {
                 ensureTable(connection, patch);
             }
             ensureBindingPurposeBackfill(connection);
+            ensureMerchantPurposeBackfill(connection);
+            ensureLegacyWithholdPurposeMerge(connection);
         }
     }
 
@@ -231,6 +247,101 @@ public class PaymentSchemaPatchRunner implements ApplicationRunner {
                     FROM `pay_project_merchant_binding`
                     WHERE `purpose_code` IS NOT NULL
                       AND `purpose_code` <> ''
+                    """);
+        }
+    }
+
+    private void ensureMerchantPurposeBackfill(Connection connection) throws SQLException {
+        if (!tableExists(connection, "pay_project_merchant_binding")
+                || !tableExists(connection, "pay_project_merchant_binding_purpose")
+                || !tableExists(connection, "pay_merchant_purpose")) {
+            return;
+        }
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("""
+                    INSERT IGNORE INTO `pay_merchant_purpose` (`merchant_id`, `purpose_code`)
+                    SELECT DISTINCT b.`merchant_id`, bp.`purpose_code`
+                    FROM `pay_project_merchant_binding` b
+                    JOIN `pay_project_merchant_binding_purpose` bp ON bp.`binding_id` = b.`id`
+                    WHERE bp.`purpose_code` IS NOT NULL
+                      AND bp.`purpose_code` <> ''
+                    """);
+        }
+    }
+
+    private void ensureLegacyWithholdPurposeMerge(Connection connection) throws SQLException {
+        if (!tableExists(connection, "pay_project_merchant_binding")
+                || !tableExists(connection, "pay_project_merchant_binding_purpose")
+                || !tableExists(connection, "pay_merchant_purpose")) {
+            return;
+        }
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("""
+                    INSERT IGNORE INTO `pay_merchant_purpose` (`merchant_id`, `purpose_code`)
+                    SELECT DISTINCT `merchant_id`, 'WITHHOLD'
+                    FROM `pay_merchant_purpose`
+                    WHERE `purpose_code` IN (
+                      'WITHHOLD_SUB_MERCHANT',
+                      'WITHHOLD_SUB_MERCHANT_BEIJING',
+                      'WITHHOLD_SUB_MERCHANT_TIANJIN',
+                      'WITHHOLD_SUB_MERCHANT_PROD_TEST'
+                    )
+                    """);
+            statement.execute("""
+                    DELETE FROM `pay_merchant_purpose`
+                    WHERE `purpose_code` IN (
+                      'WITHHOLD_SUB_MERCHANT',
+                      'WITHHOLD_SUB_MERCHANT_BEIJING',
+                      'WITHHOLD_SUB_MERCHANT_TIANJIN',
+                      'WITHHOLD_SUB_MERCHANT_PROD_TEST'
+                    )
+                    """);
+            statement.execute("""
+                    INSERT IGNORE INTO `pay_project_merchant_binding_purpose` (`binding_id`, `purpose_code`)
+                    SELECT DISTINCT `binding_id`, 'WITHHOLD'
+                    FROM `pay_project_merchant_binding_purpose`
+                    WHERE `purpose_code` IN (
+                      'WITHHOLD_SUB_MERCHANT',
+                      'WITHHOLD_SUB_MERCHANT_BEIJING',
+                      'WITHHOLD_SUB_MERCHANT_TIANJIN',
+                      'WITHHOLD_SUB_MERCHANT_PROD_TEST'
+                    )
+                    """);
+            statement.execute("""
+                    DELETE FROM `pay_project_merchant_binding_purpose`
+                    WHERE `purpose_code` IN (
+                      'WITHHOLD_SUB_MERCHANT',
+                      'WITHHOLD_SUB_MERCHANT_BEIJING',
+                      'WITHHOLD_SUB_MERCHANT_TIANJIN',
+                      'WITHHOLD_SUB_MERCHANT_PROD_TEST'
+                    )
+                    """);
+            statement.execute("""
+                    UPDATE `pay_project_merchant_binding` b
+                    LEFT JOIN `pay_project_merchant_binding` existing
+                      ON existing.`project_id` = b.`project_id`
+                     AND existing.`merchant_id` = b.`merchant_id`
+                     AND existing.`purpose_code` = 'WITHHOLD'
+                     AND existing.`id` <> b.`id`
+                    LEFT JOIN `pay_project_merchant_binding` earlier
+                      ON earlier.`project_id` = b.`project_id`
+                     AND earlier.`merchant_id` = b.`merchant_id`
+                     AND earlier.`purpose_code` IN (
+                       'WITHHOLD_SUB_MERCHANT',
+                       'WITHHOLD_SUB_MERCHANT_BEIJING',
+                       'WITHHOLD_SUB_MERCHANT_TIANJIN',
+                       'WITHHOLD_SUB_MERCHANT_PROD_TEST'
+                     )
+                     AND earlier.`id` < b.`id`
+                    SET b.`purpose_code` = 'WITHHOLD'
+                    WHERE b.`purpose_code` IN (
+                      'WITHHOLD_SUB_MERCHANT',
+                      'WITHHOLD_SUB_MERCHANT_BEIJING',
+                      'WITHHOLD_SUB_MERCHANT_TIANJIN',
+                      'WITHHOLD_SUB_MERCHANT_PROD_TEST'
+                    )
+                    AND existing.`id` IS NULL
+                    AND earlier.`id` IS NULL
                     """);
         }
     }

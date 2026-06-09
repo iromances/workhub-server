@@ -10,6 +10,18 @@ CREATE TABLE `sys_user` (
   UNIQUE KEY `uk_sys_user_user_name` (`user_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `pm_developer_resource` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `user_name` VARCHAR(64) NOT NULL,
+  `display_name` VARCHAR(128) NOT NULL,
+  `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `remark` VARCHAR(255) NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pm_developer_resource_user_name` (`user_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `sys_config_item` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `config_group` VARCHAR(128) NOT NULL,
@@ -25,6 +37,48 @@ CREATE TABLE `sys_config_item` (
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_sys_config_group_key` (`config_group`, `config_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mcp_resource_config` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `resource_type` VARCHAR(32) NOT NULL,
+  `target_key` VARCHAR(128) NOT NULL,
+  `business_line_code` VARCHAR(128) NOT NULL,
+  `environment_code` VARCHAR(64) NOT NULL,
+  `name` VARCHAR(128) NOT NULL,
+  `host` VARCHAR(255) NOT NULL,
+  `port` INT NOT NULL,
+  `database_schema` VARCHAR(128) NULL,
+  `username` VARCHAR(128) NULL,
+  `secret_ref` VARCHAR(255) NULL,
+  `password_encrypted` TEXT NULL,
+  `ssh_password_encrypted` TEXT NULL,
+  `ssh_bastion_enabled` TINYINT(1) NOT NULL DEFAULT 0,
+  `ssh_bastion_host` VARCHAR(255) NULL,
+  `ssh_bastion_port` INT NULL,
+  `ssh_bastion_user` VARCHAR(128) NULL,
+  `ssh_bastion_password_encrypted` TEXT NULL,
+  `ssh_identity_file` VARCHAR(512) NULL,
+  `allowed_services_json` TEXT NULL,
+  `allowed_log_paths_json` TEXT NULL,
+  `profiles_json` TEXT NULL,
+  `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `remark` VARCHAR(255) NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_mcp_resource_config_target_key` (`target_key`),
+  KEY `idx_mcp_resource_config_list` (`business_line_code`, `environment_code`, `resource_type`, `enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `mcp_resource_business_line` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `resource_id` BIGINT NOT NULL,
+  `business_line_code` VARCHAR(128) NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_mcp_resource_business_line` (`resource_id`, `business_line_code`),
+  KEY `idx_mcp_resource_business_line_code` (`business_line_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO `sys_config_item` (
@@ -53,16 +107,22 @@ INSERT INTO `sys_config_item` (
   'xhigh',
   1,
   'AI 任务评估调用 Codex CLI 时使用的推理强度，xhigh 表示最高'
+), (
+  'intake.requirementFolder',
+  'basePath',
+  '需求文件夹基础目录',
+  'TEXT',
+  '/Users/aslight/Desktop/进行中的需求',
+  1,
+  '需求管理打开需求文件夹时使用的本地基础目录'
 );
 
 CREATE TABLE `pm_project` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `business_line_code` VARCHAR(64) NOT NULL DEFAULT '',
-  `business_line_name` VARCHAR(128) NOT NULL DEFAULT '',
   `project_code` VARCHAR(64) NOT NULL,
   `project_name` VARCHAR(128) NOT NULL,
   `project_type` VARCHAR(32) NOT NULL,
-  `project_group` VARCHAR(128) NOT NULL DEFAULT '',
+  `business_line` VARCHAR(128) NOT NULL DEFAULT '',
   `project_status` VARCHAR(32) NOT NULL,
   `owner_user_name` VARCHAR(64) NOT NULL,
   `description` TEXT NULL,
@@ -72,28 +132,125 @@ CREATE TABLE `pm_project` (
   UNIQUE KEY `uk_pm_project_code` (`project_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE `pm_project_group_member` (
+CREATE TABLE `pm_business_line_member` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `project_group` VARCHAR(128) NOT NULL,
+  `business_line` VARCHAR(128) NOT NULL,
   `member_user_name` VARCHAR(64) NOT NULL,
   `member_display_name` VARCHAR(128) NOT NULL,
   `enabled` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_pm_project_group_member` (`project_group`, `member_user_name`)
+  UNIQUE KEY `uk_pm_business_line_member` (`business_line`, `member_user_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE `pm_project_group` (
+CREATE TABLE `pm_business_line` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `group_name` VARCHAR(128) NOT NULL,
+  `business_line_name` VARCHAR(128) NOT NULL,
   `gitlab_group_name` VARCHAR(255) NULL,
   `description` TEXT NULL,
   `enabled` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_pm_project_group_name` (`group_name`)
+  UNIQUE KEY `uk_pm_business_line_name` (`business_line_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `ops_monitor_config` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `monitor_type` VARCHAR(32) NOT NULL,
+  `monitor_key` VARCHAR(128) NOT NULL,
+  `business_line_code` VARCHAR(128) NOT NULL,
+  `environment_code` VARCHAR(64) NOT NULL,
+  `name` VARCHAR(128) NOT NULL,
+  `admin_base_url` VARCHAR(512) NULL,
+  `username` VARCHAR(128) NULL,
+  `password_encrypted` TEXT NULL,
+  `xxl_job_database_name` VARCHAR(128) NULL,
+  `executor_app_name` VARCHAR(128) NULL,
+  `job_handler` VARCHAR(255) NULL,
+  `job_desc` VARCHAR(255) NULL,
+  `mq_topic` VARCHAR(255) NULL,
+  `mq_consumer_group` VARCHAR(255) NULL,
+  `mq_lag_threshold` INT NULL,
+  `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `last_status` VARCHAR(32) NULL,
+  `last_message` VARCHAR(1000) NULL,
+  `last_checked_at` DATETIME NULL,
+  `remark` VARCHAR(255) NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ops_monitor_config_key` (`monitor_key`),
+  KEY `idx_ops_monitor_config_list` (`business_line_code`, `environment_code`, `monitor_type`, `enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `ops_system_alert_subsystem` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `business_line_code` VARCHAR(128) NOT NULL,
+  `environment_code` VARCHAR(64) NOT NULL,
+  `subsystem_name` VARCHAR(128) NOT NULL,
+  `service_name` VARCHAR(128) NOT NULL,
+  `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `remark` VARCHAR(255) NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ops_system_alert_subsystem` (`business_line_code`, `environment_code`, `service_name`),
+  KEY `idx_ops_system_alert_subsystem_list` (`business_line_code`, `environment_code`, `enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `ops_system_alert_event` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `business_line_code` VARCHAR(128) NOT NULL,
+  `environment_code` VARCHAR(64) NOT NULL,
+  `subsystem_name` VARCHAR(128) NULL,
+  `service_name` VARCHAR(128) NOT NULL,
+  `log_level` VARCHAR(32) NOT NULL,
+  `title` VARCHAR(255) NULL,
+  `message` TEXT NULL,
+  `error_type` VARCHAR(255) NULL,
+  `stack_trace` MEDIUMTEXT NULL,
+  `trace_id` VARCHAR(128) NULL,
+  `request_id` VARCHAR(128) NULL,
+  `occurred_at` DATETIME NOT NULL,
+  `source_type` VARCHAR(32) NOT NULL DEFAULT 'LOCAL',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ops_system_alert_event_query` (`business_line_code`, `environment_code`, `service_name`, `log_level`, `occurred_at`),
+  KEY `idx_ops_system_alert_event_time` (`occurred_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `sys_notification` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `recipient_user_name` VARCHAR(64) NOT NULL,
+  `notification_type` VARCHAR(64) NOT NULL,
+  `title` VARCHAR(255) NOT NULL,
+  `content` TEXT NULL,
+  `business_line_code` VARCHAR(128) NULL,
+  `environment_code` VARCHAR(64) NULL,
+  `dedupe_key` VARCHAR(255) NOT NULL,
+  `read_flag` TINYINT(1) NOT NULL DEFAULT 0,
+  `read_at` DATETIME NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sys_notification_dedupe` (`recipient_user_name`, `dedupe_key`),
+  KEY `idx_sys_notification_recipient` (`recipient_user_name`, `read_flag`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pm_project_involved_system` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `system_scope` VARCHAR(32) NOT NULL,
+  `business_line` VARCHAR(128) NOT NULL DEFAULT '',
+  `system_name` VARCHAR(128) NOT NULL,
+  `description` TEXT NULL,
+  `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `sort_order` INT NOT NULL DEFAULT 0,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pm_project_involved_system_name` (`system_scope`, `business_line`, `system_name`),
+  KEY `idx_pm_project_involved_system_select` (`system_scope`, `business_line`, `enabled`, `sort_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `pay_channel` (
@@ -124,6 +281,16 @@ CREATE TABLE `pay_merchant_account` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_pay_merchant_channel_code_env` (`channel_id`, `merchant_code`, `environment`),
   KEY `idx_pay_merchant_channel_id` (`channel_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pay_merchant_purpose` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `merchant_id` BIGINT NOT NULL,
+  `purpose_code` VARCHAR(32) NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pay_merchant_purpose` (`merchant_id`, `purpose_code`),
+  KEY `idx_pay_merchant_purpose_code` (`purpose_code`, `merchant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `pay_merchant_param` (
@@ -284,6 +451,9 @@ CREATE TABLE `pm_work_item` (
   `planned_start_at` DATETIME NULL,
   `planned_end_at` DATETIME NULL,
   `finished_at` DATETIME NULL,
+  `pause_previous_status` VARCHAR(32) NULL,
+  `pause_reason` VARCHAR(255) NULL,
+  `pause_date` DATE NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -323,6 +493,9 @@ CREATE TABLE `pm_intake_record` (
   `ai_draft_json` MEDIUMTEXT NULL,
   `intake_status` VARCHAR(32) NOT NULL,
   `demand_status` VARCHAR(32) NULL,
+  `pause_previous_demand_status` VARCHAR(32) NULL,
+  `pause_reason` VARCHAR(255) NULL,
+  `pause_date` DATE NULL,
   `enrichment_status` VARCHAR(16) NULL,
   `enrichment_error_summary` VARCHAR(255) NULL,
   `enrichment_updated_at` DATETIME NULL,
@@ -348,11 +521,28 @@ CREATE TABLE `pm_intake_history` (
   KEY `idx_pm_intake_history_intake_id` (`intake_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `pm_intake_todo` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `intake_id` BIGINT NOT NULL,
+  `todo_title` VARCHAR(255) NOT NULL,
+  `todo_content` TEXT NULL,
+  `todo_status` VARCHAR(32) NOT NULL,
+  `assignee_user_name` VARCHAR(64) NULL,
+  `planned_at` DATETIME NULL,
+  `completed_at` DATETIME NULL,
+  `process_result` TEXT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_pm_intake_todo_intake_id` (`intake_id`),
+  KEY `idx_pm_intake_todo_status` (`todo_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `pm_intake_development_analysis` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `intake_id` BIGINT NOT NULL,
   `project_id` BIGINT NULL,
-  `project_group` VARCHAR(128) NULL,
+  `business_line` VARCHAR(128) NULL,
   `repository_url` VARCHAR(512) NULL,
   `analysis_status` VARCHAR(32) NOT NULL,
   `analysis_message` VARCHAR(255) NULL,
@@ -365,6 +555,34 @@ CREATE TABLE `pm_intake_development_analysis` (
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_pm_intake_development_analysis_intake_id` (`intake_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pm_intake_clarification_analysis` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `intake_id` BIGINT NOT NULL,
+  `business_line` VARCHAR(128) NULL,
+  `analysis_status` VARCHAR(32) NOT NULL,
+  `analysis_message` VARCHAR(255) NULL,
+  `items_json` TEXT NULL,
+  `created_by` VARCHAR(64) NOT NULL,
+  `updated_by` VARCHAR(64) NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_pm_intake_clarification_analysis_intake_id` (`intake_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pm_intake_work_item_relation` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `intake_id` BIGINT NOT NULL,
+  `work_item_id` BIGINT NOT NULL,
+  `draft_index` INT NULL,
+  `relation_type` VARCHAR(32) NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pm_intake_work_item_relation` (`intake_id`, `work_item_id`),
+  KEY `idx_pm_intake_work_item_relation_intake` (`intake_id`, `draft_index`),
+  KEY `idx_pm_intake_work_item_relation_work_item` (`work_item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `pm_attachment` (

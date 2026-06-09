@@ -37,10 +37,10 @@ public class PaymentProjectBindingService {
         this.paymentAuditService = paymentAuditService;
     }
 
-    public List<PaymentProjectBindingResponse> list(Long projectId, String projectGroup, Long merchantId, String purposeCode, String status) {
+    public List<PaymentProjectBindingResponse> list(Long projectId, String businessLine, Long merchantId, String purposeCode, String status) {
         return paymentProjectBindingMapper.findAll(
                 projectId,
-                PaymentCatalogs.trimToNull(projectGroup),
+                PaymentCatalogs.trimToNull(businessLine),
                 merchantId,
                 PaymentCatalogs.trimToNull(purposeCode) == null ? null : PaymentCatalogs.normalizePurpose(purposeCode),
                 PaymentCatalogs.trimToNull(status) == null ? null : PaymentCatalogs.normalizeStatus(status, "status")
@@ -63,6 +63,7 @@ public class PaymentProjectBindingService {
     public PaymentProjectBindingResponse create(PaymentProjectBindingSaveRequest request, String operatorUserName) {
         validateReferences(request.getProjectId(), request.getMerchantId());
         List<String> purposeCodes = normalizePurposeCodes(request);
+        ensureMerchantSupportsPurposes(request.getMerchantId(), purposeCodes);
         for (String purposeCode : purposeCodes) {
             ensureUniqueKey(request.getProjectId(), request.getMerchantId(), purposeCode, null);
         }
@@ -96,6 +97,7 @@ public class PaymentProjectBindingService {
         }
         validateReferences(request.getProjectId(), request.getMerchantId());
         List<String> purposeCodes = normalizePurposeCodes(request);
+        ensureMerchantSupportsPurposes(request.getMerchantId(), purposeCodes);
         for (String purposeCode : purposeCodes) {
             ensureUniqueKey(request.getProjectId(), request.getMerchantId(), purposeCode, id);
         }
@@ -137,9 +139,7 @@ public class PaymentProjectBindingService {
         return new PaymentProjectBindingResponse(
                 response.id(),
                 response.projectId(),
-                response.businessLineCode(),
-                response.businessLineName(),
-                response.projectGroup(),
+                response.businessLine(),
                 response.projectCode(),
                 response.projectName(),
                 response.merchantId(),
@@ -183,6 +183,18 @@ public class PaymentProjectBindingService {
         );
         if (existing != null && !existing.getId().equals(currentId)) {
             throw new IllegalArgumentException("同项目、商户、用途的绑定已存在");
+        }
+    }
+
+    private void ensureMerchantSupportsPurposes(Long merchantId, List<String> purposeCodes) {
+        List<String> supportedPurposeCodes = paymentMerchantMapper.findPurposeCodes(merchantId);
+        if (supportedPurposeCodes == null || supportedPurposeCodes.isEmpty()) {
+            throw new IllegalArgumentException("商户号未维护支持用途");
+        }
+        for (String purposeCode : purposeCodes) {
+            if (!supportedPurposeCodes.contains(purposeCode)) {
+                throw new IllegalArgumentException("商户号不支持用途：" + purposeCode);
+            }
         }
     }
 

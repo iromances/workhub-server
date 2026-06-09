@@ -11,6 +11,7 @@ import cn.aslight.workhub.service.project.ProjectService;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -34,6 +35,7 @@ class PaymentProjectBindingServiceTest {
         PaymentMerchantEntity merchantEntity = new PaymentMerchantEntity();
         merchantEntity.setId(8L);
         when(merchantMapper.findEntityById(8L)).thenReturn(merchantEntity);
+        when(merchantMapper.findPurposeCodes(8L)).thenReturn(java.util.List.of("WITHHOLD"));
         when(bindingMapper.findEntityByUniqueKey(3L, 8L, "WITHHOLD")).thenReturn(null);
         doAnswer(invocation -> {
             PaymentProjectBindingEntity entity = invocation.getArgument(0);
@@ -43,8 +45,6 @@ class PaymentProjectBindingServiceTest {
         when(bindingMapper.findResponseById(100L)).thenReturn(new PaymentProjectBindingResponse(
                 100L,
                 3L,
-                "DEMO-BIZ",
-                "演示业务线",
                 "演示业务",
                 "DEMO",
                 "演示项目",
@@ -79,5 +79,33 @@ class PaymentProjectBindingServiceTest {
         verify(bindingMapper).clearDefaultBindings(3L, "WITHHOLD", null);
         assertEquals(100L, response.id());
         assertEquals("WITHHOLD", response.purposeCode());
+    }
+
+    @Test
+    void create_shouldRejectUnsupportedMerchantPurpose() {
+        PaymentProjectBindingMapper bindingMapper = mock(PaymentProjectBindingMapper.class);
+        PaymentMerchantMapper merchantMapper = mock(PaymentMerchantMapper.class);
+        ProjectService projectService = mock(ProjectService.class);
+        PaymentAuditService auditService = mock(PaymentAuditService.class);
+        PaymentProjectBindingService service = new PaymentProjectBindingService(bindingMapper, merchantMapper, projectService, auditService);
+
+        ProjectEntity projectEntity = new ProjectEntity();
+        projectEntity.setId(3L);
+        when(projectService.requireExisting(3L)).thenReturn(projectEntity);
+        PaymentMerchantEntity merchantEntity = new PaymentMerchantEntity();
+        merchantEntity.setId(8L);
+        when(merchantMapper.findEntityById(8L)).thenReturn(merchantEntity);
+        when(merchantMapper.findPurposeCodes(8L)).thenReturn(java.util.List.of("WITHHOLD"));
+
+        PaymentProjectBindingSaveRequest request = new PaymentProjectBindingSaveRequest();
+        request.setProjectId(3L);
+        request.setMerchantId(8L);
+        request.setPurposeCode("PAY_OUT");
+        request.setPriority(1);
+        request.setDefaultBinding(true);
+        request.setStatus("ACTIVE");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> service.create(request, "admin"));
+        assertEquals("商户号不支持用途：PAY_OUT", exception.getMessage());
     }
 }

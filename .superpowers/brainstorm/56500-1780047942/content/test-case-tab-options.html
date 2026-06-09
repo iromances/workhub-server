@@ -1,0 +1,72 @@
+<h2>需求详情新增“测试用例”页签</h2>
+<p class="subtitle">下面是三种落地方式。你的需求更接近 B：AI 生成草稿，人工编辑保存，并写入修改历史。</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">A. 只读 AI 参考</div>
+        <div class="mockup-body">
+          <div class="mock-nav">基本信息 | 需求澄清 | AI任务评估 | 任务评估 | 测试用例</div>
+          <div class="section">
+            <div class="label">生成状态</div>
+            <div class="placeholder">SUCCEEDED / FAILED / RUNNING</div>
+          </div>
+          <div class="placeholder">测试场景列表：前置条件、步骤、预期结果</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. 展示草稿</h3>
+      <p>只生成和展示 AI 测试用例，不保存人工编辑结果。实现最快，但后续复用价值低。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">B. 可编辑草稿（推荐）</div>
+        <div class="mockup-body">
+          <div class="mock-nav">基本信息 | 需求澄清 | AI任务评估 | 任务评估 | 测试用例</div>
+          <div style="display:flex;gap:12px;margin:12px 0;">
+            <button class="mock-button">AI生成</button>
+            <button class="mock-button">保存</button>
+            <button class="mock-button">重新生成</button>
+          </div>
+          <div class="placeholder">用例表格：场景、优先级、前置条件、步骤、预期结果、覆盖需求点</div>
+          <div class="placeholder">风险/覆盖缺口：由 AI 输出，可人工调整</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. 可编辑保存</h3>
+      <p>AI 基于需求分析生成测试用例，人工可编辑保存；生成和保存都写需求历史，不改变需求阶段。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">C. 可确认基线</div>
+        <div class="mockup-body">
+          <div class="mock-nav">基本信息 | 需求澄清 | AI任务评估 | 任务评估 | 测试用例</div>
+          <div style="display:flex;gap:12px;margin:12px 0;">
+            <button class="mock-button">AI生成</button>
+            <button class="mock-button">保存</button>
+            <button class="mock-button">确认测试基线</button>
+          </div>
+          <div class="placeholder">草稿区 + 已确认版本区 + 差异记录</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. 确认归档</h3>
+      <p>在 B 的基础上增加确认动作和版本基线。审计更强，但会引入额外生命周期语义。</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>推荐方案</h3>
+  <p>推荐 B。它满足“生成、编辑、保存、留痕”，又不会引入新的需求状态或审批/确认流，符合当前项目边界。</p>
+</div>

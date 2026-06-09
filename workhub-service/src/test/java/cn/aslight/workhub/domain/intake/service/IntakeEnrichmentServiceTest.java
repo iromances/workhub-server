@@ -82,7 +82,6 @@ class IntakeEnrichmentServiceTest {
                 null,
                 null,
                 null,
-                "2d",
                 null,
                 null,
                 null,
@@ -115,7 +114,7 @@ class IntakeEnrichmentServiceTest {
                 eq(null),
                 any(LocalDateTime.class)
         );
-        assertTrue(structuredJsonCaptor.getValue().contains("\"developmentBranchName\":\"feature/liyi_ebike_split_20260324\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"developmentBranchName\":\"feature/liyi_ebike_split_202603240005\""));
         verify(codexCliStructuredExtractor).extract("企业微信审批", "审批编号：A-001", attachments, extractionBatch.summaries());
     }
 
@@ -168,7 +167,6 @@ class IntakeEnrichmentServiceTest {
                 "趣学呗主体账户变更",
                 null,
                 "趣学呗需要调整平台收款账户。",
-                null,
                 null,
                 null,
                 null,

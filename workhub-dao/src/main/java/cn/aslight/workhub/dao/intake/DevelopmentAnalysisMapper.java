@@ -15,7 +15,7 @@ import org.apache.ibatis.annotations.Update;
 public interface DevelopmentAnalysisMapper {
 
     @Select("""
-            SELECT id, intake_id, project_id, project_group, repository_url, analysis_status, analysis_message, draft_json,
+            SELECT id, intake_id, project_id, business_line, repository_url, analysis_status, analysis_message, draft_json,
                    zentao_sync_status, zentao_sync_message, created_by, updated_by, created_at, updated_at
             FROM pm_intake_development_analysis
             WHERE id = #{id}
@@ -23,7 +23,7 @@ public interface DevelopmentAnalysisMapper {
     DevelopmentAnalysisEntity findById(Long id);
 
     @Select("""
-            SELECT id, intake_id, project_id, project_group, repository_url, analysis_status, analysis_message, draft_json,
+            SELECT id, intake_id, project_id, business_line, repository_url, analysis_status, analysis_message, draft_json,
                    zentao_sync_status, zentao_sync_message, created_by, updated_by, created_at, updated_at
             FROM pm_intake_development_analysis
             WHERE intake_id = #{intakeId}
@@ -34,10 +34,10 @@ public interface DevelopmentAnalysisMapper {
 
     @Insert("""
             INSERT INTO pm_intake_development_analysis (
-                intake_id, project_id, project_group, repository_url, analysis_status, analysis_message, draft_json,
+                intake_id, project_id, business_line, repository_url, analysis_status, analysis_message, draft_json,
                 zentao_sync_status, zentao_sync_message, created_by, updated_by
             ) VALUES (
-                #{intakeId}, #{projectId}, #{projectGroup}, #{repositoryUrl}, #{analysisStatus}, #{analysisMessage}, #{draftJson},
+                #{intakeId}, #{projectId}, #{businessLine}, #{repositoryUrl}, #{analysisStatus}, #{analysisMessage}, #{draftJson},
                 #{zentaoSyncStatus}, #{zentaoSyncMessage}, #{createdBy}, #{updatedBy}
             )
             """)
@@ -47,7 +47,7 @@ public interface DevelopmentAnalysisMapper {
     @Update("""
             UPDATE pm_intake_development_analysis
             SET project_id = #{projectId},
-                project_group = #{projectGroup},
+                business_line = #{businessLine},
                 repository_url = #{repositoryUrl},
                 analysis_status = #{analysisStatus},
                 analysis_message = #{analysisMessage},
@@ -63,7 +63,7 @@ public interface DevelopmentAnalysisMapper {
     @Update("""
             UPDATE pm_intake_development_analysis
             SET project_id = #{projectId},
-                project_group = #{projectGroup},
+                business_line = #{businessLine},
                 repository_url = #{repositoryUrl},
                 analysis_status = #{analysisStatus},
                 analysis_message = #{analysisMessage},
@@ -90,4 +90,5 @@ public interface DevelopmentAnalysisMapper {
                      @Param("zentaoSyncStatus") String zentaoSyncStatus,
                      @Param("zentaoSyncMessage") String zentaoSyncMessage,
                      @Param("updatedBy") String updatedBy);
+
 }

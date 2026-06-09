@@ -6,12 +6,10 @@ import java.time.LocalDateTime;
  * ProjectDetail 响应模型。
  */
 public record ProjectDetailResponse(Long id,
-                                    String businessLineCode,
-                                    String businessLineName,
                                     String code,
                                     String name,
                                     String type,
-                                    String group,
+                                    String businessLine,
                                     String ownerUserName,
                                     String status,
                                     String description,

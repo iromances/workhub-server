@@ -28,9 +28,13 @@ public class IntakeSchemaPatchRunner implements ApplicationRunner {
 
     private static final String TABLE_NAME = "pm_intake_record";
     private static final String HISTORY_TABLE_NAME = "pm_intake_history";
+    private static final String TODO_TABLE_NAME = "pm_intake_todo";
     private static final List<ColumnPatch> COLUMN_PATCHES = List.of(
             new ColumnPatch("structured_data_json", "MEDIUMTEXT NULL"),
             new ColumnPatch("demand_status", "VARCHAR(32) NULL"),
+            new ColumnPatch("pause_previous_demand_status", "VARCHAR(32) NULL"),
+            new ColumnPatch("pause_reason", "VARCHAR(255) NULL"),
+            new ColumnPatch("pause_date", "DATE NULL"),
             new ColumnPatch("enrichment_status", "VARCHAR(16) NULL"),
             new ColumnPatch("enrichment_error_summary", "VARCHAR(255) NULL"),
             new ColumnPatch("enrichment_updated_at", "DATETIME NULL"),
@@ -62,6 +66,7 @@ public class IntakeSchemaPatchRunner implements ApplicationRunner {
             ensureMediumText(connection, TABLE_NAME, "ai_draft_json");
             ensureExternalMessageUniqueIndex(connection);
             ensureHistoryTable(connection);
+            ensureTodoTable(connection);
         }
     }
 
@@ -166,6 +171,36 @@ public class IntakeSchemaPatchRunner implements ApplicationRunner {
                         """,
                 "Created missing table {}",
                 HISTORY_TABLE_NAME,
+                null
+        );
+    }
+
+    void ensureTodoTable(Connection connection) throws SQLException {
+        if (tableExists(connection, TODO_TABLE_NAME)) {
+            return;
+        }
+        executeAlter(
+                connection,
+                """
+                        CREATE TABLE `pm_intake_todo` (
+                          `id` BIGINT NOT NULL AUTO_INCREMENT,
+                          `intake_id` BIGINT NOT NULL,
+                          `todo_title` VARCHAR(255) NOT NULL,
+                          `todo_content` TEXT NULL,
+                          `todo_status` VARCHAR(32) NOT NULL,
+                          `assignee_user_name` VARCHAR(64) NULL,
+                          `planned_at` DATETIME NULL,
+                          `completed_at` DATETIME NULL,
+                          `process_result` TEXT NULL,
+                          `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                          PRIMARY KEY (`id`),
+                          KEY `idx_pm_intake_todo_intake_id` (`intake_id`),
+                          KEY `idx_pm_intake_todo_status` (`todo_status`)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                        """,
+                "Created missing table {}",
+                TODO_TABLE_NAME,
                 null
         );
     }

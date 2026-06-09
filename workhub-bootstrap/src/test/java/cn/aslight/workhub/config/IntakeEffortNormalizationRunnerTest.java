@@ -36,7 +36,7 @@ class IntakeEffortNormalizationRunnerTest {
         IntakeEffortNormalizationRunner runner = new IntakeEffortNormalizationRunner(intakeMapper, objectMapper);
         runner.run(new DefaultApplicationArguments(new String[0]));
 
-        verify(intakeMapper).updateEffortPayloads(eq(1L), contains("\"estimatedEffort\":\"16h\""), contains("\"estimatedEffort\":\"4h\""));
+        verify(intakeMapper).updateEffortPayloads(eq(1L), contains("\"actualEffort\":\"12h\""), contains("\"estimatedEffort\":\"4h\""));
     }
 
     @Test

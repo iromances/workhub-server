@@ -279,12 +279,11 @@ public class AiDraftGenerator {
     }
 
     private List<IntakeTaskBreakdownItem> buildHeuristicBreakdown(String type, IntakeStructuredData structuredData) {
-        String effort = structuredData == null ? null : structuredData.estimatedEffort();
         String plannedDueDate = structuredData == null ? null : structuredData.plannedDueDate();
         List<IntakeTaskBreakdownItem> items = new ArrayList<>();
         items.add(new IntakeTaskBreakdownItem(
                 "需求澄清与方案确认",
-                effort == null ? "4h" : effort,
+                "4h",
                 null,
                 "待开始",
                 structuredData == null ? "结合原始需求和附件澄清范围" : "结合审批字段和附件确认需求边界"
