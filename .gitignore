@@ -5,6 +5,5 @@ target/
 logs/
 data/
 *.iml
-.mvn/wrapper/maven-wrapper.jar
-application-local.yml
-config/mcp-resource-catalog.json
+config
+.superpowers/
