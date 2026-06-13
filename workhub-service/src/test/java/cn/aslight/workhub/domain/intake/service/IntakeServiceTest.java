@@ -3,6 +3,8 @@ package cn.aslight.workhub.service.intake;
 import cn.aslight.workhub.dao.intake.IntakeMapper;
 import cn.aslight.workhub.dao.intake.IntakeHistoryMapper;
 import cn.aslight.workhub.dao.intake.IntakeWorkItemRelationMapper;
+import cn.aslight.workhub.dao.project.BusinessLineMapper;
+import cn.aslight.workhub.model.intake.IntakeBusinessLineUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeDevelopmentBranchRequest;
 import cn.aslight.workhub.model.intake.IntakeHistoryEntity;
 import cn.aslight.workhub.model.intake.IntakePauseRequest;
@@ -11,6 +13,7 @@ import cn.aslight.workhub.model.intake.IntakeSqlDraft;
 import cn.aslight.workhub.model.intake.IntakeStageActionRequest;
 import cn.aslight.workhub.model.intake.IntakeZentaoLinkRequest;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
+import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.service.attachment.AttachmentService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -1305,6 +1308,121 @@ class IntakeServiceTest {
         verify(intakeHistoryMapper).insert(any());
         assertEquals("https://zentao.example.com/story-view-123.html", detail.structuredData().zentaoUrl());
         assertEquals("feature/req-202603250009", detail.structuredData().developmentBranchName());
+    }
+
+    @Test
+    void updateBusinessLine_shouldPersistBusinessLineForCompletedHistoricalDemand() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeStructuredDataExtractor intakeStructuredDataExtractor = new IntakeStructuredDataExtractor();
+        IntakeEnrichmentService intakeEnrichmentService = mock(IntakeEnrichmentService.class);
+
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                mock(IntakeWorkItemRelationMapper.class),
+                businessLineMapper,
+                attachmentService,
+                intakeStructuredDataExtractor,
+                intakeEnrichmentService,
+                mock(CodexCliSqlDraftGenerator.class),
+                null,
+                new ObjectMapper()
+        );
+
+        BusinessLineEntity targetBusinessLine = new BusinessLineEntity();
+        targetBusinessLine.setBusinessLineName("资产业务");
+        targetBusinessLine.setEnabled(true);
+        when(businessLineMapper.findByName("资产业务")).thenReturn(targetBusinessLine);
+
+        IntakeRecordEntity before = new IntakeRecordEntity();
+        before.setId(403L);
+        before.setSenderName("admin");
+        before.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        before.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"周拓的系统开发2.0","proposerName":"周拓","approvalCode":"202603250009","submittedTime":"2026/3/25 16:17","requirementType":"研发需求","developmentBranchName":"feature/req-202603250009","zentaoUrl":"https://zentao.example.com/story-view-123.html","requirementDigest":"沃橙绑卡","requirementName":"沃橙绑卡需求","requirementSummary":"描述","department":"供应链业务部","businessLine":"供应链科技","remark":"高优","estimatedEffort":"2d","plannedDueDate":"2026/04/05","developmentStartedDate":null,"actualEffort":null,"testingStartedDate":null,"actualCompletedTime":null,"scheduledAcceptanceDate":"2026/04/07","actualTestingEffort":"3h","actualTestingCompletedDate":"2026/04/08","acceptanceTime":"2026/04/08","releasedTime":"2026/04/09","projectHint":"供应链科技","fields":[{"label":"审批编号","value":"202603250009"}],"attachmentSummaries":[]}
+                """);
+        before.setDemandStatus("已完成");
+        before.setEnrichmentStatus("SUCCEEDED");
+        before.setIntakeStatus("待整理");
+
+        IntakeRecordEntity after = new IntakeRecordEntity();
+        after.setId(403L);
+        after.setSenderName("admin");
+        after.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        after.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"周拓的系统开发2.0","proposerName":"周拓","approvalCode":"202603250009","submittedTime":"2026/3/25 16:17","requirementType":"研发需求","developmentBranchName":"feature/req-202603250009","zentaoUrl":"https://zentao.example.com/story-view-123.html","requirementDigest":"沃橙绑卡","requirementName":"沃橙绑卡需求","requirementSummary":"描述","department":"供应链业务部","businessLine":"资产业务","remark":"高优","estimatedEffort":"2d","plannedDueDate":"2026/04/05","developmentStartedDate":null,"actualEffort":null,"testingStartedDate":null,"actualCompletedTime":null,"scheduledAcceptanceDate":"2026/04/07","actualTestingEffort":"3h","actualTestingCompletedDate":"2026/04/08","acceptanceTime":"2026/04/08","releasedTime":"2026/04/09","projectHint":"资产业务","fields":[{"label":"审批编号","value":"202603250009"}],"attachmentSummaries":[]}
+                """);
+        after.setDemandStatus("已完成");
+        after.setEnrichmentStatus("SUCCEEDED");
+        after.setIntakeStatus("待整理");
+
+        when(intakeMapper.findById(403L)).thenReturn(before, after);
+        when(attachmentService.listIntakeAttachments(403L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(403L, 20)).thenReturn(List.of());
+
+        IntakeBusinessLineUpdateRequest request = new IntakeBusinessLineUpdateRequest();
+        request.setBusinessLine("资产业务");
+
+        var detail = service.updateBusinessLine(403L, request, "admin");
+
+        ArgumentCaptor<String> structuredJsonCaptor = ArgumentCaptor.forClass(String.class);
+        verify(intakeMapper).updateStructuredData(eq(403L), structuredJsonCaptor.capture());
+        assertTrue(structuredJsonCaptor.getValue().contains("\"businessLine\":\"资产业务\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"projectHint\":\"资产业务\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"zentaoUrl\":\"https://zentao.example.com/story-view-123.html\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"scheduledAcceptanceDate\":\"2026/04/07\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"actualTestingEffort\":\"3h\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"actualTestingCompletedDate\":\"2026/04/08\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"fields\":[{\"label\":\"审批编号\",\"value\":\"202603250009\"}]"));
+        ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
+        verify(intakeHistoryMapper).insert(historyCaptor.capture());
+        assertEquals("修改业务线", historyCaptor.getValue().getActionSummary());
+        assertTrue(historyCaptor.getValue().getDetailText().contains("业务线：供应链科技 -> 资产业务"));
+        assertEquals("资产业务", detail.structuredData().businessLine());
+        assertEquals("资产业务", detail.structuredData().projectHint());
+    }
+
+    @Test
+    void updateBusinessLine_shouldRejectDisabledBusinessLine() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                mock(IntakeWorkItemRelationMapper.class),
+                businessLineMapper,
+                mock(AttachmentService.class),
+                new IntakeStructuredDataExtractor(),
+                mock(IntakeEnrichmentService.class),
+                mock(CodexCliSqlDraftGenerator.class),
+                null,
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity entity = new IntakeRecordEntity();
+        entity.setId(404L);
+        entity.setStructuredDataJson("""
+                {"requirementType":"研发需求","businessLine":"供应链科技","projectHint":"供应链科技","fields":[],"attachmentSummaries":[]}
+                """);
+        when(intakeMapper.findById(404L)).thenReturn(entity);
+
+        BusinessLineEntity disabled = new BusinessLineEntity();
+        disabled.setBusinessLineName("资产业务");
+        disabled.setEnabled(false);
+        when(businessLineMapper.findByName("资产业务")).thenReturn(disabled);
+
+        IntakeBusinessLineUpdateRequest request = new IntakeBusinessLineUpdateRequest();
+        request.setBusinessLine("资产业务");
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.updateBusinessLine(404L, request, "admin"));
+        assertEquals("业务线不存在或未启用：资产业务", ex.getMessage());
+        verify(intakeMapper, never()).updateStructuredData(eq(404L), any());
+        verify(intakeHistoryMapper, never()).insert(any());
     }
 
     @Test

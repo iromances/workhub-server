@@ -1,5 +1,0 @@
-id,cooperation_code,project_no,channel_code,pay_config_code,query_key,transaction_mode,status,is_delete,is_cancel,member_id,terminal_id,channel_url,notify_url,remark
-19,HZF000141,DEF,BAOFUPAY,B-141,DEF,AGREEMENT_PAYMENT,1,false,,1285482,92444,https://public.baofoo.com/cutpayment/protocol/backTransRequest,https://amp-cb-unionpay.xxingtong.com/channel/baofu/paynotify,
-36,HZF000141,DEF,HUIFUPAY,H-141,DEF,AGREEMENT_PAYMENT,0,true,,6666000186887033,F17139883,https://inspay.cloudpnr.com,https://amp-cb-unionpay.xxingtong.com/channel/huifu/paynotify,已废弃
-38,HZF000141,DEF,YEEPAY,Y-141,DEF,AGREEMENT_PAYMENT,1,false,false,10092876096,10092876096,https://openapi.yeepay.com/yop-center,https://amp-cb-unionpay.xxingtong.com/channel/yeepay/paynotify,大和
-39,HZF000141,DEF,HUIFUPAY,H-141,DEF,AGREEMENT_PAYMENT,1,false,,6666000191489932,F19853536,https://inspay.cloudpnr.com,https://amp-cb-unionpay.xxingtong.com/channel/huifu/paynotify,新商户号-已切换

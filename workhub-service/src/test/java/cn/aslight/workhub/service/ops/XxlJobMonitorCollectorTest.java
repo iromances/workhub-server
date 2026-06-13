@@ -4,6 +4,7 @@ import cn.aslight.workhub.model.ops.OpsMonitorCheckResponse;
 import cn.aslight.workhub.model.ops.OpsMonitorEntity;
 import cn.aslight.workhub.model.ops.XxlJobDashboardResponse;
 import cn.aslight.workhub.model.ops.XxlJobExecutorResponse;
+import cn.aslight.workhub.model.ops.XxlJobLogPageResponse;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -210,6 +211,37 @@ class XxlJobMonitorCollectorTest {
         assertTrue(!queryClient.sqls.get(1).contains("NOT (l.trigger_code IN (0, 200) AND l.handle_code = 0)"));
         assertTrue(!queryClient.sqls.get(2).contains("l.handle_code <> 200"));
         assertTrue(!queryClient.sqls.get(2).contains("NOT (l.trigger_code IN (0, 200) AND l.handle_code = 0)"));
+    }
+
+    @Test
+    void collectLogs_shouldReadRawLogsWithoutCollectingSummary() {
+        FakeXxlJobDatabaseQueryClient queryClient = new FakeXxlJobDatabaseQueryClient();
+        queryClient.nextRows(List.of(Map.of("failedJobTotal", 18)));
+        queryClient.nextRows(List.of(successJobRow()));
+        XxlJobMonitorCollector collector = new XxlJobMonitorCollector(queryClient);
+
+        XxlJobLogPageResponse response = collector.collectLogs(
+                monitor(),
+                LocalDate.of(2026, 6, 1),
+                LocalDate.of(2026, 6, 9),
+                1,
+                20,
+                "张",
+                "premium",
+                LOG_STATUS_ALL
+        );
+
+        assertEquals(18, response.total());
+        assertEquals(1, response.logs().size());
+        assertEquals("SUCCESS", response.logs().getFirst().failureType());
+        assertEquals(2, queryClient.sqls.size());
+        assertTrue(queryClient.sqls.getFirst().contains("COUNT(1) AS failedJobTotal"));
+        assertTrue(queryClient.sqls.getFirst().contains("FROM `amp_xxl_job`.`xxl_job_log` l"));
+        assertTrue(queryClient.sqls.get(1).contains("ORDER BY l.trigger_time DESC, l.id DESC"));
+        assertTrue(!queryClient.sqls.getFirst().contains("xxl_job_log_report"));
+        assertTrue(!queryClient.sqls.get(1).contains("xxl_job_log_report"));
+        assertTrue(queryClient.sqls.getFirst().contains("i.author LIKE '%张%'"));
+        assertTrue(queryClient.sqls.get(1).contains("g.app_name LIKE '%premium%'"));
     }
 
     @Test

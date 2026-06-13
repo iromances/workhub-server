@@ -333,7 +333,8 @@ CREATE TABLE `pay_merchant_secret` (
 
 CREATE TABLE `pay_project_merchant_binding` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `project_id` BIGINT NOT NULL,
+  `project_id` BIGINT NULL,
+  `business_line` VARCHAR(128) NOT NULL,
   `merchant_id` BIGINT NOT NULL,
   `purpose_code` VARCHAR(32) NOT NULL,
   `priority` INT NOT NULL DEFAULT 1,
@@ -345,6 +346,7 @@ CREATE TABLE `pay_project_merchant_binding` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_pay_binding_project_merchant_purpose` (`project_id`, `merchant_id`, `purpose_code`),
   KEY `idx_pay_binding_project_purpose` (`project_id`, `purpose_code`, `binding_status`, `is_default`, `priority`),
+  KEY `idx_pay_binding_business_purpose` (`business_line`, `purpose_code`, `binding_status`, `is_default`, `priority`),
   KEY `idx_pay_binding_merchant_id` (`merchant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

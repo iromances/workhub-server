@@ -78,7 +78,7 @@ MCP 只读通道用于在 AI 客户端、受控运维资源和 WorkHub 需求管
 
 - HTTP runtime：内嵌在 `workhub-server` 主服务中，通过 `/api/mcp/runtime` 接收 MCP JSON-RPC 请求，直接读取主库中已启用的 MCP 资源配置，配置变更后下一次调用生效。
 
-当前 MCP runtime 只暴露受控只读工具，项目根目录 `MCP_CAPABILITIES.md` 维护完整能力清单：
+当前 MCP runtime 只暴露受控只读工具，`docs/mcp-capabilities.md` 维护完整能力清单：
 
 - `list_mcp_targets`：返回业务线、业务线系统清单、全局中台系统清单、环境、数据库目标、服务器目标、知识库根路径和 GitLab 配置摘要。
 - `get_business_line_context`：按业务线名称或编码返回 GitLab group、代码缓存路径规则、知识库路径规则、数据库目标和服务器目标。

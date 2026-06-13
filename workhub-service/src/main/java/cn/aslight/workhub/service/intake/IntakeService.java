@@ -2,9 +2,11 @@ package cn.aslight.workhub.service.intake;
 
 import cn.aslight.workhub.model.attachment.AttachmentResponse;
 import cn.aslight.workhub.service.attachment.AttachmentService;
+import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisDraft;
 import cn.aslight.workhub.model.intake.DevelopmentWorkItemDraft;
 import cn.aslight.workhub.model.intake.IntakeAIDraft;
+import cn.aslight.workhub.model.intake.IntakeBusinessLineUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeCreateRequest;
 import cn.aslight.workhub.model.intake.IntakeDevelopmentBranchRequest;
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
@@ -22,6 +24,7 @@ import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
 import cn.aslight.workhub.model.intake.IntakeUploadRequest;
 import cn.aslight.workhub.model.intake.WecomCallbackRequest;
 import cn.aslight.workhub.model.intake.IntakeZentaoLinkRequest;
+import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.dao.intake.IntakeHistoryMapper;
 import cn.aslight.workhub.dao.intake.IntakeMapper;
 import cn.aslight.workhub.dao.intake.IntakeTodoMapper;
@@ -115,6 +118,7 @@ public class IntakeService {
     private final IntakeHistoryMapper intakeHistoryMapper;
     private final IntakeWorkItemRelationMapper intakeWorkItemRelationMapper;
     private final IntakeTodoMapper intakeTodoMapper;
+    private final BusinessLineMapper businessLineMapper;
     private final AttachmentService attachmentService;
     private final IntakeStructuredDataExtractor intakeStructuredDataExtractor;
     private final IntakeEnrichmentService intakeEnrichmentService;
@@ -127,6 +131,7 @@ public class IntakeService {
                          IntakeHistoryMapper intakeHistoryMapper,
                          IntakeWorkItemRelationMapper intakeWorkItemRelationMapper,
                          IntakeTodoMapper intakeTodoMapper,
+                         BusinessLineMapper businessLineMapper,
                          AttachmentService attachmentService,
                          IntakeStructuredDataExtractor intakeStructuredDataExtractor,
                          IntakeEnrichmentService intakeEnrichmentService,
@@ -137,6 +142,7 @@ public class IntakeService {
         this.intakeHistoryMapper = intakeHistoryMapper;
         this.intakeWorkItemRelationMapper = intakeWorkItemRelationMapper;
         this.intakeTodoMapper = intakeTodoMapper;
+        this.businessLineMapper = businessLineMapper;
         this.attachmentService = attachmentService;
         this.intakeStructuredDataExtractor = intakeStructuredDataExtractor;
         this.intakeEnrichmentService = intakeEnrichmentService;
@@ -157,11 +163,37 @@ public class IntakeService {
                 intakeHistoryMapper,
                 new NoopIntakeWorkItemRelationMapper(),
                 new NoopIntakeTodoMapper(),
+                null,
                 attachmentService,
                 intakeStructuredDataExtractor,
                 intakeEnrichmentService,
                 codexCliSqlDraftGenerator,
                 null,
+                objectMapper
+        );
+    }
+
+    protected IntakeService(IntakeMapper intakeMapper,
+                            IntakeHistoryMapper intakeHistoryMapper,
+                            IntakeWorkItemRelationMapper intakeWorkItemRelationMapper,
+                            BusinessLineMapper businessLineMapper,
+                            AttachmentService attachmentService,
+                            IntakeStructuredDataExtractor intakeStructuredDataExtractor,
+                            IntakeEnrichmentService intakeEnrichmentService,
+                            CodexCliSqlDraftGenerator codexCliSqlDraftGenerator,
+                            IntakeClarificationAnalysisService intakeClarificationAnalysisService,
+                            ObjectMapper objectMapper) {
+        this(
+                intakeMapper,
+                intakeHistoryMapper,
+                intakeWorkItemRelationMapper,
+                new NoopIntakeTodoMapper(),
+                businessLineMapper,
+                attachmentService,
+                intakeStructuredDataExtractor,
+                intakeEnrichmentService,
+                codexCliSqlDraftGenerator,
+                intakeClarificationAnalysisService,
                 objectMapper
         );
     }
@@ -179,7 +211,7 @@ public class IntakeService {
                 intakeMapper,
                 intakeHistoryMapper,
                 intakeWorkItemRelationMapper,
-                new NoopIntakeTodoMapper(),
+                null,
                 attachmentService,
                 intakeStructuredDataExtractor,
                 intakeEnrichmentService,
@@ -587,6 +619,32 @@ public class IntakeService {
         return detail(id, null, false);
     }
 
+    @Transactional
+    public IntakeDetailResponse updateBusinessLine(Long id,
+                                                   IntakeBusinessLineUpdateRequest request,
+                                                   String operatorUserName) {
+        IntakeRecordEntity entity = requireExisting(id);
+        String businessLine = requireValue(request == null ? null : request.getBusinessLine(), "业务线不能为空");
+        validateEnabledBusinessLine(businessLine);
+
+        IntakeStructuredData currentStructuredData = readStructuredData(entity.getStructuredDataJson());
+        IntakeStructuredData nextStructuredData = withBusinessLine(currentStructuredData, businessLine);
+        String previousBusinessLine = currentStructuredData == null ? null : trimToNull(currentStructuredData.businessLine());
+        String previousProjectHint = currentStructuredData == null ? null : trimToNull(currentStructuredData.projectHint());
+        if (java.util.Objects.equals(previousBusinessLine, businessLine)
+                && java.util.Objects.equals(previousProjectHint, businessLine)) {
+            return detail(id, null, false);
+        }
+
+        intakeMapper.updateStructuredData(id, writeStructuredDataJson(nextStructuredData));
+        recordHistory(id,
+                "UPDATE",
+                "修改业务线",
+                buildBusinessLineHistory(previousBusinessLine, businessLine, previousProjectHint),
+                operatorUserName);
+        return detail(id, null, false);
+    }
+
     /**
      * 为数据提取/运维类需求生成 SQL 草稿。
      *
@@ -947,6 +1005,110 @@ public class IntakeService {
                 summaries,
                 structuredData.sqlDraft()
         );
+    }
+
+    private IntakeStructuredData withBusinessLine(IntakeStructuredData structuredData, String businessLine) {
+        if (structuredData == null) {
+            return new IntakeStructuredData(
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    businessLine,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    businessLine,
+                    List.of(),
+                    List.of(),
+                    null
+            );
+        }
+        return new IntakeStructuredData(
+                structuredData.category(),
+                structuredData.approvalTitle(),
+                structuredData.proposerName(),
+                structuredData.developmentOwnerUserName(),
+                structuredData.approvalCode(),
+                structuredData.submittedTime(),
+                structuredData.requirementType(),
+                structuredData.developmentBranchName(),
+                structuredData.zentaoUrl(),
+                structuredData.requirementDigest(),
+                structuredData.requirementName(),
+                structuredData.requirementSummary(),
+                structuredData.department(),
+                businessLine,
+                structuredData.remark(),
+                structuredData.plannedDueDate(),
+                structuredData.plannedDevelopmentStartDate(),
+                structuredData.plannedTestingStartDate(),
+                structuredData.plannedReleaseDate(),
+                structuredData.developmentStartedDate(),
+                structuredData.actualEffort(),
+                structuredData.testingStartedDate(),
+                structuredData.actualCompletedTime(),
+                structuredData.scheduledAcceptanceDate(),
+                structuredData.actualTestingEffort(),
+                structuredData.actualTestingCompletedDate(),
+                structuredData.acceptanceTime(),
+                structuredData.releasedTime(),
+                structuredData.closedTime(),
+                structuredData.closeReason(),
+                businessLine,
+                structuredData.fields(),
+                structuredData.attachmentSummaries(),
+                structuredData.sqlDraft()
+        );
+    }
+
+    private void validateEnabledBusinessLine(String businessLine) {
+        if (businessLineMapper == null) {
+            return;
+        }
+        BusinessLineEntity entity = businessLineMapper.findByName(businessLine);
+        if (entity == null || !Boolean.TRUE.equals(entity.getEnabled())) {
+            throw new IllegalArgumentException("业务线不存在或未启用：" + businessLine);
+        }
+    }
+
+    private String buildBusinessLineHistory(String previousBusinessLine,
+                                            String businessLine,
+                                            String previousProjectHint) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("业务线：")
+                .append(defaultHistoryValue(previousBusinessLine))
+                .append(" -> ")
+                .append(defaultHistoryValue(businessLine));
+        if (!java.util.Objects.equals(previousProjectHint, businessLine)) {
+            builder.append("\n项目提示：")
+                    .append(defaultHistoryValue(previousProjectHint))
+                    .append(" -> ")
+                    .append(defaultHistoryValue(businessLine));
+        }
+        return builder.toString();
     }
 
     private IntakeAIDraft readDraft(String aiDraftJson) {

@@ -48,32 +48,25 @@ public final class PaymentCatalogs {
     );
 
     private static final Map<String, PaymentPurposeOptionResponse> PURPOSES = Map.ofEntries(
-            Map.entry("BIND_CARD", new PaymentPurposeOptionResponse("BIND_CARD", "绑卡", "银行卡签约、绑卡、预绑卡等场景")),
-            Map.entry("UNBIND_CARD", new PaymentPurposeOptionResponse("UNBIND_CARD", "解绑", "解绑银行卡、解约")),
+            Map.entry("BIND_CARD", new PaymentPurposeOptionResponse("BIND_CARD", "银行卡签约", "银行卡签约、绑卡、预绑卡等场景")),
             Map.entry("WITHHOLD", new PaymentPurposeOptionResponse("WITHHOLD", "代收", "委托扣款、代扣、代收")),
-            Map.entry("PAY_OUT", new PaymentPurposeOptionResponse("PAY_OUT", "代付", "出款、代付、放款")),
-            Map.entry("SPLIT_SETTLEMENT", new PaymentPurposeOptionResponse("SPLIT_SETTLEMENT", "分账", "分账、分润、清分")),
             Map.entry("REFUND", new PaymentPurposeOptionResponse("REFUND", "退款", "原路退回、退票、冲正")),
-            Map.entry("QUERY_ORDER", new PaymentPurposeOptionResponse("QUERY_ORDER", "订单查询", "订单查询、支付结果查询")),
-            Map.entry("DOWNLOAD_RECON", new PaymentPurposeOptionResponse("DOWNLOAD_RECON", "对账下载", "账单、对账文件下载")),
-            Map.entry("SIGN_AGREEMENT", new PaymentPurposeOptionResponse("SIGN_AGREEMENT", "签约", "开户、签约、协议确认")),
-            Map.entry("VERIFY_ACCOUNT", new PaymentPurposeOptionResponse("VERIFY_ACCOUNT", "账户校验", "实名认证、银行卡校验")),
-            Map.entry("RECHARGE", new PaymentPurposeOptionResponse("RECHARGE", "充值", "账户充值")),
             Map.entry("WITHDRAW", new PaymentPurposeOptionResponse("WITHDRAW", "提现", "提现、出金")),
             Map.entry("TRANSFER", new PaymentPurposeOptionResponse("TRANSFER", "转账", "转账、划拨")),
-            Map.entry("BALANCE_QUERY", new PaymentPurposeOptionResponse("BALANCE_QUERY", "余额查询", "账户余额查询")),
-            Map.entry("CALLBACK_VERIFY", new PaymentPurposeOptionResponse("CALLBACK_VERIFY", "回调验签", "回调报文验签、通知验签")),
             Map.entry("WITHHOLD_SPLIT_SETTLEMENT", new PaymentPurposeOptionResponse("WITHHOLD_SPLIT_SETTLEMENT", "代收分账", "代收后按规则分账、清分")),
-            Map.entry("SPLIT_RECEIVER_XXT", new PaymentPurposeOptionResponse("SPLIT_RECEIVER_XXT", "先行通被分账商户", "先行通作为被分账方")),
-            Map.entry("SPLIT_RECEIVER_LIYI", new PaymentPurposeOptionResponse("SPLIT_RECEIVER_LIYI", "里易被分账商户", "里易作为被分账方")),
-            Map.entry("REFUND_MAIN_ACCOUNT", new PaymentPurposeOptionResponse("REFUND_MAIN_ACCOUNT", "退款主户", "退款资金主账户")),
             Map.entry("ACCOUNT_SYSTEM", new PaymentPurposeOptionResponse("ACCOUNT_SYSTEM", "账户体系", "支付渠道账户体系能力"))
     );
-    private static final Map<String, String> LEGACY_PURPOSE_ALIASES = Map.of(
-            "WITHHOLD_SUB_MERCHANT", "WITHHOLD",
-            "WITHHOLD_SUB_MERCHANT_BEIJING", "WITHHOLD",
-            "WITHHOLD_SUB_MERCHANT_TIANJIN", "WITHHOLD",
-            "WITHHOLD_SUB_MERCHANT_PROD_TEST", "WITHHOLD"
+    private static final Map<String, String> LEGACY_PURPOSE_ALIASES = Map.ofEntries(
+            Map.entry("WITHHOLD_SUB_MERCHANT", "WITHHOLD"),
+            Map.entry("WITHHOLD_SUB_MERCHANT_BEIJING", "WITHHOLD"),
+            Map.entry("WITHHOLD_SUB_MERCHANT_TIANJIN", "WITHHOLD"),
+            Map.entry("WITHHOLD_SUB_MERCHANT_PROD_TEST", "WITHHOLD"),
+            Map.entry("SIGN_AGREEMENT", "BIND_CARD"),
+            Map.entry("PAY_OUT", "TRANSFER"),
+            Map.entry("SPLIT_SETTLEMENT", "WITHHOLD_SPLIT_SETTLEMENT"),
+            Map.entry("SPLIT_RECEIVER_XXT", "WITHHOLD_SPLIT_SETTLEMENT"),
+            Map.entry("SPLIT_RECEIVER_LIYI", "WITHHOLD_SPLIT_SETTLEMENT"),
+            Map.entry("REFUND_MAIN_ACCOUNT", "REFUND")
     );
 
     private PaymentCatalogs() {

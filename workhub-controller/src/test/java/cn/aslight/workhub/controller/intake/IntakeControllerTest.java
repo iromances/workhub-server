@@ -3,6 +3,7 @@ package cn.aslight.workhub.controller.intake;
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakeHistoryResponse;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisResponse;
+import cn.aslight.workhub.model.intake.IntakeBusinessLineUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
 import cn.aslight.workhub.model.intake.IntakeTodoResponse;
@@ -115,6 +116,26 @@ class IntakeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.message").value("任务评估已提交，系统正在后台处理中"));
+    }
+
+    @Test
+    void updateBusinessLine_shouldExposeBusinessLineApi() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        IntakeDetailResponse detail = simpleDetail(9L, "已完成");
+        when(intakeService.updateBusinessLine(eq(9L), any(IntakeBusinessLineUpdateRequest.class), eq("admin"))).thenReturn(detail);
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
+
+        mockMvc.perform(post("/api/intake/9/business-line")
+                        .principal(new UsernamePasswordAuthenticationToken("admin", "N/A"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"businessLine":"资产业务"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(9));
+
+        verify(intakeService).updateBusinessLine(eq(9L), any(IntakeBusinessLineUpdateRequest.class), eq("admin"));
     }
 
     @Test

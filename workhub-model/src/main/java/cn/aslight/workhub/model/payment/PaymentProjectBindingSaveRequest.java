@@ -10,8 +10,10 @@ import java.util.List;
  */
 public class PaymentProjectBindingSaveRequest {
 
-    @NotNull(message = "不能为空")
     private Long projectId;
+
+    @NotBlank(message = "不能为空")
+    private String businessLine;
 
     @NotNull(message = "不能为空")
     private Long merchantId;
@@ -38,6 +40,14 @@ public class PaymentProjectBindingSaveRequest {
 
     public void setProjectId(Long projectId) {
         this.projectId = projectId;
+    }
+
+    public String getBusinessLine() {
+        return businessLine;
+    }
+
+    public void setBusinessLine(String businessLine) {
+        this.businessLine = businessLine;
     }
 
     public Long getMerchantId() {

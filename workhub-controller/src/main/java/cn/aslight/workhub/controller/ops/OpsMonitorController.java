@@ -7,6 +7,7 @@ import cn.aslight.workhub.model.ops.OpsMonitorResponse;
 import cn.aslight.workhub.model.ops.OpsMonitorSaveRequest;
 import cn.aslight.workhub.model.ops.XxlJobDashboardResponse;
 import cn.aslight.workhub.model.ops.XxlJobExecutorResponse;
+import cn.aslight.workhub.model.ops.XxlJobLogPageResponse;
 import cn.aslight.workhub.service.ops.OpsMonitorService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -89,5 +90,17 @@ public class OpsMonitorController {
                                                              @RequestParam(required = false) String executorAppName,
                                                              @RequestParam(defaultValue = "ALL") String logStatus) {
         return ApiResponse.success(opsMonitorService.xxlJobDetail(id, startDate, endDate, page, pageSize, author, executorAppName, logStatus));
+    }
+
+    @GetMapping("/{id}/xxl-job/logs")
+    public ApiResponse<XxlJobLogPageResponse> xxlJobLogs(@PathVariable Long id,
+                                                         @RequestParam(required = false) LocalDate startDate,
+                                                         @RequestParam(required = false) LocalDate endDate,
+                                                         @RequestParam(defaultValue = "1") int page,
+                                                         @RequestParam(defaultValue = "20") int pageSize,
+                                                         @RequestParam(required = false) String author,
+                                                         @RequestParam(required = false) String executorAppName,
+                                                         @RequestParam(defaultValue = "ALL") String logStatus) {
+        return ApiResponse.success(opsMonitorService.xxlJobLogs(id, startDate, endDate, page, pageSize, author, executorAppName, logStatus));
     }
 }

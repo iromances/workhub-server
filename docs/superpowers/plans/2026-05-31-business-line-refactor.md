@@ -57,7 +57,6 @@
 - Modify: `README.md`
 - Modify: `docs/project-charter.md`
 - Modify: `docs/backend-architecture.md`
-- Modify: `docs/implementation-roadmap.md`
 - Modify: `docs/controller-api.md`
 
 - [ ] Update business wording from project group to business line.

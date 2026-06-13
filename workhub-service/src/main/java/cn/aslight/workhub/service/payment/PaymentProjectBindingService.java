@@ -9,6 +9,7 @@ import cn.aslight.workhub.model.payment.PaymentMerchantEntity;
 import cn.aslight.workhub.model.payment.PaymentProjectBindingEntity;
 import cn.aslight.workhub.model.payment.PaymentProjectBindingResponse;
 import cn.aslight.workhub.model.payment.PaymentProjectBindingSaveRequest;
+import cn.aslight.workhub.model.project.ProjectEntity;
 import cn.aslight.workhub.service.project.ProjectService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,11 +49,18 @@ public class PaymentProjectBindingService {
     }
 
     public PaymentProjectBindingResponse resolve(Long projectId, String purposeCode) {
-        projectService.requireExisting(projectId);
+        ProjectEntity project = projectService.requireExisting(projectId);
+        String normalizedPurposeCode = PaymentCatalogs.normalizePurpose(purposeCode);
         PaymentProjectBindingResponse response = paymentProjectBindingMapper.resolveActiveBinding(
                 projectId,
-                PaymentCatalogs.normalizePurpose(purposeCode)
+                normalizedPurposeCode
         );
+        if (response == null) {
+            response = paymentProjectBindingMapper.resolveBusinessLineActiveBinding(
+                    PaymentCatalogs.trimToNull(project.getBusinessLine()),
+                    normalizedPurposeCode
+            );
+        }
         if (response == null) {
             throw new IllegalArgumentException("未找到可用的项目支付商户绑定");
         }
@@ -61,16 +69,17 @@ public class PaymentProjectBindingService {
 
     @Transactional
     public PaymentProjectBindingResponse create(PaymentProjectBindingSaveRequest request, String operatorUserName) {
-        validateReferences(request.getProjectId(), request.getMerchantId());
+        String businessLine = validateReferences(request.getProjectId(), request.getBusinessLine(), request.getMerchantId());
         List<String> purposeCodes = normalizePurposeCodes(request);
         ensureMerchantSupportsPurposes(request.getMerchantId(), purposeCodes);
         for (String purposeCode : purposeCodes) {
-            ensureUniqueKey(request.getProjectId(), request.getMerchantId(), purposeCode, null);
+            ensureUniqueKey(request.getProjectId(), businessLine, request.getMerchantId(), purposeCode, null);
         }
         PaymentProjectBindingEntity entity = toEntity(request);
+        entity.setBusinessLine(businessLine);
         if (Boolean.TRUE.equals(entity.getDefaultBinding())) {
             for (String purposeCode : purposeCodes) {
-                paymentProjectBindingMapper.clearDefaultBindings(entity.getProjectId(), purposeCode, null);
+                paymentProjectBindingMapper.clearDefaultBindings(entity.getProjectId(), businessLine, purposeCode, null);
             }
         }
         paymentProjectBindingMapper.insert(entity);
@@ -81,7 +90,7 @@ public class PaymentProjectBindingService {
                 entity.getId(),
                 "CREATE",
                 "新增项目商户绑定",
-                "projectId=" + entity.getProjectId() + ",merchantId=" + entity.getMerchantId() + ",purpose=" + entity.getPurposeCode(),
+                "businessLine=" + entity.getBusinessLine() + ",projectId=" + entity.getProjectId() + ",merchantId=" + entity.getMerchantId() + ",purpose=" + entity.getPurposeCode(),
                 operatorUserName
         );
         return requireBinding(entity.getId());
@@ -95,17 +104,18 @@ public class PaymentProjectBindingService {
         if (existing == null) {
             throw new IllegalArgumentException("项目商户绑定不存在");
         }
-        validateReferences(request.getProjectId(), request.getMerchantId());
+        String businessLine = validateReferences(request.getProjectId(), request.getBusinessLine(), request.getMerchantId());
         List<String> purposeCodes = normalizePurposeCodes(request);
         ensureMerchantSupportsPurposes(request.getMerchantId(), purposeCodes);
         for (String purposeCode : purposeCodes) {
-            ensureUniqueKey(request.getProjectId(), request.getMerchantId(), purposeCode, id);
+            ensureUniqueKey(request.getProjectId(), businessLine, request.getMerchantId(), purposeCode, id);
         }
         PaymentProjectBindingEntity entity = toEntity(request);
         entity.setId(id);
+        entity.setBusinessLine(businessLine);
         if (Boolean.TRUE.equals(entity.getDefaultBinding())) {
             for (String purposeCode : purposeCodes) {
-                paymentProjectBindingMapper.clearDefaultBindings(entity.getProjectId(), purposeCode, id);
+                paymentProjectBindingMapper.clearDefaultBindings(entity.getProjectId(), businessLine, purposeCode, id);
             }
         }
         paymentProjectBindingMapper.update(entity);
@@ -116,7 +126,7 @@ public class PaymentProjectBindingService {
                 id,
                 "UPDATE",
                 "更新项目商户绑定",
-                "projectId=" + entity.getProjectId() + ",merchantId=" + entity.getMerchantId() + ",purpose=" + entity.getPurposeCode(),
+                "businessLine=" + entity.getBusinessLine() + ",projectId=" + entity.getProjectId() + ",merchantId=" + entity.getMerchantId() + ",purpose=" + entity.getPurposeCode(),
                 operatorUserName
         );
         return requireBinding(id);
@@ -161,12 +171,23 @@ public class PaymentProjectBindingService {
         );
     }
 
-    private void validateReferences(Long projectId, Long merchantId) {
-        projectService.requireExisting(projectId);
+    private String validateReferences(Long projectId, String businessLine, Long merchantId) {
+        String normalizedBusinessLine = PaymentCatalogs.trimToNull(businessLine);
+        if (normalizedBusinessLine == null) {
+            throw new IllegalArgumentException("业务线不能为空");
+        }
+        if (projectId != null) {
+            ProjectEntity project = projectService.requireExisting(projectId);
+            String projectBusinessLine = PaymentCatalogs.trimToNull(project.getBusinessLine());
+            if (projectBusinessLine != null && !projectBusinessLine.equals(normalizedBusinessLine)) {
+                throw new IllegalArgumentException("项目不属于所选业务线");
+            }
+        }
         PaymentMerchantEntity merchantEntity = paymentMerchantMapper.findEntityById(merchantId);
         if (merchantEntity == null) {
             throw new IllegalArgumentException("支付商户不存在");
         }
+        return normalizedBusinessLine;
     }
 
     private void validateMerchant(Long merchantId) {
@@ -175,14 +196,15 @@ public class PaymentProjectBindingService {
         }
     }
 
-    private void ensureUniqueKey(Long projectId, Long merchantId, String purposeCode, Long currentId) {
+    private void ensureUniqueKey(Long projectId, String businessLine, Long merchantId, String purposeCode, Long currentId) {
         PaymentProjectBindingEntity existing = paymentProjectBindingMapper.findEntityByUniqueKey(
                 projectId,
+                businessLine,
                 merchantId,
                 PaymentCatalogs.normalizePurpose(purposeCode)
         );
         if (existing != null && !existing.getId().equals(currentId)) {
-            throw new IllegalArgumentException("同项目、商户、用途的绑定已存在");
+            throw new IllegalArgumentException(projectId == null ? "同业务线、商户、用途的通用绑定已存在" : "同项目、商户、用途的绑定已存在");
         }
     }
 
@@ -201,6 +223,7 @@ public class PaymentProjectBindingService {
     private PaymentProjectBindingEntity toEntity(PaymentProjectBindingSaveRequest request) {
         PaymentProjectBindingEntity entity = new PaymentProjectBindingEntity();
         entity.setProjectId(request.getProjectId());
+        entity.setBusinessLine(PaymentCatalogs.trimToNull(request.getBusinessLine()));
         entity.setMerchantId(request.getMerchantId());
         entity.setPurposeCode(normalizePurposeCodes(request).getFirst());
         entity.setPriority(PaymentCatalogs.requirePositivePriority(request.getPriority()));

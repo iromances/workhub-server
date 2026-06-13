@@ -79,7 +79,7 @@
   查询参数：`monitorType`、`businessLineCode`、`environmentCode`、`keyword`、`enabledOnly`
 - `POST /api/ops/monitors`
   用途：新增运维监测配置。
-  说明：当前支持 `XXL_JOB`，需要配置业务线、环境和该 DBServer 上的 XXL-JOB 数据库名；多个业务线共用同一个 XXL-JOB 库时，可配置 `executorAppName` 作为关注执行器，多个执行器用英文逗号分隔。配置后统计、详情和告警只关注这些执行器；未配置时默认关注该业务线 XXL-JOB 库下所有执行器。数据库访问复用对应业务线环境的 MCP 只读数据库目标。`MQ` 菜单入口已预留，采集下一步接入。
+  说明：当前支持 `XXL_JOB`，需要配置业务线、环境和该 DBServer 上的 XXL-JOB 数据库名；多个业务线共用同一个 XXL-JOB 库时，可配置 `executorAppName` 作为关注执行器，多个执行器用英文逗号分隔。配置后详情和告警只关注这些执行器；未配置时默认关注该业务线 XXL-JOB 库下所有执行器。数据库访问复用对应业务线环境的 MCP 只读数据库目标。`MQ` 菜单入口已预留，采集下一步接入。
 - `PUT /api/ops/monitors/{id}`
   用途：更新运维监测配置。
 - `DELETE /api/ops/monitors/{id}`
@@ -88,17 +88,21 @@
   用途：手动触发一次真实采集。
   说明：`XXL_JOB` 会通过 MCP 只读数据库通道读取 `xxl_job_group`、`xxl_job_info`、`xxl_job_log_report` 和最近失败的 `xxl_job_log`，统计运行情况并定位失败任务；只做读取，不触发任务、不修改 XXL-JOB 配置。
 - `GET /api/ops/monitors/xxl-job/dashboard`
-  用途：查询已配置业务线 XXL-JOB 运行统计，列表不返回失败任务明细。
+  用途：查询已配置业务线 XXL-JOB 本地监测配置，首页不读取远端 XXL-JOB 调度库。
   查询参数：`businessLineCode`、`environmentCode`、`enabledOnly`
-  返回说明：包含 `jobCount`、`executorCount`、`triggerCount`、`triggerSuccessCount`、`triggerFailedCount`、`triggerRunningCount`、`reportUpdatedAt` 等字段。未配置关注执行器时读取 XXL-JOB Admin 原生 `xxl_job_log_report` 快照；配置关注执行器时，因原生快照不带执行器维度，按 `xxl_job_log`、`xxl_job_info`、`xxl_job_group` 重新聚合关注执行器范围内的数据。
+  返回说明：仅从本地 `ops_monitor_config` 映射配置字段和上次采集结果；兼容保留的运行统计字段统一返回默认值，不做实时统计。
 - `GET /api/ops/monitors/xxl-job/executors`
   用途：按业务线、环境和 XXL-JOB 数据库名查询可关注执行器下拉选项。
   查询参数：`businessLineCode`、`environmentCode`、`xxlJobDatabaseName`
-  返回说明：读取对应 XXL-JOB 库的 `xxl_job_group`，返回 `appName` 和 `title`；仅用于页面选择，不修改 XXL-JOB 配置。
+  返回说明：读取对应 XXL-JOB 库的 `xxl_job_group`，返回 `appName` 和 `title`；该接口不再用于业务监测首页，保留给后续受控配置辅助场景，不修改 XXL-JOB 配置。
 - `GET /api/ops/monitors/{id}/xxl-job/detail`
-  用途：查询单条 XXL-JOB 监测详情。
+  用途：查询单条 XXL-JOB 监测详情兼容接口。
   查询参数：`startDate`、`endDate`，格式 `yyyy-MM-dd`；未传时默认查询最近一个月。
-  说明：详情默认按日期区间直接读取 XXL-JOB 原始 `xxl_job_log` 全部执行日志，可切换为只看失败日志；如监测配置了 `executorAppName` 关注执行器，明细和告警只返回这些执行器范围内的日志；未配置时默认查询全部执行器。详情支持分页、负责人和执行器模糊查询。
+  说明：该接口保留兼容旧前端，返回结构仍包含统计字段；新页面不再使用。
+- `GET /api/ops/monitors/{id}/xxl-job/logs`
+  用途：查询单条 XXL-JOB 监测配置对应的原始执行日志。
+  查询参数：`startDate`、`endDate`，格式 `yyyy-MM-dd`；未传时默认查询最近 7 天；`page` 默认 `1`；`pageSize` 默认 `20`、最大 `200`；`author` 按负责人模糊查询；`executorAppName` 按执行器模糊查询；`logStatus` 支持 `ALL` 和 `FAILED`，默认 `ALL`。
+  说明：该接口只读取 XXL-JOB 原始 `xxl_job_log` 明细和分页总数，不读取 `xxl_job_log_report` 或任务统计；如监测配置了 `executorAppName` 关注执行器，日志范围会先限定在这些执行器内，未配置时默认查询全部执行器。查询只走对应业务线环境的 MCP 只读数据库通道，不触发任务、不修改 XXL-JOB 配置。
 - `GET /api/ops/system-alerts`
   用途：查询系统预警本地错误事件看板。
   查询参数：`businessLineCode`、`environmentCode`、`serviceName`、`level`、`startTime`、`endTime`、`page`、`pageSize`
@@ -330,6 +334,10 @@
   用途：手动修改自动生成的研发分支名，并记录修改历史。
   请求体：`IntakeDevelopmentBranchRequest`
   行为说明：只更新结构化数据中的研发分支，不推进需求状态；后续保存禅道地址等旁路字段时不会重新覆盖已有研发分支。
+- `POST /api/intake/{id}/business-line`
+  用途：修改单条需求的业务线，并记录修改历史。
+  请求体：`IntakeBusinessLineUpdateRequest`，字段 `businessLine` 必填，取值必须是项目管理中已启用的业务线名称。
+  行为说明：允许修改历史需求和终态需求，只更新 `structuredData.businessLine` 并同步 `projectHint`；不自动重跑 AI 澄清、研发任务评估，不迁移已生成的知识库文件或正式工作项关系。
 - `POST /api/intake/{id}/sql-draft`
   用途：为 `数据提取/运维` 类需求生成 SQL 草稿，并写入 `structuredData.sqlDraft` 与修改历史。
   行为说明：只调用 Codex CLI 生成文本草稿，不连接数据库、不执行 SQL；AI 会尽量自行推断表名和字段，无法确认时在 `questions` 中列出待人工确认项。
@@ -373,6 +381,8 @@
 ## 8. 支付配置接口
 
 控制器：`PaymentChannelController`、`PaymentMerchantController`、`PaymentBindingController`
+
+页面口径：支付配置管理页按“支付渠道”和“商户账号与密钥”组织。“项目用途绑定”不再作为独立页签展示，前端在商户账号详情中按当前商户查看绑定并编辑已有绑定；新增绑定入口合并到“编辑支付商户”弹窗中。后端 `/api/payment/bindings` 接口继续作为兼容和实现接口保留。
 
 - `GET /api/payment/channels`
   用途：查询支付渠道列表。
@@ -423,19 +433,19 @@
   字段：`secretName`、`secretType`、`fileValueType`、`file`、`activateNow`、`validFrom`、`validTo`、`remark`
   说明：`fileValueType` 必须显式传 `TEXT` 或 `BINARY`。`TEXT` 按 UTF-8 读取文件正文后加密落库；`BINARY` 按原始字节 Base64 编码后加密落库。后端不按文件扩展名或 MIME 类型自动推断。
 - `GET /api/payment/bindings`
-  用途：查询项目商户绑定列表，返回业务线、项目、商户、多用途编码和关联商户关系。
-  查询参数：`projectId`、`merchantId`、`purposeCode`、`status`
+  用途：查询业务支付绑定列表，返回业务线、项目、商户、多用途编码和关联商户关系；商户详情中的“项目用途绑定”区块按 `merchantId` 调用该接口加载当前商户绑定。`projectId` 为空的记录表示业务线通用绑定。
+  查询参数：`projectId`、`businessLine`、`merchantId`、`purposeCode`、`status`
 - `POST /api/payment/bindings`
-  用途：新建项目商户绑定。
-  请求体：`PaymentProjectBindingSaveRequest`，支持 `purposeCodes` 多选用途和 `relations` 关联商户关系；`purposeCode` 保留为兼容字段，默认取 `purposeCodes` 第一项；绑定用途必须是该商户号支持用途的子集。
+  用途：新建业务支付绑定；从编辑支付商户弹窗发起时，前端固定传当前商户 `merchantId`。
+  请求体：`PaymentProjectBindingSaveRequest`，`businessLine` 必填，`projectId` 可为空；`projectId` 为空表示该业务线通用绑定，非空表示项目专属绑定且项目必须属于所选业务线。支持 `purposeCodes` 多选用途和 `relations` 关联商户关系；`purposeCode` 保留为兼容字段，默认取 `purposeCodes` 第一项；绑定用途必须是该商户号支持用途的子集。
 - `PUT /api/payment/bindings/{id}`
-  用途：更新项目商户绑定。
-  请求体：`PaymentProjectBindingSaveRequest`，支持 `purposeCodes` 多选用途和 `relations` 关联商户关系；绑定用途必须是该商户号支持用途的子集。
+  用途：更新业务支付绑定；从商户详情或编辑支付商户弹窗发起时，前端固定传当前商户 `merchantId`。
+  请求体：`PaymentProjectBindingSaveRequest`，规则同新增接口。
 - `GET /api/payment/projects/{projectId}/bindings/resolve`
-  用途：按 `projectId + purposeCode` 解析当前应使用的生效商户绑定。
+  用途：按 `projectId + purposeCode` 解析当前应使用的生效商户绑定；后端优先返回项目专属绑定，找不到时回退到项目所属业务线的通用绑定。
   查询参数：`purposeCode`
 - `GET /api/payment/purposes`
-  用途：查询系统内置支付用途字典，例如 `BIND_CARD`、`WITHHOLD`、`PAY_OUT`、`SPLIT_SETTLEMENT` 等。
+  用途：查询系统内置支付用途字典，例如 `BIND_CARD`（银行卡签约）、`WITHHOLD`、`REFUND`、`TRANSFER`、`WITHHOLD_SPLIT_SETTLEMENT` 等；历史 `SIGN_AGREEMENT` 会按 `BIND_CARD` 处理，历史 `PAY_OUT` 会按 `TRANSFER` 处理，历史 `SPLIT_SETTLEMENT`、`SPLIT_RECEIVER_XXT`、`SPLIT_RECEIVER_LIYI` 会按 `WITHHOLD_SPLIT_SETTLEMENT` 处理，历史 `REFUND_MAIN_ACCOUNT` 会按 `REFUND` 处理，订单查询、账户校验、解绑、充值、对账/对单下载、回调验签、余额查询不再作为商户用途维护。
 
 ## 9. 附件接口
 

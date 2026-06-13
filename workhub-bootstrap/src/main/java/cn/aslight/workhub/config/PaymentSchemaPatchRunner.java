@@ -127,7 +127,8 @@ public class PaymentSchemaPatchRunner implements ApplicationRunner {
                     """
                             CREATE TABLE `pay_project_merchant_binding` (
                               `id` BIGINT NOT NULL AUTO_INCREMENT,
-                              `project_id` BIGINT NOT NULL,
+                              `project_id` BIGINT NULL,
+                              `business_line` VARCHAR(128) NOT NULL,
                               `merchant_id` BIGINT NOT NULL,
                               `purpose_code` VARCHAR(32) NOT NULL,
                               `priority` INT NOT NULL DEFAULT 1,
@@ -139,6 +140,7 @@ public class PaymentSchemaPatchRunner implements ApplicationRunner {
                               PRIMARY KEY (`id`),
                               UNIQUE KEY `uk_pay_binding_project_merchant_purpose` (`project_id`, `merchant_id`, `purpose_code`),
                               KEY `idx_pay_binding_project_purpose` (`project_id`, `purpose_code`, `binding_status`, `is_default`, `priority`),
+                              KEY `idx_pay_binding_business_purpose` (`business_line`, `purpose_code`, `binding_status`, `is_default`, `priority`),
                               KEY `idx_pay_binding_merchant_id` (`merchant_id`)
                             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                             """
@@ -229,9 +231,43 @@ public class PaymentSchemaPatchRunner implements ApplicationRunner {
             for (TablePatch patch : TABLE_PATCHES) {
                 ensureTable(connection, patch);
             }
+            ensureBusinessLineBindingSchema(connection);
             ensureBindingPurposeBackfill(connection);
             ensureMerchantPurposeBackfill(connection);
             ensureLegacyWithholdPurposeMerge(connection);
+        }
+    }
+
+    private void ensureBusinessLineBindingSchema(Connection connection) throws SQLException {
+        if (!tableExists(connection, "pay_project_merchant_binding")) {
+            return;
+        }
+        try (Statement statement = connection.createStatement()) {
+            if (!columnExists(connection, "pay_project_merchant_binding", "business_line")) {
+                statement.execute("""
+                        ALTER TABLE `pay_project_merchant_binding`
+                        ADD COLUMN `business_line` VARCHAR(128) NULL AFTER `project_id`
+                        """);
+            }
+            if (tableExists(connection, "pm_project")) {
+                statement.execute("""
+                        UPDATE `pay_project_merchant_binding` b
+                        JOIN `pm_project` p ON p.`id` = b.`project_id`
+                        SET b.`business_line` = p.`business_line`
+                        WHERE b.`business_line` IS NULL
+                           OR b.`business_line` = ''
+                        """);
+            }
+            statement.execute("""
+                    ALTER TABLE `pay_project_merchant_binding`
+                    MODIFY COLUMN `project_id` BIGINT NULL
+                    """);
+            if (!indexExists(connection, "pay_project_merchant_binding", "idx_pay_binding_business_purpose")) {
+                statement.execute("""
+                        CREATE INDEX `idx_pay_binding_business_purpose`
+                        ON `pay_project_merchant_binding` (`business_line`, `purpose_code`, `binding_status`, `is_default`, `priority`)
+                        """);
+            }
         }
     }
 
@@ -361,18 +397,51 @@ public class PaymentSchemaPatchRunner implements ApplicationRunner {
     boolean tableExists(Connection connection, String tableName) throws SQLException {
         DatabaseMetaData metaData = connection.getMetaData();
         try (ResultSet resultSet = metaData.getTables(connection.getCatalog(), null, tableName, new String[]{"TABLE"})) {
-            if (resultSet.next()) {
+            if (resultSet != null && resultSet.next()) {
                 return true;
             }
         }
         try (ResultSet resultSet = metaData.getTables(connection.getCatalog(), null, tableName.toUpperCase(Locale.ROOT), new String[]{"TABLE"})) {
-            if (resultSet.next()) {
+            if (resultSet != null && resultSet.next()) {
                 return true;
             }
         }
         try (ResultSet resultSet = metaData.getTables(connection.getCatalog(), null, tableName.toLowerCase(Locale.ROOT), new String[]{"TABLE"})) {
-            return resultSet.next();
+            return resultSet != null && resultSet.next();
         }
+    }
+
+    boolean columnExists(Connection connection, String tableName, String columnName) throws SQLException {
+        DatabaseMetaData metaData = connection.getMetaData();
+        try (ResultSet resultSet = metaData.getColumns(connection.getCatalog(), null, tableName, columnName)) {
+            if (resultSet != null && resultSet.next()) {
+                return true;
+            }
+        }
+        try (ResultSet resultSet = metaData.getColumns(connection.getCatalog(), null, tableName.toUpperCase(Locale.ROOT), columnName.toUpperCase(Locale.ROOT))) {
+            if (resultSet != null && resultSet.next()) {
+                return true;
+            }
+        }
+        try (ResultSet resultSet = metaData.getColumns(connection.getCatalog(), null, tableName.toLowerCase(Locale.ROOT), columnName.toLowerCase(Locale.ROOT))) {
+            return resultSet != null && resultSet.next();
+        }
+    }
+
+    boolean indexExists(Connection connection, String tableName, String indexName) throws SQLException {
+        DatabaseMetaData metaData = connection.getMetaData();
+        try (ResultSet resultSet = metaData.getIndexInfo(connection.getCatalog(), null, tableName, false, false)) {
+            if (resultSet == null) {
+                return false;
+            }
+            while (resultSet.next()) {
+                String existingIndex = resultSet.getString("INDEX_NAME");
+                if (indexName.equalsIgnoreCase(existingIndex)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     record TablePatch(String tableName, String createSql) {

@@ -5,6 +5,7 @@ import cn.aslight.workhub.model.ops.OpsMonitorEntity;
 import cn.aslight.workhub.model.ops.XxlJobDashboardResponse;
 import cn.aslight.workhub.model.ops.XxlJobExecutorResponse;
 import cn.aslight.workhub.model.ops.XxlJobFailedJobResponse;
+import cn.aslight.workhub.model.ops.XxlJobLogPageResponse;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -151,6 +152,60 @@ public class XxlJobMonitorCollector {
                 normalizedPage,
                 normalizedPageSize,
                 failedJobs
+        );
+    }
+
+    public XxlJobLogPageResponse collectLogs(OpsMonitorEntity monitor,
+                                             LocalDate startDate,
+                                             LocalDate endDate,
+                                             int page,
+                                             int pageSize,
+                                             String author,
+                                             String executorAppName,
+                                             String logStatus) {
+        LocalDate normalizedStartDate = requireDate(startDate, "开始日期不能为空");
+        LocalDate normalizedEndDate = requireDate(endDate, "结束日期不能为空");
+        if (normalizedStartDate.isAfter(normalizedEndDate)) {
+            throw new IllegalArgumentException("开始日期不能晚于结束日期");
+        }
+        int normalizedPage = normalizePage(page);
+        int normalizedPageSize = normalizePageSize(pageSize);
+        int offset = (normalizedPage - 1) * normalizedPageSize;
+        String databaseName = quoteDatabaseName(monitor.getXxlJobDatabaseName());
+        String detailFilter = detailFilterSql(author, executorAppName);
+        String statusFilter = logStatusFilterSql(logStatus);
+        int total = intValue(rowValue(firstRow(queryClient.runRows(
+                monitor.getBusinessLineCode(),
+                monitor.getEnvironmentCode(),
+                failedJobsCountSql(databaseName, normalizedStartDate, normalizedEndDate, monitor.getExecutorAppName(), detailFilter, statusFilter)
+        )), "failedJobTotal"));
+        List<XxlJobFailedJobResponse> logs = queryClient.runRows(
+                        monitor.getBusinessLineCode(),
+                        monitor.getEnvironmentCode(),
+                        failedJobsSql(databaseName, normalizedStartDate, normalizedEndDate, monitor.getExecutorAppName(), detailFilter, statusFilter, normalizedPageSize, offset)
+                )
+                .stream()
+                .map(this::toFailedJob)
+                .toList();
+        boolean failedOnly = LOG_STATUS_FAILED.equals(normalizeLogStatus(logStatus));
+        String status = failedOnly && total > 0 ? "ERROR" : "UP";
+        String message = failedOnly
+                ? (total > 0 ? "XXL-JOB 区间失败日志数：" + total : "XXL-JOB 区间内无失败日志")
+                : "XXL-JOB 区间日志数：" + total;
+        return new XxlJobLogPageResponse(
+                monitor.getId(),
+                monitor.getMonitorKey(),
+                monitor.getBusinessLineCode(),
+                monitor.getEnvironmentCode(),
+                monitor.getName(),
+                monitor.getXxlJobDatabaseName(),
+                status,
+                message,
+                LocalDateTime.now(),
+                total,
+                normalizedPage,
+                normalizedPageSize,
+                logs
         );
     }
 

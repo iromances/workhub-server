@@ -7,6 +7,7 @@ import cn.aslight.workhub.model.intake.DevelopmentAnalysisConfirmResponse;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisDraftUpdateRequest;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisOwnerUpdateRequest;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisResponse;
+import cn.aslight.workhub.model.intake.IntakeBusinessLineUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeDevelopmentBranchRequest;
 import cn.aslight.workhub.model.intake.IntakeClarificationAnalysisResponse;
 import cn.aslight.workhub.model.intake.IntakeClarificationReplyRequest;
@@ -370,6 +371,21 @@ public class IntakeController {
                                                                      @RequestBody IntakeDevelopmentBranchRequest request,
                                                                      Authentication authentication) {
         return ApiResponse.success(intakeService.updateDevelopmentBranch(id, request, authentication.getName()));
+    }
+
+    /**
+     * 修改需求业务线。
+     *
+     * @param id 待整理记录 ID
+     * @param request 业务线请求
+     * @param authentication 当前认证信息
+     * @return 更新后的需求详情
+     */
+    @PostMapping("/{id}/business-line")
+    public ApiResponse<IntakeDetailResponse> updateBusinessLine(@PathVariable Long id,
+                                                                @Valid @RequestBody IntakeBusinessLineUpdateRequest request,
+                                                                Authentication authentication) {
+        return ApiResponse.success(intakeService.updateBusinessLine(id, request, authentication.getName()));
     }
 
     /**

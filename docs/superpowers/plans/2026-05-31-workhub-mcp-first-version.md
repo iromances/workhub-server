@@ -66,7 +66,6 @@
 - Create: `workhub-mcp-server/src/main/resources/mcp-resource-catalog.example.json`
 - Modify: `README.md`
 - Modify: `docs/backend-architecture.md`
-- Modify: `docs/implementation-roadmap.md`
 
 - [ ] Add a sample multi-business-line, multi-environment catalog.
 - [ ] Document how to start the MCP server and point an AI client at it.

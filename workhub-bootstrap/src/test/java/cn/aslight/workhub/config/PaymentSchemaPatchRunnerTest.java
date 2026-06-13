@@ -108,6 +108,8 @@ class PaymentSchemaPatchRunnerTest {
         ResultSet payBindingRelationExists = resultSet(true);
         ResultSet payMerchantCredentialExists = resultSet(true);
         ResultSet payOperationLogExists = resultSet(true);
+        ResultSet payBindingExistsForBusinessLineSchema = resultSet(true);
+        ResultSet projectExistsForBusinessLineBackfill = resultSet(true);
         ResultSet payBindingExistsForBackfill = resultSet(true);
         ResultSet payBindingPurposeExistsForBackfill = resultSet(true);
         ResultSet payBindingExistsForMerchantPurposeBackfill = resultSet(true);
@@ -116,17 +118,22 @@ class PaymentSchemaPatchRunnerTest {
         ResultSet payBindingExistsForLegacyMerge = resultSet(true);
         ResultSet payBindingPurposeExistsForLegacyMerge = resultSet(true);
         ResultSet payMerchantPurposeExistsForLegacyMerge = resultSet(true);
+        ResultSet businessLineColumnExists = resultSet(true);
+        ResultSet businessLineIndexExists = indexResultSet("idx_pay_binding_business_purpose");
 
         when(metaData.getTables("workhub", null, "pay_channel", new String[]{"TABLE"})).thenReturn(payChannelExists);
         when(metaData.getTables("workhub", null, "pay_merchant_account", new String[]{"TABLE"})).thenReturn(payMerchantAccountExists);
         when(metaData.getTables("workhub", null, "pay_merchant_purpose", new String[]{"TABLE"})).thenReturn(payMerchantPurposeExists, payMerchantPurposeExistsForBackfill, payMerchantPurposeExistsForLegacyMerge);
         when(metaData.getTables("workhub", null, "pay_merchant_param", new String[]{"TABLE"})).thenReturn(payMerchantParamExists);
         when(metaData.getTables("workhub", null, "pay_merchant_secret", new String[]{"TABLE"})).thenReturn(payMerchantSecretExists);
-        when(metaData.getTables("workhub", null, "pay_project_merchant_binding", new String[]{"TABLE"})).thenReturn(payBindingExists, payBindingExistsForBackfill, payBindingExistsForMerchantPurposeBackfill, payBindingExistsForLegacyMerge);
+        when(metaData.getTables("workhub", null, "pay_project_merchant_binding", new String[]{"TABLE"})).thenReturn(payBindingExists, payBindingExistsForBusinessLineSchema, payBindingExistsForBackfill, payBindingExistsForMerchantPurposeBackfill, payBindingExistsForLegacyMerge);
         when(metaData.getTables("workhub", null, "pay_project_merchant_binding_purpose", new String[]{"TABLE"})).thenReturn(payBindingPurposeExists, payBindingPurposeExistsForBackfill, payBindingPurposeExistsForMerchantPurposeBackfill, payBindingPurposeExistsForLegacyMerge);
         when(metaData.getTables("workhub", null, "pay_project_merchant_binding_relation", new String[]{"TABLE"})).thenReturn(payBindingRelationExists);
         when(metaData.getTables("workhub", null, "pay_merchant_credential", new String[]{"TABLE"})).thenReturn(payMerchantCredentialExists);
         when(metaData.getTables("workhub", null, "pay_operation_log", new String[]{"TABLE"})).thenReturn(payOperationLogExists);
+        when(metaData.getTables("workhub", null, "pm_project", new String[]{"TABLE"})).thenReturn(projectExistsForBusinessLineBackfill);
+        when(metaData.getColumns("workhub", null, "pay_project_merchant_binding", "business_line")).thenReturn(businessLineColumnExists);
+        when(metaData.getIndexInfo("workhub", null, "pay_project_merchant_binding", false, false)).thenReturn(businessLineIndexExists);
 
         PaymentSchemaPatchRunner runner = new PaymentSchemaPatchRunner(dataSource);
         runner.run(new DefaultApplicationArguments(new String[0]));
@@ -135,12 +142,19 @@ class PaymentSchemaPatchRunnerTest {
         verify(statement, atLeastOnce()).execute(org.mockito.ArgumentMatchers.contains("INSERT IGNORE INTO `pay_project_merchant_binding_purpose`"));
         verify(statement, atLeastOnce()).execute(org.mockito.ArgumentMatchers.contains("INSERT IGNORE INTO `pay_merchant_purpose`"));
         verify(statement, atLeastOnce()).execute(org.mockito.ArgumentMatchers.contains("WITHHOLD_SUB_MERCHANT_PROD_TEST"));
-        verify(statement).execute(org.mockito.ArgumentMatchers.contains("UPDATE `pay_project_merchant_binding` b"));
+        verify(statement).execute(org.mockito.ArgumentMatchers.contains("SET b.`business_line` = p.`business_line`"));
     }
 
     private ResultSet resultSet(boolean firstNext) throws Exception {
         ResultSet resultSet = mock(ResultSet.class);
         when(resultSet.next()).thenReturn(firstNext, false);
+        return resultSet;
+    }
+
+    private ResultSet indexResultSet(String indexName) throws Exception {
+        ResultSet resultSet = mock(ResultSet.class);
+        when(resultSet.next()).thenReturn(true, false);
+        when(resultSet.getString("INDEX_NAME")).thenReturn(indexName);
         return resultSet;
     }
 }

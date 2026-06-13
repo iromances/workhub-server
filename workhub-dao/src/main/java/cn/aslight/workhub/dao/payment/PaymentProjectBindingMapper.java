@@ -24,7 +24,7 @@ public interface PaymentProjectBindingMapper {
             "<script>",
             "SELECT b.id,",
             "b.project_id AS projectId,",
-            "p.business_line AS businessLine,",
+            "COALESCE(b.business_line, p.business_line) AS businessLine,",
             "p.project_code AS projectCode,",
             "p.project_name AS projectName,",
             "b.merchant_id AS merchantId,",
@@ -44,7 +44,7 @@ public interface PaymentProjectBindingMapper {
             "b.created_at AS createdAt,",
             "b.updated_at AS updatedAt",
             "FROM pay_project_merchant_binding b",
-            "JOIN pm_project p ON p.id = b.project_id",
+            "LEFT JOIN pm_project p ON p.id = b.project_id",
             "JOIN pay_merchant_account m ON m.id = b.merchant_id",
             "JOIN pay_channel c ON c.id = m.channel_id",
             "<where>",
@@ -52,7 +52,7 @@ public interface PaymentProjectBindingMapper {
             "AND b.project_id = #{projectId}",
             "</if>",
             "<if test='businessLine != null and businessLine != \"\"'>",
-            "AND p.business_line = #{businessLine}",
+            "AND COALESCE(b.business_line, p.business_line) = #{businessLine}",
             "</if>",
             "<if test='merchantId != null'>",
             "AND b.merchant_id = #{merchantId}",
@@ -64,7 +64,7 @@ public interface PaymentProjectBindingMapper {
             "AND b.binding_status = #{status}",
             "</if>",
             "</where>",
-            "ORDER BY b.project_id ASC, b.purpose_code ASC, b.is_default DESC, b.priority ASC, b.id DESC",
+            "ORDER BY COALESCE(b.business_line, p.business_line) ASC, b.project_id ASC, b.purpose_code ASC, b.is_default DESC, b.priority ASC, b.id DESC",
             "</script>"
     })
     List<PaymentProjectBindingResponse> findAll(@Param("projectId") Long projectId,
@@ -76,7 +76,7 @@ public interface PaymentProjectBindingMapper {
     @Select("""
             SELECT b.id,
                    b.project_id AS projectId,
-                   p.business_line AS businessLine,
+                   COALESCE(b.business_line, p.business_line) AS businessLine,
                    p.project_code AS projectCode,
                    p.project_name AS projectName,
                    b.merchant_id AS merchantId,
@@ -96,7 +96,7 @@ public interface PaymentProjectBindingMapper {
                    b.created_at AS createdAt,
                    b.updated_at AS updatedAt
             FROM pay_project_merchant_binding b
-            JOIN pm_project p ON p.id = b.project_id
+            LEFT JOIN pm_project p ON p.id = b.project_id
             JOIN pay_merchant_account m ON m.id = b.merchant_id
             JOIN pay_channel c ON c.id = m.channel_id
             WHERE b.id = #{id}
@@ -106,6 +106,7 @@ public interface PaymentProjectBindingMapper {
     @Select("""
             SELECT id,
                    project_id,
+                   business_line,
                    merchant_id,
                    purpose_code,
                    priority,
@@ -117,32 +118,47 @@ public interface PaymentProjectBindingMapper {
             """)
     PaymentProjectBindingEntity findEntityById(Long id);
 
-    @Select("""
-            SELECT id,
-                   project_id,
-                   merchant_id,
-                   purpose_code,
-                   priority,
-                   is_default AS defaultBinding,
-                   binding_status,
-                   remark
-            FROM pay_project_merchant_binding
-            WHERE project_id = #{projectId}
-              AND merchant_id = #{merchantId}
-              AND EXISTS (
-                  SELECT 1
-                  FROM pay_project_merchant_binding_purpose bp
-                  WHERE bp.binding_id = pay_project_merchant_binding.id
-                    AND bp.purpose_code = #{purposeCode}
-              )
-            """)
+    @Select({
+            "<script>",
+            "SELECT id,",
+            "project_id,",
+            "business_line,",
+            "merchant_id,",
+            "purpose_code,",
+            "priority,",
+            "is_default AS defaultBinding,",
+            "binding_status,",
+            "remark",
+            "FROM pay_project_merchant_binding",
+            "<where>",
+            "<choose>",
+            "<when test='projectId != null'>",
+            "project_id = #{projectId}",
+            "</when>",
+            "<otherwise>",
+            "project_id IS NULL",
+            "AND business_line = #{businessLine}",
+            "</otherwise>",
+            "</choose>",
+            "AND merchant_id = #{merchantId}",
+            "AND EXISTS (",
+            "SELECT 1",
+            "FROM pay_project_merchant_binding_purpose bp",
+            "WHERE bp.binding_id = pay_project_merchant_binding.id",
+            "AND bp.purpose_code = #{purposeCode}",
+            ")",
+            "</where>",
+            "</script>"
+    })
     PaymentProjectBindingEntity findEntityByUniqueKey(@Param("projectId") Long projectId,
+                                                      @Param("businessLine") String businessLine,
                                                       @Param("merchantId") Long merchantId,
                                                       @Param("purposeCode") String purposeCode);
 
     @Insert("""
             INSERT INTO pay_project_merchant_binding (
                 project_id,
+                business_line,
                 merchant_id,
                 purpose_code,
                 priority,
@@ -151,6 +167,7 @@ public interface PaymentProjectBindingMapper {
                 remark
             ) VALUES (
                 #{projectId},
+                #{businessLine},
                 #{merchantId},
                 #{purposeCode},
                 #{priority},
@@ -165,6 +182,7 @@ public interface PaymentProjectBindingMapper {
     @Update("""
             UPDATE pay_project_merchant_binding
             SET project_id = #{projectId},
+                business_line = #{businessLine},
                 merchant_id = #{merchantId},
                 purpose_code = #{purposeCode},
                 priority = #{priority},
@@ -175,10 +193,22 @@ public interface PaymentProjectBindingMapper {
             """)
     int update(PaymentProjectBindingEntity entity);
 
-    @Update("""
+    @Update({
+            "<script>",
+            """
             UPDATE pay_project_merchant_binding
             SET is_default = 0
-            WHERE project_id = #{projectId}
+            WHERE
+            """,
+            "<choose>",
+            "<when test='projectId != null'>",
+            "project_id = #{projectId}",
+            "</when>",
+            "<otherwise>",
+            "project_id IS NULL AND business_line = #{businessLine}",
+            "</otherwise>",
+            "</choose>",
+            """
               AND EXISTS (
                   SELECT 1
                   FROM pay_project_merchant_binding_purpose bp
@@ -186,15 +216,18 @@ public interface PaymentProjectBindingMapper {
                     AND bp.purpose_code = #{purposeCode}
               )
               AND id != COALESCE(#{excludeId}, -1)
-            """)
+            """,
+            "</script>"
+    })
     int clearDefaultBindings(@Param("projectId") Long projectId,
+                             @Param("businessLine") String businessLine,
                              @Param("purposeCode") String purposeCode,
                              @Param("excludeId") Long excludeId);
 
     @Select("""
             SELECT b.id,
                    b.project_id AS projectId,
-                   p.business_line AS businessLine,
+                   COALESCE(b.business_line, p.business_line) AS businessLine,
                    p.project_code AS projectCode,
                    p.project_name AS projectName,
                    b.merchant_id AS merchantId,
@@ -214,7 +247,7 @@ public interface PaymentProjectBindingMapper {
                    b.created_at AS createdAt,
                    b.updated_at AS updatedAt
             FROM pay_project_merchant_binding b
-            JOIN pm_project p ON p.id = b.project_id
+            LEFT JOIN pm_project p ON p.id = b.project_id
             JOIN pay_merchant_account m ON m.id = b.merchant_id
             JOIN pay_channel c ON c.id = m.channel_id
             WHERE b.project_id = #{projectId}
@@ -227,6 +260,44 @@ public interface PaymentProjectBindingMapper {
             """)
     PaymentProjectBindingResponse resolveActiveBinding(@Param("projectId") Long projectId,
                                                        @Param("purposeCode") String purposeCode);
+
+    @Select("""
+            SELECT b.id,
+                   b.project_id AS projectId,
+                   b.business_line AS businessLine,
+                   p.project_code AS projectCode,
+                   p.project_name AS projectName,
+                   b.merchant_id AS merchantId,
+                   m.merchant_code AS merchantCode,
+                   m.merchant_name AS merchantName,
+                   c.id AS channelId,
+                   c.channel_code AS channelCode,
+                   c.channel_name AS channelName,
+                   m.environment,
+                   b.purpose_code AS purposeCode,
+                   NULL AS purposeCodes,
+                   b.priority,
+                   b.is_default AS defaultBinding,
+                   b.binding_status AS status,
+                   b.remark,
+                   NULL AS relations,
+                   b.created_at AS createdAt,
+                   b.updated_at AS updatedAt
+            FROM pay_project_merchant_binding b
+            LEFT JOIN pm_project p ON p.id = b.project_id
+            JOIN pay_merchant_account m ON m.id = b.merchant_id
+            JOIN pay_channel c ON c.id = m.channel_id
+            WHERE b.project_id IS NULL
+              AND b.business_line = #{businessLine}
+              AND EXISTS (SELECT 1 FROM pay_project_merchant_binding_purpose bp WHERE bp.binding_id = b.id AND bp.purpose_code = #{purposeCode})
+              AND b.binding_status = 'ACTIVE'
+              AND m.status = 'ACTIVE'
+              AND c.status = 'ACTIVE'
+            ORDER BY b.is_default DESC, b.priority ASC, b.id ASC
+            LIMIT 1
+            """)
+    PaymentProjectBindingResponse resolveBusinessLineActiveBinding(@Param("businessLine") String businessLine,
+                                                                   @Param("purposeCode") String purposeCode);
 
     @Select("""
             SELECT purpose_code

@@ -6,6 +6,7 @@ import cn.aslight.workhub.model.ops.OpsMonitorResponse;
 import cn.aslight.workhub.model.ops.OpsMonitorSaveRequest;
 import cn.aslight.workhub.model.ops.XxlJobDashboardResponse;
 import cn.aslight.workhub.model.ops.XxlJobExecutorResponse;
+import cn.aslight.workhub.model.ops.XxlJobLogPageResponse;
 import cn.aslight.workhub.service.mcp.McpCryptoService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -18,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -82,6 +84,74 @@ class OpsMonitorServiceTest {
         assertEquals(3, response.failedJobPage());
         assertEquals(50, response.failedJobPageSize());
         verify(collector).collect(monitor, startDate, endDate, 3, 50, "张", "premium", "FAILED");
+    }
+
+    @Test
+    void xxlJobLogs_shouldPassPaginationAndFiltersToLogOnlyCollector() {
+        OpsMonitorMapper mapper = mock(OpsMonitorMapper.class);
+        OpsMonitorSchemaInitializer schemaInitializer = mock(OpsMonitorSchemaInitializer.class);
+        McpCryptoService cryptoService = mock(McpCryptoService.class);
+        XxlJobMonitorCollector collector = mock(XxlJobMonitorCollector.class);
+        OpsMonitorService service = new OpsMonitorService(mapper, schemaInitializer, cryptoService, collector);
+        OpsMonitorEntity monitor = monitor(9L, "amp_xxl_job");
+        LocalDate startDate = LocalDate.of(2026, 6, 1);
+        LocalDate endDate = LocalDate.of(2026, 6, 9);
+        XxlJobLogPageResponse logPage = new XxlJobLogPageResponse(
+                9L,
+                "支付:prod:XXL_JOB",
+                "支付",
+                "prod",
+                "支付 prod XXL-JOB",
+                "amp_xxl_job",
+                12,
+                2,
+                10,
+                List.of()
+        );
+        when(mapper.findById(9L)).thenReturn(monitor);
+        when(collector.collectLogs(eq(monitor), eq(startDate), eq(endDate), eq(2), eq(10), eq("张"), eq("premium"), eq("ALL"))).thenReturn(logPage);
+
+        XxlJobLogPageResponse response = service.xxlJobLogs(9L, startDate, endDate, 2, 10, "张", "premium", "ALL");
+
+        assertEquals(12, response.total());
+        assertEquals(2, response.page());
+        assertEquals(10, response.pageSize());
+        verify(collector).collectLogs(monitor, startDate, endDate, 2, 10, "张", "premium", "ALL");
+        verify(collector, never()).collectSummary(monitor);
+    }
+
+    @Test
+    void dashboard_shouldReturnLocalMonitorConfigWithoutQueryingXxlJobDatabase() {
+        OpsMonitorMapper mapper = mock(OpsMonitorMapper.class);
+        OpsMonitorSchemaInitializer schemaInitializer = mock(OpsMonitorSchemaInitializer.class);
+        McpCryptoService cryptoService = mock(McpCryptoService.class);
+        XxlJobMonitorCollector collector = mock(XxlJobMonitorCollector.class);
+        OpsMonitorService service = new OpsMonitorService(mapper, schemaInitializer, cryptoService, collector);
+        OpsMonitorEntity monitor = monitor(9L, "amp_xxl_job");
+        monitor.setExecutorAppName("premium-job,premium-settle");
+        monitor.setLastStatus("ERROR");
+        monitor.setLastMessage("上次采集失败");
+        monitor.setLastCheckedAt(LocalDateTime.of(2026, 6, 9, 10, 30));
+        when(mapper.findAll("XXL_JOB", "支付", "prod", null, true)).thenReturn(List.of(monitor));
+
+        List<XxlJobDashboardResponse> dashboards = service.dashboard("支付", "prod", true);
+
+        assertEquals(1, dashboards.size());
+        XxlJobDashboardResponse dashboard = dashboards.getFirst();
+        assertEquals(9L, dashboard.id());
+        assertEquals("支付:prod:XXL_JOB", dashboard.monitorKey());
+        assertEquals("支付", dashboard.businessLineCode());
+        assertEquals("prod", dashboard.environmentCode());
+        assertEquals("支付 prod XXL-JOB", dashboard.name());
+        assertEquals("amp_xxl_job", dashboard.xxlJobDatabaseName());
+        assertEquals("ERROR", dashboard.status());
+        assertEquals("上次采集失败", dashboard.message());
+        assertEquals(LocalDateTime.of(2026, 6, 9, 10, 30), dashboard.checkedAt());
+        assertEquals(0, dashboard.jobCount());
+        assertEquals(0, dashboard.triggerCount());
+        assertEquals(0, dashboard.failedJobCount());
+        assertEquals(0, dashboard.failedJobs().size());
+        verify(collector, never()).collectSummary(monitor);
     }
 
     @Test

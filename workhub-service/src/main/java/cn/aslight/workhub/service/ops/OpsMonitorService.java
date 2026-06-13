@@ -7,6 +7,7 @@ import cn.aslight.workhub.model.ops.OpsMonitorResponse;
 import cn.aslight.workhub.model.ops.OpsMonitorSaveRequest;
 import cn.aslight.workhub.model.ops.XxlJobDashboardResponse;
 import cn.aslight.workhub.model.ops.XxlJobExecutorResponse;
+import cn.aslight.workhub.model.ops.XxlJobLogPageResponse;
 import cn.aslight.workhub.service.mcp.McpCryptoService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -141,7 +142,7 @@ public class OpsMonitorService {
                         null,
                         enabledOnly)
                 .stream()
-                .map(this::collectDashboardSafely)
+                .map(this::toDashboardConfig)
                 .toList();
     }
 
@@ -197,13 +198,76 @@ public class OpsMonitorService {
         }
     }
 
-    private XxlJobDashboardResponse collectDashboardSafely(OpsMonitorEntity entity) {
+    public XxlJobLogPageResponse xxlJobLogs(Long id,
+                                            LocalDate startDate,
+                                            LocalDate endDate,
+                                            int page,
+                                            int pageSize,
+                                            String author,
+                                            String executorAppName,
+                                            String logStatus) {
+        schemaInitializer.ensureInitialized();
+        OpsMonitorEntity entity = requireExisting(id);
+        if (!XXL_JOB.equals(entity.getMonitorType())) {
+            throw new IllegalArgumentException("MQ 监测详情下一步接入");
+        }
+        LocalDate normalizedEndDate = endDate == null ? LocalDate.now() : endDate;
+        LocalDate normalizedStartDate = startDate == null ? normalizedEndDate.minusDays(7) : startDate;
         try {
-            return xxlJobMonitorCollector.collectSummary(entity);
+            return xxlJobMonitorCollector.collectLogs(entity, normalizedStartDate, normalizedEndDate, page, pageSize, author, executorAppName, logStatus);
         } catch (Exception ex) {
             String message = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
-            return xxlJobDashboardError(entity, message);
+            return new XxlJobLogPageResponse(
+                    entity.getId(),
+                    entity.getMonitorKey(),
+                    entity.getBusinessLineCode(),
+                    entity.getEnvironmentCode(),
+                    entity.getName(),
+                    entity.getXxlJobDatabaseName(),
+                    "ERROR",
+                    message,
+                    LocalDateTime.now(),
+                    0,
+                    page,
+                    pageSize,
+                    List.of()
+            );
         }
+    }
+
+    private XxlJobDashboardResponse toDashboardConfig(OpsMonitorEntity entity) {
+        String status = trimToNull(entity.getLastStatus());
+        if (status == null) {
+            status = Boolean.FALSE.equals(entity.getEnabled()) ? "DISABLED" : "CONFIGURED";
+        }
+        String message = trimToNull(entity.getLastMessage());
+        if (message == null) {
+            message = "仅展示本地 XXL-JOB 监测配置";
+        }
+        return new XxlJobDashboardResponse(
+                entity.getId(),
+                entity.getMonitorKey(),
+                entity.getBusinessLineCode(),
+                entity.getEnvironmentCode(),
+                entity.getName(),
+                entity.getXxlJobDatabaseName(),
+                status,
+                message,
+                entity.getLastCheckedAt(),
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                null,
+                0,
+                1,
+                0,
+                List.of()
+        );
     }
 
     private XxlJobDashboardResponse xxlJobDashboardError(OpsMonitorEntity entity, String message) {
