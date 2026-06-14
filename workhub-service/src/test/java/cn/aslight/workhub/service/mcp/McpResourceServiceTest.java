@@ -144,7 +144,7 @@ class McpResourceServiceTest {
                 involvedSystem("MIDDLE_PLATFORM", "", "authing")
         ));
         when(sysConfigService.findPlainValue("knowledge.project", "vaultPath"))
-                .thenReturn("/Users/aslight/Obsidian Vault/Company Obsidian Vault");
+                .thenReturn("/mnt/workhub/project-knowledge");
         when(sysConfigService.findPlainValue("gitlab.global", "webApiUrl"))
                 .thenReturn("http://gitlab.example.com");
         when(sysConfigService.findPlainValue("gitlab.global", "sshHost"))
@@ -158,7 +158,7 @@ class McpResourceServiceTest {
         assertEquals("ca-assets", businessLineSummary.get("gitlabGroupName"));
         assertEquals(List.of("assets-saps"), businessLineSummary.get("involvedSystems"));
         assertEquals(List.of("authing"), businessLineSummary.get("globalSystems"));
-        assertEquals("/Users/aslight/Obsidian Vault/Company Obsidian Vault", catalog.knowledge().get("projectVaultPath"));
+        assertEquals("/mnt/workhub/project-knowledge", catalog.knowledge().get("projectVaultPath"));
         assertEquals("http://gitlab.example.com", catalog.gitlab().get("webApiUrl"));
         assertEquals(true, catalog.gitlab().get("accessTokenConfigured"));
         assertTrue(!catalog.gitlab().containsValue("plain-gitlab-token"));

@@ -28,7 +28,7 @@ class DevelopmentPlanFolderServiceTest {
 
     @Test
     void open_shouldCreateAndOpenDevelopmentPlanYearFolderInKnowledgeVault() throws Exception {
-        Path vault = tempDir.resolve("Company Obsidian Vault");
+        Path vault = tempDir.resolve("project-knowledge");
         ObjectMapper objectMapper = new ObjectMapper();
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(101L);

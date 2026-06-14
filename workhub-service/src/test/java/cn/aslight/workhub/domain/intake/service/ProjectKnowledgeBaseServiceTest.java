@@ -26,7 +26,7 @@ class ProjectKnowledgeBaseServiceTest {
 
     @Test
     void buildContext_shouldReadRelevantMarkdownFromConfiguredVault() throws Exception {
-        Path vault = tempDir.resolve("Company Obsidian Vault");
+        Path vault = tempDir.resolve("project-knowledge");
         Files.createDirectories(vault.resolve("供应链"));
         Files.writeString(vault.resolve("供应链").resolve("绑卡路由规则.md"), """
                 # 绑卡路由规则

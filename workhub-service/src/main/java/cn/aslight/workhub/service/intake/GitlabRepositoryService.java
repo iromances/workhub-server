@@ -90,10 +90,20 @@ public class GitlabRepositoryService {
         if (project == null) {
             throw new IllegalArgumentException("项目不能为空");
         }
-        String businessLine = requireText(project.businessLine(), "业务线不能为空");
-        String gitlabGroupName = findGitlabGroupName(businessLine);
+        return resolveAndFetchGroup(project.businessLine());
+    }
+
+    /**
+     * 按业务线拉取 GitLab 命名空间下全部可访问仓库。
+     *
+     * @param businessLine 业务线名称
+     * @return 业务线仓库集合
+     */
+    public GitlabRepositoryBundle resolveAndFetchGroup(String businessLine) {
+        String normalizedBusinessLine = requireText(businessLine, "业务线不能为空");
+        String gitlabGroupName = findGitlabGroupName(normalizedBusinessLine);
         if (gitlabGroupName == null) {
-            throw new IllegalArgumentException("业务线未维护 GitLab 组名，请在项目管理中维护业务线对应的 gitlabGroupName：" + businessLine);
+            throw new IllegalArgumentException("业务线未维护 GitLab 组名，请在项目管理中维护业务线对应的 gitlabGroupName：" + normalizedBusinessLine);
         }
         String webApiUrl = sysConfigService.requirePlainValue(GLOBAL_CONFIG_GROUP, "webApiUrl");
         String accessToken = sysConfigService.requirePlainValue(GLOBAL_CONFIG_GROUP, "accessToken");
@@ -117,7 +127,7 @@ public class GitlabRepositoryService {
             repositories.add(new GitlabRepository(repositoryUrl, repoPath));
         }
         log.info("GitLab group repositories synced. businessLine={}, gitlabGroupName={}, repositoryCount={}",
-                businessLine,
+                normalizedBusinessLine,
                 gitlabGroupName,
                 repositories.size());
         return new GitlabRepositoryBundle(gitlabGroupName, groupRoot, repositories);

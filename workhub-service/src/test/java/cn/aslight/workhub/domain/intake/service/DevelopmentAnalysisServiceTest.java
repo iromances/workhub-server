@@ -203,7 +203,7 @@ class DevelopmentAnalysisServiceTest {
         entity.setAnalysisStatus("PENDING");
         entity.setDraftJson(null);
         when(developmentAnalysisMapper.findById(2L)).thenReturn(entity);
-        when(gitlabRepositoryService.resolveAndFetchGroup(any())).thenThrow(new IllegalArgumentException("GitLab 业务线未配置"));
+        when(gitlabRepositoryService.resolveAndFetchGroup(any(ProjectDetailResponse.class))).thenThrow(new IllegalArgumentException("GitLab 业务线未配置"));
 
         service.executeAnalysis(2L, 40L, "admin");
 

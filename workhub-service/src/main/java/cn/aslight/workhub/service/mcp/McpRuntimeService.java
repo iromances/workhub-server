@@ -3,6 +3,7 @@ package cn.aslight.workhub.service.mcp;
 import cn.aslight.workhub.mcp.config.McpResourceCatalog;
 import cn.aslight.workhub.mcp.tool.McpToolRegistry;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
+import cn.aslight.workhub.service.intake.GitlabRepositoryService;
 import cn.aslight.workhub.service.intake.IntakeService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,12 +26,15 @@ public class McpRuntimeService {
 
     private final McpResourceService mcpResourceService;
     private final IntakeService intakeService;
+    private final GitlabRepositoryService gitlabRepositoryService;
     private final ObjectMapper objectMapper;
 
     public McpRuntimeService(McpResourceService mcpResourceService,
-                             IntakeService intakeService) {
+                             IntakeService intakeService,
+                             GitlabRepositoryService gitlabRepositoryService) {
         this.mcpResourceService = mcpResourceService;
         this.intakeService = intakeService;
+        this.gitlabRepositoryService = gitlabRepositoryService;
         this.objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -103,6 +107,7 @@ public class McpRuntimeService {
         McpResourceCatalog catalog = objectMapper.convertValue(mcpResourceService.catalog(), McpResourceCatalog.class);
         McpToolRegistry registry = McpToolRegistry.firstVersion(catalog, objectMapper);
         registerIntakeTools(registry);
+        registerGitlabTools(registry);
         return registry;
     }
 
@@ -113,6 +118,12 @@ public class McpRuntimeService {
         registry.register("search_intakes", "Search requirement-management intakes by approvalCode and/or requirementName.",
                 objectSchema(List.of(), "approvalCode", "requirementName", "limit"),
                 this::searchIntakes);
+    }
+
+    private void registerGitlabTools(McpToolRegistry registry) {
+        registry.register("sync_gitlab_group_repositories", "Clone or refresh all accessible repositories for a business line GitLab group into the local controlled cache.",
+                objectSchema(List.of("businessLine")),
+                this::syncGitlabGroupRepositories);
     }
 
     private Map<String, Object> searchIntakes(JsonNode args) {
@@ -130,6 +141,22 @@ public class McpRuntimeService {
                 "count", matches.size(),
                 "limit", limit,
                 "items", matches
+        );
+    }
+
+    private Map<String, Object> syncGitlabGroupRepositories(JsonNode args) {
+        GitlabRepositoryService.GitlabRepositoryBundle bundle =
+                gitlabRepositoryService.resolveAndFetchGroup(requireText(args, "businessLine"));
+        return Map.of(
+                "gitlabGroupName", bundle.gitlabGroupName(),
+                "localRoot", bundle.localRoot().toString(),
+                "repositoryCount", bundle.repositories().size(),
+                "repositories", bundle.repositories().stream()
+                        .map(repository -> Map.of(
+                                "repositoryUrl", repository.repositoryUrl(),
+                                "localPath", repository.localPath().toString()
+                        ))
+                        .toList()
         );
     }
 

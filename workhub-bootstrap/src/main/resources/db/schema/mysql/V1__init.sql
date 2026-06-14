@@ -39,6 +39,26 @@ CREATE TABLE `sys_config_item` (
   UNIQUE KEY `uk_sys_config_group_key` (`config_group`, `config_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `sys_db_script_execution_log` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `script_name` VARCHAR(255) NOT NULL,
+  `script_path` VARCHAR(512) NOT NULL,
+  `script_type` VARCHAR(16) NOT NULL,
+  `script_version` VARCHAR(64) NULL,
+  `checksum` VARCHAR(128) NULL,
+  `execution_status` VARCHAR(32) NOT NULL,
+  `executed_by` VARCHAR(64) NOT NULL,
+  `executed_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `error_message` TEXT NULL,
+  `remark` VARCHAR(255) NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sys_db_script_execution_log_name` (`script_name`),
+  KEY `idx_sys_db_script_execution_log_status` (`execution_status`, `executed_at`),
+  KEY `idx_sys_db_script_execution_log_type` (`script_type`, `executed_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE `mcp_resource_config` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `resource_type` VARCHAR(32) NOT NULL,
@@ -88,9 +108,9 @@ INSERT INTO `sys_config_item` (
   'vaultPath',
   '项目知识库地址',
   'TEXT',
-  '/Users/aslight/Obsidian Vault/Company Obsidian Vault',
+  NULL,
   1,
-  'AI 任务评估遇到不确定业务口径时可参考的本地 Obsidian Vault 路径'
+  'AI 任务评估遇到不确定业务口径时可参考的项目知识库路径；由 MCP 项目配置维护'
 ), (
   'ai.codexCli',
   'model',

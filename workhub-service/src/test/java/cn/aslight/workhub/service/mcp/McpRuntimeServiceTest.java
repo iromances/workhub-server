@@ -4,11 +4,13 @@ import cn.aslight.workhub.model.mcp.McpCatalogResponse;
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
+import cn.aslight.workhub.service.intake.GitlabRepositoryService;
 import cn.aslight.workhub.service.intake.IntakeService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -34,14 +36,14 @@ class McpRuntimeServiceTest {
                 List.of(Map.of("code", "prod", "name", "prod", "production", true, "enabled", true)),
                 List.of(databaseTarget("jiatai-hp-db-prod", "汇浦")),
                 List.of(),
-                Map.of("projectVaultPath", "/Users/aslight/Obsidian Vault/Company Obsidian Vault"),
+                Map.of("projectVaultPath", "/mnt/workhub/project-knowledge"),
                 Map.of(
                         "webApiUrl", "http://gitlab.example.com",
                         "sshHost", "git@gitlab.example.com",
                         "accessTokenConfigured", true
                 )
         ));
-        McpRuntimeService runtimeService = new McpRuntimeService(resourceService, new FakeIntakeService());
+        McpRuntimeService runtimeService = new McpRuntimeService(resourceService, new FakeIntakeService(), new FakeGitlabRepositoryService());
 
         JsonNode response = runtimeService.handle(objectMapper.readTree("""
                 {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"list_mcp_targets","arguments":{}}}
@@ -71,14 +73,14 @@ class McpRuntimeServiceTest {
                 List.of(Map.of("code", "prod", "name", "prod", "production", true, "enabled", true)),
                 List.of(databaseTarget("jiatai-hp-db-prod", "汇浦")),
                 List.of(),
-                Map.of("projectVaultPath", "/Users/aslight/Obsidian Vault/Company Obsidian Vault"),
+                Map.of("projectVaultPath", "/mnt/workhub/project-knowledge"),
                 Map.of(
                         "webApiUrl", "http://gitlab.example.com",
                         "sshHost", "git@gitlab.example.com",
                         "accessTokenConfigured", true
                 )
         ));
-        McpRuntimeService runtimeService = new McpRuntimeService(resourceService, new FakeIntakeService());
+        McpRuntimeService runtimeService = new McpRuntimeService(resourceService, new FakeIntakeService(), new FakeGitlabRepositoryService());
 
         JsonNode response = runtimeService.handle(objectMapper.readTree("""
                 {"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_business_line_context","arguments":{"businessLine":"汇浦"}}}
@@ -96,7 +98,7 @@ class McpRuntimeServiceTest {
 
     @Test
     void handle_shouldListIntakeToolsInHttpRuntime() throws Exception {
-        McpRuntimeService runtimeService = new McpRuntimeService(emptyResourceService(), new FakeIntakeService());
+        McpRuntimeService runtimeService = new McpRuntimeService(emptyResourceService(), new FakeIntakeService(), new FakeGitlabRepositoryService());
 
         JsonNode response = runtimeService.handle(objectMapper.readTree("""
                 {"jsonrpc":"2.0","id":3,"method":"tools/list","params":{}}
@@ -105,6 +107,7 @@ class McpRuntimeServiceTest {
         String text = response.at("/result/tools").toString();
         assertTrue(text.contains("get_intake_detail"));
         assertTrue(text.contains("search_intakes"));
+        assertTrue(text.contains("sync_gitlab_group_repositories"));
     }
 
     @Test
@@ -135,7 +138,7 @@ class McpRuntimeServiceTest {
                 LocalDateTime.parse("2026-06-01T10:00:00"),
                 LocalDateTime.parse("2026-06-01T10:05:00")
         );
-        McpRuntimeService runtimeService = new McpRuntimeService(emptyResourceService(), intakeService);
+        McpRuntimeService runtimeService = new McpRuntimeService(emptyResourceService(), intakeService, new FakeGitlabRepositoryService());
 
         JsonNode response = runtimeService.handle(objectMapper.readTree("""
                 {"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"get_intake_detail","arguments":{"intakeId":"88"}}}
@@ -153,7 +156,7 @@ class McpRuntimeServiceTest {
     void handle_shouldSearchIntakesByApprovalCodeAndRequirementName() throws Exception {
         FakeIntakeService intakeService = new FakeIntakeService();
         intakeService.summaryResponses = List.of(summary(88L));
-        McpRuntimeService runtimeService = new McpRuntimeService(emptyResourceService(), intakeService);
+        McpRuntimeService runtimeService = new McpRuntimeService(emptyResourceService(), intakeService, new FakeGitlabRepositoryService());
 
         JsonNode response = runtimeService.handle(objectMapper.readTree("""
                 {"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"search_intakes","arguments":{"approvalCode":"SP-20260601","requirementName":"MCP","limit":"5"}}}
@@ -169,7 +172,7 @@ class McpRuntimeServiceTest {
 
     @Test
     void handle_shouldRejectIntakeSearchWithoutCriteria() throws Exception {
-        McpRuntimeService runtimeService = new McpRuntimeService(emptyResourceService(), new FakeIntakeService());
+        McpRuntimeService runtimeService = new McpRuntimeService(emptyResourceService(), new FakeIntakeService(), new FakeGitlabRepositoryService());
 
         JsonNode response = runtimeService.handle(objectMapper.readTree("""
                 {"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"search_intakes","arguments":{}}}
@@ -177,6 +180,23 @@ class McpRuntimeServiceTest {
 
         assertEquals(-32603, response.at("/error/code").asInt());
         assertTrue(response.at("/error/message").asText().contains("审批编号或需求名称至少填写一个"));
+    }
+
+    @Test
+    void handle_shouldSyncGitlabGroupRepositoriesByBusinessLineWithoutReturningToken() throws Exception {
+        FakeGitlabRepositoryService gitlabRepositoryService = new FakeGitlabRepositoryService();
+        McpRuntimeService runtimeService = new McpRuntimeService(emptyResourceService(), new FakeIntakeService(), gitlabRepositoryService);
+
+        JsonNode response = runtimeService.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"sync_gitlab_group_repositories","arguments":{"businessLine":"汇浦"}}}
+                """));
+
+        String text = response.at("/result/content/0/text").asText();
+        assertEquals("汇浦", gitlabRepositoryService.syncedBusinessLine);
+        assertTrue(text.contains("\"gitlabGroupName\" : \"ca-assets\""));
+        assertTrue(text.contains("\"repositoryCount\" : 1"));
+        assertTrue(text.contains("/tmp/workhub-git-cache/group-abc/assets-saps"));
+        assertTrue(!text.contains("plain-gitlab-token"));
     }
 
     private Map<String, Object> databaseTarget(String key, String businessLine) {
@@ -342,6 +362,27 @@ class McpRuntimeServiceTest {
             this.searchRequirementName = requirementName;
             this.searchApprovalCode = approvalCode;
             return summaryResponses;
+        }
+    }
+
+    private static class FakeGitlabRepositoryService extends GitlabRepositoryService {
+        private String syncedBusinessLine;
+
+        FakeGitlabRepositoryService() {
+            super(null, null, null);
+        }
+
+        @Override
+        public GitlabRepositoryBundle resolveAndFetchGroup(String businessLine) {
+            this.syncedBusinessLine = businessLine;
+            return new GitlabRepositoryBundle(
+                    "ca-assets",
+                    Path.of("/tmp/workhub-git-cache/group-abc"),
+                    List.of(new GitlabRepository(
+                            "https://gitlab.example.com/ca-assets/assets-saps.git",
+                            Path.of("/tmp/workhub-git-cache/group-abc/assets-saps")
+                    ))
+            );
         }
     }
 }
