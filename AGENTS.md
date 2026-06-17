@@ -11,6 +11,8 @@
 
 关联前端仓库在同级目录 `../workhub-web`，可读写。
 
+嘉泰资产平台前端仓库特别注意：`jiatai-amp-opadmin` 是嘉泰当前运营后台前端；`jiatai-amp-admin` 是演示用旧系统。除非用户明确点名 `jiatai-amp-admin`，嘉泰资产平台业务前端需求不要改到 `jiatai-amp-admin`。
+
 
 ## 2. 文档索引
 
