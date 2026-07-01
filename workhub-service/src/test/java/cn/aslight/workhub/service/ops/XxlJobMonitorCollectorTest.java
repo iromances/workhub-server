@@ -106,6 +106,9 @@ class XxlJobMonitorCollectorTest {
         assertTrue(queryClient.sqls.getFirst().contains("g.app_name IN ('premium-job','premium-settle')"));
         assertTrue(queryClient.sqls.getFirst().contains("`amp_xxl_job`.`xxl_job_info` i"));
         assertTrue(queryClient.sqls.getFirst().contains("`amp_xxl_job`.`xxl_job_log` l"));
+        assertEquals(1, countOccurrences(queryClient.sqls.getFirst(), "FROM `amp_xxl_job`.`xxl_job_log` l"));
+        assertTrue(queryClient.sqls.getFirst().contains("SUM(CASE WHEN l.handle_code = 200 THEN 1 ELSE 0 END)"));
+        assertTrue(queryClient.sqls.getFirst().contains("MAX(l.trigger_time) AS reportUpdatedAt"));
     }
 
     @Test
@@ -425,6 +428,16 @@ class XxlJobMonitorCollectorTest {
         row.put("handleCode", 200);
         row.put("handleMsg", "success");
         return row;
+    }
+
+    private int countOccurrences(String value, String needle) {
+        int count = 0;
+        int index = 0;
+        while ((index = value.indexOf(needle, index)) >= 0) {
+            count++;
+            index += needle.length();
+        }
+        return count;
     }
 
     private static class FakeXxlJobDatabaseQueryClient implements XxlJobDatabaseQueryClient {

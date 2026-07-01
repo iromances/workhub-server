@@ -273,42 +273,41 @@ public class XxlJobMonitorCollector {
     private String focusedSummarySql(String databaseName, String executorFilter) {
         return """
                 SELECT
-                  (SELECT COUNT(1)
-                   FROM %1$s.`xxl_job_info` i
-                   JOIN %1$s.`xxl_job_group` g ON g.id = i.job_group
-                   WHERE 1 = 1 %2$s) AS jobCount,
-                  (SELECT COUNT(1)
-                   FROM %1$s.`xxl_job_info` i
-                   JOIN %1$s.`xxl_job_group` g ON g.id = i.job_group
-                   WHERE i.trigger_status = 1 %2$s) AS enabledJobCount,
-                  (SELECT COUNT(1)
-                   FROM %1$s.`xxl_job_info` i
-                   JOIN %1$s.`xxl_job_group` g ON g.id = i.job_group
-                   WHERE i.trigger_status <> 1 %2$s) AS disabledJobCount,
-                  (SELECT GROUP_CONCAT(g.address_list SEPARATOR ',')
-                   FROM %1$s.`xxl_job_group` g
-                   WHERE g.address_list IS NOT NULL AND g.address_list <> '' %2$s) AS executorRegistryList,
-                  (SELECT COUNT(1)
-                   FROM %1$s.`xxl_job_log` l
-                   JOIN %1$s.`xxl_job_info` i ON i.id = l.job_id
-                   JOIN %1$s.`xxl_job_group` g ON g.id = i.job_group
-                   WHERE l.handle_code = 0 AND l.trigger_code IN (0, 200) %2$s) AS triggerRunningCount,
-                  (SELECT COUNT(1)
-                   FROM %1$s.`xxl_job_log` l
-                   JOIN %1$s.`xxl_job_info` i ON i.id = l.job_id
-                   JOIN %1$s.`xxl_job_group` g ON g.id = i.job_group
-                   WHERE l.handle_code = 200 %2$s) AS triggerSuccessCount,
-                  (SELECT COUNT(1)
-                   FROM %1$s.`xxl_job_log` l
-                   JOIN %1$s.`xxl_job_info` i ON i.id = l.job_id
-                   JOIN %1$s.`xxl_job_group` g ON g.id = i.job_group
-                   WHERE l.handle_code <> 200
-                     AND NOT (l.trigger_code IN (0, 200) AND l.handle_code = 0) %2$s) AS triggerFailedCount,
-                  (SELECT MAX(l.trigger_time)
-                   FROM %1$s.`xxl_job_log` l
-                   JOIN %1$s.`xxl_job_info` i ON i.id = l.job_id
-                   JOIN %1$s.`xxl_job_group` g ON g.id = i.job_group
-                   WHERE 1 = 1 %2$s) AS reportUpdatedAt
+                  job_stats.jobCount AS jobCount,
+                  job_stats.enabledJobCount AS enabledJobCount,
+                  job_stats.disabledJobCount AS disabledJobCount,
+                  executor_stats.executorRegistryList AS executorRegistryList,
+                  log_stats.triggerRunningCount AS triggerRunningCount,
+                  log_stats.triggerSuccessCount AS triggerSuccessCount,
+                  log_stats.triggerFailedCount AS triggerFailedCount,
+                  log_stats.reportUpdatedAt AS reportUpdatedAt
+                FROM (
+                  SELECT
+                    COUNT(1) AS jobCount,
+                    COALESCE(SUM(CASE WHEN i.trigger_status = 1 THEN 1 ELSE 0 END), 0) AS enabledJobCount,
+                    COALESCE(SUM(CASE WHEN i.trigger_status <> 1 THEN 1 ELSE 0 END), 0) AS disabledJobCount
+                  FROM %1$s.`xxl_job_info` i
+                  JOIN %1$s.`xxl_job_group` g ON g.id = i.job_group
+                  WHERE 1 = 1 %2$s
+                ) job_stats
+                CROSS JOIN (
+                  SELECT GROUP_CONCAT(g.address_list SEPARATOR ',') AS executorRegistryList
+                  FROM %1$s.`xxl_job_group` g
+                  WHERE g.address_list IS NOT NULL AND g.address_list <> '' %2$s
+                ) executor_stats
+                CROSS JOIN (
+                  SELECT
+                    COALESCE(SUM(CASE WHEN l.handle_code = 0 AND l.trigger_code IN (0, 200) THEN 1 ELSE 0 END), 0) AS triggerRunningCount,
+                    COALESCE(SUM(CASE WHEN l.handle_code = 200 THEN 1 ELSE 0 END), 0) AS triggerSuccessCount,
+                    COALESCE(SUM(CASE WHEN l.handle_code <> 200
+                                      AND NOT (l.trigger_code IN (0, 200) AND l.handle_code = 0)
+                                      THEN 1 ELSE 0 END), 0) AS triggerFailedCount,
+                    MAX(l.trigger_time) AS reportUpdatedAt
+                  FROM %1$s.`xxl_job_log` l
+                  JOIN %1$s.`xxl_job_info` i ON i.id = l.job_id
+                  JOIN %1$s.`xxl_job_group` g ON g.id = i.job_group
+                  WHERE 1 = 1 %2$s
+                ) log_stats
                 """.formatted(databaseName, executorFilter);
     }
 

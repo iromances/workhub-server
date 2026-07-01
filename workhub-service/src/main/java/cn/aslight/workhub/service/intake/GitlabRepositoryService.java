@@ -114,15 +114,15 @@ public class GitlabRepositoryService {
             throw new IllegalArgumentException("GitLab 业务线下未找到可访问仓库：" + gitlabGroupName);
         }
 
-        Path groupRoot = Path.of("data", "git-cache", "group-" + safeHash(gitlabGroupName)).toAbsolutePath().normalize();
+        Path groupRoot = groupCacheRoot(gitlabGroupName);
         List<GitlabRepository> repositories = new ArrayList<>();
         for (GitlabProject gitlabProject : projects) {
             String repositoryUrl = firstNonBlank(
                     gitlabProject.httpUrlToRepo(),
                     gitlabProject.webUrl() == null ? null : gitlabProject.webUrl() + ".git"
             );
-            String repositoryName = firstNonBlank(gitlabProject.path(), inferRepositoryName(repositoryUrl));
-            Path repoPath = groupRoot.resolve(safePathName(repositoryName)).normalize();
+            String repositoryName = repositoryDirectoryName(gitlabProject, repositoryUrl);
+            Path repoPath = groupRoot.resolve(repositoryName).normalize();
             fetchRepository(repositoryUrl, accessToken, repoPath);
             repositories.add(new GitlabRepository(repositoryUrl, repoPath));
         }
@@ -217,7 +217,10 @@ public class GitlabRepositoryService {
         if (group == null) {
             return null;
         }
-        BusinessLineEntity entity = businessLineMapper.findByName(group);
+        BusinessLineEntity entity = businessLineMapper.findByCode(group);
+        if (entity == null) {
+            entity = businessLineMapper.findByName(group);
+        }
         return entity == null || Boolean.FALSE.equals(entity.getEnabled()) ? null : trimToNull(entity.getGitlabGroupName());
     }
 
@@ -436,10 +439,16 @@ public class GitlabRepositoryService {
         return trimToNull(name);
     }
 
-    private String safePathName(String value) {
-        String normalized = requireText(value, "仓库名称不能为空")
-                .replaceAll("[^\\p{IsAlphabetic}\\p{IsDigit}._-]+", "-");
-        return normalized.isBlank() ? safeHash(value) : normalized;
+    String repositoryDirectoryName(GitlabProject gitlabProject, String repositoryUrl) {
+        String repositoryName = firstNonBlank(
+                gitlabProject == null ? null : gitlabProject.path(),
+                inferRepositoryName(repositoryUrl)
+        );
+        return requireText(repositoryName, "仓库名称不能为空");
+    }
+
+    Path groupCacheRoot(String gitlabGroupName) {
+        return Path.of("data", "git-cache", requireText(gitlabGroupName, "GitLab 组名不能为空")).toAbsolutePath().normalize();
     }
 
     private String requireText(String value, String message) {

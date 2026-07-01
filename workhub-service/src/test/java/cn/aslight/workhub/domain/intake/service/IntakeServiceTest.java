@@ -143,6 +143,7 @@ class IntakeServiceTest {
         populated.setDemandStatus("已收录");
         populated.setEnrichmentStatus("SUCCEEDED");
         populated.setIntakeStatus("待整理");
+        populated.setActiveTodoCount(2L);
 
         IntakeRecordEntity blank = new IntakeRecordEntity();
         blank.setId(102L);
@@ -165,7 +166,7 @@ class IntakeServiceTest {
 
         when(intakeMapper.findAll(eq(null))).thenReturn(List.of(populated, blank));
 
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null);
+        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null, null, null);
 
         assertEquals(2, result.size());
         assertEquals("202603250009", result.get(0).approvalCode());
@@ -177,6 +178,7 @@ class IntakeServiceTest {
         assertEquals("沃橙绑卡至嘉泰保理", result.get(0).requirementDigest());
         assertEquals("2026/04/01", result.get(0).plannedDevelopmentStartDate());
         assertEquals("已收录", result.get(0).demandStatus());
+        assertEquals(2L, result.get(0).activeTodoCount());
         assertEquals("SUCCEEDED", result.get(0).enrichmentStatus());
 
         assertEquals("LEGACY-001", result.get(1).approvalCode());
@@ -221,7 +223,7 @@ class IntakeServiceTest {
 
         when(intakeMapper.findAll(eq(null))).thenReturn(List.of(operations));
 
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null);
+        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null, null, null);
 
         assertEquals(1, result.size());
         IntakeSummaryResponse item = result.getFirst();
@@ -264,7 +266,7 @@ class IntakeServiceTest {
         entity.setIntakeStatus("待整理");
         when(intakeMapper.findAll(eq(null))).thenReturn(List.of(entity));
 
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null);
+        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null, null, null);
 
         assertEquals(1, result.size());
         assertNull(result.get(0).demandStatus());
@@ -316,7 +318,7 @@ class IntakeServiceTest {
 
         when(intakeMapper.findAll(eq(null))).thenReturn(List.of(matched, missed));
 
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, "2026/04/01", "2026/04/05");
+        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null, "2026/04/01", "2026/04/05");
 
         assertEquals(1, result.size());
         assertEquals("REL-001", result.getFirst().approvalCode());
@@ -365,7 +367,7 @@ class IntakeServiceTest {
 
         when(intakeMapper.findAll(eq(null))).thenReturn(List.of(matched, missed));
 
-        List<IntakeSummaryResponse> result = service.list(null, "绑卡", null, null, null, null, null);
+        List<IntakeSummaryResponse> result = service.list(null, "绑卡", null, null, null, null, null, null, null);
 
         assertEquals(1, result.size());
         assertEquals("NAME-001", result.getFirst().approvalCode());
@@ -412,7 +414,7 @@ class IntakeServiceTest {
 
         when(intakeMapper.findAll(eq(null))).thenReturn(List.of(matched, missed));
 
-        List<IntakeSummaryResponse> result = service.list(null, null, "060001", "周", null, null, null);
+        List<IntakeSummaryResponse> result = service.list(null, null, "060001", "周", null, null, null, null, null);
 
         assertEquals(1, result.size());
         assertEquals("202604060001", result.getFirst().approvalCode());

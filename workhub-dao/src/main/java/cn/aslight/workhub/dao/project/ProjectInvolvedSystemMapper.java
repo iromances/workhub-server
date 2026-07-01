@@ -19,24 +19,26 @@ public interface ProjectInvolvedSystemMapper {
 
     @Select({
             "<script>",
-            "SELECT id, system_scope, business_line, system_name, description, enabled, sort_order, created_at, updated_at",
-            "FROM pm_project_involved_system",
+            "SELECT s.id, s.system_scope, COALESCE(bl.business_line_name, s.business_line) AS business_line,",
+            "s.business_line_code, s.system_name, s.description, s.enabled, s.sort_order, s.created_at, s.updated_at",
+            "FROM pm_project_involved_system s",
+            "LEFT JOIN pm_business_line bl ON bl.business_line_code = s.business_line_code",
             "<where>",
             "<if test='systemScope != null and systemScope != \"\"'>",
-            "AND system_scope = #{systemScope}",
+            "AND s.system_scope = #{systemScope}",
             "</if>",
             "<if test='businessLine != null'>",
-            "AND business_line = #{businessLine}",
+            "AND s.business_line_code = #{businessLine}",
             "</if>",
             "<if test='enabledOnly'>",
-            "AND enabled = 1",
+            "AND s.enabled = 1",
             "</if>",
             "<if test='keyword != null and keyword != \"\"'>",
-            "AND (system_name LIKE CONCAT('%', #{keyword}, '%')",
-            "OR description LIKE CONCAT('%', #{keyword}, '%'))",
+            "AND (s.system_name LIKE CONCAT('%', #{keyword}, '%')",
+            "OR s.description LIKE CONCAT('%', #{keyword}, '%'))",
             "</if>",
             "</where>",
-            "ORDER BY system_scope ASC, business_line ASC, enabled DESC, sort_order ASC, system_name ASC, id ASC",
+            "ORDER BY s.system_scope ASC, business_line ASC, s.enabled DESC, s.sort_order ASC, s.system_name ASC, s.id ASC",
             "</script>"
     })
     List<ProjectInvolvedSystemEntity> findAll(@Param("systemScope") String systemScope,
@@ -45,17 +47,27 @@ public interface ProjectInvolvedSystemMapper {
                                               @Param("keyword") String keyword);
 
     @Select("""
-            SELECT id, system_scope, business_line, system_name, description, enabled, sort_order, created_at, updated_at
-            FROM pm_project_involved_system
-            WHERE id = #{id}
+            SELECT s.id,
+                   s.system_scope,
+                   COALESCE(bl.business_line_name, s.business_line) AS business_line,
+                   s.business_line_code,
+                   s.system_name,
+                   s.description,
+                   s.enabled,
+                   s.sort_order,
+                   s.created_at,
+                   s.updated_at
+            FROM pm_project_involved_system s
+            LEFT JOIN pm_business_line bl ON bl.business_line_code = s.business_line_code
+            WHERE s.id = #{id}
             """)
     ProjectInvolvedSystemEntity findById(Long id);
 
     @Select("""
-            SELECT id, system_scope, business_line, system_name, description, enabled, sort_order, created_at, updated_at
+            SELECT id, system_scope, business_line, business_line_code, system_name, description, enabled, sort_order, created_at, updated_at
             FROM pm_project_involved_system
             WHERE system_scope = #{systemScope}
-              AND business_line = #{businessLine}
+              AND business_line_code = #{businessLine}
               AND system_name = #{systemName}
             LIMIT 1
             """)
@@ -64,25 +76,39 @@ public interface ProjectInvolvedSystemMapper {
                                                @Param("systemName") String systemName);
 
     @Select("""
-            SELECT id, system_scope, business_line, system_name, description, enabled, sort_order, created_at, updated_at
-            FROM pm_project_involved_system
-            WHERE enabled = 1
+            SELECT s.id,
+                   s.system_scope,
+                   COALESCE(bl.business_line_name, s.business_line) AS business_line,
+                   s.business_line_code,
+                   s.system_name,
+                   s.description,
+                   s.enabled,
+                   s.sort_order,
+                   s.created_at,
+                   s.updated_at
+            FROM pm_project_involved_system s
+            LEFT JOIN pm_business_line bl ON bl.business_line_code = s.business_line_code
+            WHERE s.enabled = 1
               AND (
-                    (system_scope = 'BUSINESS_LINE' AND business_line = #{businessLine})
-                 OR (system_scope = 'MIDDLE_PLATFORM' AND business_line = '')
+                    (s.system_scope = 'BUSINESS_LINE' AND s.business_line_code = #{businessLine})
+                 OR (s.system_scope = 'MIDDLE_PLATFORM' AND s.business_line_code = '')
               )
-            ORDER BY CASE system_scope WHEN 'BUSINESS_LINE' THEN 0 ELSE 1 END,
-                     sort_order ASC,
-                     system_name ASC,
-                     id ASC
+            ORDER BY CASE s.system_scope WHEN 'BUSINESS_LINE' THEN 0 ELSE 1 END,
+                     s.sort_order ASC,
+                     s.system_name ASC,
+                     s.id ASC
             """)
-    List<ProjectInvolvedSystemEntity> findSelectableByBusinessLine(String businessLine);
+    List<ProjectInvolvedSystemEntity> findSelectableByBusinessLineCode(String businessLine);
+
+    default List<ProjectInvolvedSystemEntity> findSelectableByBusinessLine(String businessLine) {
+        return findSelectableByBusinessLineCode(businessLine);
+    }
 
     @Insert("""
             INSERT INTO pm_project_involved_system (
-                system_scope, business_line, system_name, description, enabled, sort_order
+                system_scope, business_line, business_line_code, system_name, description, enabled, sort_order
             ) VALUES (
-                #{systemScope}, #{businessLine}, #{systemName}, #{description}, #{enabled}, #{sortOrder}
+                #{systemScope}, #{businessLine}, #{businessLineCode}, #{systemName}, #{description}, #{enabled}, #{sortOrder}
             )
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
@@ -92,6 +118,7 @@ public interface ProjectInvolvedSystemMapper {
             UPDATE pm_project_involved_system
             SET system_scope = #{systemScope},
                 business_line = #{businessLine},
+                business_line_code = #{businessLineCode},
                 system_name = #{systemName},
                 description = #{description},
                 enabled = #{enabled},
@@ -119,7 +146,7 @@ public interface ProjectInvolvedSystemMapper {
             SELECT COUNT(1)
             FROM pm_project_involved_system
             WHERE system_scope = 'BUSINESS_LINE'
-              AND business_line = #{businessLine}
+              AND business_line_code = #{businessLine}
             """)
     int countByBusinessLine(String businessLine);
 }

@@ -2,6 +2,7 @@ package cn.aslight.workhub.service.payment;
 
 import cn.aslight.workhub.dao.payment.PaymentMerchantMapper;
 import cn.aslight.workhub.dao.payment.PaymentProjectBindingMapper;
+import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.model.payment.PaymentBindingRelationEntity;
 import cn.aslight.workhub.model.payment.PaymentBindingRelationResponse;
 import cn.aslight.workhub.model.payment.PaymentBindingRelationSaveRequest;
@@ -9,8 +10,10 @@ import cn.aslight.workhub.model.payment.PaymentMerchantEntity;
 import cn.aslight.workhub.model.payment.PaymentProjectBindingEntity;
 import cn.aslight.workhub.model.payment.PaymentProjectBindingResponse;
 import cn.aslight.workhub.model.payment.PaymentProjectBindingSaveRequest;
+import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.model.project.ProjectEntity;
 import cn.aslight.workhub.service.project.ProjectService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,15 +30,26 @@ public class PaymentProjectBindingService {
     private final PaymentMerchantMapper paymentMerchantMapper;
     private final ProjectService projectService;
     private final PaymentAuditService paymentAuditService;
+    private final BusinessLineMapper businessLineMapper;
 
+    @Autowired
     public PaymentProjectBindingService(PaymentProjectBindingMapper paymentProjectBindingMapper,
                                         PaymentMerchantMapper paymentMerchantMapper,
                                         ProjectService projectService,
-                                        PaymentAuditService paymentAuditService) {
+                                        PaymentAuditService paymentAuditService,
+                                        BusinessLineMapper businessLineMapper) {
         this.paymentProjectBindingMapper = paymentProjectBindingMapper;
         this.paymentMerchantMapper = paymentMerchantMapper;
         this.projectService = projectService;
         this.paymentAuditService = paymentAuditService;
+        this.businessLineMapper = businessLineMapper;
+    }
+
+    PaymentProjectBindingService(PaymentProjectBindingMapper paymentProjectBindingMapper,
+                                 PaymentMerchantMapper paymentMerchantMapper,
+                                 ProjectService projectService,
+                                 PaymentAuditService paymentAuditService) {
+        this(paymentProjectBindingMapper, paymentMerchantMapper, projectService, paymentAuditService, null);
     }
 
     public List<PaymentProjectBindingResponse> list(Long projectId, String businessLine, Long merchantId, String purposeCode, String status) {
@@ -57,7 +71,7 @@ public class PaymentProjectBindingService {
         );
         if (response == null) {
             response = paymentProjectBindingMapper.resolveBusinessLineActiveBinding(
-                    PaymentCatalogs.trimToNull(project.getBusinessLine()),
+                    paymentBusinessLineIdentity(project),
                     normalizedPurposeCode
             );
         }
@@ -69,17 +83,18 @@ public class PaymentProjectBindingService {
 
     @Transactional
     public PaymentProjectBindingResponse create(PaymentProjectBindingSaveRequest request, String operatorUserName) {
-        String businessLine = validateReferences(request.getProjectId(), request.getBusinessLine(), request.getMerchantId());
+        ResolvedBusinessLine businessLine = validateReferences(request);
         List<String> purposeCodes = normalizePurposeCodes(request);
         ensureMerchantSupportsPurposes(request.getMerchantId(), purposeCodes);
         for (String purposeCode : purposeCodes) {
-            ensureUniqueKey(request.getProjectId(), businessLine, request.getMerchantId(), purposeCode, null);
+            ensureUniqueKey(request.getProjectId(), businessLine.identity(), request.getMerchantId(), purposeCode, null);
         }
         PaymentProjectBindingEntity entity = toEntity(request);
-        entity.setBusinessLine(businessLine);
+        entity.setBusinessLineCode(businessLine.code());
+        entity.setBusinessLine(businessLine.name());
         if (Boolean.TRUE.equals(entity.getDefaultBinding())) {
             for (String purposeCode : purposeCodes) {
-                paymentProjectBindingMapper.clearDefaultBindings(entity.getProjectId(), businessLine, purposeCode, null);
+                paymentProjectBindingMapper.clearDefaultBindings(entity.getProjectId(), businessLine.identity(), purposeCode, null);
             }
         }
         paymentProjectBindingMapper.insert(entity);
@@ -104,18 +119,19 @@ public class PaymentProjectBindingService {
         if (existing == null) {
             throw new IllegalArgumentException("项目商户绑定不存在");
         }
-        String businessLine = validateReferences(request.getProjectId(), request.getBusinessLine(), request.getMerchantId());
+        ResolvedBusinessLine businessLine = validateReferences(request);
         List<String> purposeCodes = normalizePurposeCodes(request);
         ensureMerchantSupportsPurposes(request.getMerchantId(), purposeCodes);
         for (String purposeCode : purposeCodes) {
-            ensureUniqueKey(request.getProjectId(), businessLine, request.getMerchantId(), purposeCode, id);
+            ensureUniqueKey(request.getProjectId(), businessLine.identity(), request.getMerchantId(), purposeCode, id);
         }
         PaymentProjectBindingEntity entity = toEntity(request);
         entity.setId(id);
-        entity.setBusinessLine(businessLine);
+        entity.setBusinessLineCode(businessLine.code());
+        entity.setBusinessLine(businessLine.name());
         if (Boolean.TRUE.equals(entity.getDefaultBinding())) {
             for (String purposeCode : purposeCodes) {
-                paymentProjectBindingMapper.clearDefaultBindings(entity.getProjectId(), businessLine, purposeCode, id);
+                paymentProjectBindingMapper.clearDefaultBindings(entity.getProjectId(), businessLine.identity(), purposeCode, id);
             }
         }
         paymentProjectBindingMapper.update(entity);
@@ -149,6 +165,7 @@ public class PaymentProjectBindingService {
         return new PaymentProjectBindingResponse(
                 response.id(),
                 response.projectId(),
+                response.businessLineCode(),
                 response.businessLine(),
                 response.projectCode(),
                 response.projectName(),
@@ -171,23 +188,26 @@ public class PaymentProjectBindingService {
         );
     }
 
-    private String validateReferences(Long projectId, String businessLine, Long merchantId) {
-        String normalizedBusinessLine = PaymentCatalogs.trimToNull(businessLine);
-        if (normalizedBusinessLine == null) {
+    private ResolvedBusinessLine validateReferences(PaymentProjectBindingSaveRequest request) {
+        ResolvedBusinessLine resolvedBusinessLine = resolveBusinessLine(request.getBusinessLineCode(), request.getBusinessLine());
+        if (resolvedBusinessLine == null) {
             throw new IllegalArgumentException("业务线不能为空");
         }
-        if (projectId != null) {
-            ProjectEntity project = projectService.requireExisting(projectId);
+        if (request.getProjectId() != null) {
+            ProjectEntity project = projectService.requireExisting(request.getProjectId());
+            String projectBusinessLineCode = PaymentCatalogs.trimToNull(project.getBusinessLineCode());
             String projectBusinessLine = PaymentCatalogs.trimToNull(project.getBusinessLine());
-            if (projectBusinessLine != null && !projectBusinessLine.equals(normalizedBusinessLine)) {
+            boolean codeMatches = projectBusinessLineCode != null && projectBusinessLineCode.equals(resolvedBusinessLine.identity());
+            boolean nameMatches = projectBusinessLine != null && projectBusinessLine.equals(resolvedBusinessLine.name());
+            if (!codeMatches && !nameMatches) {
                 throw new IllegalArgumentException("项目不属于所选业务线");
             }
         }
-        PaymentMerchantEntity merchantEntity = paymentMerchantMapper.findEntityById(merchantId);
+        PaymentMerchantEntity merchantEntity = paymentMerchantMapper.findEntityById(request.getMerchantId());
         if (merchantEntity == null) {
             throw new IllegalArgumentException("支付商户不存在");
         }
-        return normalizedBusinessLine;
+        return resolvedBusinessLine;
     }
 
     private void validateMerchant(Long merchantId) {
@@ -223,6 +243,7 @@ public class PaymentProjectBindingService {
     private PaymentProjectBindingEntity toEntity(PaymentProjectBindingSaveRequest request) {
         PaymentProjectBindingEntity entity = new PaymentProjectBindingEntity();
         entity.setProjectId(request.getProjectId());
+        entity.setBusinessLineCode(PaymentCatalogs.trimToNull(request.getBusinessLineCode()));
         entity.setBusinessLine(PaymentCatalogs.trimToNull(request.getBusinessLine()));
         entity.setMerchantId(request.getMerchantId());
         entity.setPurposeCode(normalizePurposeCodes(request).getFirst());
@@ -231,6 +252,45 @@ public class PaymentProjectBindingService {
         entity.setBindingStatus(PaymentCatalogs.normalizeStatus(request.getStatus(), "status"));
         entity.setRemark(PaymentCatalogs.trimToNull(request.getRemark()));
         return entity;
+    }
+
+    private ResolvedBusinessLine resolveBusinessLine(String businessLineCode, String businessLine) {
+        String normalizedCode = PaymentCatalogs.trimToNull(businessLineCode);
+        String normalizedBusinessLine = PaymentCatalogs.trimToNull(businessLine);
+        String lookupValue = normalizedCode == null ? normalizedBusinessLine : normalizedCode;
+        if (lookupValue == null) {
+            return null;
+        }
+        if (businessLineMapper == null) {
+            return new ResolvedBusinessLine(normalizedCode, normalizedBusinessLine, lookupValue);
+        }
+        BusinessLineEntity entity = normalizedCode == null ? null : businessLineMapper.findByCode(normalizedCode);
+        if (entity == null && normalizedBusinessLine != null) {
+            entity = businessLineMapper.findByCode(normalizedBusinessLine);
+        }
+        if (entity == null && normalizedBusinessLine != null) {
+            entity = businessLineMapper.findByName(normalizedBusinessLine);
+        }
+        if (entity == null) {
+            throw new IllegalArgumentException("业务线不存在");
+        }
+        if (!Boolean.TRUE.equals(entity.getEnabled())) {
+            throw new IllegalArgumentException("业务线已停用");
+        }
+        String resolvedCode = PaymentCatalogs.trimToNull(entity.getBusinessLineCode());
+        String resolvedName = PaymentCatalogs.trimToNull(entity.getBusinessLineName());
+        return new ResolvedBusinessLine(resolvedCode, resolvedName, resolvedCode == null ? resolvedName : resolvedCode);
+    }
+
+    private String paymentBusinessLineIdentity(ProjectEntity project) {
+        String businessLineCode = PaymentCatalogs.trimToNull(project.getBusinessLineCode());
+        if (businessLineCode != null) {
+            return businessLineCode;
+        }
+        return PaymentCatalogs.trimToNull(project.getBusinessLine());
+    }
+
+    private record ResolvedBusinessLine(String code, String name, String identity) {
     }
 
     private List<String> normalizePurposeCodes(PaymentProjectBindingSaveRequest request) {

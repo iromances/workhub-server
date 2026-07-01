@@ -58,11 +58,12 @@ public class PaymentMerchantController {
     public ApiResponse<PageResponse<PaymentMerchantSummaryResponse>> list(@RequestParam(required = false) String status,
                                                                           @RequestParam(required = false) Long channelId,
                                                                           @RequestParam(required = false) Long projectId,
+                                                                          @RequestParam(required = false) String businessLine,
                                                                           @RequestParam(required = false) String purposeCode,
                                                                           @RequestParam(required = false) String keyword,
                                                                           @RequestParam(defaultValue = "1") int page,
                                                                           @RequestParam(defaultValue = "10") int pageSize) {
-        List<PaymentMerchantSummaryResponse> items = paymentMerchantService.list(status, channelId, projectId, purposeCode, keyword);
+        List<PaymentMerchantSummaryResponse> items = paymentMerchantService.list(status, channelId, projectId, businessLine, purposeCode, keyword);
         return ApiResponse.success(page(items, page, pageSize));
     }
 

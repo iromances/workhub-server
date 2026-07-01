@@ -2,13 +2,16 @@ package cn.aslight.workhub.service.intake;
 
 import cn.aslight.workhub.service.attachment.AttachmentService;
 import cn.aslight.workhub.service.attachment.AttachmentTextExtractionService;
+import cn.aslight.workhub.dao.intake.IntakeStructuredFieldMapper;
 import cn.aslight.workhub.model.intake.IntakeAttachmentSummary;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeStructuredField;
 import cn.aslight.workhub.dao.intake.IntakeMapper;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
+import cn.aslight.workhub.model.intake.IntakeStructuredFieldEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -16,7 +19,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -30,9 +35,11 @@ public class IntakeEnrichmentService {
     private static final Logger log = LoggerFactory.getLogger(IntakeEnrichmentService.class);
 
     private final IntakeMapper intakeMapper;
+    private final IntakeStructuredFieldMapper intakeStructuredFieldMapper;
     private final AttachmentService attachmentService;
     private final AttachmentTextExtractionService attachmentTextExtractionService;
     private final IntakeStructuredDataExtractor intakeStructuredDataExtractor;
+    private final IntakeStructuredFieldNormalizer intakeStructuredFieldNormalizer;
     private final CodexCliStructuredExtractor codexCliStructuredExtractor;
     private final Executor workhubTaskExecutor;
     private final ObjectMapper objectMapper;
@@ -44,13 +51,55 @@ public class IntakeEnrichmentService {
                                    CodexCliStructuredExtractor codexCliStructuredExtractor,
                                    @Qualifier("workhubTaskExecutor") Executor workhubTaskExecutor,
                                    ObjectMapper objectMapper) {
+        this(
+                intakeMapper,
+                new NoopIntakeStructuredFieldMapper(),
+                attachmentService,
+                attachmentTextExtractionService,
+                intakeStructuredDataExtractor,
+                new IntakeStructuredFieldNormalizer(),
+                codexCliStructuredExtractor,
+                workhubTaskExecutor,
+                objectMapper
+        );
+    }
+
+    @Autowired
+    public IntakeEnrichmentService(IntakeMapper intakeMapper,
+                                   IntakeStructuredFieldMapper intakeStructuredFieldMapper,
+                                   AttachmentService attachmentService,
+                                   AttachmentTextExtractionService attachmentTextExtractionService,
+                                   IntakeStructuredDataExtractor intakeStructuredDataExtractor,
+                                   IntakeStructuredFieldNormalizer intakeStructuredFieldNormalizer,
+                                   CodexCliStructuredExtractor codexCliStructuredExtractor,
+                                   @Qualifier("workhubTaskExecutor") Executor workhubTaskExecutor,
+                                   ObjectMapper objectMapper) {
         this.intakeMapper = intakeMapper;
+        this.intakeStructuredFieldMapper = intakeStructuredFieldMapper;
         this.attachmentService = attachmentService;
         this.attachmentTextExtractionService = attachmentTextExtractionService;
         this.intakeStructuredDataExtractor = intakeStructuredDataExtractor;
+        this.intakeStructuredFieldNormalizer = intakeStructuredFieldNormalizer;
         this.codexCliStructuredExtractor = codexCliStructuredExtractor;
         this.workhubTaskExecutor = workhubTaskExecutor;
         this.objectMapper = objectMapper;
+    }
+
+    private static class NoopIntakeStructuredFieldMapper implements IntakeStructuredFieldMapper {
+        @Override
+        public List<IntakeStructuredFieldEntity> findByIntakeId(Long intakeId) {
+            return List.of();
+        }
+
+        @Override
+        public int deleteByIntakeId(Long intakeId) {
+            return 0;
+        }
+
+        @Override
+        public int upsertBatch(List<IntakeStructuredFieldEntity> fields) {
+            return 0;
+        }
     }
 
     public void scheduleUploadedEnrichment(Long intakeId, String sourceChannel, String rawContent) {
@@ -100,7 +149,7 @@ public class IntakeEnrichmentService {
                     extractionBatch.summaries().size(),
                     extractionBatch.warnings());
 
-            IntakeStructuredData baseline = readStructuredData(entity.getStructuredDataJson());
+            IntakeStructuredData baseline = toStructuredData(entity, intakeStructuredFieldMapper.findByIntakeId(intakeId));
             IntakeStructuredData attachmentStructuredData = intakeStructuredDataExtractor.extract(
                     buildAttachmentSummarySource(extractionBatch.summaries())
             );
@@ -135,6 +184,9 @@ public class IntakeEnrichmentService {
             merged = normalizeDevelopmentBranchName(merged);
             String nextDemandStatus = IntakeDemandStatusRules.resolveAfterEnrichment(entity.getDemandStatus(), nextStatus, merged);
 
+            intakeStructuredFieldNormalizer.applyStructuredData(entity, merged);
+            intakeMapper.updateFormalFields(entity);
+            replaceStructuredFields(intakeId, merged);
             intakeMapper.updateStructuredDataAndEnrichment(
                     intakeId,
                     writeStructuredDataJson(merged),
@@ -150,7 +202,11 @@ public class IntakeEnrichmentService {
             intakeMapper.updateEnrichmentState(
                     intakeId,
                     IntakeEnrichmentStatus.FAILED,
-                    IntakeDemandStatusRules.resolveAfterEnrichment(failedEntity.getDemandStatus(), IntakeEnrichmentStatus.FAILED, readStructuredData(failedEntity.getStructuredDataJson())),
+                    IntakeDemandStatusRules.resolveAfterEnrichment(
+                            failedEntity.getDemandStatus(),
+                            IntakeEnrichmentStatus.FAILED,
+                            toStructuredData(failedEntity, intakeStructuredFieldMapper.findByIntakeId(intakeId))
+                    ),
                     summarizeException(ex),
                     LocalDateTime.now()
             );
@@ -333,6 +389,109 @@ public class IntakeEnrichmentService {
                                                                    List<IntakeAttachmentSummary> enriched) {
         List<IntakeAttachmentSummary> safeEnriched = enriched == null ? List.of() : enriched;
         return safeEnriched.isEmpty() ? (baseline == null ? List.of() : baseline) : safeEnriched;
+    }
+
+    private void replaceStructuredFields(Long intakeId, IntakeStructuredData structuredData) {
+        intakeStructuredFieldMapper.deleteByIntakeId(intakeId);
+        List<IntakeStructuredFieldEntity> fields = intakeStructuredFieldNormalizer.toFieldEntities(intakeId, structuredData);
+        if (!fields.isEmpty()) {
+            intakeStructuredFieldMapper.upsertBatch(fields);
+        }
+    }
+
+    private IntakeStructuredData toStructuredData(IntakeRecordEntity entity, List<IntakeStructuredFieldEntity> fieldEntities) {
+        IntakeStructuredData legacyPayload = readStructuredData(entity.getStructuredDataJson());
+        if (!hasStructuredFormalFields(entity)) {
+            return legacyPayload;
+        }
+        return new IntakeStructuredData(
+                legacyPayload == null ? null : legacyPayload.category(),
+                entity.getApprovalTitle(),
+                entity.getProposerName(),
+                entity.getDevelopmentOwnerUserName(),
+                entity.getApprovalCode(),
+                formatDateTime(entity.getSubmittedAt()),
+                entity.getRequirementType(),
+                entity.getDevelopmentBranchName(),
+                entity.getZentaoUrl(),
+                entity.getRequirementDigest(),
+                entity.getRequirementName(),
+                entity.getRequirementSummary(),
+                entity.getDepartment(),
+                entity.getBusinessLine(),
+                entity.getBusinessLineCode(),
+                entity.getRemark(),
+                formatDate(entity.getPlannedDueDate()),
+                formatDate(entity.getPlannedDevelopmentStartDate()),
+                formatDate(entity.getPlannedTestingStartDate()),
+                formatDate(entity.getPlannedReleaseDate()),
+                formatDate(entity.getDevelopmentStartedDate()),
+                entity.getActualEffort(),
+                formatDate(entity.getTestingStartedDate()),
+                formatDate(entity.getActualCompletedDate()),
+                formatDate(entity.getScheduledAcceptanceDate()),
+                entity.getActualTestingEffort(),
+                formatDate(entity.getActualTestingCompletedDate()),
+                formatDate(entity.getAcceptanceDate()),
+                formatDate(entity.getReleasedDate()),
+                formatDate(entity.getClosedDate()),
+                entity.getCloseReason(),
+                entity.getProjectHint(),
+                toStructuredFields(fieldEntities),
+                legacyPayload == null || legacyPayload.attachmentSummaries() == null ? List.of() : legacyPayload.attachmentSummaries(),
+                legacyPayload == null ? null : legacyPayload.sqlDraft()
+        );
+    }
+
+    private boolean hasStructuredFormalFields(IntakeRecordEntity entity) {
+        return trimToNull(entity.getApprovalCode()) != null
+                || trimToNull(entity.getApprovalTitle()) != null
+                || trimToNull(entity.getProposerName()) != null
+                || entity.getSubmittedAt() != null
+                || trimToNull(entity.getRequirementType()) != null
+                || trimToNull(entity.getRequirementName()) != null
+                || trimToNull(entity.getRequirementSummary()) != null
+                || trimToNull(entity.getRequirementDigest()) != null
+                || trimToNull(entity.getDepartment()) != null
+                || trimToNull(entity.getBusinessLine()) != null
+                || trimToNull(entity.getBusinessLineCode()) != null
+                || trimToNull(entity.getProjectHint()) != null
+                || trimToNull(entity.getDevelopmentBranchName()) != null
+                || trimToNull(entity.getZentaoUrl()) != null
+                || trimToNull(entity.getRemark()) != null
+                || entity.getPlannedDueDate() != null
+                || entity.getPlannedDevelopmentStartDate() != null
+                || entity.getPlannedTestingStartDate() != null
+                || entity.getPlannedReleaseDate() != null
+                || entity.getDevelopmentStartedDate() != null
+                || entity.getTestingStartedDate() != null
+                || entity.getActualCompletedDate() != null
+                || entity.getScheduledAcceptanceDate() != null
+                || entity.getActualTestingCompletedDate() != null
+                || entity.getAcceptanceDate() != null
+                || entity.getReleasedDate() != null
+                || entity.getClosedDate() != null
+                || trimToNull(entity.getCloseReason()) != null
+                || trimToNull(entity.getEstimatedEffort()) != null
+                || trimToNull(entity.getActualEffort()) != null
+                || trimToNull(entity.getActualTestingEffort()) != null;
+    }
+
+    private List<IntakeStructuredField> toStructuredFields(List<IntakeStructuredFieldEntity> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return List.of();
+        }
+        return entities.stream()
+                .map(entity -> new IntakeStructuredField(entity.getFieldLabel(), entity.getFieldValue()))
+                .toList();
+    }
+
+    private String formatDate(LocalDate value) {
+        return value == null ? null : value.toString().replace('-', '/');
+    }
+
+    private String formatDateTime(LocalDateTime value) {
+        return value == null ? null : value.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm"));
     }
 
     private IntakeRecordEntity requireExisting(Long intakeId) {

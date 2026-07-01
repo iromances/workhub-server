@@ -10,6 +10,7 @@ public class ProjectInvolvedSystemEntity {
     private Long id;
     private String systemScope;
     private String businessLine;
+    private String businessLineCode;
     private String systemName;
     private String description;
     private Boolean enabled;
@@ -39,6 +40,14 @@ public class ProjectInvolvedSystemEntity {
 
     public void setBusinessLine(String businessLine) {
         this.businessLine = businessLine;
+    }
+
+    public String getBusinessLineCode() {
+        return businessLineCode;
+    }
+
+    public void setBusinessLineCode(String businessLineCode) {
+        this.businessLineCode = businessLineCode;
     }
 
     public String getSystemName() {

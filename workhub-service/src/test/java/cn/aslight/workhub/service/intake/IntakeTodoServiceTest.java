@@ -142,6 +142,28 @@ class IntakeTodoServiceTest {
         assertEquals("更新需求待办", historyCaptor.getValue().getActionSummary());
     }
 
+    @Test
+    void delete_shouldRemoveTodoAndRecordHistory() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeTodoMapper todoMapper = mock(IntakeTodoMapper.class);
+        IntakeHistoryMapper historyMapper = mock(IntakeHistoryMapper.class);
+        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, historyMapper);
+
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(15L);
+        when(intakeMapper.findById(15L)).thenReturn(intake);
+        IntakeTodoEntity existing = responseEntity(501L, "待处理", null);
+        existing.setIntakeId(15L);
+        when(todoMapper.findById(501L)).thenReturn(existing);
+
+        service.delete(15L, 501L, "admin");
+
+        verify(todoMapper).deleteById(501L);
+        ArgumentCaptor<IntakeHistoryEntity> historyCaptor = forClass(IntakeHistoryEntity.class);
+        verify(historyMapper).insert(historyCaptor.capture());
+        assertEquals("删除需求待办", historyCaptor.getValue().getActionSummary());
+    }
+
     private IntakeTodoEntity responseEntity(Long id, String status, String result) {
         IntakeTodoEntity entity = new IntakeTodoEntity();
         entity.setId(id);

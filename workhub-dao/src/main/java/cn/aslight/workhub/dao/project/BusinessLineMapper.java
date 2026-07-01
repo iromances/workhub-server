@@ -25,7 +25,7 @@ public interface BusinessLineMapper {
      */
     @Select({
             "<script>",
-            "SELECT id, business_line_name, gitlab_group_name, description, enabled, created_at, updated_at",
+            "SELECT id, business_line_code, business_line_name, gitlab_group_name, description, enabled, created_at, updated_at",
             "FROM pm_business_line",
             "<where>",
             "<if test='keyword != null and keyword != \"\"'>",
@@ -46,7 +46,7 @@ public interface BusinessLineMapper {
      * @return 业务线实体
      */
     @Select("""
-            SELECT id, business_line_name, gitlab_group_name, description, enabled, created_at, updated_at
+            SELECT id, business_line_code, business_line_name, gitlab_group_name, description, enabled, created_at, updated_at
             FROM pm_business_line
             WHERE id = #{id}
             """)
@@ -59,12 +59,38 @@ public interface BusinessLineMapper {
      * @return 业务线实体
      */
     @Select("""
-            SELECT id, business_line_name, gitlab_group_name, description, enabled, created_at, updated_at
+            SELECT id, business_line_code, business_line_name, gitlab_group_name, description, enabled, created_at, updated_at
             FROM pm_business_line
             WHERE business_line_name = #{businessLineName}
             LIMIT 1
             """)
     BusinessLineEntity findByName(String businessLineName);
+
+    /**
+     * 按业务线稳定编码查询业务线。
+     *
+     * @param businessLineCode 业务线稳定编码
+     * @return 业务线实体
+     */
+    @Select("""
+            SELECT id, business_line_code, business_line_name, gitlab_group_name, description, enabled, created_at, updated_at
+            FROM pm_business_line
+            WHERE business_line_code = #{businessLineCode}
+            LIMIT 1
+            """)
+    BusinessLineEntity findByCode(String businessLineCode);
+
+    /**
+     * 查询当前最大自动流水编码。
+     *
+     * @return 最大业务线稳定编码
+     */
+    @Select("""
+            SELECT MAX(business_line_code)
+            FROM pm_business_line
+            WHERE business_line_code REGEXP '^BL[0-9]{6}$'
+            """)
+    String findMaxBusinessLineCode();
 
     /**
      * 新增业务线。
@@ -74,9 +100,9 @@ public interface BusinessLineMapper {
      */
     @Insert("""
             INSERT INTO pm_business_line (
-                business_line_name, gitlab_group_name, description, enabled
+                business_line_code, business_line_name, gitlab_group_name, description, enabled
             ) VALUES (
-                #{businessLineName}, #{gitlabGroupName}, #{description}, #{enabled}
+                #{businessLineCode}, #{businessLineName}, #{gitlabGroupName}, #{description}, #{enabled}
             )
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")

@@ -7,6 +7,7 @@ public class PaymentProjectBindingEntity {
 
     private Long id;
     private Long projectId;
+    private String businessLineCode;
     private String businessLine;
     private Long merchantId;
     private String purposeCode;
@@ -29,6 +30,14 @@ public class PaymentProjectBindingEntity {
 
     public void setProjectId(Long projectId) {
         this.projectId = projectId;
+    }
+
+    public String getBusinessLineCode() {
+        return businessLineCode;
+    }
+
+    public void setBusinessLineCode(String businessLineCode) {
+        this.businessLineCode = businessLineCode;
     }
 
     public String getBusinessLine() {

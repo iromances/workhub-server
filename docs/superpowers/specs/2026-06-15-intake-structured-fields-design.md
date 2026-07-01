@@ -15,14 +15,14 @@
 
 ## 目标
 
-本次改造的目标不是完全消灭 JSON，而是把职责拆清楚：
+本次改造一次性交付，不做长期双写和分阶段切换。目标不是把所有 JSON 都消灭，而是把需求正式字段从 JSON 中彻底移出：
 
 - `pm_intake_record` 承载需求主流程和高频查询需要的正式字段。
 - `pm_intake_structured_field` 承载原始动态抽取字段，也就是现有 `fields` 的 label/value 明细。
-- 附件、文档、截图类信息优先走 `pm_attachment` 或附件扩展，不污染主表。
+- 附件、文档、截图类 label 不进主表，统一进入 `pm_intake_structured_field`，用 `source_type` 区分。
 - AI 草稿、研发拆解草稿、澄清项草稿继续留在现有专用 JSON 字段或分析表，后续单独治理。
 
-改造完成后，新代码不再依赖 `structured_data_json` 维护正式需求字段。
+改造完成后，业务代码不再依赖 `structured_data_json` 维护或读取正式需求字段。该列只作为历史备份保留。
 
 ## 非目标
 
@@ -30,7 +30,7 @@
 - 不在本次拆分 `pm_intake_development_analysis.draft_json`。
 - 不在本次拆分 `pm_intake_clarification_analysis.items_json`。
 - 不在本次完整重构附件存储，只处理 `fields` 中附件/文档类字段的归类。
-- 不直接删除历史 `structured_data_json`，先做兼容迁移和只读回退。
+- 不直接删除历史 `structured_data_json`，但业务代码不再从它回退读取正式字段。
 
 ## 表结构设计
 
@@ -150,7 +150,7 @@ CREATE TABLE pm_intake_structured_field (
 
 ### 归附件/文档扩展
 
-文件、文档、链接、截图类字段不进入主表。短期也可进入 `pm_intake_structured_field`，但 `source_type` 标记为文档或附件扩展；中长期应归并到 `pm_attachment` 或附件摘要模型。
+文件、文档、链接、截图类字段不进入主表。本次统一进入 `pm_intake_structured_field`，但 `source_type` 标记为 `ATTACHMENT_DOC_FIELD`，避免和普通动态字段混在一起。
 
 例如：
 
@@ -165,10 +165,11 @@ CREATE TABLE pm_intake_structured_field (
 
 ## 数据迁移
 
-迁移分两步：
+迁移一次性完成：
 
 1. 从 `structured_data_json` 回填 `pm_intake_record` 正式字段。
 2. 从 `structured_data_json.fields` 写入 `pm_intake_structured_field`。
+3. 迁移完成后，应用代码只读写主表正式字段和字段子表，不再读写 `structured_data_json` 中的正式字段。
 
 回填要求：
 
@@ -179,13 +180,13 @@ CREATE TABLE pm_intake_structured_field (
 - 同义 label 按字段清单归一到同一个正式字段。
 - 迁移脚本必须幂等，重复执行不能生成重复 `pm_intake_structured_field`。
 
-建议给字段子表增加唯一约束：
+字段子表增加唯一约束，保证迁移和重跑幂等：
 
 ```sql
-UNIQUE KEY uk_pm_intake_structured_field_order (intake_id, sort_order, field_label)
+UNIQUE KEY uk_pm_intake_structured_field_order (intake_id, sort_order)
 ```
 
-如需允许同一个 label 多次出现，则唯一键改为 `(intake_id, sort_order)`，不限制 label。
+同一个需求内允许同名 label 多次出现，靠 `sort_order` 保序。
 
 ## 代码改造
 
@@ -199,7 +200,7 @@ UNIQUE KEY uk_pm_intake_structured_field_order (intake_id, sort_order, field_lab
 
 - `IntakeMapper` 查询、插入、更新正式字段。
 - 新增 `IntakeStructuredFieldMapper`，支持按 `intake_id` 查询、批量 upsert、删除重建。
-- 列表筛选优先下推到 SQL，不再全部查出后用 JSON 字段过滤。
+- 列表筛选下推到 SQL，不再全部查出后用 JSON 字段过滤。
 
 ### Service
 
@@ -211,9 +212,10 @@ UNIQUE KEY uk_pm_intake_structured_field_order (intake_id, sort_order, field_lab
 
 ### 兼容
 
-- 过渡期读取逻辑：主表列优先；主表列为空时从 `structured_data_json` 回退解析。
-- 新写入逻辑：不再把正式字段写回 `structured_data_json`。
-- `structured_data_json` 暂时保留，用于回滚和历史对照；稳定后可改名为 `structured_extra_json` 或删除。
+- 迁移脚本负责一次性回填现有数据。
+- 应用运行时不做“主表为空再读 JSON”的正式字段回退，避免继续掩盖脏数据。
+- 新写入逻辑不再把正式字段写回 `structured_data_json`。
+- `structured_data_json` 保留为历史备份和排查依据，不参与正常业务读写。
 
 ## 测试策略
 
@@ -230,7 +232,7 @@ UNIQUE KEY uk_pm_intake_structured_field_order (intake_id, sort_order, field_lab
 - 新录入需求后，主表字段和字段子表均正确写入。
 - 列表按审批编号、需求名称、业务线、上线日期筛选不依赖 JSON。
 - 详情页仍能返回原始 `fields`。
-- 历史 JSON 记录在未回填时仍能展示。
+- 迁移后的历史记录不依赖 JSON 也能展示正式字段。
 
 ### 迁移验证
 
@@ -238,13 +240,14 @@ UNIQUE KEY uk_pm_intake_structured_field_order (intake_id, sort_order, field_lab
 - `pm_intake_structured_field` 每条需求字段数与原 JSON fields 数一致。
 - 高频字段回填率与统计文档一致或可解释。
 - 关键筛选接口结果与迁移前一致。
+- 迁移后抽样检查 `pm_intake_record` 关键字段非空率，不允许靠 JSON 回退补齐。
 
 ## 风险
 
 - 日期格式历史数据不统一，需要容错解析。
 - `预估工时`、`预计工时`、`实际工时` 以前混用，迁移时必须区分 `estimated_effort` 和 `actual_effort`。
 - `business_line` 历史名称可能不完全匹配 `pm_business_line.business_line_name`，需要记录无法回填 `business_line_code` 的数据。
-- 过渡期存在主表字段和旧 JSON 不一致的可能，必须明确主表字段优先。
+- 迁移后一旦主表字段和旧 JSON 不一致，以主表字段为准；旧 JSON 不再作为业务真相。
 
 ## 验收标准
 
@@ -253,3 +256,4 @@ UNIQUE KEY uk_pm_intake_structured_field_order (intake_id, sort_order, field_lab
 - 现有 85 条需求的 `fields` 全量迁移到 `pm_intake_structured_field`。
 - 列表、详情、状态推进、业务线修改、上线日期、工时更新功能保持可用。
 - 启动迁移 Runner 不再需要长期修复 `structured_data_json` 中的正式字段。
+- 代码中正式字段的列表、详情、筛选、更新路径不再解析 `structured_data_json`。

@@ -85,6 +85,142 @@ public class IntakeRecordEntity {
      */
     private Long convertedWorkItemId;
     /**
+     * 审批编号。
+     */
+    private String approvalCode;
+    /**
+     * 审批标题。
+     */
+    private String approvalTitle;
+    /**
+     * 审批状态。
+     */
+    private String approvalStatus;
+    /**
+     * 提出人或申请人。
+     */
+    private String proposerName;
+    /**
+     * 提交时间。
+     */
+    private LocalDateTime submittedAt;
+    /**
+     * 需求类型。
+     */
+    private String requirementType;
+    /**
+     * 需求名称。
+     */
+    private String requirementName;
+    /**
+     * 需求说明。
+     */
+    private String requirementSummary;
+    /**
+     * 需求摘要。
+     */
+    private String requirementDigest;
+    /**
+     * 提出部门。
+     */
+    private String department;
+    /**
+     * 业务线名称。
+     */
+    private String businessLine;
+    /**
+     * 业务线稳定编码。
+     */
+    private String businessLineCode;
+    /**
+     * 项目组或项目提示。
+     */
+    private String projectHint;
+    /**
+     * 研发分支名。
+     */
+    private String developmentBranchName;
+    /**
+     * 禅道地址。
+     */
+    private String zentaoUrl;
+    /**
+     * 备注。
+     */
+    private String remark;
+    /**
+     * 预计完成日期。
+     */
+    private LocalDate plannedDueDate;
+    /**
+     * 计划开发开始日期。
+     */
+    private LocalDate plannedDevelopmentStartDate;
+    /**
+     * 计划测试开始日期。
+     */
+    private LocalDate plannedTestingStartDate;
+    /**
+     * 计划上线日期。
+     */
+    private LocalDate plannedReleaseDate;
+    /**
+     * 实际开发开始日期。
+     */
+    private LocalDate developmentStartedDate;
+    /**
+     * 实际测试开始日期。
+     */
+    private LocalDate testingStartedDate;
+    /**
+     * 实际开发完成日期。
+     */
+    private LocalDate actualCompletedDate;
+    /**
+     * 计划验收日期。
+     */
+    private LocalDate scheduledAcceptanceDate;
+    /**
+     * 实际测试完成日期。
+     */
+    private LocalDate actualTestingCompletedDate;
+    /**
+     * 验收日期。
+     */
+    private LocalDate acceptanceDate;
+    /**
+     * 实际上线日期。
+     */
+    private LocalDate releasedDate;
+    /**
+     * 关闭日期。
+     */
+    private LocalDate closedDate;
+    /**
+     * 关闭原因。
+     */
+    private String closeReason;
+    /**
+     * 预估工时。
+     */
+    private String estimatedEffort;
+    /**
+     * 实际开发工时。
+     */
+    private String actualEffort;
+    /**
+     * 实际测试工时。
+     */
+    private String actualTestingEffort;
+    /**
+     * 优先级。
+     */
+    private String priority;
+    /**
+     * 紧急程度。
+     */
+    private String urgency;
+    /**
      * 最新任务评估草稿中的总预估工时。
      */
     private String totalEstimatedEffort;
@@ -100,6 +236,10 @@ public class IntakeRecordEntity {
      * 最新任务评估草稿 JSON。
      */
     private String latestDevelopmentDraftJson;
+    /**
+     * 未完成待办数量。
+     */
+    private Long activeTodoCount;
     /**
      * 是否逻辑删除。
      */
@@ -273,6 +413,278 @@ public class IntakeRecordEntity {
         this.convertedWorkItemId = convertedWorkItemId;
     }
 
+    public String getApprovalCode() {
+        return approvalCode;
+    }
+
+    public void setApprovalCode(String approvalCode) {
+        this.approvalCode = approvalCode;
+    }
+
+    public String getApprovalTitle() {
+        return approvalTitle;
+    }
+
+    public void setApprovalTitle(String approvalTitle) {
+        this.approvalTitle = approvalTitle;
+    }
+
+    public String getApprovalStatus() {
+        return approvalStatus;
+    }
+
+    public void setApprovalStatus(String approvalStatus) {
+        this.approvalStatus = approvalStatus;
+    }
+
+    public String getProposerName() {
+        return proposerName;
+    }
+
+    public void setProposerName(String proposerName) {
+        this.proposerName = proposerName;
+    }
+
+    public LocalDateTime getSubmittedAt() {
+        return submittedAt;
+    }
+
+    public void setSubmittedAt(LocalDateTime submittedAt) {
+        this.submittedAt = submittedAt;
+    }
+
+    public String getRequirementType() {
+        return requirementType;
+    }
+
+    public void setRequirementType(String requirementType) {
+        this.requirementType = requirementType;
+    }
+
+    public String getRequirementName() {
+        return requirementName;
+    }
+
+    public void setRequirementName(String requirementName) {
+        this.requirementName = requirementName;
+    }
+
+    public String getRequirementSummary() {
+        return requirementSummary;
+    }
+
+    public void setRequirementSummary(String requirementSummary) {
+        this.requirementSummary = requirementSummary;
+    }
+
+    public String getRequirementDigest() {
+        return requirementDigest;
+    }
+
+    public void setRequirementDigest(String requirementDigest) {
+        this.requirementDigest = requirementDigest;
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(String department) {
+        this.department = department;
+    }
+
+    public String getBusinessLine() {
+        return businessLine;
+    }
+
+    public void setBusinessLine(String businessLine) {
+        this.businessLine = businessLine;
+    }
+
+    public String getBusinessLineCode() {
+        return businessLineCode;
+    }
+
+    public void setBusinessLineCode(String businessLineCode) {
+        this.businessLineCode = businessLineCode;
+    }
+
+    public String getProjectHint() {
+        return projectHint;
+    }
+
+    public void setProjectHint(String projectHint) {
+        this.projectHint = projectHint;
+    }
+
+    public String getDevelopmentBranchName() {
+        return developmentBranchName;
+    }
+
+    public void setDevelopmentBranchName(String developmentBranchName) {
+        this.developmentBranchName = developmentBranchName;
+    }
+
+    public String getZentaoUrl() {
+        return zentaoUrl;
+    }
+
+    public void setZentaoUrl(String zentaoUrl) {
+        this.zentaoUrl = zentaoUrl;
+    }
+
+    public String getRemark() {
+        return remark;
+    }
+
+    public void setRemark(String remark) {
+        this.remark = remark;
+    }
+
+    public LocalDate getPlannedDueDate() {
+        return plannedDueDate;
+    }
+
+    public void setPlannedDueDate(LocalDate plannedDueDate) {
+        this.plannedDueDate = plannedDueDate;
+    }
+
+    public LocalDate getPlannedDevelopmentStartDate() {
+        return plannedDevelopmentStartDate;
+    }
+
+    public void setPlannedDevelopmentStartDate(LocalDate plannedDevelopmentStartDate) {
+        this.plannedDevelopmentStartDate = plannedDevelopmentStartDate;
+    }
+
+    public LocalDate getPlannedTestingStartDate() {
+        return plannedTestingStartDate;
+    }
+
+    public void setPlannedTestingStartDate(LocalDate plannedTestingStartDate) {
+        this.plannedTestingStartDate = plannedTestingStartDate;
+    }
+
+    public LocalDate getPlannedReleaseDate() {
+        return plannedReleaseDate;
+    }
+
+    public void setPlannedReleaseDate(LocalDate plannedReleaseDate) {
+        this.plannedReleaseDate = plannedReleaseDate;
+    }
+
+    public LocalDate getDevelopmentStartedDate() {
+        return developmentStartedDate;
+    }
+
+    public void setDevelopmentStartedDate(LocalDate developmentStartedDate) {
+        this.developmentStartedDate = developmentStartedDate;
+    }
+
+    public LocalDate getTestingStartedDate() {
+        return testingStartedDate;
+    }
+
+    public void setTestingStartedDate(LocalDate testingStartedDate) {
+        this.testingStartedDate = testingStartedDate;
+    }
+
+    public LocalDate getActualCompletedDate() {
+        return actualCompletedDate;
+    }
+
+    public void setActualCompletedDate(LocalDate actualCompletedDate) {
+        this.actualCompletedDate = actualCompletedDate;
+    }
+
+    public LocalDate getScheduledAcceptanceDate() {
+        return scheduledAcceptanceDate;
+    }
+
+    public void setScheduledAcceptanceDate(LocalDate scheduledAcceptanceDate) {
+        this.scheduledAcceptanceDate = scheduledAcceptanceDate;
+    }
+
+    public LocalDate getActualTestingCompletedDate() {
+        return actualTestingCompletedDate;
+    }
+
+    public void setActualTestingCompletedDate(LocalDate actualTestingCompletedDate) {
+        this.actualTestingCompletedDate = actualTestingCompletedDate;
+    }
+
+    public LocalDate getAcceptanceDate() {
+        return acceptanceDate;
+    }
+
+    public void setAcceptanceDate(LocalDate acceptanceDate) {
+        this.acceptanceDate = acceptanceDate;
+    }
+
+    public LocalDate getReleasedDate() {
+        return releasedDate;
+    }
+
+    public void setReleasedDate(LocalDate releasedDate) {
+        this.releasedDate = releasedDate;
+    }
+
+    public LocalDate getClosedDate() {
+        return closedDate;
+    }
+
+    public void setClosedDate(LocalDate closedDate) {
+        this.closedDate = closedDate;
+    }
+
+    public String getCloseReason() {
+        return closeReason;
+    }
+
+    public void setCloseReason(String closeReason) {
+        this.closeReason = closeReason;
+    }
+
+    public String getEstimatedEffort() {
+        return estimatedEffort;
+    }
+
+    public void setEstimatedEffort(String estimatedEffort) {
+        this.estimatedEffort = estimatedEffort;
+    }
+
+    public String getActualEffort() {
+        return actualEffort;
+    }
+
+    public void setActualEffort(String actualEffort) {
+        this.actualEffort = actualEffort;
+    }
+
+    public String getActualTestingEffort() {
+        return actualTestingEffort;
+    }
+
+    public void setActualTestingEffort(String actualTestingEffort) {
+        this.actualTestingEffort = actualTestingEffort;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public String getUrgency() {
+        return urgency;
+    }
+
+    public void setUrgency(String urgency) {
+        this.urgency = urgency;
+    }
+
     public String getTotalEstimatedEffort() {
         return totalEstimatedEffort;
     }
@@ -303,6 +715,14 @@ public class IntakeRecordEntity {
 
     public void setLatestDevelopmentDraftJson(String latestDevelopmentDraftJson) {
         this.latestDevelopmentDraftJson = latestDevelopmentDraftJson;
+    }
+
+    public Long getActiveTodoCount() {
+        return activeTodoCount;
+    }
+
+    public void setActiveTodoCount(Long activeTodoCount) {
+        this.activeTodoCount = activeTodoCount;
     }
 
     public Boolean getDeleted() {

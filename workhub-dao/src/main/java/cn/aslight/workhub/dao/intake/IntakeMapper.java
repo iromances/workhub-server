@@ -38,6 +38,40 @@ public interface IntakeMapper {
             "enrichment_error_summary,",
             "enrichment_updated_at,",
             "converted_work_item_id,",
+            "approval_code,",
+            "approval_title,",
+            "approval_status,",
+            "proposer_name,",
+            "submitted_at,",
+            "requirement_type,",
+            "requirement_name,",
+            "requirement_summary,",
+            "requirement_digest,",
+            "department,",
+            "business_line,",
+            "business_line_code,",
+            "project_hint,",
+            "development_branch_name,",
+            "zentao_url,",
+            "remark,",
+            "planned_due_date,",
+            "planned_development_start_date,",
+            "planned_testing_start_date,",
+            "planned_release_date,",
+            "development_started_date,",
+            "testing_started_date,",
+            "actual_completed_date,",
+            "scheduled_acceptance_date,",
+            "actual_testing_completed_date,",
+            "acceptance_date,",
+            "released_date,",
+            "closed_date,",
+            "close_reason,",
+            "estimated_effort,",
+            "actual_effort,",
+            "actual_testing_effort,",
+            "priority,",
+            "urgency,",
             "(SELECT JSON_UNQUOTE(JSON_EXTRACT(da.draft_json, '$.totalEstimatedEffort'))",
             " FROM pm_intake_development_analysis da",
             " WHERE da.intake_id = pm_intake_record.id",
@@ -54,6 +88,10 @@ public interface IntakeMapper {
             " FROM pm_intake_development_analysis da",
             " WHERE da.intake_id = pm_intake_record.id",
             " ORDER BY da.id DESC LIMIT 1) AS latest_development_draft_json,",
+            "(SELECT COUNT(1)",
+            " FROM pm_intake_todo todo",
+            " WHERE todo.intake_id = pm_intake_record.id",
+            "   AND todo.todo_status IN ('待处理', '处理中')) AS active_todo_count,",
             "deleted,",
             "deleted_at,",
             "deleted_by,",
@@ -70,29 +108,6 @@ public interface IntakeMapper {
             "</script>"
     })
     List<IntakeRecordEntity> findAll(@Param("status") String status);
-
-    @Select("""
-            SELECT id,
-                   development_owner_user_name,
-                   demand_status,
-                   structured_data_json,
-                   ai_draft_json
-            FROM pm_intake_record
-            WHERE structured_data_json IS NOT NULL
-               OR ai_draft_json IS NOT NULL
-            ORDER BY id ASC
-            """)
-    List<IntakeRecordEntity> findAllForEffortNormalization();
-
-    @Select("""
-            SELECT id,
-                   development_owner_user_name,
-                   demand_status,
-                   structured_data_json
-            FROM pm_intake_record
-            ORDER BY id ASC
-            """)
-    List<IntakeRecordEntity> findAllForLifecycleMigration();
 
     @Select("""
             SELECT id,
@@ -114,6 +129,40 @@ public interface IntakeMapper {
                    enrichment_error_summary,
                    enrichment_updated_at,
                    converted_work_item_id,
+                   approval_code,
+                   approval_title,
+                   approval_status,
+                   proposer_name,
+                   submitted_at,
+                   requirement_type,
+                   requirement_name,
+                   requirement_summary,
+                   requirement_digest,
+                   department,
+                   business_line,
+                   business_line_code,
+                   project_hint,
+                   development_branch_name,
+                   zentao_url,
+                   remark,
+                   planned_due_date,
+                   planned_development_start_date,
+                   planned_testing_start_date,
+                   planned_release_date,
+                   development_started_date,
+                   testing_started_date,
+                   actual_completed_date,
+                   scheduled_acceptance_date,
+                   actual_testing_completed_date,
+                   acceptance_date,
+                   released_date,
+                   closed_date,
+                   close_reason,
+                   estimated_effort,
+                   actual_effort,
+                   actual_testing_effort,
+                   priority,
+                   urgency,
                    (SELECT da.draft_json
                     FROM pm_intake_development_analysis da
                     WHERE da.intake_id = pm_intake_record.id
@@ -149,6 +198,40 @@ public interface IntakeMapper {
                    enrichment_error_summary,
                    enrichment_updated_at,
                    converted_work_item_id,
+                   approval_code,
+                   approval_title,
+                   approval_status,
+                   proposer_name,
+                   submitted_at,
+                   requirement_type,
+                   requirement_name,
+                   requirement_summary,
+                   requirement_digest,
+                   department,
+                   business_line,
+                   business_line_code,
+                   project_hint,
+                   development_branch_name,
+                   zentao_url,
+                   remark,
+                   planned_due_date,
+                   planned_development_start_date,
+                   planned_testing_start_date,
+                   planned_release_date,
+                   development_started_date,
+                   testing_started_date,
+                   actual_completed_date,
+                   scheduled_acceptance_date,
+                   actual_testing_completed_date,
+                   acceptance_date,
+                   released_date,
+                   closed_date,
+                   close_reason,
+                   estimated_effort,
+                   actual_effort,
+                   actual_testing_effort,
+                   priority,
+                   urgency,
                    (SELECT da.draft_json
                     FROM pm_intake_development_analysis da
                     WHERE da.intake_id = pm_intake_record.id
@@ -183,6 +266,40 @@ public interface IntakeMapper {
                 enrichment_error_summary,
                 enrichment_updated_at,
                 converted_work_item_id,
+                approval_code,
+                approval_title,
+                approval_status,
+                proposer_name,
+                submitted_at,
+                requirement_type,
+                requirement_name,
+                requirement_summary,
+                requirement_digest,
+                department,
+                business_line,
+                business_line_code,
+                project_hint,
+                development_branch_name,
+                zentao_url,
+                remark,
+                planned_due_date,
+                planned_development_start_date,
+                planned_testing_start_date,
+                planned_release_date,
+                development_started_date,
+                testing_started_date,
+                actual_completed_date,
+                scheduled_acceptance_date,
+                actual_testing_completed_date,
+                acceptance_date,
+                released_date,
+                closed_date,
+                close_reason,
+                estimated_effort,
+                actual_effort,
+                actual_testing_effort,
+                priority,
+                urgency,
                 deleted,
                 deleted_at,
                 deleted_by
@@ -202,6 +319,40 @@ public interface IntakeMapper {
                 #{enrichmentErrorSummary},
                 #{enrichmentUpdatedAt},
                 #{convertedWorkItemId},
+                #{approvalCode},
+                #{approvalTitle},
+                #{approvalStatus},
+                #{proposerName},
+                #{submittedAt},
+                #{requirementType},
+                #{requirementName},
+                #{requirementSummary},
+                #{requirementDigest},
+                #{department},
+                #{businessLine},
+                #{businessLineCode},
+                #{projectHint},
+                #{developmentBranchName},
+                #{zentaoUrl},
+                #{remark},
+                #{plannedDueDate},
+                #{plannedDevelopmentStartDate},
+                #{plannedTestingStartDate},
+                #{plannedReleaseDate},
+                #{developmentStartedDate},
+                #{testingStartedDate},
+                #{actualCompletedDate},
+                #{scheduledAcceptanceDate},
+                #{actualTestingCompletedDate},
+                #{acceptanceDate},
+                #{releasedDate},
+                #{closedDate},
+                #{closeReason},
+                #{estimatedEffort},
+                #{actualEffort},
+                #{actualTestingEffort},
+                #{priority},
+                #{urgency},
                 #{deleted},
                 #{deletedAt},
                 #{deletedBy}
@@ -275,6 +426,58 @@ public interface IntakeMapper {
 
     @Update("""
             UPDATE pm_intake_record
+            SET approval_code = #{approvalCode},
+                approval_title = #{approvalTitle},
+                approval_status = #{approvalStatus},
+                proposer_name = #{proposerName},
+                submitted_at = #{submittedAt},
+                requirement_type = #{requirementType},
+                requirement_name = #{requirementName},
+                requirement_summary = #{requirementSummary},
+                requirement_digest = #{requirementDigest},
+                department = #{department},
+                business_line = #{businessLine},
+                business_line_code = #{businessLineCode},
+                project_hint = #{projectHint},
+                development_branch_name = #{developmentBranchName},
+                zentao_url = #{zentaoUrl},
+                remark = #{remark},
+                planned_due_date = #{plannedDueDate},
+                planned_development_start_date = #{plannedDevelopmentStartDate},
+                planned_testing_start_date = #{plannedTestingStartDate},
+                planned_release_date = #{plannedReleaseDate},
+                development_started_date = #{developmentStartedDate},
+                testing_started_date = #{testingStartedDate},
+                actual_completed_date = #{actualCompletedDate},
+                scheduled_acceptance_date = #{scheduledAcceptanceDate},
+                actual_testing_completed_date = #{actualTestingCompletedDate},
+                acceptance_date = #{acceptanceDate},
+                released_date = #{releasedDate},
+                closed_date = #{closedDate},
+                close_reason = #{closeReason},
+                estimated_effort = #{estimatedEffort},
+                actual_effort = #{actualEffort},
+                actual_testing_effort = #{actualTestingEffort},
+                priority = #{priority},
+                urgency = #{urgency},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+            """)
+    int updateFormalFields(IntakeRecordEntity entity);
+
+    @Update("""
+            UPDATE pm_intake_record
+            SET development_owner_user_name = #{developmentOwnerUserName},
+                demand_status = #{demandStatus},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+            """)
+    int updateManagementState(@Param("id") Long id,
+                              @Param("developmentOwnerUserName") String developmentOwnerUserName,
+                              @Param("demandStatus") String demandStatus);
+
+    @Update("""
+            UPDATE pm_intake_record
             SET structured_data_json = #{structuredDataJson},
                 development_owner_user_name = #{developmentOwnerUserName},
                 demand_status = #{demandStatus},
@@ -311,30 +514,6 @@ public interface IntakeMapper {
             """)
     int restorePausedDemand(@Param("id") Long id,
                             @Param("restoredDemandStatus") String restoredDemandStatus);
-
-    @Update("""
-            UPDATE pm_intake_record
-            SET structured_data_json = #{structuredDataJson},
-                development_owner_user_name = #{developmentOwnerUserName},
-                demand_status = #{demandStatus},
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = #{id}
-            """)
-    int updateLifecycleFields(@Param("id") Long id,
-                              @Param("structuredDataJson") String structuredDataJson,
-                              @Param("developmentOwnerUserName") String developmentOwnerUserName,
-                              @Param("demandStatus") String demandStatus);
-
-    @Update("""
-            UPDATE pm_intake_record
-            SET structured_data_json = #{structuredDataJson},
-                ai_draft_json = #{aiDraftJson},
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = #{id}
-            """)
-    int updateEffortPayloads(@Param("id") Long id,
-                             @Param("structuredDataJson") String structuredDataJson,
-                             @Param("aiDraftJson") String aiDraftJson);
 
     @Update("""
             UPDATE pm_intake_record

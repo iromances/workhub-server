@@ -467,6 +467,107 @@ class DevelopmentAnalysisServiceTest {
     }
 
     @Test
+    void updateDraft_shouldValidateSystemTagsWithBusinessLineCodeWhenProjectUsesDisplayName() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        DevelopmentAnalysisMapper developmentAnalysisMapper = mock(DevelopmentAnalysisMapper.class);
+        ProjectMapper projectMapper = mock(ProjectMapper.class);
+        ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
+        UserMapper userMapper = mock(UserMapper.class);
+        GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
+        ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
+        CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
+        WorkItemService workItemService = mock(WorkItemService.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        DevelopmentAnalysisService service = new DevelopmentAnalysisService(
+                intakeMapper,
+                intakeHistoryMapper,
+                developmentAnalysisMapper,
+                projectMapper,
+                involvedSystemMapper,
+                userMapper,
+                gitlabRepositoryService,
+                projectKnowledgeBaseService,
+                analysisGenerator,
+                workItemService,
+                command -> { },
+                objectMapper
+        );
+
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(40L);
+        intake.setDemandStatus("待评估");
+        intake.setStructuredDataJson("""
+                {"category":"需求审批","requirementType":"研发需求","requirementName":"支付系统评估","projectHint":"BL000001","fields":[],"attachmentSummaries":[]}
+                """);
+        when(intakeMapper.findById(40L)).thenReturn(intake);
+
+        DevelopmentAnalysisEntity entity = new DevelopmentAnalysisEntity();
+        entity.setId(2L);
+        entity.setIntakeId(40L);
+        entity.setAnalysisStatus("DRAFT");
+        entity.setDraftJson(writeDraft(objectMapper, minimalDraft("8h", "2h", List.of())));
+        when(developmentAnalysisMapper.findLatestByIntakeId(40L)).thenReturn(entity);
+
+        ProjectDetailResponse project = new ProjectDetailResponse(
+                3L,
+                "payment",
+                "支付系统",
+                "业务项目",
+                "BL000001",
+                "账单管理",
+                "石浩",
+                "进行中",
+                null,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+        when(projectMapper.findFirstDetailByBusinessLine("BL000001")).thenReturn(project);
+        when(involvedSystemMapper.findSelectableByBusinessLine("BL000001"))
+                .thenReturn(List.of(involvedSystem("scf-payment")));
+
+        service.updateDraft(
+                40L,
+                new DevelopmentAnalysisDraftUpdateRequest(
+                        "BL000001",
+                        "8h",
+                        "6h",
+                        "2h",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        List.of(new DevelopmentAnalysisDraftUpdateRequest.WorkItemDraft(
+                                "支付系统改造",
+                                "补充支付系统任务",
+                                "支付链路改造",
+                                "CODE_CHANGE",
+                                List.of("支付服务"),
+                                List.of("调整支付链路"),
+                                List.of("scf-payment"),
+                                List.of(),
+                                "MEDIUM",
+                                null,
+                                List.of(),
+                                "6h",
+                                "石浩",
+                                "2",
+                                null,
+                                null,
+                                null,
+                                null
+                        ))
+                ),
+                "admin"
+        );
+
+        verify(involvedSystemMapper).findSelectableByBusinessLine("BL000001");
+        verify(developmentAnalysisMapper).update(any());
+    }
+
+    @Test
     void updateDraft_shouldCreateManualDraftWhenAiDraftDoesNotExist() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);

@@ -10,7 +10,6 @@ public class McpResourceSaveRequest {
     @NotBlank
     private String resourceType;
 
-    @NotBlank
     private String targetKey;
 
     private String businessLineCode;
@@ -20,7 +19,6 @@ public class McpResourceSaveRequest {
     @NotBlank
     private String environmentCode;
 
-    @NotBlank
     private String name;
 
     private String systemName;

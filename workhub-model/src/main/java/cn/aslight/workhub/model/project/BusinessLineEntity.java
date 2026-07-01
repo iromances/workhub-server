@@ -16,6 +16,10 @@ public class BusinessLineEntity {
      */
     private String businessLineName;
     /**
+     * 业务线稳定编码。
+     */
+    private String businessLineCode;
+    /**
      * GitLab 组名或命名空间。
      */
     private String gitlabGroupName;
@@ -50,6 +54,14 @@ public class BusinessLineEntity {
 
     public void setBusinessLineName(String businessLineName) {
         this.businessLineName = businessLineName;
+    }
+
+    public String getBusinessLineCode() {
+        return businessLineCode;
+    }
+
+    public void setBusinessLineCode(String businessLineCode) {
+        this.businessLineCode = businessLineCode;
     }
 
     public String getGitlabGroupName() {

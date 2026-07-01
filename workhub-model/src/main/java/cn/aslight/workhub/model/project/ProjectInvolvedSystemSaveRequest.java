@@ -10,6 +10,7 @@ public class ProjectInvolvedSystemSaveRequest {
     @NotBlank(message = "系统范围不能为空")
     private String systemScope;
     private String businessLine;
+    private String businessLineCode;
     @NotBlank(message = "系统名称不能为空")
     private String systemName;
     private String description;
@@ -30,6 +31,14 @@ public class ProjectInvolvedSystemSaveRequest {
 
     public void setBusinessLine(String businessLine) {
         this.businessLine = businessLine;
+    }
+
+    public String getBusinessLineCode() {
+        return businessLineCode;
+    }
+
+    public void setBusinessLineCode(String businessLineCode) {
+        this.businessLineCode = businessLineCode;
     }
 
     public String getSystemName() {

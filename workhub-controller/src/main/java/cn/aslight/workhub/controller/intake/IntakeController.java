@@ -8,6 +8,7 @@ import cn.aslight.workhub.model.intake.DevelopmentAnalysisDraftUpdateRequest;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisOwnerUpdateRequest;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisResponse;
 import cn.aslight.workhub.model.intake.IntakeBusinessLineUpdateRequest;
+import cn.aslight.workhub.model.intake.IntakeDashboardResponse;
 import cn.aslight.workhub.model.intake.IntakeDevelopmentBranchRequest;
 import cn.aslight.workhub.model.intake.IntakeClarificationAnalysisResponse;
 import cn.aslight.workhub.model.intake.IntakeClarificationReplyRequest;
@@ -95,17 +96,30 @@ public class IntakeController {
                                                                  @RequestParam(required = false) String requirementName,
                                                                  @RequestParam(required = false) String approvalCode,
                                                                  @RequestParam(required = false) String proposerName,
+                                                                 @RequestParam(required = false) String businessLine,
+                                                                 @RequestParam(required = false) String requirementType,
                                                                  @RequestParam(required = false) String demandStatus,
                                                                  @RequestParam(required = false) String releasedStartDate,
                                                                  @RequestParam(required = false) String releasedEndDate,
                                                                  @RequestParam(defaultValue = "1") int page,
                                                                  @RequestParam(defaultValue = "10") int pageSize) {
-        List<IntakeSummaryResponse> items = intakeService.list(status, requirementName, approvalCode, proposerName, demandStatus, releasedStartDate, releasedEndDate);
+        List<IntakeSummaryResponse> items = intakeService.list(status, requirementName, approvalCode, proposerName, businessLine, requirementType, demandStatus, releasedStartDate, releasedEndDate);
         int normalizedPage = Math.max(page, 1);
         int normalizedPageSize = Math.max(pageSize, 1);
         int fromIndex = Math.min((normalizedPage - 1) * normalizedPageSize, items.size());
         int toIndex = Math.min(fromIndex + normalizedPageSize, items.size());
         return ApiResponse.success(new PageResponse<>(items.size(), items.subList(fromIndex, toIndex)));
+    }
+
+    /**
+     * 查询工作台需求统计。
+     *
+     * @param demandType 业务线统计需求类型过滤
+     * @return 工作台统计结果
+     */
+    @GetMapping("/dashboard")
+    public ApiResponse<IntakeDashboardResponse> dashboard(@RequestParam(required = false, defaultValue = "ALL") String demandType) {
+        return ApiResponse.success(intakeService.dashboard(demandType));
     }
 
     /**
@@ -210,6 +224,22 @@ public class IntakeController {
                                                             @Valid @RequestBody IntakeTodoStatusRequest request,
                                                             Authentication authentication) {
         return ApiResponse.success(intakeTodoService.updateStatus(id, todoId, request, authentication.getName()));
+    }
+
+    /**
+     * 删除需求待办。
+     *
+     * @param id 需求 ID
+     * @param todoId 待办 ID
+     * @param authentication 当前认证信息
+     * @return 空响应
+     */
+    @DeleteMapping("/{id}/todos/{todoId}")
+    public ApiResponse<Void> deleteTodo(@PathVariable Long id,
+                                        @PathVariable Long todoId,
+                                        Authentication authentication) {
+        intakeTodoService.delete(id, todoId, authentication.getName());
+        return ApiResponse.success(null);
     }
 
     /**

@@ -2,14 +2,19 @@ package cn.aslight.workhub.service.payment;
 
 import cn.aslight.workhub.dao.payment.PaymentMerchantMapper;
 import cn.aslight.workhub.dao.payment.PaymentProjectBindingMapper;
+import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.model.payment.PaymentMerchantEntity;
 import cn.aslight.workhub.model.payment.PaymentProjectBindingEntity;
 import cn.aslight.workhub.model.payment.PaymentProjectBindingResponse;
 import cn.aslight.workhub.model.payment.PaymentProjectBindingSaveRequest;
+import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.model.project.ProjectEntity;
 import cn.aslight.workhub.service.project.ProjectService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+
+import java.lang.reflect.Constructor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,6 +28,118 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class PaymentProjectBindingServiceTest {
+
+    @Test
+    void springConstructor_shouldBeExplicitlyAutowiredWhenTestConstructorExists() throws Exception {
+        Constructor<PaymentProjectBindingService> constructor = PaymentProjectBindingService.class.getConstructor(
+                PaymentProjectBindingMapper.class,
+                PaymentMerchantMapper.class,
+                ProjectService.class,
+                PaymentAuditService.class,
+                BusinessLineMapper.class
+        );
+
+        assertEquals(true, constructor.isAnnotationPresent(Autowired.class));
+    }
+
+    @Test
+    void create_shouldAcceptBusinessLineCodeAndStoreStableReference() {
+        PaymentProjectBindingMapper bindingMapper = mock(PaymentProjectBindingMapper.class);
+        PaymentMerchantMapper merchantMapper = mock(PaymentMerchantMapper.class);
+        ProjectService projectService = mock(ProjectService.class);
+        PaymentAuditService auditService = mock(PaymentAuditService.class);
+        BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
+        PaymentProjectBindingService service = new PaymentProjectBindingService(bindingMapper, merchantMapper, projectService, auditService, businessLineMapper);
+
+        BusinessLineEntity businessLine = new BusinessLineEntity();
+        businessLine.setBusinessLineCode("BL000001");
+        businessLine.setBusinessLineName("资产业务");
+        businessLine.setEnabled(true);
+        when(businessLineMapper.findByCode("BL000001")).thenReturn(businessLine);
+
+        ProjectEntity projectEntity = new ProjectEntity();
+        projectEntity.setId(3L);
+        projectEntity.setBusinessLineCode("BL000001");
+        projectEntity.setBusinessLine("旧资产业务");
+        when(projectService.requireExisting(3L)).thenReturn(projectEntity);
+
+        PaymentMerchantEntity merchantEntity = new PaymentMerchantEntity();
+        merchantEntity.setId(8L);
+        when(merchantMapper.findEntityById(8L)).thenReturn(merchantEntity);
+        when(merchantMapper.findPurposeCodes(8L)).thenReturn(java.util.List.of("WITHHOLD"));
+        when(bindingMapper.findEntityByUniqueKey(3L, "BL000001", 8L, "WITHHOLD")).thenReturn(null);
+        doAnswer(invocation -> {
+            PaymentProjectBindingEntity entity = invocation.getArgument(0);
+            entity.setId(100L);
+            return 1;
+        }).when(bindingMapper).insert(any(PaymentProjectBindingEntity.class));
+        when(bindingMapper.findResponseById(100L)).thenReturn(new PaymentProjectBindingResponse(
+                100L,
+                3L,
+                "BL000001",
+                "资产业务",
+                "DEMO",
+                "演示项目",
+                8L,
+                "M001",
+                "易宝主商户",
+                1L,
+                "YEEPAY",
+                "易宝",
+                "PROD",
+                "WITHHOLD",
+                java.util.List.of("WITHHOLD"),
+                1,
+                true,
+                "ACTIVE",
+                null,
+                java.util.List.of(),
+                null,
+                null
+        ));
+
+        PaymentProjectBindingSaveRequest request = new PaymentProjectBindingSaveRequest();
+        request.setProjectId(3L);
+        request.setBusinessLine("BL000001");
+        request.setMerchantId(8L);
+        request.setPurposeCode("WITHHOLD");
+        request.setPriority(1);
+        request.setDefaultBinding(true);
+        request.setStatus("ACTIVE");
+
+        PaymentProjectBindingResponse response = service.create(request, "admin");
+
+        verify(bindingMapper).clearDefaultBindings(3L, "BL000001", "WITHHOLD", null);
+        ArgumentCaptor<PaymentProjectBindingEntity> entityCaptor = ArgumentCaptor.forClass(PaymentProjectBindingEntity.class);
+        verify(bindingMapper).insert(entityCaptor.capture());
+        assertEquals("BL000001", entityCaptor.getValue().getBusinessLineCode());
+        assertEquals("资产业务", entityCaptor.getValue().getBusinessLine());
+        assertEquals("BL000001", response.businessLineCode());
+        assertEquals("资产业务", response.businessLine());
+    }
+
+    @Test
+    void create_shouldRejectUnknownBusinessLineCode() {
+        PaymentProjectBindingMapper bindingMapper = mock(PaymentProjectBindingMapper.class);
+        PaymentMerchantMapper merchantMapper = mock(PaymentMerchantMapper.class);
+        ProjectService projectService = mock(ProjectService.class);
+        PaymentAuditService auditService = mock(PaymentAuditService.class);
+        BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
+        PaymentProjectBindingService service = new PaymentProjectBindingService(bindingMapper, merchantMapper, projectService, auditService, businessLineMapper);
+
+        PaymentProjectBindingSaveRequest request = new PaymentProjectBindingSaveRequest();
+        request.setBusinessLine("BL999999");
+        request.setProjectId(null);
+        request.setMerchantId(8L);
+        request.setPurposeCode("WITHHOLD");
+        request.setPriority(1);
+        request.setDefaultBinding(true);
+        request.setStatus("ACTIVE");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> service.create(request, "admin"));
+        assertEquals("业务线不存在", exception.getMessage());
+        verify(bindingMapper, never()).insert(any());
+    }
 
     @Test
     void create_shouldClearPreviousDefaultBindingWhenMarkedDefault() {

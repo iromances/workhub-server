@@ -248,7 +248,16 @@ public class IntakeClarificationAnalysisService {
     }
 
     private String resolveBusinessLine(IntakeStructuredData structuredData) {
-        return firstNonBlank(structuredData.projectHint(), firstNonBlank(structuredData.businessLine(), structuredData.department()));
+        if (structuredData == null) {
+            return null;
+        }
+        return firstNonBlank(
+                structuredData.businessLineCode(),
+                firstNonBlank(
+                        structuredData.businessLine(),
+                        firstNonBlank(structuredData.department(), structuredData.projectHint())
+                )
+        );
     }
 
     private IntakeClarificationAnalysisEntity requireAnalysis(Long intakeId) {

@@ -133,7 +133,7 @@ public class McpRuntimeService {
             throw new IllegalArgumentException("审批编号或需求名称至少填写一个");
         }
         int limit = optionalInt(args, "limit", 10, 1, 50);
-        List<IntakeSummaryResponse> matches = intakeService.list(null, requirementName, approvalCode, null, null, null, null)
+        List<IntakeSummaryResponse> matches = intakeService.list(null, requirementName, approvalCode, null, null, null, null, null, null)
                 .stream()
                 .limit(limit)
                 .toList();

@@ -47,12 +47,14 @@ public class PaymentMerchantService {
     public List<PaymentMerchantSummaryResponse> list(String status,
                                                      Long channelId,
                                                      Long projectId,
+                                                     String businessLine,
                                                      String purposeCode,
                                                      String keyword) {
         return paymentMerchantMapper.findAll(
                 PaymentCatalogs.trimToNull(status) == null ? null : PaymentCatalogs.normalizeStatus(status, "status"),
                 channelId,
                 projectId,
+                PaymentCatalogs.trimToNull(businessLine),
                 PaymentCatalogs.trimToNull(purposeCode) == null ? null : PaymentCatalogs.normalizePurpose(purposeCode),
                 PaymentCatalogs.trimToNull(keyword)
         ).stream().map(this::withPurposeCodes).toList();

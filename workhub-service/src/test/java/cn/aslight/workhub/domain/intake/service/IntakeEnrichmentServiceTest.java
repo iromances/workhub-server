@@ -16,12 +16,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -48,9 +47,11 @@ class IntakeEnrichmentServiceTest {
 
         IntakeRecordEntity entity = new IntakeRecordEntity();
         entity.setId(7L);
-        entity.setStructuredDataJson("""
-                {"category":"需求审批","approvalTitle":null,"proposerName":null,"approvalCode":"202603240005","submittedTime":"2026/3/24 11:54","requirementType":"研发需求","requirementDigest":"原始需求","requirementName":"原始需求","requirementSummary":null,"department":null,"businessLine":null,"remark":null,"estimatedEffort":null,"plannedDueDate":null,"actualEffort":null,"actualCompletedTime":null,"acceptanceTime":null,"projectHint":null,"fields":[{"label":"审批编号","value":"202603240005"}],"attachmentSummaries":[]}
-                """);
+        entity.setApprovalCode("202603240005");
+        entity.setSubmittedAt(LocalDateTime.of(2026, 3, 24, 11, 54));
+        entity.setRequirementType("研发需求");
+        entity.setRequirementDigest("原始需求");
+        entity.setRequirementName("原始需求");
         entity.setDemandStatus(null);
         when(intakeMapper.findById(7L)).thenReturn(entity);
 
@@ -105,16 +106,17 @@ class IntakeEnrichmentServiceTest {
         InOrder inOrder = inOrder(intakeMapper);
         inOrder.verify(intakeMapper).updateEnrichmentState(eq(7L), eq(IntakeEnrichmentStatus.PENDING), eq(null), eq(null), any(LocalDateTime.class));
         inOrder.verify(intakeMapper).updateEnrichmentState(eq(7L), eq(IntakeEnrichmentStatus.RUNNING), eq(null), eq(null), any(LocalDateTime.class));
-        ArgumentCaptor<String> structuredJsonCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<IntakeRecordEntity> entityCaptor = ArgumentCaptor.forClass(IntakeRecordEntity.class);
+        inOrder.verify(intakeMapper).updateFormalFields(entityCaptor.capture());
         inOrder.verify(intakeMapper).updateStructuredDataAndEnrichment(
                 eq(7L),
-                structuredJsonCaptor.capture(),
+                any(String.class),
                 eq("已收录"),
                 eq(IntakeEnrichmentStatus.SUCCEEDED),
                 eq(null),
                 any(LocalDateTime.class)
         );
-        assertTrue(structuredJsonCaptor.getValue().contains("\"developmentBranchName\":\"feature/liyi_ebike_split_202603240005\""));
+        assertEquals("feature/liyi_ebike_split_202603240005", entityCaptor.getValue().getDevelopmentBranchName());
         verify(codexCliStructuredExtractor).extract("企业微信审批", "审批编号：A-001", attachments, extractionBatch.summaries());
     }
 
@@ -189,6 +191,7 @@ class IntakeEnrichmentServiceTest {
 
         service.scheduleUploadedEnrichment(10L, "需求录入", "需求截图：image.png");
 
+        verify(intakeMapper).updateFormalFields(any(IntakeRecordEntity.class));
         verify(intakeMapper).updateStructuredDataAndEnrichment(
                 eq(10L),
                 any(String.class),
@@ -232,6 +235,7 @@ class IntakeEnrichmentServiceTest {
 
         service.scheduleUploadedEnrichment(9L, "需求截图录入", "需求截图：test.png");
 
+        verify(intakeMapper).updateFormalFields(any(IntakeRecordEntity.class));
         verify(intakeMapper).updateStructuredDataAndEnrichment(
                 eq(9L),
                 any(String.class),
@@ -240,6 +244,5 @@ class IntakeEnrichmentServiceTest {
                 eq("Codex CLI 解析超时"),
                 any(LocalDateTime.class)
         );
-        verify(intakeMapper, never()).updateEnrichmentState(eq(9L), eq(IntakeEnrichmentStatus.FAILED), any(), any(), any(LocalDateTime.class));
     }
 }

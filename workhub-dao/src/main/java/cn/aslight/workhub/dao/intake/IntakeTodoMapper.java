@@ -4,6 +4,7 @@ import cn.aslight.workhub.model.intake.IntakeTodoEntity;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -94,5 +95,11 @@ public interface IntakeTodoMapper {
             WHERE id = #{id}
             """)
     int updateStatus(IntakeTodoEntity entity);
+
+    @Delete("""
+            DELETE FROM pm_intake_todo
+            WHERE id = #{id}
+            """)
+    int deleteById(Long id);
 
 }

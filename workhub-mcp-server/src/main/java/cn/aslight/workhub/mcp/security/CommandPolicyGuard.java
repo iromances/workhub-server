@@ -28,7 +28,7 @@ public class CommandPolicyGuard {
 
     private String requireAllowedService(ServerTarget target, Map<String, String> args) {
         String service = requireValue(args.get("service"), "服务名不能为空");
-        if (!target.allowedServices().contains(service)) {
+        if (!target.allowedServices().isEmpty() && !target.allowedServices().contains(service)) {
             throw new IllegalArgumentException("服务不在白名单中：" + service);
         }
         return service;
@@ -36,7 +36,7 @@ public class CommandPolicyGuard {
 
     private String requireAllowedLogPath(ServerTarget target, Map<String, String> args) {
         String logPath = requireValue(args.get("logPath"), "日志路径不能为空");
-        if (!target.allowedLogPaths().contains(logPath)) {
+        if (!target.allowedLogPaths().isEmpty() && !target.allowedLogPaths().contains(logPath)) {
             throw new IllegalArgumentException("日志路径不在白名单中：" + logPath);
         }
         return logPath;

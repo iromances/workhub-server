@@ -65,14 +65,14 @@ GitLab 摘要只返回：
 返回内容包括：
 
 - `gitlabGroupName`
-- `localRoot`：本地缓存根目录
+- `localRoot`：本地缓存根目录，批量同步时为 `data/git-cache/{gitlabGroupName}`
 - `repositoryCount`
-- `repositories`：仓库 URL 和本地路径列表
+- `repositories`：仓库 URL 和本地路径列表；仓库目录名沿用 GitLab project `path`，`path` 为空时从仓库 URL 末段推断并去掉 `.git`
 
 安全边界：
 
 - GitLab Access Token 只在 WorkHub 服务端内部使用，不通过 MCP catalog 或工具结果返回。
-- 工具只执行受控的 `git clone`、`git fetch`、`remote set-url`、`remote set-head`、`reset --hard origin/HEAD` 和 `clean -fdx`，缓存目录由 WorkHub 按业务线 group 生成。
+- 工具只执行受控的 `git clone`、`git fetch`、`remote set-url`、`remote set-head`、`reset --hard origin/HEAD` 和 `clean -fdx`，缓存目录由 WorkHub 按 `data/git-cache/{gitlabGroupName}` 生成。
 - 工具用于代码只读分析前的本地缓存同步，不用于提交、推送、改分支或修改远端仓库。
 
 ### `search_intakes`
@@ -125,7 +125,7 @@ GitLab 摘要只返回：
 
 ### `get_service_status`
 
-读取白名单服务状态。
+读取服务状态。配置服务白名单时只允许读取白名单服务；服务白名单为空表示不限制服务名。
 
 必填参数：
 
@@ -135,7 +135,7 @@ GitLab 摘要只返回：
 
 ### `read_service_logs`
 
-读取白名单服务日志或白名单日志路径。
+读取服务日志或日志路径。配置服务白名单或日志路径白名单时只允许读取白名单范围；对应白名单为空表示不限制该维度。
 
 必填参数：
 

@@ -21,28 +21,31 @@ public interface ProjectMapper {
 
     @Select({
             "<script>",
-            "SELECT id,",
-            "project_code AS code,",
-            "project_name AS name,",
-            "project_type AS type,",
-            "business_line AS businessLine,",
-            "owner_user_name AS ownerUserName,",
-            "project_status AS status",
-            "FROM pm_project",
+            "SELECT p.id,",
+            "p.project_code AS code,",
+            "p.project_name AS name,",
+            "p.project_type AS type,",
+            "p.business_line_code AS businessLineCode,",
+            "COALESCE(bl.business_line_name, p.business_line) AS businessLine,",
+            "p.owner_user_name AS ownerUserName,",
+            "p.project_status AS status",
+            "FROM pm_project p",
+            "LEFT JOIN pm_business_line bl ON bl.business_line_code = p.business_line_code",
             "<where>",
             "<if test='status != null and status != \"\"'>",
-            "AND project_status = #{status}",
+            "AND p.project_status = #{status}",
             "</if>",
             "<if test='businessLine != null and businessLine != \"\"'>",
-            "AND business_line = #{businessLine}",
+            "AND p.business_line_code = #{businessLine}",
             "</if>",
             "<if test='keyword != null and keyword != \"\"'>",
-            "AND (project_code LIKE CONCAT('%', #{keyword}, '%')",
-            "OR project_name LIKE CONCAT('%', #{keyword}, '%')",
-            "OR business_line LIKE CONCAT('%', #{keyword}, '%'))",
+            "AND (p.project_code LIKE CONCAT('%', #{keyword}, '%')",
+            "OR p.project_name LIKE CONCAT('%', #{keyword}, '%')",
+            "OR p.business_line LIKE CONCAT('%', #{keyword}, '%')",
+            "OR bl.business_line_name LIKE CONCAT('%', #{keyword}, '%'))",
             "</if>",
             "</where>",
-            "ORDER BY id DESC",
+            "ORDER BY p.id DESC",
             "</script>"
     })
     List<ProjectSummaryResponse> findAll(@Param("status") String status,
@@ -50,18 +53,20 @@ public interface ProjectMapper {
                                          @Param("businessLine") String businessLine);
 
     @Select("""
-            SELECT id,
-                   project_code AS code,
-                   project_name AS name,
-                   project_type AS type,
-                   business_line AS businessLine,
-                   owner_user_name AS ownerUserName,
-                   project_status AS status,
-                   description,
-                   created_at AS createdAt,
-                   updated_at AS updatedAt
-            FROM pm_project
-            WHERE id = #{id}
+            SELECT p.id,
+                   p.project_code AS code,
+                   p.project_name AS name,
+                   p.project_type AS type,
+                   p.business_line_code AS businessLineCode,
+                   COALESCE(bl.business_line_name, p.business_line) AS businessLine,
+                   p.owner_user_name AS ownerUserName,
+                   p.project_status AS status,
+                   p.description,
+                   p.created_at AS createdAt,
+                   p.updated_at AS updatedAt
+            FROM pm_project p
+            LEFT JOIN pm_business_line bl ON bl.business_line_code = p.business_line_code
+            WHERE p.id = #{id}
             """)
     ProjectDetailResponse findDetailById(Long id);
 
@@ -71,6 +76,7 @@ public interface ProjectMapper {
                    project_name,
                    project_type,
                    business_line,
+                   business_line_code,
                    project_status,
                    owner_user_name,
                    description
@@ -85,6 +91,7 @@ public interface ProjectMapper {
                    project_name,
                    project_type,
                    business_line,
+                   business_line_code,
                    project_status,
                    owner_user_name,
                    description
@@ -94,19 +101,21 @@ public interface ProjectMapper {
     ProjectEntity findEntityByCode(String projectCode);
 
     @Select("""
-            SELECT id,
-                   project_code AS code,
-                   project_name AS name,
-                   project_type AS type,
-                   business_line AS businessLine,
-                   owner_user_name AS ownerUserName,
-                   project_status AS status,
-                   description,
-                   created_at AS createdAt,
-                   updated_at AS updatedAt
-            FROM pm_project
-            WHERE business_line = #{businessLine}
-            ORDER BY id ASC
+            SELECT p.id,
+                   p.project_code AS code,
+                   p.project_name AS name,
+                   p.project_type AS type,
+                   p.business_line_code AS businessLineCode,
+                   COALESCE(bl.business_line_name, p.business_line) AS businessLine,
+                   p.owner_user_name AS ownerUserName,
+                   p.project_status AS status,
+                   p.description,
+                   p.created_at AS createdAt,
+                   p.updated_at AS updatedAt
+            FROM pm_project p
+            LEFT JOIN pm_business_line bl ON bl.business_line_code = p.business_line_code
+            WHERE p.business_line_code = #{businessLine}
+            ORDER BY p.id ASC
             LIMIT 1
             """)
     ProjectDetailResponse findFirstDetailByBusinessLine(String businessLine);
@@ -117,6 +126,7 @@ public interface ProjectMapper {
                 project_name,
                 project_type,
                 business_line,
+                business_line_code,
                 project_status,
                 owner_user_name,
                 description
@@ -125,6 +135,7 @@ public interface ProjectMapper {
                 #{projectName},
                 #{projectType},
                 #{businessLine},
+                #{businessLineCode},
                 #{projectStatus},
                 #{ownerUserName},
                 #{description}
@@ -139,6 +150,7 @@ public interface ProjectMapper {
                 project_name = #{projectName},
                 project_type = #{projectType},
                 business_line = #{businessLine},
+                business_line_code = #{businessLineCode},
                 project_status = #{projectStatus},
                 owner_user_name = #{ownerUserName},
                 description = #{description}
@@ -190,7 +202,7 @@ public interface ProjectMapper {
     @Select("""
             SELECT COUNT(1)
             FROM pm_project
-            WHERE business_line = #{businessLineName}
+            WHERE business_line_code = #{businessLineName}
             """)
     int countByBusinessLine(String businessLineName);
 }

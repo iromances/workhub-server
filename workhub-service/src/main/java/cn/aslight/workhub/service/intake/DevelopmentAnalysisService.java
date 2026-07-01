@@ -509,7 +509,7 @@ public class DevelopmentAnalysisService {
                     trimToNull(item.risk())
             ));
         }
-        validateWorkItemSystemTags(workItems, project == null ? businessLine : project.businessLine(), existingDraft);
+        validateWorkItemSystemTags(workItems, businessLineKeyForValidation(project, businessLine), existingDraft);
 
         validateOptionalWorkItemEfforts(workItems);
         String developmentEstimatedEffort = sumEstimatedEffort(workItems, null);
@@ -887,9 +887,10 @@ public class DevelopmentAnalysisService {
 
     private ProjectDetailResponse resolveProjectOrNull(IntakeStructuredData structuredData) {
         List<String> candidates = new ArrayList<>();
-        addCandidate(candidates, structuredData.projectHint());
+        addCandidate(candidates, structuredData.businessLineCode());
         addCandidate(candidates, structuredData.businessLine());
         addCandidate(candidates, structuredData.department());
+        addCandidate(candidates, structuredData.projectHint());
         for (String candidate : candidates) {
             String group = trimToNull(candidate);
             if (group == null) {
@@ -929,10 +930,13 @@ public class DevelopmentAnalysisService {
 
     private String resolveBusinessLine(IntakeStructuredData structuredData) {
         return firstNonBlank(
-                structuredData == null ? null : structuredData.projectHint(),
+                structuredData == null ? null : structuredData.businessLineCode(),
                 firstNonBlank(
                         structuredData == null ? null : structuredData.businessLine(),
-                        structuredData == null ? null : structuredData.department()
+                        firstNonBlank(
+                                structuredData == null ? null : structuredData.department(),
+                                structuredData == null ? null : structuredData.projectHint()
+                        )
                 )
         );
     }
@@ -969,6 +973,13 @@ public class DevelopmentAnalysisService {
             return null;
         }
         return draft.projectName();
+    }
+
+    private String businessLineKeyForValidation(ProjectDetailResponse project, String fallbackBusinessLine) {
+        if (project == null) {
+            return fallbackBusinessLine;
+        }
+        return firstNonBlank(project.businessLineCode(), firstNonBlank(fallbackBusinessLine, project.businessLine()));
     }
 
     private IntakeStructuredData withBusinessLineOverride(IntakeStructuredData baseline, String businessLineOverride) {

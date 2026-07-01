@@ -16,8 +16,9 @@ public class ProjectSaveRequest {
     @NotBlank(message = "不能为空")
     private String type;
 
-    @NotBlank(message = "不能为空")
     private String businessLine;
+
+    private String businessLineCode;
 
     @NotBlank(message = "不能为空")
     private String ownerUserName;
@@ -57,6 +58,14 @@ public class ProjectSaveRequest {
 
     public void setBusinessLine(String businessLine) {
         this.businessLine = businessLine;
+    }
+
+    public String getBusinessLineCode() {
+        return businessLineCode;
+    }
+
+    public void setBusinessLineCode(String businessLineCode) {
+        this.businessLineCode = businessLineCode;
     }
 
     public String getOwnerUserName() {

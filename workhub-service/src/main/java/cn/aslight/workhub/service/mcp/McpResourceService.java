@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -76,11 +77,7 @@ public class McpResourceService {
     @Transactional
     public McpResourceResponse create(McpResourceSaveRequest request) {
         schemaInitializer.ensureInitialized();
-        McpResourceEntity duplicate = mcpResourceMapper.findByTargetKey(requireValue(request.getTargetKey(), "目标 key 不能为空"));
-        if (duplicate != null) {
-            throw new IllegalArgumentException("目标 key 已存在");
-        }
-        McpResourceEntity entity = toEntity(new McpResourceEntity(), request);
+        McpResourceEntity entity = toEntity(new McpResourceEntity(), request, true);
         mcpResourceMapper.insert(entity);
         replaceBusinessLineBindings(entity.getId(), normalizeBusinessLineCodes(request));
         return toResponse(requireExisting(entity.getId()));
@@ -90,12 +87,7 @@ public class McpResourceService {
     public McpResourceResponse update(Long id, McpResourceSaveRequest request) {
         schemaInitializer.ensureInitialized();
         McpResourceEntity existing = requireExisting(id);
-        String targetKey = requireValue(request.getTargetKey(), "目标 key 不能为空");
-        McpResourceEntity duplicate = mcpResourceMapper.findByTargetKey(targetKey);
-        if (duplicate != null && !duplicate.getId().equals(id)) {
-            throw new IllegalArgumentException("目标 key 已存在");
-        }
-        McpResourceEntity entity = toEntity(existing, request);
+        McpResourceEntity entity = toEntity(existing, request, false);
         entity.setId(id);
         mcpResourceMapper.update(entity);
         replaceBusinessLineBindings(id, normalizeBusinessLineCodes(request));
@@ -312,14 +304,15 @@ public class McpResourceService {
         return entity;
     }
 
-    private McpResourceEntity toEntity(McpResourceEntity entity, McpResourceSaveRequest request) {
+    private McpResourceEntity toEntity(McpResourceEntity entity, McpResourceSaveRequest request, boolean create) {
         String resourceType = normalizeResourceType(request.getResourceType());
         validateByResourceType(resourceType, entity, request);
+        GeneratedTarget generatedTarget = resolveTarget(resourceType, entity, request, create);
         entity.setResourceType(resourceType);
-        entity.setTargetKey(requireValue(request.getTargetKey(), "目标 key 不能为空"));
+        entity.setTargetKey(generatedTarget.targetKey());
         entity.setBusinessLineCode(normalizeBusinessLineCodes(request).getFirst());
         entity.setEnvironmentCode(requireValue(request.getEnvironmentCode(), "环境不能为空"));
-        entity.setName(requireValue(request.getName(), "名称不能为空"));
+        entity.setName(generatedTarget.name());
         entity.setSystemName(SERVER.equals(resourceType) ? writeJson(normalizeSystemNames(request)) : null);
         entity.setHost(requireValue(request.getHost(), "目标主机不能为空"));
         entity.setPort(request.getPort());
@@ -342,6 +335,87 @@ public class McpResourceService {
         entity.setEnabled(request.getEnabled() == null || request.getEnabled());
         entity.setRemark(trimToNull(request.getRemark()));
         return entity;
+    }
+
+    private GeneratedTarget resolveTarget(String resourceType,
+                                          McpResourceEntity existing,
+                                          McpResourceSaveRequest request,
+                                          boolean create) {
+        String requestedTargetKey = trimToNull(request.getTargetKey());
+        String targetKey;
+        if (requestedTargetKey != null) {
+            targetKey = requestedTargetKey;
+            McpResourceEntity duplicate = mcpResourceMapper.findByTargetKey(targetKey);
+            if (duplicate != null && (existing.getId() == null || !duplicate.getId().equals(existing.getId()))) {
+                throw new IllegalArgumentException("目标 key 已存在");
+            }
+        } else if (!create && trimToNull(existing.getTargetKey()) != null) {
+            targetKey = existing.getTargetKey();
+        } else {
+            targetKey = nextAvailableGeneratedTargetKey(resourceType, request);
+        }
+        String name = firstNonBlank(request.getName(), create ? null : existing.getName());
+        if (name == null) {
+            name = generateTargetName(resourceType, request);
+        }
+        return new GeneratedTarget(targetKey, name);
+    }
+
+    private String nextAvailableGeneratedTargetKey(String resourceType, McpResourceSaveRequest request) {
+        String baseKey = generatedTargetKeyBase(resourceType, request);
+        for (int index = 1; index <= 1000; index++) {
+            String candidate = index == 1 ? baseKey : baseKey + "-" + index;
+            if (mcpResourceMapper.findByTargetKey(candidate) == null) {
+                return candidate;
+            }
+        }
+        throw new IllegalArgumentException("自动生成目标 key 失败：可用序号已用尽");
+    }
+
+    private String generatedTargetKeyBase(String resourceType, McpResourceSaveRequest request) {
+        String businessLineCode = normalizeBusinessLineCodes(request).getFirst();
+        String environmentCode = requireValue(request.getEnvironmentCode(), "环境不能为空");
+        String host = requireValue(request.getHost(), "目标主机不能为空");
+        Integer port = request.getPort();
+        if (port == null || port <= 0) {
+            throw new IllegalArgumentException("端口必须大于 0");
+        }
+        return String.join("-",
+                sanitizeKeyPart(businessLineCode),
+                sanitizeKeyPart(environmentCode),
+                DATABASE.equals(resourceType) ? "db" : "server",
+                sanitizeKeyPart(host),
+                String.valueOf(port)
+        );
+    }
+
+    private String sanitizeKeyPart(String value) {
+        String normalized = requireValue(value, "目标 key 组成字段不能为空")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-+|-+$)", "");
+        return normalized.isBlank() ? "target" : normalized;
+    }
+
+    private String generateTargetName(String resourceType, McpResourceSaveRequest request) {
+        String businessLineCode = normalizeBusinessLineCodes(request).getFirst();
+        String businessLineName = businessLineName(businessLineCode);
+        String environmentCode = requireValue(request.getEnvironmentCode(), "环境不能为空");
+        String host = requireValue(request.getHost(), "目标主机不能为空");
+        Integer port = request.getPort();
+        if (port == null || port <= 0) {
+            throw new IllegalArgumentException("端口必须大于 0");
+        }
+        String typeName = DATABASE.equals(resourceType) ? "数据库目标" : "服务器目标";
+        return businessLineName + " " + environmentCode + " " + typeName + " " + host + ":" + port;
+    }
+
+    private String businessLineName(String businessLineCode) {
+        BusinessLineEntity businessLine = businessLineMapper.findByCode(businessLineCode);
+        if (businessLine == null || trimToNull(businessLine.getBusinessLineName()) == null) {
+            return businessLineCode;
+        }
+        return businessLine.getBusinessLineName().trim();
     }
 
     private void validateByResourceType(String resourceType, McpResourceEntity existing, McpResourceSaveRequest request) {
@@ -398,9 +472,6 @@ public class McpResourceService {
             request.getSystemNames().forEach(value -> addUnique(values, value));
         }
         addUnique(values, request.getSystemName());
-        if (values.isEmpty()) {
-            throw new IllegalArgumentException("服务器所属系统不能为空");
-        }
         return values;
     }
 
@@ -604,5 +675,8 @@ public class McpResourceService {
 
     private String nullToEmpty(String value) {
         return value == null ? "" : value;
+    }
+
+    private record GeneratedTarget(String targetKey, String name) {
     }
 }

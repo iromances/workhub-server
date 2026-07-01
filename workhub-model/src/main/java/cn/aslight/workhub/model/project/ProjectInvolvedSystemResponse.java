@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
  */
 public record ProjectInvolvedSystemResponse(Long id,
                                             String systemScope,
+                                            String businessLineCode,
                                             String businessLine,
                                             String systemName,
                                             String description,

@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -62,6 +63,117 @@ class McpResourceServiceTest {
         assertNotEquals("plain-db-password", captor.getValue().getPasswordEncrypted());
         assertTrue(captor.getValue().getPasswordEncrypted().startsWith("mcp:v1:"));
         assertTrue(response.passwordConfigured());
+    }
+
+    @Test
+    void createDatabase_shouldGenerateTargetKeyAndNameWhenBlank() {
+        McpResourceMapper mapper = mock(McpResourceMapper.class);
+        McpCryptoService cryptoService = new McpCryptoService(testProperties());
+        McpResourceSchemaInitializer schemaInitializer = mock(McpResourceSchemaInitializer.class);
+        BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
+        McpResourceService service = new McpResourceService(
+                mapper,
+                cryptoService,
+                schemaInitializer,
+                businessLineMapper,
+                mock(ProjectInvolvedSystemMapper.class),
+                mock(SysConfigService.class)
+        );
+        AtomicReference<McpResourceEntity> saved = new AtomicReference<>();
+        when(mapper.findByTargetKey("bl000001-test-db-10-0-0-10-3306")).thenReturn(null);
+        org.mockito.Mockito.doAnswer(invocation -> {
+            McpResourceEntity entity = invocation.getArgument(0);
+            entity.setId(1L);
+            saved.set(entity);
+            return null;
+        }).when(mapper).insert(any());
+        when(mapper.findById(1L)).thenAnswer(invocation -> saved.get());
+        when(businessLineMapper.findByCode("BL000001")).thenReturn(businessLine("BL000001", "保费分期"));
+
+        McpResourceSaveRequest request = databaseRequest();
+        request.setTargetKey(null);
+        request.setName(null);
+        request.setBusinessLineCode("BL000001");
+        request.setBusinessLineCodes(List.of("BL000001"));
+
+        McpResourceResponse response = service.create(request);
+
+        assertEquals("bl000001-test-db-10-0-0-10-3306", response.targetKey());
+        assertEquals("保费分期 test 数据库目标 10.0.0.10:3306", response.name());
+    }
+
+    @Test
+    void createServer_shouldGenerateNextAvailableTargetKeyWhenBaseKeyExists() {
+        McpResourceMapper mapper = mock(McpResourceMapper.class);
+        McpCryptoService cryptoService = new McpCryptoService(testProperties());
+        McpResourceSchemaInitializer schemaInitializer = mock(McpResourceSchemaInitializer.class);
+        BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
+        McpResourceService service = new McpResourceService(
+                mapper,
+                cryptoService,
+                schemaInitializer,
+                businessLineMapper,
+                mock(ProjectInvolvedSystemMapper.class),
+                mock(SysConfigService.class)
+        );
+        AtomicReference<McpResourceEntity> saved = new AtomicReference<>();
+        when(mapper.findByTargetKey("bl000007-prod-server-10-0-1-20-22")).thenReturn(new McpResourceEntity());
+        when(mapper.findByTargetKey("bl000007-prod-server-10-0-1-20-22-2")).thenReturn(null);
+        org.mockito.Mockito.doAnswer(invocation -> {
+            McpResourceEntity entity = invocation.getArgument(0);
+            entity.setId(2L);
+            saved.set(entity);
+            return null;
+        }).when(mapper).insert(any());
+        when(mapper.findById(2L)).thenAnswer(invocation -> saved.get());
+        when(businessLineMapper.findByCode("BL000007")).thenReturn(businessLine("BL000007", "汇浦"));
+
+        McpResourceSaveRequest request = serverRequest();
+        request.setTargetKey(null);
+        request.setName(null);
+
+        McpResourceResponse response = service.create(request);
+
+        assertEquals("bl000007-prod-server-10-0-1-20-22-2", response.targetKey());
+        assertEquals("汇浦 prod 服务器目标 10.0.1.20:22", response.name());
+    }
+
+    @Test
+    void createServer_shouldAllowBlankSystemNamesAsAllSystemsInBusinessLine() {
+        McpResourceMapper mapper = mock(McpResourceMapper.class);
+        McpCryptoService cryptoService = new McpCryptoService(testProperties());
+        McpResourceSchemaInitializer schemaInitializer = mock(McpResourceSchemaInitializer.class);
+        BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
+        McpResourceService service = new McpResourceService(
+                mapper,
+                cryptoService,
+                schemaInitializer,
+                businessLineMapper,
+                mock(ProjectInvolvedSystemMapper.class),
+                mock(SysConfigService.class)
+        );
+        AtomicReference<McpResourceEntity> saved = new AtomicReference<>();
+        when(mapper.findByTargetKey("bl000007-prod-server-10-0-1-20-22")).thenReturn(null);
+        org.mockito.Mockito.doAnswer(invocation -> {
+            McpResourceEntity entity = invocation.getArgument(0);
+            entity.setId(3L);
+            saved.set(entity);
+            return null;
+        }).when(mapper).insert(any());
+        when(mapper.findById(3L)).thenAnswer(invocation -> saved.get());
+        when(businessLineMapper.findByCode("BL000007")).thenReturn(businessLine("BL000007", "汇浦"));
+
+        McpResourceSaveRequest request = serverRequest();
+        request.setTargetKey(null);
+        request.setName(null);
+        request.setSystemNames(List.of());
+        request.setSystemName(null);
+
+        McpResourceResponse response = service.create(request);
+
+        assertEquals("bl000007-prod-server-10-0-1-20-22", response.targetKey());
+        assertNull(response.systemName());
+        assertEquals(List.of(), response.systemNames());
     }
 
     @Test
@@ -176,6 +288,28 @@ class McpResourceServiceTest {
         request.setUsername("readonly");
         request.setPassword("plain-db-password");
         return request;
+    }
+
+    private McpResourceSaveRequest serverRequest() {
+        McpResourceSaveRequest request = new McpResourceSaveRequest();
+        request.setResourceType("SERVER");
+        request.setBusinessLineCode("BL000007");
+        request.setBusinessLineCodes(List.of("BL000007"));
+        request.setEnvironmentCode("prod");
+        request.setSystemNames(List.of("assets-saps"));
+        request.setHost("10.0.1.20");
+        request.setPort(22);
+        request.setUsername("ops");
+        request.setSshPassword("plain-ssh-password");
+        return request;
+    }
+
+    private BusinessLineEntity businessLine(String code, String name) {
+        BusinessLineEntity entity = new BusinessLineEntity();
+        entity.setBusinessLineCode(code);
+        entity.setBusinessLineName(name);
+        entity.setEnabled(true);
+        return entity;
     }
 
     private McpProperties testProperties() {

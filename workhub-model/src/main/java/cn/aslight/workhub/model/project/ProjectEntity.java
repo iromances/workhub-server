@@ -26,6 +26,10 @@ public class ProjectEntity {
      */
     private String businessLine;
     /**
+     * 业务线稳定编码。
+     */
+    private String businessLineCode;
+    /**
      * 项目状态。
      */
     private String projectStatus;
@@ -76,6 +80,14 @@ public class ProjectEntity {
 
     public void setBusinessLine(String businessLine) {
         this.businessLine = businessLine;
+    }
+
+    public String getBusinessLineCode() {
+        return businessLineCode;
+    }
+
+    public void setBusinessLineCode(String businessLineCode) {
+        this.businessLineCode = businessLineCode;
     }
 
     public String getProjectStatus() {

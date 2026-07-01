@@ -143,29 +143,34 @@ CREATE TABLE `pm_project` (
   `project_name` VARCHAR(128) NOT NULL,
   `project_type` VARCHAR(32) NOT NULL,
   `business_line` VARCHAR(128) NOT NULL DEFAULT '',
+  `business_line_code` VARCHAR(32) NOT NULL DEFAULT '',
   `project_status` VARCHAR(32) NOT NULL,
   `owner_user_name` VARCHAR(64) NOT NULL,
   `description` TEXT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_pm_project_code` (`project_code`)
+  UNIQUE KEY `uk_pm_project_code` (`project_code`),
+  KEY `idx_pm_project_business_line_code` (`business_line_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `pm_business_line_member` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `business_line` VARCHAR(128) NOT NULL,
+  `business_line_code` VARCHAR(32) NOT NULL DEFAULT '',
   `member_user_name` VARCHAR(64) NOT NULL,
   `member_display_name` VARCHAR(128) NOT NULL,
   `enabled` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_pm_business_line_member` (`business_line`, `member_user_name`)
+  UNIQUE KEY `uk_pm_business_line_member` (`business_line`, `member_user_name`),
+  KEY `idx_pm_business_line_member_code` (`business_line_code`, `member_user_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `pm_business_line` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `business_line_code` VARCHAR(32) NOT NULL,
   `business_line_name` VARCHAR(128) NOT NULL,
   `gitlab_group_name` VARCHAR(255) NULL,
   `description` TEXT NULL,
@@ -173,6 +178,7 @@ CREATE TABLE `pm_business_line` (
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pm_business_line_code` (`business_line_code`),
   UNIQUE KEY `uk_pm_business_line_name` (`business_line_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -262,6 +268,7 @@ CREATE TABLE `pm_project_involved_system` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `system_scope` VARCHAR(32) NOT NULL,
   `business_line` VARCHAR(128) NOT NULL DEFAULT '',
+  `business_line_code` VARCHAR(32) NOT NULL DEFAULT '',
   `system_name` VARCHAR(128) NOT NULL,
   `description` TEXT NULL,
   `enabled` TINYINT(1) NOT NULL DEFAULT 1,
@@ -270,7 +277,9 @@ CREATE TABLE `pm_project_involved_system` (
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_pm_project_involved_system_name` (`system_scope`, `business_line`, `system_name`),
-  KEY `idx_pm_project_involved_system_select` (`system_scope`, `business_line`, `enabled`, `sort_order`)
+  UNIQUE KEY `uk_pm_project_involved_system_code_name` (`system_scope`, `business_line_code`, `system_name`),
+  KEY `idx_pm_project_involved_system_select` (`system_scope`, `business_line`, `enabled`, `sort_order`),
+  KEY `idx_pm_project_involved_system_code_select` (`system_scope`, `business_line_code`, `enabled`, `sort_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `pay_channel` (
@@ -355,6 +364,7 @@ CREATE TABLE `pay_project_merchant_binding` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `project_id` BIGINT NULL,
   `business_line` VARCHAR(128) NOT NULL,
+  `business_line_code` VARCHAR(32) NOT NULL DEFAULT '',
   `merchant_id` BIGINT NOT NULL,
   `purpose_code` VARCHAR(32) NOT NULL,
   `priority` INT NOT NULL DEFAULT 1,
@@ -367,6 +377,7 @@ CREATE TABLE `pay_project_merchant_binding` (
   UNIQUE KEY `uk_pay_binding_project_merchant_purpose` (`project_id`, `merchant_id`, `purpose_code`),
   KEY `idx_pay_binding_project_purpose` (`project_id`, `purpose_code`, `binding_status`, `is_default`, `priority`),
   KEY `idx_pay_binding_business_purpose` (`business_line`, `purpose_code`, `binding_status`, `is_default`, `priority`),
+  KEY `idx_pay_binding_business_code_purpose` (`business_line_code`, `purpose_code`, `binding_status`, `is_default`, `priority`),
   KEY `idx_pay_binding_merchant_id` (`merchant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -522,13 +533,69 @@ CREATE TABLE `pm_intake_record` (
   `enrichment_error_summary` VARCHAR(255) NULL,
   `enrichment_updated_at` DATETIME NULL,
   `converted_work_item_id` BIGINT NULL,
+  `approval_code` VARCHAR(64) NULL,
+  `approval_title` VARCHAR(255) NULL,
+  `approval_status` VARCHAR(32) NULL,
+  `proposer_name` VARCHAR(128) NULL,
+  `submitted_at` DATETIME NULL,
+  `requirement_type` VARCHAR(32) NULL,
+  `requirement_name` VARCHAR(255) NULL,
+  `requirement_summary` TEXT NULL,
+  `requirement_digest` VARCHAR(255) NULL,
+  `department` VARCHAR(128) NULL,
+  `business_line` VARCHAR(128) NULL,
+  `business_line_code` VARCHAR(32) NULL,
+  `project_hint` VARCHAR(128) NULL,
+  `development_branch_name` VARCHAR(128) NULL,
+  `zentao_url` VARCHAR(512) NULL,
+  `remark` TEXT NULL,
+  `planned_due_date` DATE NULL,
+  `planned_development_start_date` DATE NULL,
+  `planned_testing_start_date` DATE NULL,
+  `planned_release_date` DATE NULL,
+  `development_started_date` DATE NULL,
+  `testing_started_date` DATE NULL,
+  `actual_completed_date` DATE NULL,
+  `scheduled_acceptance_date` DATE NULL,
+  `actual_testing_completed_date` DATE NULL,
+  `acceptance_date` DATE NULL,
+  `released_date` DATE NULL,
+  `closed_date` DATE NULL,
+  `close_reason` VARCHAR(255) NULL,
+  `estimated_effort` VARCHAR(32) NULL,
+  `actual_effort` VARCHAR(32) NULL,
+  `actual_testing_effort` VARCHAR(32) NULL,
+  `priority` VARCHAR(16) NULL,
+  `urgency` VARCHAR(32) NULL,
   `deleted` TINYINT(1) NOT NULL DEFAULT 0,
   `deleted_at` DATETIME NULL,
   `deleted_by` VARCHAR(64) NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_pm_intake_record_external_message_id` (`external_message_id`)
+  UNIQUE KEY `uk_pm_intake_record_external_message_id` (`external_message_id`),
+  KEY `idx_pm_intake_record_approval_code` (`approval_code`),
+  KEY `idx_pm_intake_record_business_line_code` (`business_line_code`, `deleted`, `received_at`),
+  KEY `idx_pm_intake_record_requirement_type` (`requirement_type`, `deleted`, `received_at`),
+  KEY `idx_pm_intake_record_released_date` (`released_date`, `deleted`),
+  KEY `idx_pm_intake_record_submitted_at` (`submitted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `pm_intake_structured_field` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `intake_id` BIGINT NOT NULL,
+  `field_label` VARCHAR(128) NOT NULL,
+  `field_value` TEXT NULL,
+  `normalized_key` VARCHAR(64) NULL,
+  `source_type` VARCHAR(32) NOT NULL DEFAULT 'STRUCTURED_FIELD',
+  `sort_order` INT NOT NULL DEFAULT 0,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pm_intake_structured_field_order` (`intake_id`, `sort_order`),
+  KEY `idx_pm_intake_structured_field_intake` (`intake_id`, `sort_order`),
+  KEY `idx_pm_intake_structured_field_label` (`field_label`),
+  KEY `idx_pm_intake_structured_field_normalized` (`normalized_key`, `intake_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `pm_intake_history` (
@@ -565,6 +632,7 @@ CREATE TABLE `pm_intake_development_analysis` (
   `intake_id` BIGINT NOT NULL,
   `project_id` BIGINT NULL,
   `business_line` VARCHAR(128) NULL,
+  `business_line_code` VARCHAR(32) NULL,
   `repository_url` VARCHAR(512) NULL,
   `analysis_status` VARCHAR(32) NOT NULL,
   `analysis_message` VARCHAR(255) NULL,
@@ -583,6 +651,7 @@ CREATE TABLE `pm_intake_clarification_analysis` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `intake_id` BIGINT NOT NULL,
   `business_line` VARCHAR(128) NULL,
+  `business_line_code` VARCHAR(32) NULL,
   `analysis_status` VARCHAR(32) NOT NULL,
   `analysis_message` VARCHAR(255) NULL,
   `items_json` TEXT NULL,

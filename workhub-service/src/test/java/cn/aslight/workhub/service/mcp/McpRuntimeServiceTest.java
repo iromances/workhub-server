@@ -90,7 +90,7 @@ class McpRuntimeServiceTest {
         assertTrue(text.contains("ca-assets"));
         assertTrue(text.contains("assets-saps"));
         assertTrue(text.contains("jiatai-hp-db-prod"));
-        assertTrue(text.contains("group-369a82817b7f30940b798d2b"));
+        assertTrue(text.contains("data/git-cache/ca-assets"));
         assertTrue(text.contains("projectVaultPath"));
         assertTrue(text.contains("accessTokenConfigured"));
         assertTrue(!text.contains("plain-gitlab-token"));
@@ -195,7 +195,7 @@ class McpRuntimeServiceTest {
         assertEquals("汇浦", gitlabRepositoryService.syncedBusinessLine);
         assertTrue(text.contains("\"gitlabGroupName\" : \"ca-assets\""));
         assertTrue(text.contains("\"repositoryCount\" : 1"));
-        assertTrue(text.contains("/tmp/workhub-git-cache/group-abc/assets-saps"));
+        assertTrue(text.contains("/tmp/workhub-git-cache/ca-assets/assets-saps"));
         assertTrue(!text.contains("plain-gitlab-token"));
     }
 
@@ -254,6 +254,7 @@ class McpRuntimeServiceTest {
                 "MCP 需求读取",
                 "让 MCP 支持需求内容读取",
                 "汇浦",
+                "BL000007",
                 null,
                 null,
                 null,
@@ -275,7 +276,8 @@ class McpRuntimeServiceTest {
                 List.of("workhub-server"),
                 "SUCCEEDED",
                 "已确认",
-                null
+                null,
+                0L
         );
     }
 
@@ -356,6 +358,8 @@ class McpRuntimeServiceTest {
                                                 String requirementName,
                                                 String approvalCode,
                                                 String proposerName,
+                                                String businessLine,
+                                                String requirementType,
                                                 String demandStatus,
                                                 String releasedStartDate,
                                                 String releasedEndDate) {
@@ -377,10 +381,10 @@ class McpRuntimeServiceTest {
             this.syncedBusinessLine = businessLine;
             return new GitlabRepositoryBundle(
                     "ca-assets",
-                    Path.of("/tmp/workhub-git-cache/group-abc"),
+                    Path.of("/tmp/workhub-git-cache/ca-assets"),
                     List.of(new GitlabRepository(
                             "https://gitlab.example.com/ca-assets/assets-saps.git",
-                            Path.of("/tmp/workhub-git-cache/group-abc/assets-saps")
+                            Path.of("/tmp/workhub-git-cache/ca-assets/assets-saps")
                     ))
             );
         }

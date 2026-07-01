@@ -30,6 +30,8 @@ public class ProjectService {
 
     public static final String SYSTEM_SCOPE_BUSINESS_LINE = "BUSINESS_LINE";
     public static final String SYSTEM_SCOPE_MIDDLE_PLATFORM = "MIDDLE_PLATFORM";
+    private static final String BUSINESS_LINE_CODE_PREFIX = "BL";
+    private static final int BUSINESS_LINE_CODE_WIDTH = 6;
 
     private final ProjectMapper projectMapper;
     private final BusinessLineMapper businessLineMapper;
@@ -47,7 +49,7 @@ public class ProjectService {
     }
 
     public List<ProjectSummaryResponse> list(String status, String keyword, String businessLine) {
-        return projectMapper.findAll(trimToNull(status), trimToNull(keyword), trimToNull(businessLine));
+        return projectMapper.findAll(trimToNull(status), trimToNull(keyword), normalizeOptionalBusinessLineCode(businessLine));
     }
 
     public List<BusinessLineResponse> listBusinessLines(String keyword) {
@@ -68,8 +70,8 @@ public class ProjectService {
     }
 
     public List<ProjectInvolvedSystemResponse> listSelectableInvolvedSystems(String businessLine) {
-        String normalizedBusinessLine = requireBusinessLineName(businessLine);
-        return involvedSystemMapper.findSelectableByBusinessLine(normalizedBusinessLine).stream()
+        String businessLineCode = requireBusinessLine(businessLine).getBusinessLineCode();
+        return involvedSystemMapper.findSelectableByBusinessLineCode(businessLineCode).stream()
                 .map(this::toInvolvedSystemResponse)
                 .toList();
     }
@@ -102,6 +104,7 @@ public class ProjectService {
     public BusinessLineResponse createBusinessLine(BusinessLineSaveRequest request) {
         ensureBusinessLineNameAvailable(request.getBusinessLineName(), null);
         BusinessLineEntity entity = toBusinessLineEntity(new BusinessLineEntity(), request);
+        entity.setBusinessLineCode(nextBusinessLineCode());
         businessLineMapper.insert(entity);
         return toBusinessLineResponse(requireExistingBusinessLine(entity.getId()));
     }
@@ -109,7 +112,7 @@ public class ProjectService {
     @Transactional
     public ProjectInvolvedSystemResponse createInvolvedSystem(ProjectInvolvedSystemSaveRequest request) {
         ProjectInvolvedSystemEntity entity = toInvolvedSystemEntity(new ProjectInvolvedSystemEntity(), request);
-        ensureInvolvedSystemNameAvailable(entity.getSystemScope(), entity.getBusinessLine(), entity.getSystemName(), null);
+        ensureInvolvedSystemNameAvailable(entity.getSystemScope(), entity.getBusinessLineCode(), entity.getSystemName(), null);
         involvedSystemMapper.insert(entity);
         return toInvolvedSystemResponse(requireExistingInvolvedSystem(entity.getId()));
     }
@@ -120,7 +123,8 @@ public class ProjectService {
         if (Boolean.FALSE.equals(businessLineEntity.getEnabled())) {
             throw new IllegalArgumentException("业务线已停用，不能同步 Git 系统清单");
         }
-        String businessLine = requireBusinessLineName(businessLineEntity.getBusinessLineName());
+        String businessLine = businessLineEntity.getBusinessLineName();
+        String businessLineCode = businessLineEntity.getBusinessLineCode();
         List<GitlabProjectSystem> systems = gitlabRepositoryService.listGroupProjectSystems(businessLine);
         Set<String> handledNames = new LinkedHashSet<>();
         int sortOrder = 100;
@@ -131,7 +135,7 @@ public class ProjectService {
             }
             ProjectInvolvedSystemEntity existing = involvedSystemMapper.findByIdentity(
                     SYSTEM_SCOPE_BUSINESS_LINE,
-                    businessLine,
+                    businessLineCode,
                     systemName
             );
             if (existing != null) {
@@ -141,6 +145,7 @@ public class ProjectService {
             ProjectInvolvedSystemEntity entity = new ProjectInvolvedSystemEntity();
             entity.setSystemScope(SYSTEM_SCOPE_BUSINESS_LINE);
             entity.setBusinessLine(businessLine);
+            entity.setBusinessLineCode(businessLineCode);
             entity.setSystemName(systemName);
             entity.setDescription(buildGitSystemDescription(system));
             entity.setEnabled(true);
@@ -148,7 +153,7 @@ public class ProjectService {
             involvedSystemMapper.insert(entity);
             sortOrder += 10;
         }
-        return listInvolvedSystems(SYSTEM_SCOPE_BUSINESS_LINE, businessLine, false, null);
+        return listInvolvedSystems(SYSTEM_SCOPE_BUSINESS_LINE, businessLineCode, false, null);
     }
 
     @Transactional
@@ -184,10 +189,11 @@ public class ProjectService {
 
     @Transactional
     public BusinessLineResponse updateBusinessLine(Long id, BusinessLineSaveRequest request) {
-        requireExistingBusinessLine(id);
+        BusinessLineEntity existing = requireExistingBusinessLine(id);
         ensureBusinessLineNameAvailable(request.getBusinessLineName(), id);
         BusinessLineEntity entity = toBusinessLineEntity(new BusinessLineEntity(), request);
         entity.setId(id);
+        entity.setBusinessLineCode(existing.getBusinessLineCode());
         businessLineMapper.update(entity);
         return toBusinessLineResponse(requireExistingBusinessLine(id));
     }
@@ -201,7 +207,7 @@ public class ProjectService {
                 && involvedSystemMapper.countDevelopmentAnalysisUsage(existing.getSystemName()) > 0) {
             throw new IllegalArgumentException("系统已被研发任务使用，不能修改系统名称");
         }
-        ensureInvolvedSystemNameAvailable(entity.getSystemScope(), entity.getBusinessLine(), entity.getSystemName(), id);
+        ensureInvolvedSystemNameAvailable(entity.getSystemScope(), entity.getBusinessLineCode(), entity.getSystemName(), id);
         involvedSystemMapper.update(entity);
         return toInvolvedSystemResponse(requireExistingInvolvedSystem(id));
     }
@@ -209,13 +215,13 @@ public class ProjectService {
     @Transactional
     public void deleteBusinessLine(Long id) {
         BusinessLineEntity existing = requireExistingBusinessLine(id);
-        if (projectMapper.countByBusinessLine(existing.getBusinessLineName()) > 0) {
+        if (projectMapper.countByBusinessLine(existing.getBusinessLineCode()) > 0) {
             throw new IllegalArgumentException("业务线已有项目，不能删除");
         }
         if (businessLineMapper.countMembers(existing.getBusinessLineName()) > 0) {
             throw new IllegalArgumentException("业务线已有成员，不能删除");
         }
-        if (involvedSystemMapper.countByBusinessLine(existing.getBusinessLineName()) > 0) {
+        if (involvedSystemMapper.countByBusinessLine(existing.getBusinessLineCode()) > 0) {
             throw new IllegalArgumentException("业务线已有涉及系统，不能删除");
         }
         businessLineMapper.deleteById(id);
@@ -261,11 +267,13 @@ public class ProjectService {
     }
 
     private ProjectEntity toEntity(ProjectSaveRequest request) {
+        BusinessLineEntity businessLine = requireBusinessLine(request.getBusinessLineCode(), request.getBusinessLine());
         ProjectEntity entity = new ProjectEntity();
         entity.setProjectCode(request.getCode().trim());
         entity.setProjectName(request.getName().trim());
         entity.setProjectType(request.getType().trim());
-        entity.setBusinessLine(requireBusinessLineName(request.getBusinessLine()));
+        entity.setBusinessLine(businessLine.getBusinessLineName());
+        entity.setBusinessLineCode(businessLine.getBusinessLineCode());
         entity.setProjectStatus(request.getStatus().trim());
         entity.setOwnerUserName(request.getOwnerUserName().trim());
         entity.setDescription(trimToNull(request.getDescription()));
@@ -283,6 +291,7 @@ public class ProjectService {
     private BusinessLineResponse toBusinessLineResponse(BusinessLineEntity entity) {
         return new BusinessLineResponse(
                 entity.getId(),
+                entity.getBusinessLineCode(),
                 entity.getBusinessLineName(),
                 entity.getGitlabGroupName(),
                 entity.getDescription(),
@@ -292,11 +301,26 @@ public class ProjectService {
         );
     }
 
+    private String nextBusinessLineCode() {
+        String maxCode = businessLineMapper.findMaxBusinessLineCode();
+        int next = 1;
+        if (maxCode != null && maxCode.startsWith(BUSINESS_LINE_CODE_PREFIX)) {
+            String serial = maxCode.substring(BUSINESS_LINE_CODE_PREFIX.length());
+            next = Integer.parseInt(serial) + 1;
+        }
+        if (next > 999999) {
+            throw new IllegalStateException("业务线编码已超过可用范围");
+        }
+        return BUSINESS_LINE_CODE_PREFIX + String.format("%0" + BUSINESS_LINE_CODE_WIDTH + "d", next);
+    }
+
     private ProjectInvolvedSystemEntity toInvolvedSystemEntity(ProjectInvolvedSystemEntity entity,
                                                                ProjectInvolvedSystemSaveRequest request) {
         String scope = normalizeSystemScope(request.getSystemScope(), true);
+        BusinessLineEntity businessLine = normalizeSystemBusinessLine(scope, request.getBusinessLineCode(), request.getBusinessLine());
         entity.setSystemScope(scope);
-        entity.setBusinessLine(normalizeSystemBusinessLine(scope, request.getBusinessLine()));
+        entity.setBusinessLine(businessLine.getBusinessLineName());
+        entity.setBusinessLineCode(businessLine.getBusinessLineCode());
         entity.setSystemName(requireSystemName(request.getSystemName()));
         entity.setDescription(trimToNull(request.getDescription()));
         entity.setEnabled(request.getEnabled() == null || request.getEnabled());
@@ -308,7 +332,8 @@ public class ProjectService {
         return new ProjectInvolvedSystemResponse(
                 entity.getId(),
                 entity.getSystemScope(),
-                entity.getBusinessLine(),
+                entity.getBusinessLineCode(),
+                resolveBusinessLineName(entity.getBusinessLineCode(), entity.getBusinessLine()),
                 entity.getSystemName(),
                 entity.getDescription(),
                 entity.getEnabled(),
@@ -352,25 +377,69 @@ public class ProjectService {
     }
 
     private String normalizeSystemBusinessLine(String scope, String businessLine) {
+        return normalizeSystemBusinessLine(scope, null, businessLine).getBusinessLineCode();
+    }
+
+    private BusinessLineEntity normalizeSystemBusinessLine(String scope, String businessLineCode, String businessLine) {
         if (scope == null) {
-            return trimToNull(businessLine);
+            BusinessLineEntity entity = new BusinessLineEntity();
+            entity.setBusinessLineCode(trimToNull(businessLineCode));
+            entity.setBusinessLineName(trimToNull(businessLine));
+            return entity;
         }
         if (SYSTEM_SCOPE_MIDDLE_PLATFORM.equals(scope)) {
-            return "";
+            BusinessLineEntity entity = new BusinessLineEntity();
+            entity.setBusinessLineCode("");
+            entity.setBusinessLineName("");
+            return entity;
         }
-        return requireBusinessLineName(businessLine);
+        return requireBusinessLine(businessLineCode, businessLine);
     }
 
     private String requireBusinessLineName(String businessLine) {
-        String normalized = trimToNull(businessLine);
+        return requireBusinessLine(businessLine).getBusinessLineName();
+    }
+
+    private BusinessLineEntity requireBusinessLine(String businessLine) {
+        return requireBusinessLine(null, businessLine);
+    }
+
+    private BusinessLineEntity requireBusinessLine(String businessLineCode, String businessLineName) {
+        String normalizedCode = trimToNull(businessLineCode);
+        if (normalizedCode != null) {
+            BusinessLineEntity byCode = businessLineMapper.findByCode(normalizedCode);
+            if (byCode == null) {
+                throw new IllegalArgumentException("业务线不存在");
+            }
+            return byCode;
+        }
+        String normalized = trimToNull(businessLineName);
         if (normalized == null) {
             throw new IllegalArgumentException("业务线不能为空");
+        }
+        BusinessLineEntity byCode = businessLineMapper.findByCode(normalized);
+        if (byCode != null) {
+            return byCode;
         }
         BusinessLineEntity existing = businessLineMapper.findByName(normalized);
         if (existing == null) {
             throw new IllegalArgumentException("业务线不存在");
         }
-        return normalized;
+        return existing;
+    }
+
+    private String normalizeOptionalBusinessLineCode(String businessLine) {
+        String normalized = trimToNull(businessLine);
+        return normalized == null ? null : requireBusinessLine(normalized).getBusinessLineCode();
+    }
+
+    private String resolveBusinessLineName(String businessLineCode, String fallbackName) {
+        String normalizedCode = trimToNull(businessLineCode);
+        if (normalizedCode == null) {
+            return fallbackName;
+        }
+        BusinessLineEntity entity = businessLineMapper.findByCode(normalizedCode);
+        return entity == null ? fallbackName : entity.getBusinessLineName();
     }
 
     private String requireSystemName(String systemName) {

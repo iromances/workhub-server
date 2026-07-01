@@ -104,12 +104,12 @@ class PaymentMerchantControllerTest {
     }
 
     @Test
-    void list_shouldSupportProjectAndPurposeFilter() throws Exception {
+    void list_shouldSupportProjectBusinessLineAndPurposeFilter() throws Exception {
         PaymentMerchantService merchantService = mock(PaymentMerchantService.class);
         PaymentMerchantParamService paramService = mock(PaymentMerchantParamService.class);
         PaymentMerchantCredentialService credentialService = mock(PaymentMerchantCredentialService.class);
         PaymentSecretService secretService = mock(PaymentSecretService.class);
-        when(merchantService.list(eq("ACTIVE"), eq(1L), eq(10L), eq("WITHHOLD"), eq("M0001"))).thenReturn(List.of(
+        when(merchantService.list(eq("ACTIVE"), eq(1L), eq(10L), eq("BL000001"), eq("WITHHOLD"), eq("M0001"))).thenReturn(List.of(
                 new PaymentMerchantSummaryResponse(8L, 1L, "YEEPAY", "易宝支付", "M0001", "易宝主商户", "PROD", "app-prod", List.of("WITHHOLD"), "ACTIVE")
         ));
 
@@ -121,6 +121,7 @@ class PaymentMerchantControllerTest {
                         .param("status", "ACTIVE")
                         .param("channelId", "1")
                         .param("projectId", "10")
+                        .param("businessLine", "BL000001")
                         .param("purposeCode", "WITHHOLD")
                         .param("keyword", "M0001")
                         .accept(MediaType.APPLICATION_JSON))

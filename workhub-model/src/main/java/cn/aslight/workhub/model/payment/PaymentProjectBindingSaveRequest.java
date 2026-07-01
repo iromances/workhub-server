@@ -1,7 +1,7 @@
 package cn.aslight.workhub.model.payment;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 
 import java.util.List;
 
@@ -12,7 +12,8 @@ public class PaymentProjectBindingSaveRequest {
 
     private Long projectId;
 
-    @NotBlank(message = "不能为空")
+    private String businessLineCode;
+
     private String businessLine;
 
     @NotNull(message = "不能为空")
@@ -40,6 +41,14 @@ public class PaymentProjectBindingSaveRequest {
 
     public void setProjectId(Long projectId) {
         this.projectId = projectId;
+    }
+
+    public String getBusinessLineCode() {
+        return businessLineCode;
+    }
+
+    public void setBusinessLineCode(String businessLineCode) {
+        this.businessLineCode = businessLineCode;
     }
 
     public String getBusinessLine() {

@@ -122,6 +122,14 @@ public class IntakeTodoService {
         return findCreatedOrUpdated(intakeId, todoId);
     }
 
+    @Transactional
+    public void delete(Long intakeId, Long todoId, String operatorUserName) {
+        requireIntake(intakeId);
+        IntakeTodoEntity existing = requireTodo(intakeId, todoId);
+        intakeTodoMapper.deleteById(todoId);
+        recordHistory(intakeId, "删除需求待办", buildDeleteHistory(existing), operatorUserName);
+    }
+
     private IntakeRecordEntity requireIntake(Long intakeId) {
         IntakeRecordEntity intake = intakeMapper.findById(intakeId);
         if (intake == null) {
@@ -195,6 +203,17 @@ public class IntakeTodoService {
         appendChange(changes, "处理结果", before.getProcessResult(), after.getProcessResult());
         appendChange(changes, "完成时间", formatTime(before.getCompletedAt()), formatTime(after.getCompletedAt()));
         return changes.isEmpty() ? "未发生字段变化" : String.join("\n", changes);
+    }
+
+    private String buildDeleteHistory(IntakeTodoEntity entity) {
+        List<String> details = new java.util.ArrayList<>();
+        details.add("待办标题：" + defaultHistoryValue(entity.getTitle()));
+        details.add("待办内容：" + defaultHistoryValue(entity.getContent()));
+        details.add("处理人：" + defaultHistoryValue(entity.getAssigneeUserName()));
+        details.add("计划处理时间：" + defaultHistoryValue(formatTime(entity.getPlannedAt())));
+        details.add("处理状态：" + defaultHistoryValue(entity.getTodoStatus()));
+        details.add("处理结果：" + defaultHistoryValue(entity.getProcessResult()));
+        return String.join("\n", details);
     }
 
     private void appendChange(List<String> changes, String label, String before, String after) {

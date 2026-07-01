@@ -93,6 +93,24 @@ class IntakeControllerTest {
     }
 
     @Test
+    void deleteTodo_shouldExposeTodoDeleteApi() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        IntakeTodoService todoService = mock(IntakeTodoService.class);
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new IntakeController(
+                intakeService,
+                mock(DevelopmentAnalysisService.class),
+                todoService
+        )).build();
+
+        mockMvc.perform(delete("/api/intake/9/todos/1001")
+                        .principal(new UsernamePasswordAuthenticationToken("admin", "N/A")))
+                .andExpect(status().isOk());
+
+        verify(todoService).delete(9L, 1001L, "admin");
+    }
+
+    @Test
     void analyzeDevelopment_shouldReturnPendingResponseQuickly() throws Exception {
         IntakeService intakeService = mock(IntakeService.class);
         DevelopmentAnalysisService developmentAnalysisService = mock(DevelopmentAnalysisService.class);
@@ -141,7 +159,7 @@ class IntakeControllerTest {
     @Test
     void list_shouldExposeStructuredColumnsInApiResponse() throws Exception {
         IntakeService intakeService = mock(IntakeService.class);
-        when(intakeService.list(eq(null), eq(null), eq(null), eq(null), eq(null), eq(null), eq(null))).thenReturn(List.of(
+        when(intakeService.list(eq(null), eq(null), eq(null), eq(null), eq(null), eq(null), eq(null), eq(null), eq(null))).thenReturn(List.of(
                 new IntakeSummaryResponse(
                         1L,
                         "需求截图附件录入",
@@ -154,16 +172,20 @@ class IntakeControllerTest {
                         "202603250009",
                         "2026/3/25 16:17",
                         "研发需求",
+                        null,
+                        null,
                         "沃橙绑卡至嘉泰保理",
                         "供应链业务部",
                         "沃橙项目增加客户绑卡至嘉泰保理的需求0325",
                         "为避免单一支付通道暂停风险，需要补充嘉泰保理易宝商户号绑卡方案。",
                         "供应链科技",
+                        null,
                         "涉及沃诚项目额度释放，最高优先级。",
                         "24h",
                         "20h",
                         "4h",
                         "2026/3/31",
+                        "2026/4/1",
                         "2026/4/2",
                         "2026/4/5",
                         "2026/4/1",
@@ -179,7 +201,8 @@ class IntakeControllerTest {
                         List.of("支付服务"),
                         "SUCCEEDED",
                         "待整理",
-                        null
+                        null,
+                        2L
                 )
         ));
 
@@ -204,7 +227,42 @@ class IntakeControllerTest {
                 .andExpect(jsonPath("$.data.items[0].developmentStartedDate").value("2026/4/1"))
                 .andExpect(jsonPath("$.data.items[0].testingStartedDate").value("2026/4/2"))
                 .andExpect(jsonPath("$.data.items[0].releasedTime").value("无"))
+                .andExpect(jsonPath("$.data.items[0].activeTodoCount").value(2))
                 .andExpect(jsonPath("$.data.items[0].enrichmentStatus").value("SUCCEEDED"));
+    }
+
+    @Test
+    void list_shouldPassBusinessLineFilterToService() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        when(intakeService.list(eq(null), eq(null), eq(null), eq(null), eq("资产业务"), eq(null), eq(null), eq(null), eq(null)))
+                .thenReturn(List.of());
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
+
+        mockMvc.perform(get("/api/intake")
+                        .param("businessLine", "资产业务")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(0));
+
+        verify(intakeService).list(eq(null), eq(null), eq(null), eq(null), eq("资产业务"), eq(null), eq(null), eq(null), eq(null));
+    }
+
+    @Test
+    void list_shouldPassRequirementTypeFilterToService() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        when(intakeService.list(eq(null), eq(null), eq(null), eq(null), eq(null), eq("研发需求"), eq(null), eq(null), eq(null)))
+                .thenReturn(List.of());
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
+
+        mockMvc.perform(get("/api/intake")
+                        .param("requirementType", "研发需求")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(0));
+
+        verify(intakeService).list(eq(null), eq(null), eq(null), eq(null), eq(null), eq("研发需求"), eq(null), eq(null), eq(null));
     }
 
     @Test

@@ -7,6 +7,7 @@ public record ProjectSummaryResponse(Long id,
                                      String code,
                                      String name,
                                      String type,
+                                     String businessLineCode,
                                      String businessLine,
                                      String ownerUserName,
                                      String status) {

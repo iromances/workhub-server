@@ -24,7 +24,8 @@ public interface PaymentProjectBindingMapper {
             "<script>",
             "SELECT b.id,",
             "b.project_id AS projectId,",
-            "COALESCE(b.business_line, p.business_line) AS businessLine,",
+            "COALESCE(b.business_line_code, p.business_line_code) AS businessLineCode,",
+            "COALESCE(bl.business_line_name, b.business_line, p.business_line) AS businessLine,",
             "p.project_code AS projectCode,",
             "p.project_name AS projectName,",
             "b.merchant_id AS merchantId,",
@@ -45,6 +46,7 @@ public interface PaymentProjectBindingMapper {
             "b.updated_at AS updatedAt",
             "FROM pay_project_merchant_binding b",
             "LEFT JOIN pm_project p ON p.id = b.project_id",
+            "LEFT JOIN pm_business_line bl ON bl.business_line_code = COALESCE(b.business_line_code, p.business_line_code)",
             "JOIN pay_merchant_account m ON m.id = b.merchant_id",
             "JOIN pay_channel c ON c.id = m.channel_id",
             "<where>",
@@ -52,7 +54,8 @@ public interface PaymentProjectBindingMapper {
             "AND b.project_id = #{projectId}",
             "</if>",
             "<if test='businessLine != null and businessLine != \"\"'>",
-            "AND COALESCE(b.business_line, p.business_line) = #{businessLine}",
+            "AND (COALESCE(b.business_line_code, p.business_line_code, b.business_line, p.business_line) = #{businessLine}",
+            "OR COALESCE(bl.business_line_name, b.business_line, p.business_line) = #{businessLine})",
             "</if>",
             "<if test='merchantId != null'>",
             "AND b.merchant_id = #{merchantId}",
@@ -64,7 +67,7 @@ public interface PaymentProjectBindingMapper {
             "AND b.binding_status = #{status}",
             "</if>",
             "</where>",
-            "ORDER BY COALESCE(b.business_line, p.business_line) ASC, b.project_id ASC, b.purpose_code ASC, b.is_default DESC, b.priority ASC, b.id DESC",
+            "ORDER BY COALESCE(bl.business_line_name, b.business_line, p.business_line) ASC, b.project_id ASC, b.purpose_code ASC, b.is_default DESC, b.priority ASC, b.id DESC",
             "</script>"
     })
     List<PaymentProjectBindingResponse> findAll(@Param("projectId") Long projectId,
@@ -76,7 +79,8 @@ public interface PaymentProjectBindingMapper {
     @Select("""
             SELECT b.id,
                    b.project_id AS projectId,
-                   COALESCE(b.business_line, p.business_line) AS businessLine,
+                   COALESCE(b.business_line_code, p.business_line_code) AS businessLineCode,
+                   COALESCE(bl.business_line_name, b.business_line, p.business_line) AS businessLine,
                    p.project_code AS projectCode,
                    p.project_name AS projectName,
                    b.merchant_id AS merchantId,
@@ -97,6 +101,7 @@ public interface PaymentProjectBindingMapper {
                    b.updated_at AS updatedAt
             FROM pay_project_merchant_binding b
             LEFT JOIN pm_project p ON p.id = b.project_id
+            LEFT JOIN pm_business_line bl ON bl.business_line_code = COALESCE(b.business_line_code, p.business_line_code)
             JOIN pay_merchant_account m ON m.id = b.merchant_id
             JOIN pay_channel c ON c.id = m.channel_id
             WHERE b.id = #{id}
@@ -106,6 +111,7 @@ public interface PaymentProjectBindingMapper {
     @Select("""
             SELECT id,
                    project_id,
+                   business_line_code,
                    business_line,
                    merchant_id,
                    purpose_code,
@@ -122,6 +128,7 @@ public interface PaymentProjectBindingMapper {
             "<script>",
             "SELECT id,",
             "project_id,",
+            "business_line_code,",
             "business_line,",
             "merchant_id,",
             "purpose_code,",
@@ -137,7 +144,7 @@ public interface PaymentProjectBindingMapper {
             "</when>",
             "<otherwise>",
             "project_id IS NULL",
-            "AND business_line = #{businessLine}",
+            "AND COALESCE(business_line_code, business_line) = #{businessLine}",
             "</otherwise>",
             "</choose>",
             "AND merchant_id = #{merchantId}",
@@ -158,6 +165,7 @@ public interface PaymentProjectBindingMapper {
     @Insert("""
             INSERT INTO pay_project_merchant_binding (
                 project_id,
+                business_line_code,
                 business_line,
                 merchant_id,
                 purpose_code,
@@ -167,6 +175,7 @@ public interface PaymentProjectBindingMapper {
                 remark
             ) VALUES (
                 #{projectId},
+                #{businessLineCode},
                 #{businessLine},
                 #{merchantId},
                 #{purposeCode},
@@ -182,6 +191,7 @@ public interface PaymentProjectBindingMapper {
     @Update("""
             UPDATE pay_project_merchant_binding
             SET project_id = #{projectId},
+                business_line_code = #{businessLineCode},
                 business_line = #{businessLine},
                 merchant_id = #{merchantId},
                 purpose_code = #{purposeCode},
@@ -205,7 +215,7 @@ public interface PaymentProjectBindingMapper {
             "project_id = #{projectId}",
             "</when>",
             "<otherwise>",
-            "project_id IS NULL AND business_line = #{businessLine}",
+            "project_id IS NULL AND COALESCE(business_line_code, business_line) = #{businessLine}",
             "</otherwise>",
             "</choose>",
             """
@@ -227,7 +237,8 @@ public interface PaymentProjectBindingMapper {
     @Select("""
             SELECT b.id,
                    b.project_id AS projectId,
-                   COALESCE(b.business_line, p.business_line) AS businessLine,
+                   COALESCE(b.business_line_code, p.business_line_code) AS businessLineCode,
+                   COALESCE(bl.business_line_name, b.business_line, p.business_line) AS businessLine,
                    p.project_code AS projectCode,
                    p.project_name AS projectName,
                    b.merchant_id AS merchantId,
@@ -248,6 +259,7 @@ public interface PaymentProjectBindingMapper {
                    b.updated_at AS updatedAt
             FROM pay_project_merchant_binding b
             LEFT JOIN pm_project p ON p.id = b.project_id
+            LEFT JOIN pm_business_line bl ON bl.business_line_code = COALESCE(b.business_line_code, p.business_line_code)
             JOIN pay_merchant_account m ON m.id = b.merchant_id
             JOIN pay_channel c ON c.id = m.channel_id
             WHERE b.project_id = #{projectId}
@@ -264,7 +276,8 @@ public interface PaymentProjectBindingMapper {
     @Select("""
             SELECT b.id,
                    b.project_id AS projectId,
-                   b.business_line AS businessLine,
+                   b.business_line_code AS businessLineCode,
+                   COALESCE(bl.business_line_name, b.business_line) AS businessLine,
                    p.project_code AS projectCode,
                    p.project_name AS projectName,
                    b.merchant_id AS merchantId,
@@ -285,10 +298,11 @@ public interface PaymentProjectBindingMapper {
                    b.updated_at AS updatedAt
             FROM pay_project_merchant_binding b
             LEFT JOIN pm_project p ON p.id = b.project_id
+            LEFT JOIN pm_business_line bl ON bl.business_line_code = b.business_line_code
             JOIN pay_merchant_account m ON m.id = b.merchant_id
             JOIN pay_channel c ON c.id = m.channel_id
             WHERE b.project_id IS NULL
-              AND b.business_line = #{businessLine}
+              AND COALESCE(b.business_line_code, b.business_line) = #{businessLine}
               AND EXISTS (SELECT 1 FROM pay_project_merchant_binding_purpose bp WHERE bp.binding_id = b.id AND bp.purpose_code = #{purposeCode})
               AND b.binding_status = 'ACTIVE'
               AND m.status = 'ACTIVE'

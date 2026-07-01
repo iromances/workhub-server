@@ -12,8 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import java.security.MessageDigest;
-import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -181,7 +179,7 @@ public class McpToolRegistry {
         Map<String, Object> context = new LinkedHashMap<>(catalog.gitlab());
         context.put("gitlabGroupName", businessLine.gitlabGroupName());
         if (businessLine.gitlabGroupName() != null && !businessLine.gitlabGroupName().isBlank()) {
-            context.put("codeCacheRoot", "data/git-cache/group-" + safeHash(businessLine.gitlabGroupName()));
+            context.put("codeCacheRoot", "data/git-cache/" + businessLine.gitlabGroupName().trim());
         }
         return context;
     }
@@ -229,15 +227,6 @@ public class McpToolRegistry {
         summary.put("allowedLogPaths", target.allowedLogPaths());
         summary.put("profiles", target.profiles().stream().map(McpResourceCatalog.ServerTarget.ServerProfile::key).toList());
         return summary;
-    }
-
-    private String safeHash(String value) {
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes());
-            return HexFormat.of().formatHex(digest).substring(0, 24);
-        } catch (Exception ex) {
-            throw new IllegalStateException("仓库缓存路径生成失败", ex);
-        }
     }
 
     private String requireText(JsonNode node, String field) {

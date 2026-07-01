@@ -21,8 +21,9 @@ public class IntakeUploadRequest {
 
     private String rawContent;
 
-    @NotBlank(message = "不能为空")
     private String businessLine;
+
+    private String businessLineCode;
 
     public String getSenderName() {
         return senderName;
@@ -70,5 +71,13 @@ public class IntakeUploadRequest {
 
     public void setBusinessLine(String businessLine) {
         this.businessLine = businessLine;
+    }
+
+    public String getBusinessLineCode() {
+        return businessLineCode;
+    }
+
+    public void setBusinessLineCode(String businessLineCode) {
+        this.businessLineCode = businessLineCode;
     }
 }
