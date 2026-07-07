@@ -1,5 +1,7 @@
 package cn.aslight.workhub.security;
 
+import cn.aslight.workhub.model.system.SysUserEntity;
+import cn.aslight.workhub.service.auth.PermissionContextService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,8 +14,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
-
 @Component
 /**
  * JWT 鉴权过滤器。
@@ -21,9 +21,12 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenService jwtTokenService;
+    private final PermissionContextService permissionContextService;
 
-    public JwtAuthenticationFilter(JwtTokenService jwtTokenService) {
+    public JwtAuthenticationFilter(JwtTokenService jwtTokenService,
+                                   PermissionContextService permissionContextService) {
         this.jwtTokenService = jwtTokenService;
+        this.permissionContextService = permissionContextService;
     }
 
     @Override
@@ -35,8 +38,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = authorization.substring(7);
             try {
                 String username = jwtTokenService.parseUsername(token);
+                SysUserEntity user = permissionContextService.requireActiveUser(username);
                 UsernamePasswordAuthenticationToken authentication =
-                        UsernamePasswordAuthenticationToken.authenticated(username, null, List.of());
+                        UsernamePasswordAuthenticationToken.authenticated(
+                                user.getUserName(),
+                                null,
+                                permissionContextService.authorities(user.getId())
+                        );
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (Exception ignored) {
                 SecurityContextHolder.clearContext();

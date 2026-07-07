@@ -15,6 +15,10 @@ public class PaymentSecretEntity {
     private String maskedValue;
     private String fingerprint;
     private String algorithm;
+    private String sourceType;
+    private String fileName;
+    private String fileContentType;
+    private String fileValueType;
     private Integer versionNo;
     private String status;
     private LocalDateTime validFrom;
@@ -83,6 +87,38 @@ public class PaymentSecretEntity {
 
     public void setAlgorithm(String algorithm) {
         this.algorithm = algorithm;
+    }
+
+    public String getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(String sourceType) {
+        this.sourceType = sourceType;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getFileContentType() {
+        return fileContentType;
+    }
+
+    public void setFileContentType(String fileContentType) {
+        this.fileContentType = fileContentType;
+    }
+
+    public String getFileValueType() {
+        return fileValueType;
+    }
+
+    public void setFileValueType(String fileValueType) {
+        this.fileValueType = fileValueType;
     }
 
     public Integer getVersionNo() {

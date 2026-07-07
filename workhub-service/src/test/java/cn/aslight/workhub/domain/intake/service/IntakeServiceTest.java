@@ -11,6 +11,7 @@ import cn.aslight.workhub.model.intake.IntakePauseRequest;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeSqlDraft;
 import cn.aslight.workhub.model.intake.IntakeStageActionRequest;
+import cn.aslight.workhub.model.intake.IntakeUploadRequest;
 import cn.aslight.workhub.model.intake.IntakeZentaoLinkRequest;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
 import cn.aslight.workhub.model.project.BusinessLineEntity;
@@ -32,12 +33,48 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 class IntakeServiceTest {
+
+    @Test
+    void createUploaded_shouldDefaultPriorityToMedium() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeEnrichmentService intakeEnrichmentService = mock(IntakeEnrichmentService.class);
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                new IntakeStructuredDataExtractor(),
+                intakeEnrichmentService,
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+        ArgumentCaptor<IntakeRecordEntity> entityCaptor = ArgumentCaptor.forClass(IntakeRecordEntity.class);
+        doAnswer(invocation -> {
+            IntakeRecordEntity entity = invocation.getArgument(0);
+            entity.setId(1001L);
+            when(intakeMapper.findById(1001L)).thenReturn(entity);
+            return 1;
+        }).when(intakeMapper).insert(any(IntakeRecordEntity.class));
+        when(attachmentService.listIntakeAttachments(1001L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(1001L, 20)).thenReturn(List.of());
+        IntakeUploadRequest request = new IntakeUploadRequest();
+        request.setSenderName("张三");
+        request.setDevelopmentOwnerUserName("lisi");
+        request.setRawContent("需求类型：研发需求\n需求名称：默认优先级测试");
+
+        service.createUploaded(request, List.of(), List.of());
+
+        verify(intakeMapper).insert(entityCaptor.capture());
+        assertEquals("中", entityCaptor.getValue().getPriority());
+    }
 
     @Test
     void pauseDemand_shouldRecordPreviousStatusReasonPauseDateAndHistory() {

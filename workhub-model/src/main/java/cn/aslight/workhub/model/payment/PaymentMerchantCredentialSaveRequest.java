@@ -16,7 +16,6 @@ public class PaymentMerchantCredentialSaveRequest {
     @NotBlank(message = "不能为空")
     private String credentialType;
 
-    @NotBlank(message = "不能为空")
     private String credentialValue;
 
     @NotBlank(message = "不能为空")

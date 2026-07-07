@@ -8,6 +8,7 @@ import cn.aslight.workhub.model.mcp.McpResourceResponse;
 import cn.aslight.workhub.model.mcp.McpResourceSaveRequest;
 import cn.aslight.workhub.service.mcp.McpResourceService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,6 +32,7 @@ public class McpResourceController {
     }
 
     @GetMapping("/resources")
+    @PreAuthorize("hasAuthority('ops:mcp-resource:view') or hasAuthority('ops:mcp-resource:manage')")
     public ApiResponse<PageResponse<McpResourceResponse>> listResources(@RequestParam(required = false) String resourceType,
                                                                         @RequestParam(required = false) String businessLineCode,
                                                                         @RequestParam(required = false) String environmentCode,
@@ -41,28 +43,33 @@ public class McpResourceController {
     }
 
     @PostMapping("/resources")
+    @PreAuthorize("hasAuthority('ops:mcp-resource:create') or hasAuthority('ops:mcp-resource:manage')")
     public ApiResponse<McpResourceResponse> createResource(@Valid @RequestBody McpResourceSaveRequest request) {
         return ApiResponse.success(mcpResourceService.create(request));
     }
 
     @PutMapping("/resources/{id}")
+    @PreAuthorize("hasAuthority('ops:mcp-resource:update') or hasAuthority('ops:mcp-resource:manage')")
     public ApiResponse<McpResourceResponse> updateResource(@PathVariable Long id,
                                                            @Valid @RequestBody McpResourceSaveRequest request) {
         return ApiResponse.success(mcpResourceService.update(id, request));
     }
 
     @DeleteMapping("/resources/{id}")
+    @PreAuthorize("hasAuthority('ops:mcp-resource:delete') or hasAuthority('ops:mcp-resource:manage')")
     public ApiResponse<Void> deleteResource(@PathVariable Long id) {
         mcpResourceService.delete(id);
         return ApiResponse.success(null);
     }
 
     @GetMapping("/catalog")
+    @PreAuthorize("hasAuthority('ops:mcp-resource:view') or hasAuthority('ops:mcp-resource:manage')")
     public ApiResponse<McpCatalogResponse> catalog() {
         return ApiResponse.success(mcpResourceService.catalog());
     }
 
     @GetMapping("/audits")
+    @PreAuthorize("hasAuthority('ops:mcp-audit:view') or hasAuthority('ops:mcp-resource:view') or hasAuthority('ops:mcp-resource:manage')")
     public ApiResponse<PageResponse<McpAuditEntryResponse>> auditEntries(@RequestParam(defaultValue = "100") int limit) {
         List<McpAuditEntryResponse> items = mcpResourceService.auditEntries(limit);
         return ApiResponse.success(new PageResponse<>(items.size(), items));

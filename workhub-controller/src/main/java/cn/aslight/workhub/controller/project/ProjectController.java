@@ -11,6 +11,7 @@ import cn.aslight.workhub.model.project.ProjectSaveRequest;
 import cn.aslight.workhub.model.project.ProjectSummaryResponse;
 import cn.aslight.workhub.service.project.ProjectService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,6 +42,7 @@ public class ProjectController {
      * @return 列表结果
      */
     @GetMapping
+    @PreAuthorize("hasAuthority('project:project:view') or hasAuthority('project:project:manage')")
     public ApiResponse<PageResponse<ProjectSummaryResponse>> list(@RequestParam(required = false) String status,
                                                                   @RequestParam(required = false) String keyword,
                                                                   @RequestParam(required = false) String businessLine,
@@ -59,6 +61,7 @@ public class ProjectController {
      * @return 业务线列表
      */
     @GetMapping("/business-lines")
+    @PreAuthorize("hasAuthority('project:business-line:view') or hasAuthority('project:business-line:manage')")
     public ApiResponse<PageResponse<BusinessLineResponse>> listBusinessLines(@RequestParam(required = false) String keyword,
                                                                              @RequestParam(required = false) Integer page,
                                                                              @RequestParam(required = false) Integer pageSize) {
@@ -76,6 +79,7 @@ public class ProjectController {
      * @return 研发涉及系统清单
      */
     @GetMapping("/involved-systems")
+    @PreAuthorize("hasAuthority('project:system:view') or hasAuthority('project:system:manage') or hasAuthority('project:business-line:view') or hasAuthority('project:business-line:manage')")
     public ApiResponse<PageResponse<ProjectInvolvedSystemResponse>> listInvolvedSystems(@RequestParam(required = false) String systemScope,
                                                                                         @RequestParam(required = false) String businessLine,
                                                                                         @RequestParam(required = false) Boolean enabledOnly,
@@ -91,6 +95,7 @@ public class ProjectController {
      * @return 业务线系统和中台系统
      */
     @GetMapping("/involved-systems/selectable")
+    @PreAuthorize("hasAuthority('project:system:view') or hasAuthority('project:business-line:view') or hasAuthority('intake:record:view') or hasAuthority('payment:config:view')")
     public ApiResponse<PageResponse<ProjectInvolvedSystemResponse>> selectableInvolvedSystems(@RequestParam String businessLine) {
         List<ProjectInvolvedSystemResponse> items = projectService.listSelectableInvolvedSystems(businessLine);
         return ApiResponse.success(new PageResponse<>(items.size(), items));
@@ -103,6 +108,7 @@ public class ProjectController {
      * @return 研发涉及系统详情
      */
     @PostMapping("/involved-systems")
+    @PreAuthorize("hasAuthority('project:system:create') or hasAuthority('project:system:manage') or hasAuthority('project:business-line:manage')")
     public ApiResponse<ProjectInvolvedSystemResponse> createInvolvedSystem(@Valid @RequestBody ProjectInvolvedSystemSaveRequest request) {
         return ApiResponse.success(projectService.createInvolvedSystem(request));
     }
@@ -115,6 +121,7 @@ public class ProjectController {
      * @return 研发涉及系统详情
      */
     @PutMapping("/involved-systems/{id}")
+    @PreAuthorize("hasAuthority('project:system:update') or hasAuthority('project:system:manage') or hasAuthority('project:business-line:manage')")
     public ApiResponse<ProjectInvolvedSystemResponse> updateInvolvedSystem(@PathVariable Long id,
                                                                            @Valid @RequestBody ProjectInvolvedSystemSaveRequest request) {
         return ApiResponse.success(projectService.updateInvolvedSystem(id, request));
@@ -127,6 +134,7 @@ public class ProjectController {
      * @return 删除结果
      */
     @DeleteMapping("/involved-systems/{id}")
+    @PreAuthorize("hasAuthority('project:system:delete') or hasAuthority('project:system:manage') or hasAuthority('project:business-line:manage')")
     public ApiResponse<Void> deleteInvolvedSystem(@PathVariable Long id) {
         projectService.deleteInvolvedSystem(id);
         return ApiResponse.success(null);
@@ -139,6 +147,7 @@ public class ProjectController {
      * @return 同步后的业务线系统清单
      */
     @PostMapping("/business-lines/{id}/involved-systems/sync-git")
+    @PreAuthorize("hasAuthority('project:business-line:sync-system') or hasAuthority('project:business-line:manage')")
     public ApiResponse<PageResponse<ProjectInvolvedSystemResponse>> syncBusinessLineInvolvedSystemsFromGit(@PathVariable Long id) {
         List<ProjectInvolvedSystemResponse> items = projectService.syncInvolvedSystemsFromGit(id);
         return ApiResponse.success(new PageResponse<>(items.size(), items));
@@ -151,6 +160,7 @@ public class ProjectController {
      * @return 业务线详情
      */
     @PostMapping("/business-lines")
+    @PreAuthorize("hasAuthority('project:business-line:create') or hasAuthority('project:business-line:manage')")
     public ApiResponse<BusinessLineResponse> createBusinessLine(@Valid @RequestBody BusinessLineSaveRequest request) {
         return ApiResponse.success(projectService.createBusinessLine(request));
     }
@@ -163,6 +173,7 @@ public class ProjectController {
      * @return 业务线详情
      */
     @PutMapping("/business-lines/{id}")
+    @PreAuthorize("hasAuthority('project:business-line:update') or hasAuthority('project:business-line:manage')")
     public ApiResponse<BusinessLineResponse> updateBusinessLine(@PathVariable Long id,
                                                                 @Valid @RequestBody BusinessLineSaveRequest request) {
         return ApiResponse.success(projectService.updateBusinessLine(id, request));
@@ -175,6 +186,7 @@ public class ProjectController {
      * @return 删除结果
      */
     @DeleteMapping("/business-lines/{id}")
+    @PreAuthorize("hasAuthority('project:business-line:delete') or hasAuthority('project:business-line:manage')")
     public ApiResponse<Void> deleteBusinessLine(@PathVariable Long id) {
         projectService.deleteBusinessLine(id);
         return ApiResponse.success(null);
@@ -187,6 +199,7 @@ public class ProjectController {
      * @return 详情结果
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('project:project:view') or hasAuthority('project:project:manage')")
     public ApiResponse<ProjectDetailResponse> detail(@PathVariable Long id) {
         return ApiResponse.success(projectService.detail(id));
     }
@@ -198,6 +211,7 @@ public class ProjectController {
      * @return 新建结果
      */
     @PostMapping
+    @PreAuthorize("hasAuthority('project:project:create') or hasAuthority('project:project:manage')")
     public ApiResponse<ProjectDetailResponse> create(@Valid @RequestBody ProjectSaveRequest request) {
         return ApiResponse.success(projectService.create(request));
     }
@@ -210,6 +224,7 @@ public class ProjectController {
      * @return 更新结果
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('project:project:update') or hasAuthority('project:project:manage')")
     public ApiResponse<ProjectDetailResponse> update(@PathVariable Long id,
                                                      @Valid @RequestBody ProjectSaveRequest request) {
         return ApiResponse.success(projectService.update(id, request));
@@ -222,6 +237,7 @@ public class ProjectController {
      * @return 删除结果
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('project:project:delete') or hasAuthority('project:project:manage')")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         projectService.delete(id);
         return ApiResponse.success(null);

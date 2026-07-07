@@ -6,6 +6,7 @@ import cn.aslight.workhub.model.system.SysConfigResponse;
 import cn.aslight.workhub.model.system.SysConfigSaveRequest;
 import cn.aslight.workhub.service.system.SysConfigService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,6 +39,7 @@ public class SysConfigController {
      * @return 系统配置列表
      */
     @GetMapping
+    @PreAuthorize("hasAuthority('system:config:view') or hasAuthority('system:config:manage')")
     public ApiResponse<PageResponse<SysConfigResponse>> list(@RequestParam(required = false) String configGroup,
                                                             @RequestParam(required = false) String keyword) {
         List<SysConfigResponse> items = sysConfigService.list(configGroup, keyword);
@@ -51,6 +53,7 @@ public class SysConfigController {
      * @return 新增后的配置
      */
     @PostMapping
+    @PreAuthorize("hasAuthority('system:config:create') or hasAuthority('system:config:manage')")
     public ApiResponse<SysConfigResponse> create(@Valid @RequestBody SysConfigSaveRequest request) {
         return ApiResponse.success(sysConfigService.create(request));
     }
@@ -63,6 +66,7 @@ public class SysConfigController {
      * @return 更新后的配置
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('system:config:update') or hasAuthority('system:config:manage')")
     public ApiResponse<SysConfigResponse> update(@PathVariable Long id,
                                                  @Valid @RequestBody SysConfigSaveRequest request) {
         return ApiResponse.success(sysConfigService.update(id, request));

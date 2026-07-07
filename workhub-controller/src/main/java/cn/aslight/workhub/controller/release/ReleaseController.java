@@ -7,6 +7,7 @@ import cn.aslight.workhub.model.release.ReleaseSaveRequest;
 import cn.aslight.workhub.model.release.ReleaseSummaryResponse;
 import cn.aslight.workhub.service.release.ReleaseService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,6 +37,7 @@ public class ReleaseController {
      * @return 列表结果
      */
     @GetMapping
+    @PreAuthorize("hasAuthority('project:project:view') or hasAuthority('project:project:manage')")
     public ApiResponse<PageResponse<ReleaseSummaryResponse>> list(@RequestParam(required = false) Long projectId,
                                                                   @RequestParam(required = false) String status) {
         List<ReleaseSummaryResponse> items = releaseService.list(projectId, status);
@@ -49,6 +51,7 @@ public class ReleaseController {
      * @return 详情结果
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('project:project:view') or hasAuthority('project:project:manage')")
     public ApiResponse<ReleaseDetailResponse> detail(@PathVariable Long id) {
         return ApiResponse.success(releaseService.detail(id));
     }
@@ -60,6 +63,7 @@ public class ReleaseController {
      * @return 新建结果
      */
     @PostMapping
+    @PreAuthorize("hasAuthority('project:project:create') or hasAuthority('project:project:manage')")
     public ApiResponse<ReleaseDetailResponse> create(@Valid @RequestBody ReleaseSaveRequest request) {
         return ApiResponse.success(releaseService.create(request));
     }
@@ -72,6 +76,7 @@ public class ReleaseController {
      * @return 更新结果
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('project:project:update') or hasAuthority('project:project:manage')")
     public ApiResponse<ReleaseDetailResponse> update(@PathVariable Long id,
                                                      @Valid @RequestBody ReleaseSaveRequest request) {
         return ApiResponse.success(releaseService.update(id, request));

@@ -155,11 +155,11 @@ public class McpToolRegistry {
         context.put("gitlab", gitlabContext(catalog, matched));
         context.put("knowledge", knowledgeContext(catalog, code));
         context.put("databaseTargets", catalog.databaseTargets().stream()
-                .filter(target -> target.businessLineCodes().contains(code))
+                .filter(target -> matchesBusinessLine(target.businessLineCodes(), matched))
                 .map(this::databaseTargetSummary)
                 .toList());
         context.put("serverTargets", catalog.serverTargets().stream()
-                .filter(target -> target.businessLineCodes().contains(code))
+                .filter(target -> matchesBusinessLine(target.businessLineCodes(), matched))
                 .map(this::serverTargetSummary)
                 .toList());
         return context;
@@ -185,10 +185,31 @@ public class McpToolRegistry {
     }
 
     private McpResourceCatalog.BusinessLine findBusinessLine(McpResourceCatalog catalog, String businessLine) {
+        String normalized = normalizeText(businessLine);
         return catalog.businessLines().stream()
-                .filter(item -> businessLine.equals(item.code()) || businessLine.equals(item.name()))
+                .filter(item -> normalized.equals(normalizeText(item.code()))
+                        || normalized.equals(normalizeText(item.name()))
+                        || normalized.equals(normalizeText(item.gitlabGroupName())))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("业务线不存在：" + businessLine));
+    }
+
+    private boolean matchesBusinessLine(List<String> values, McpResourceCatalog.BusinessLine businessLine) {
+        List<String> aliases = List.of(
+                nullToEmpty(businessLine.code()),
+                nullToEmpty(businessLine.name()),
+                nullToEmpty(businessLine.gitlabGroupName())
+        ).stream()
+                .map(this::normalizeText)
+                .filter(value -> !value.isBlank())
+                .toList();
+        if (aliases.isEmpty()) {
+            return false;
+        }
+        return values.stream()
+                .map(this::normalizeText)
+                .filter(value -> !value.isBlank())
+                .anyMatch(aliases::contains);
     }
 
     private Map<String, Object> businessLineSummary(McpResourceCatalog.BusinessLine businessLine) {
@@ -243,6 +264,14 @@ public class McpToolRegistry {
         }
         String value = node.path(field).asText();
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private String normalizeText(String value) {
+        return value == null ? "" : value.trim().toLowerCase();
+    }
+
+    private String nullToEmpty(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private record McpTool(String name,

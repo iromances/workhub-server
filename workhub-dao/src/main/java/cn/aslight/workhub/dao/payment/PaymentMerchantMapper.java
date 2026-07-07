@@ -28,7 +28,6 @@ public interface PaymentMerchantMapper {
             "m.merchant_code AS merchantCode,",
             "m.merchant_name AS merchantName,",
             "m.environment,",
-            "m.app_id AS appId,",
             "NULL AS purposeCodes,",
             "m.status",
             "FROM pay_merchant_account m",
@@ -101,7 +100,6 @@ public interface PaymentMerchantMapper {
                    m.merchant_code AS merchantCode,
                    m.merchant_name AS merchantName,
                    m.environment,
-                   m.app_id AS appId,
                    m.settlement_subject AS settlementSubject,
                    m.status,
                    m.remark,
@@ -120,7 +118,6 @@ public interface PaymentMerchantMapper {
                    merchant_name,
                    environment,
                    status,
-                   app_id,
                    settlement_subject,
                    remark
             FROM pay_merchant_account
@@ -135,7 +132,6 @@ public interface PaymentMerchantMapper {
                    merchant_name,
                    environment,
                    status,
-                   app_id,
                    settlement_subject,
                    remark
             FROM pay_merchant_account
@@ -154,7 +150,6 @@ public interface PaymentMerchantMapper {
                 merchant_name,
                 environment,
                 status,
-                app_id,
                 settlement_subject,
                 remark
             ) VALUES (
@@ -163,7 +158,6 @@ public interface PaymentMerchantMapper {
                 #{merchantName},
                 #{environment},
                 #{status},
-                #{appId},
                 #{settlementSubject},
                 #{remark}
             )
@@ -178,7 +172,6 @@ public interface PaymentMerchantMapper {
                 merchant_name = #{merchantName},
                 environment = #{environment},
                 status = #{status},
-                app_id = #{appId},
                 settlement_subject = #{settlementSubject},
                 remark = #{remark}
             WHERE id = #{id}

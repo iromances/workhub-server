@@ -14,7 +14,7 @@ public final class PaymentCatalogs {
 
     static final Set<String> ACTIVE_STATUSES = Set.of("ACTIVE", "INACTIVE");
     static final Set<String> ENVIRONMENTS = Set.of("PROD", "UAT", "SIT", "TEST");
-    static final Set<String> VALUE_TYPES = Set.of("TEXT", "JSON", "URL", "NUMBER", "CERT", "PEM");
+    static final Set<String> VALUE_TYPES = Set.of("TEXT", "FILE", "JSON", "URL", "NUMBER", "CERT", "PEM");
     static final Set<String> SECRET_FILE_VALUE_TYPES = Set.of("TEXT", "BINARY");
     static final Set<String> SECRET_TYPES = Set.of(
             "API_KEY",

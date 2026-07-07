@@ -491,6 +491,15 @@ public interface IntakeMapper {
 
     @Update("""
             UPDATE pm_intake_record
+            SET priority = #{priority},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+            """)
+    int updatePriority(@Param("id") Long id,
+                       @Param("priority") String priority);
+
+    @Update("""
+            UPDATE pm_intake_record
             SET demand_status = '已暂停',
                 pause_previous_demand_status = #{previousDemandStatus},
                 pause_reason = #{pauseReason},

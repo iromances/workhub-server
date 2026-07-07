@@ -7,6 +7,7 @@ import cn.aslight.workhub.model.sprint.SprintSaveRequest;
 import cn.aslight.workhub.model.sprint.SprintSummaryResponse;
 import cn.aslight.workhub.service.sprint.SprintService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,6 +37,7 @@ public class SprintController {
      * @return 列表结果
      */
     @GetMapping
+    @PreAuthorize("hasAuthority('project:project:view') or hasAuthority('project:project:manage')")
     public ApiResponse<PageResponse<SprintSummaryResponse>> list(@RequestParam(required = false) Long projectId,
                                                                  @RequestParam(required = false) String status) {
         List<SprintSummaryResponse> items = sprintService.list(projectId, status);
@@ -49,6 +51,7 @@ public class SprintController {
      * @return 详情结果
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('project:project:view') or hasAuthority('project:project:manage')")
     public ApiResponse<SprintDetailResponse> detail(@PathVariable Long id) {
         return ApiResponse.success(sprintService.detail(id));
     }
@@ -60,6 +63,7 @@ public class SprintController {
      * @return 新建结果
      */
     @PostMapping
+    @PreAuthorize("hasAuthority('project:project:create') or hasAuthority('project:project:manage')")
     public ApiResponse<SprintDetailResponse> create(@Valid @RequestBody SprintSaveRequest request) {
         return ApiResponse.success(sprintService.create(request));
     }
@@ -72,6 +76,7 @@ public class SprintController {
      * @return 更新结果
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('project:project:update') or hasAuthority('project:project:manage')")
     public ApiResponse<SprintDetailResponse> update(@PathVariable Long id,
                                                     @Valid @RequestBody SprintSaveRequest request) {
         return ApiResponse.success(sprintService.update(id, request));

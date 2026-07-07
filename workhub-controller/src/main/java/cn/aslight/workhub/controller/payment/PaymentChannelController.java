@@ -7,6 +7,7 @@ import cn.aslight.workhub.model.payment.PaymentChannelSaveRequest;
 import cn.aslight.workhub.model.payment.PaymentChannelSummaryResponse;
 import cn.aslight.workhub.service.payment.PaymentChannelService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,6 +34,7 @@ public class PaymentChannelController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('payment:config:view') or hasAuthority('payment:config:manage')")
     public ApiResponse<PageResponse<PaymentChannelSummaryResponse>> list(@RequestParam(required = false) Long channelId,
                                                                          @RequestParam(required = false) String status,
                                                                          @RequestParam(defaultValue = "1") int page,
@@ -42,17 +44,20 @@ public class PaymentChannelController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('payment:config:view') or hasAuthority('payment:config:manage')")
     public ApiResponse<PaymentChannelDetailResponse> detail(@PathVariable Long id) {
         return ApiResponse.success(paymentChannelService.detail(id));
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('payment:channel:create') or hasAuthority('payment:config:manage')")
     public ApiResponse<PaymentChannelDetailResponse> create(@Valid @RequestBody PaymentChannelSaveRequest request,
                                                             Principal principal) {
         return ApiResponse.success(paymentChannelService.create(request, operator(principal)));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('payment:channel:update') or hasAuthority('payment:config:manage')")
     public ApiResponse<PaymentChannelDetailResponse> update(@PathVariable Long id,
                                                             @Valid @RequestBody PaymentChannelSaveRequest request,
                                                             Principal principal) {

@@ -90,7 +90,12 @@ public interface ProjectInvolvedSystemMapper {
             LEFT JOIN pm_business_line bl ON bl.business_line_code = s.business_line_code
             WHERE s.enabled = 1
               AND (
-                    (s.system_scope = 'BUSINESS_LINE' AND s.business_line_code = #{businessLine})
+                    (s.system_scope = 'BUSINESS_LINE'
+                     AND (
+                            s.business_line_code = #{businessLine}
+                         OR bl.business_line_name = #{businessLine}
+                         OR s.business_line = #{businessLine}
+                     ))
                  OR (s.system_scope = 'MIDDLE_PLATFORM' AND s.business_line_code = '')
               )
             ORDER BY CASE s.system_scope WHEN 'BUSINESS_LINE' THEN 0 ELSE 1 END,

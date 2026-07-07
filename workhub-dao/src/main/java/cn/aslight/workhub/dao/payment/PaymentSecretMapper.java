@@ -22,36 +22,73 @@ public interface PaymentSecretMapper {
                    secret_name AS secretName,
                    secret_type AS secretType,
                    version_no AS versionNo,
-                   masked_value AS maskedValue,
-                   fingerprint,
-                   algorithm,
-                   status,
-                   valid_from AS validFrom,
-                   valid_to AS validTo,
+	                   masked_value AS maskedValue,
+	                   fingerprint,
+	                   algorithm,
+	                   source_type AS sourceType,
+	                   file_name AS fileName,
+	                   file_content_type AS fileContentType,
+	                   file_value_type AS fileValueType,
+	                   status,
+	                   valid_from AS validFrom,
+	                   valid_to AS validTo,
                    remark,
                    created_at AS createdAt
             FROM pay_merchant_secret
             WHERE merchant_id = #{merchantId}
             ORDER BY secret_name ASC, version_no DESC
-            """)
-    List<PaymentSecretSummaryResponse> findByMerchantId(Long merchantId);
+	            """)
+	    List<PaymentSecretSummaryResponse> findByMerchantId(Long merchantId);
+
+	    @Select("""
+	            SELECT id,
+	                   merchant_id,
+	                   secret_name,
+	                   secret_type,
+	                   encrypted_value,
+	                   masked_value,
+	                   fingerprint,
+	                   algorithm,
+	                   source_type,
+	                   file_name,
+	                   file_content_type,
+	                   file_value_type,
+	                   version_no,
+	                   status,
+	                   valid_from,
+	                   valid_to,
+	                   remark
+	            FROM pay_merchant_secret
+	            WHERE id = #{id}
+	            """)
+	    PaymentSecretEntity findEntityById(Long id);
 
     @Select("""
-            SELECT COALESCE(MAX(version_no), 0)
+            SELECT id,
+                   merchant_id,
+                   secret_name,
+                   secret_type,
+                   encrypted_value,
+                   masked_value,
+                   fingerprint,
+                   algorithm,
+                   source_type,
+                   file_name,
+                   file_content_type,
+                   file_value_type,
+                   version_no,
+                   status,
+                   valid_from,
+                   valid_to,
+                   remark
             FROM pay_merchant_secret
             WHERE merchant_id = #{merchantId}
               AND secret_name = #{secretName}
+            ORDER BY version_no DESC, id DESC
+            LIMIT 1
             """)
-    int findMaxVersion(@Param("merchantId") Long merchantId, @Param("secretName") String secretName);
-
-    @Update("""
-            UPDATE pay_merchant_secret
-            SET status = 'INACTIVE'
-            WHERE merchant_id = #{merchantId}
-              AND secret_name = #{secretName}
-              AND status = 'ACTIVE'
-            """)
-    int deactivateActiveVersions(@Param("merchantId") Long merchantId, @Param("secretName") String secretName);
+    PaymentSecretEntity findLatestEntityByMerchantIdAndName(@Param("merchantId") Long merchantId,
+                                                            @Param("secretName") String secretName);
 
     @Insert("""
             INSERT INTO pay_merchant_secret (
@@ -62,6 +99,10 @@ public interface PaymentSecretMapper {
                 masked_value,
                 fingerprint,
                 algorithm,
+                source_type,
+                file_name,
+                file_content_type,
+                file_value_type,
                 version_no,
                 status,
                 valid_from,
@@ -75,6 +116,10 @@ public interface PaymentSecretMapper {
                 #{maskedValue},
                 #{fingerprint},
                 #{algorithm},
+                #{sourceType},
+                #{fileName},
+                #{fileContentType},
+                #{fileValueType},
                 #{versionNo},
                 #{status},
                 #{validFrom},
@@ -84,4 +129,24 @@ public interface PaymentSecretMapper {
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(PaymentSecretEntity entity);
+
+    @Update("""
+            UPDATE pay_merchant_secret
+            SET secret_name = #{secretName},
+                secret_type = #{secretType},
+                encrypted_value = #{encryptedValue},
+                masked_value = #{maskedValue},
+                fingerprint = #{fingerprint},
+                algorithm = #{algorithm},
+                source_type = #{sourceType},
+                file_name = #{fileName},
+                file_content_type = #{fileContentType},
+                file_value_type = #{fileValueType},
+                status = #{status},
+                valid_from = #{validFrom},
+                valid_to = #{validTo},
+                remark = #{remark}
+            WHERE id = #{id}
+            """)
+    int update(PaymentSecretEntity entity);
 }

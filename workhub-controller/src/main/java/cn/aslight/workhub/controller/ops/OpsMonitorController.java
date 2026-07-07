@@ -10,6 +10,7 @@ import cn.aslight.workhub.model.ops.XxlJobExecutorResponse;
 import cn.aslight.workhub.model.ops.XxlJobLogPageResponse;
 import cn.aslight.workhub.service.ops.OpsMonitorService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,6 +35,7 @@ public class OpsMonitorController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('ops:monitor:view') or hasAuthority('ops:monitor:manage')")
     public ApiResponse<PageResponse<OpsMonitorResponse>> list(@RequestParam(required = false) String monitorType,
                                                               @RequestParam(required = false) String businessLineCode,
                                                               @RequestParam(required = false) String environmentCode,
@@ -44,28 +46,33 @@ public class OpsMonitorController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('ops:monitor:create') or hasAuthority('ops:monitor:manage')")
     public ApiResponse<OpsMonitorResponse> create(@Valid @RequestBody OpsMonitorSaveRequest request) {
         return ApiResponse.success(opsMonitorService.create(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ops:monitor:update') or hasAuthority('ops:monitor:manage')")
     public ApiResponse<OpsMonitorResponse> update(@PathVariable Long id,
                                                   @Valid @RequestBody OpsMonitorSaveRequest request) {
         return ApiResponse.success(opsMonitorService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ops:monitor:delete') or hasAuthority('ops:monitor:manage')")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         opsMonitorService.delete(id);
         return ApiResponse.success(null);
     }
 
     @PostMapping("/{id}/check")
+    @PreAuthorize("hasAuthority('ops:monitor:check')")
     public ApiResponse<OpsMonitorCheckResponse> check(@PathVariable Long id) {
         return ApiResponse.success(opsMonitorService.check(id));
     }
 
     @GetMapping("/xxl-job/dashboard")
+    @PreAuthorize("hasAuthority('ops:monitor:view') or hasAuthority('ops:monitor:manage')")
     public ApiResponse<PageResponse<XxlJobDashboardResponse>> xxlJobDashboard(@RequestParam(required = false) String businessLineCode,
                                                                                @RequestParam(required = false) String environmentCode,
                                                                                @RequestParam(defaultValue = "true") boolean enabledOnly) {
@@ -74,6 +81,7 @@ public class OpsMonitorController {
     }
 
     @GetMapping("/xxl-job/executors")
+    @PreAuthorize("hasAuthority('ops:monitor:view') or hasAuthority('ops:monitor:manage')")
     public ApiResponse<List<XxlJobExecutorResponse>> xxlJobExecutors(@RequestParam String businessLineCode,
                                                                       @RequestParam String environmentCode,
                                                                       @RequestParam String xxlJobDatabaseName) {
@@ -81,6 +89,7 @@ public class OpsMonitorController {
     }
 
     @GetMapping("/{id}/xxl-job/detail")
+    @PreAuthorize("hasAuthority('ops:monitor:view') or hasAuthority('ops:monitor:manage')")
     public ApiResponse<XxlJobDashboardResponse> xxlJobDetail(@PathVariable Long id,
                                                              @RequestParam(required = false) LocalDate startDate,
                                                              @RequestParam(required = false) LocalDate endDate,
@@ -93,6 +102,7 @@ public class OpsMonitorController {
     }
 
     @GetMapping("/{id}/xxl-job/logs")
+    @PreAuthorize("hasAuthority('ops:monitor:view') or hasAuthority('ops:monitor:manage')")
     public ApiResponse<XxlJobLogPageResponse> xxlJobLogs(@PathVariable Long id,
                                                          @RequestParam(required = false) LocalDate startDate,
                                                          @RequestParam(required = false) LocalDate endDate,

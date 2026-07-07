@@ -276,6 +276,41 @@ class McpResourceServiceTest {
         assertTrue(!catalog.gitlab().containsValue("plain-gitlab-token"));
     }
 
+    @Test
+    void catalog_shouldUseBusinessLineCodeAndMatchSystemBindingsByCodeOrName() {
+        McpResourceMapper mapper = mock(McpResourceMapper.class);
+        McpCryptoService cryptoService = new McpCryptoService(testProperties());
+        McpResourceSchemaInitializer schemaInitializer = mock(McpResourceSchemaInitializer.class);
+        BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
+        ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
+        McpResourceService service = new McpResourceService(
+                mapper,
+                cryptoService,
+                schemaInitializer,
+                businessLineMapper,
+                involvedSystemMapper,
+                mock(SysConfigService.class)
+        );
+        when(mapper.findAll(isNull(), isNull(), isNull(), isNull(), anyBoolean())).thenReturn(List.of());
+        BusinessLineEntity businessLine = businessLine("BL000007", "汇浦");
+        businessLine.setGitlabGroupName("ca-assets");
+        when(businessLineMapper.findAll(null)).thenReturn(List.of(businessLine));
+        ProjectInvolvedSystemEntity codeBoundSystem = involvedSystem("BUSINESS_LINE", null, "assets-saps");
+        codeBoundSystem.setBusinessLineCode("BL000007");
+        ProjectInvolvedSystemEntity nameBoundSystem = involvedSystem("BUSINESS_LINE", "汇浦", "assets-admin");
+        when(involvedSystemMapper.findAll(isNull(), isNull(), anyBoolean(), isNull())).thenReturn(List.of(
+                codeBoundSystem,
+                nameBoundSystem
+        ));
+
+        McpCatalogResponse catalog = service.catalog();
+
+        Map<String, Object> businessLineSummary = catalog.businessLines().getFirst();
+        assertEquals("BL000007", businessLineSummary.get("code"));
+        assertEquals("汇浦", businessLineSummary.get("name"));
+        assertEquals(List.of("assets-saps", "assets-admin"), businessLineSummary.get("involvedSystems"));
+    }
+
     private McpResourceSaveRequest databaseRequest() {
         McpResourceSaveRequest request = new McpResourceSaveRequest();
         request.setResourceType("DATABASE");

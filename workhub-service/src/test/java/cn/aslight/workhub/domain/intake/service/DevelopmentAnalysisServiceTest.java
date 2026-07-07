@@ -568,6 +568,109 @@ class DevelopmentAnalysisServiceTest {
     }
 
     @Test
+    void updateDraft_shouldCanonicalizeUniqueSystemSuffixAlias() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        DevelopmentAnalysisMapper developmentAnalysisMapper = mock(DevelopmentAnalysisMapper.class);
+        ProjectMapper projectMapper = mock(ProjectMapper.class);
+        ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
+        UserMapper userMapper = mock(UserMapper.class);
+        GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
+        ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
+        CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
+        WorkItemService workItemService = mock(WorkItemService.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        DevelopmentAnalysisService service = new DevelopmentAnalysisService(
+                intakeMapper,
+                intakeHistoryMapper,
+                developmentAnalysisMapper,
+                projectMapper,
+                involvedSystemMapper,
+                userMapper,
+                gitlabRepositoryService,
+                projectKnowledgeBaseService,
+                analysisGenerator,
+                workItemService,
+                command -> { },
+                objectMapper
+        );
+
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(41L);
+        intake.setDemandStatus("待评估");
+        intake.setStructuredDataJson("""
+                {"category":"需求审批","requirementType":"研发需求","requirementName":"嘉泰支付系统评估","projectHint":"BL000003","fields":[],"attachmentSummaries":[]}
+                """);
+        when(intakeMapper.findById(41L)).thenReturn(intake);
+
+        DevelopmentAnalysisEntity entity = new DevelopmentAnalysisEntity();
+        entity.setId(3L);
+        entity.setIntakeId(41L);
+        entity.setAnalysisStatus("DRAFT");
+        entity.setDraftJson(writeDraft(objectMapper, minimalDraft("8h", "2h", List.of())));
+        when(developmentAnalysisMapper.findLatestByIntakeId(41L)).thenReturn(entity);
+
+        ProjectDetailResponse project = new ProjectDetailResponse(
+                4L,
+                "jiatai-amp",
+                "嘉泰资产平台",
+                "业务项目",
+                "BL000003",
+                "嘉泰资产平台",
+                "石浩",
+                "进行中",
+                null,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        );
+        when(projectMapper.findFirstDetailByBusinessLine("BL000003")).thenReturn(project);
+        when(involvedSystemMapper.findSelectableByBusinessLine("BL000003"))
+                .thenReturn(List.of(involvedSystem("jiatai-amp-payment")));
+
+        service.updateDraft(
+                41L,
+                new DevelopmentAnalysisDraftUpdateRequest(
+                        "BL000003",
+                        "8h",
+                        "6h",
+                        "2h",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        List.of(new DevelopmentAnalysisDraftUpdateRequest.WorkItemDraft(
+                                "支付系统改造",
+                                "补充支付系统任务",
+                                "支付链路改造",
+                                "CODE_CHANGE",
+                                List.of("支付服务"),
+                                List.of("调整支付链路"),
+                                List.of("amp-payment"),
+                                List.of(),
+                                "MEDIUM",
+                                null,
+                                List.of(),
+                                "6h",
+                                "石浩",
+                                "2",
+                                null,
+                                null,
+                                null,
+                                null
+                        ))
+                ),
+                "admin"
+        );
+
+        ArgumentCaptor<DevelopmentAnalysisEntity> captor = forClass(DevelopmentAnalysisEntity.class);
+        verify(developmentAnalysisMapper).update(captor.capture());
+        DevelopmentAnalysisDraft updated = readDraft(objectMapper, captor.getValue().getDraftJson());
+        assertEquals(List.of("jiatai-amp-payment"), updated.workItems().getFirst().systemTags());
+    }
+
+    @Test
     void updateDraft_shouldCreateManualDraftWhenAiDraftDoesNotExist() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);

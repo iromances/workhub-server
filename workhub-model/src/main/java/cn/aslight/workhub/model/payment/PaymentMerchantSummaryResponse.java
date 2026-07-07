@@ -12,7 +12,6 @@ public record PaymentMerchantSummaryResponse(Long id,
                                              String merchantCode,
                                              String merchantName,
                                              String environment,
-                                             String appId,
                                              List<String> purposeCodes,
                                              String status) {
 }

@@ -14,6 +14,7 @@ import cn.aslight.workhub.model.intake.IntakeClarificationAnalysisResponse;
 import cn.aslight.workhub.model.intake.IntakeClarificationReplyRequest;
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakePauseRequest;
+import cn.aslight.workhub.model.intake.IntakePriorityUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeRequirementFolderResponse;
 import cn.aslight.workhub.model.intake.IntakeStageActionRequest;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
@@ -32,6 +33,7 @@ import cn.aslight.workhub.service.intake.RequirementFolderService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -92,6 +94,7 @@ public class IntakeController {
      * @return 列表结果
      */
     @GetMapping
+    @PreAuthorize("hasAuthority('intake:record:view')")
     public ApiResponse<PageResponse<IntakeSummaryResponse>> list(@RequestParam(required = false) String status,
                                                                  @RequestParam(required = false) String requirementName,
                                                                  @RequestParam(required = false) String approvalCode,
@@ -118,6 +121,7 @@ public class IntakeController {
      * @return 工作台统计结果
      */
     @GetMapping("/dashboard")
+    @PreAuthorize("hasAuthority('dashboard:view') or hasAuthority('intake:record:view')")
     public ApiResponse<IntakeDashboardResponse> dashboard(@RequestParam(required = false, defaultValue = "ALL") String demandType) {
         return ApiResponse.success(intakeService.dashboard(demandType));
     }
@@ -131,6 +135,7 @@ public class IntakeController {
      * @return 详情结果
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('intake:record:detail')")
     public ApiResponse<IntakeDetailResponse> detail(@PathVariable Long id,
                                                     @RequestParam(defaultValue = "true") boolean recordView,
                                                     Authentication authentication) {
@@ -146,6 +151,7 @@ public class IntakeController {
      * @return 更新后的需求详情
      */
     @PostMapping("/{id}/pause")
+    @PreAuthorize("hasAuthority('intake:stage:operate')")
     public ApiResponse<IntakeDetailResponse> pauseDemand(@PathVariable Long id,
                                                          @Valid @RequestBody IntakePauseRequest request,
                                                          Authentication authentication) {
@@ -160,6 +166,7 @@ public class IntakeController {
      * @return 更新后的需求详情
      */
     @PostMapping("/{id}/resume")
+    @PreAuthorize("hasAuthority('intake:stage:operate')")
     public ApiResponse<IntakeDetailResponse> resumeDemand(@PathVariable Long id,
                                                           Authentication authentication) {
         return ApiResponse.success(intakeService.resumeDemand(id, authentication.getName()));
@@ -172,6 +179,7 @@ public class IntakeController {
      * @return 待办列表
      */
     @GetMapping("/{id}/todos")
+    @PreAuthorize("hasAuthority('intake:record:view')")
     public ApiResponse<PageResponse<IntakeTodoResponse>> listTodos(@PathVariable Long id) {
         List<IntakeTodoResponse> items = intakeTodoService.list(id);
         return ApiResponse.success(new PageResponse<>(items.size(), items));
@@ -186,6 +194,7 @@ public class IntakeController {
      * @return 新增后的待办
      */
     @PostMapping("/{id}/todos")
+    @PreAuthorize("hasAuthority('intake:todo:manage')")
     public ApiResponse<IntakeTodoResponse> createTodo(@PathVariable Long id,
                                                       @Valid @RequestBody IntakeTodoCreateRequest request,
                                                       Authentication authentication) {
@@ -202,6 +211,7 @@ public class IntakeController {
      * @return 更新后的待办
      */
     @PutMapping("/{id}/todos/{todoId}")
+    @PreAuthorize("hasAuthority('intake:todo:manage')")
     public ApiResponse<IntakeTodoResponse> updateTodo(@PathVariable Long id,
                                                       @PathVariable Long todoId,
                                                       @Valid @RequestBody IntakeTodoUpdateRequest request,
@@ -219,6 +229,7 @@ public class IntakeController {
      * @return 更新后的待办
      */
     @PostMapping("/{id}/todos/{todoId}/status")
+    @PreAuthorize("hasAuthority('intake:todo:manage')")
     public ApiResponse<IntakeTodoResponse> updateTodoStatus(@PathVariable Long id,
                                                             @PathVariable Long todoId,
                                                             @Valid @RequestBody IntakeTodoStatusRequest request,
@@ -235,6 +246,7 @@ public class IntakeController {
      * @return 空响应
      */
     @DeleteMapping("/{id}/todos/{todoId}")
+    @PreAuthorize("hasAuthority('intake:todo:manage')")
     public ApiResponse<Void> deleteTodo(@PathVariable Long id,
                                         @PathVariable Long todoId,
                                         Authentication authentication) {
@@ -249,6 +261,7 @@ public class IntakeController {
      * @return 文件夹路径
      */
     @PostMapping("/{id}/requirement-folder/open")
+    @PreAuthorize("hasAuthority('intake:requirement-folder:open')")
     public ApiResponse<IntakeRequirementFolderResponse> openRequirementFolder(@PathVariable Long id) {
         return ApiResponse.success(requirementFolderService.open(id));
     }
@@ -260,6 +273,7 @@ public class IntakeController {
      * @return 文件夹路径
      */
     @PostMapping("/{id}/development-plan-folder/open")
+    @PreAuthorize("hasAuthority('intake:development-plan-folder:open')")
     public ApiResponse<IntakeRequirementFolderResponse> openDevelopmentPlanFolder(@PathVariable Long id) {
         return ApiResponse.success(developmentPlanFolderService.open(id));
     }
@@ -273,6 +287,7 @@ public class IntakeController {
      * @return 新建后的需求详情
      */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('intake:record:create')")
     public ApiResponse<IntakeDetailResponse> createUploaded(@Valid @ModelAttribute IntakeUploadRequest request,
                                                             @RequestParam(name = "screenshots", required = false) List<MultipartFile> screenshots,
                                                             @RequestParam(name = "attachments", required = false) List<MultipartFile> attachments) {
@@ -289,6 +304,7 @@ public class IntakeController {
      * @return 更新后的需求详情
      */
     @PostMapping(value = "/{id}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('intake:attachment:manage') or hasAuthority('intake:record:update')")
     public ApiResponse<IntakeDetailResponse> appendAttachments(@PathVariable Long id,
                                                                @RequestParam(name = "screenshots", required = false) List<MultipartFile> screenshots,
                                                                @RequestParam(name = "attachments", required = false) List<MultipartFile> attachments,
@@ -305,6 +321,7 @@ public class IntakeController {
      * @return 更新后的需求详情
      */
     @DeleteMapping("/{id}/attachments/{attachmentId}")
+    @PreAuthorize("hasAuthority('intake:attachment:manage') or hasAuthority('intake:record:update')")
     public ApiResponse<IntakeDetailResponse> deleteAttachment(@PathVariable Long id,
                                                               @PathVariable Long attachmentId,
                                                               Authentication authentication) {
@@ -321,6 +338,7 @@ public class IntakeController {
      * @return 更新后的需求详情
      */
     @PostMapping("/{id}/attachments/{attachmentId}/replace")
+    @PreAuthorize("hasAuthority('intake:attachment:manage') or hasAuthority('intake:record:update')")
     public ApiResponse<IntakeDetailResponse> replaceAttachment(@PathVariable Long id,
                                                                @PathVariable Long attachmentId,
                                                                @RequestParam(name = "file") MultipartFile file,
@@ -336,6 +354,7 @@ public class IntakeController {
      * @return 更新后的需求详情
      */
     @PostMapping("/{id}/enrichment/retry")
+    @PreAuthorize("hasAuthority('intake:ai:operate')")
     public ApiResponse<IntakeDetailResponse> retryEnrichment(@PathVariable Long id,
                                                              Authentication authentication) {
         return ApiResponse.success(intakeService.retryEnrichment(id, authentication.getName()));
@@ -350,6 +369,7 @@ public class IntakeController {
      * @return 更新后的需求详情
      */
     @PostMapping(value = "/{id}/stage-actions", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasAuthority('intake:stage:operate')")
     public ApiResponse<IntakeDetailResponse> advanceStage(@PathVariable Long id,
                                                           @RequestBody IntakeStageActionRequest request,
                                                           Authentication authentication) {
@@ -366,6 +386,7 @@ public class IntakeController {
      * @return 更新后的需求详情
      */
     @PostMapping(value = "/{id}/stage-actions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('intake:stage:operate')")
     public ApiResponse<IntakeDetailResponse> advanceStageWithFiles(@PathVariable Long id,
                                                                    @ModelAttribute IntakeStageActionRequest request,
                                                                    @RequestParam(name = "dataFiles", required = false) List<MultipartFile> dataFiles,
@@ -382,6 +403,7 @@ public class IntakeController {
      * @return 更新后的需求详情
      */
     @PostMapping("/{id}/zentao-link")
+    @PreAuthorize("hasAuthority('intake:metadata:update') or hasAuthority('intake:record:update')")
     public ApiResponse<IntakeDetailResponse> updateZentaoLink(@PathVariable Long id,
                                                               @RequestBody IntakeZentaoLinkRequest request,
                                                               Authentication authentication) {
@@ -397,6 +419,7 @@ public class IntakeController {
      * @return 更新后的需求详情
      */
     @PostMapping("/{id}/development-branch")
+    @PreAuthorize("hasAuthority('intake:metadata:update') or hasAuthority('intake:record:update')")
     public ApiResponse<IntakeDetailResponse> updateDevelopmentBranch(@PathVariable Long id,
                                                                      @RequestBody IntakeDevelopmentBranchRequest request,
                                                                      Authentication authentication) {
@@ -412,10 +435,27 @@ public class IntakeController {
      * @return 更新后的需求详情
      */
     @PostMapping("/{id}/business-line")
+    @PreAuthorize("hasAuthority('intake:metadata:update') or hasAuthority('intake:record:update')")
     public ApiResponse<IntakeDetailResponse> updateBusinessLine(@PathVariable Long id,
                                                                 @Valid @RequestBody IntakeBusinessLineUpdateRequest request,
                                                                 Authentication authentication) {
         return ApiResponse.success(intakeService.updateBusinessLine(id, request, authentication.getName()));
+    }
+
+    /**
+     * 修改需求优先级。
+     *
+     * @param id 待整理记录 ID
+     * @param request 优先级请求
+     * @param authentication 当前认证信息
+     * @return 更新后的需求详情
+     */
+    @PostMapping("/{id}/priority")
+    @PreAuthorize("hasAuthority('intake:metadata:update') or hasAuthority('intake:record:update')")
+    public ApiResponse<IntakeDetailResponse> updatePriority(@PathVariable Long id,
+                                                            @RequestBody IntakePriorityUpdateRequest request,
+                                                            Authentication authentication) {
+        return ApiResponse.success(intakeService.updatePriority(id, request, authentication.getName()));
     }
 
     /**
@@ -428,23 +468,27 @@ public class IntakeController {
      * @return 更新后的需求详情
      */
     @PostMapping("/{id}/sql-draft")
+    @PreAuthorize("hasAuthority('intake:ai:operate')")
     public ApiResponse<IntakeDetailResponse> generateSqlDraft(@PathVariable Long id,
                                                               Authentication authentication) {
         return ApiResponse.success(intakeService.generateSqlDraft(id, authentication.getName()));
     }
 
     @GetMapping("/{id}/clarification-analysis")
+    @PreAuthorize("hasAuthority('intake:record:view')")
     public ApiResponse<IntakeClarificationAnalysisResponse> clarificationAnalysis(@PathVariable Long id) {
         return ApiResponse.success(intakeClarificationAnalysisService.detail(id));
     }
 
     @PostMapping("/{id}/clarification-analysis")
+    @PreAuthorize("hasAuthority('intake:ai:operate')")
     public ApiResponse<IntakeClarificationAnalysisResponse> analyzeClarification(@PathVariable Long id,
                                                                                  Authentication authentication) {
         return ApiResponse.success(intakeClarificationAnalysisService.analyze(id, authentication.getName()));
     }
 
     @PostMapping("/{id}/clarification-analysis/items/reply")
+    @PreAuthorize("hasAuthority('intake:ai:operate')")
     public ApiResponse<IntakeClarificationAnalysisResponse> replyClarificationItem(@PathVariable Long id,
                                                                                   @Valid @RequestBody IntakeClarificationReplyRequest request,
                                                                                   Authentication authentication) {
@@ -452,11 +496,13 @@ public class IntakeController {
     }
 
     @GetMapping("/{id}/development-analysis")
+    @PreAuthorize("hasAuthority('intake:record:view')")
     public ApiResponse<DevelopmentAnalysisResponse> developmentAnalysis(@PathVariable Long id) {
         return ApiResponse.success(developmentAnalysisService.detail(id));
     }
 
     @PostMapping("/{id}/development-analysis")
+    @PreAuthorize("hasAuthority('intake:ai:operate')")
     public ApiResponse<DevelopmentAnalysisResponse> analyzeDevelopment(@PathVariable Long id,
                                                                        @RequestParam(required = false) String businessLine,
                                                                        Authentication authentication) {
@@ -464,6 +510,7 @@ public class IntakeController {
     }
 
     @PostMapping("/{id}/development-analysis/chat")
+    @PreAuthorize("hasAuthority('intake:ai:operate')")
     public ApiResponse<DevelopmentAnalysisResponse> chatDevelopmentAnalysis(@PathVariable Long id,
                                                                            @Valid @RequestBody DevelopmentAnalysisChatRequest request,
                                                                            Authentication authentication) {
@@ -471,6 +518,7 @@ public class IntakeController {
     }
 
     @PostMapping("/{id}/development-analysis/owners")
+    @PreAuthorize("hasAuthority('intake:ai:operate')")
     public ApiResponse<DevelopmentAnalysisResponse> updateDevelopmentAnalysisOwners(@PathVariable Long id,
                                                                                    @Valid @RequestBody DevelopmentAnalysisOwnerUpdateRequest request,
                                                                                    Authentication authentication) {
@@ -478,6 +526,7 @@ public class IntakeController {
     }
 
     @PostMapping("/{id}/development-analysis/draft")
+    @PreAuthorize("hasAuthority('intake:ai:operate')")
     public ApiResponse<DevelopmentAnalysisResponse> updateDevelopmentAnalysisDraft(@PathVariable Long id,
                                                                                   @Valid @RequestBody DevelopmentAnalysisDraftUpdateRequest request,
                                                                                   Authentication authentication) {
@@ -485,18 +534,21 @@ public class IntakeController {
     }
 
     @PostMapping("/{id}/development-analysis/confirm")
+    @PreAuthorize("hasAuthority('intake:ai:operate')")
     public ApiResponse<DevelopmentAnalysisConfirmResponse> confirmDevelopmentAnalysis(@PathVariable Long id,
                                                                                      Authentication authentication) {
         return ApiResponse.success(developmentAnalysisService.confirm(id, authentication.getName()));
     }
 
     @PostMapping("/{id}/zentao-sync")
+    @PreAuthorize("hasAuthority('intake:zentao:sync') or hasAuthority('intake:ai:operate')")
     public ApiResponse<DevelopmentAnalysisConfirmResponse> syncZentao(@PathVariable Long id,
                                                                       Authentication authentication) {
         return ApiResponse.success(developmentAnalysisService.syncZentao(id, authentication.getName()));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('intake:record:delete')")
     public ApiResponse<Void> delete(@PathVariable Long id, Authentication authentication) {
         intakeService.delete(id, authentication == null ? null : authentication.getName());
         return ApiResponse.success();

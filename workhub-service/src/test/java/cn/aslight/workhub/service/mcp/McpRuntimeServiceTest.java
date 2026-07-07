@@ -107,6 +107,8 @@ class McpRuntimeServiceTest {
         String text = response.at("/result/tools").toString();
         assertTrue(text.contains("get_intake_detail"));
         assertTrue(text.contains("search_intakes"));
+        assertTrue(text.contains("get_requirement_test_context"));
+        assertTrue(text.contains("get_business_line_test_context"));
         assertTrue(text.contains("sync_gitlab_group_repositories"));
     }
 
@@ -179,7 +181,75 @@ class McpRuntimeServiceTest {
                 """));
 
         assertEquals(-32603, response.at("/error/code").asInt());
-        assertTrue(response.at("/error/message").asText().contains("审批编号或需求名称至少填写一个"));
+        assertTrue(response.at("/error/message").asText().contains("审批编号、需求名称或摘要关键词至少填写一个"));
+    }
+
+    @Test
+    void handle_shouldResolveRequirementTestContextFromRequirementAndCatalog() throws Exception {
+        McpResourceService resourceService = resourceService(new McpCatalogResponse(
+                List.of(Map.of(
+                        "code", "BL000007",
+                        "name", "汇浦",
+                        "gitlabGroupName", "ca-assets",
+                        "involvedSystems", List.of("assets-saps"),
+                        "globalSystems", List.of("authing"),
+                        "enabled", true
+                )),
+                List.of(Map.of("code", "test", "name", "测试环境", "production", false, "enabled", true)),
+                List.of(databaseTarget("jiatai-hp-db-test", "BL000007", "test")),
+                List.of(serverTarget("jiatai-hp-server-test", "BL000007", "test", "assets-saps")),
+                Map.of("projectVaultPath", "/mnt/workhub/project-knowledge"),
+                Map.of(
+                        "webApiUrl", "http://gitlab.example.com",
+                        "sshHost", "git@gitlab.example.com",
+                        "accessTokenConfigured", true
+                )
+        ));
+        FakeIntakeService intakeService = new FakeIntakeService();
+        intakeService.summaryResponses = List.of(summary(88L));
+        intakeService.detailResponse = new IntakeDetailResponse(
+                88L,
+                "UPLOAD",
+                "需求管理",
+                null,
+                "张三",
+                "李四",
+                LocalDateTime.parse("2026-06-01T10:00:00"),
+                "测试中",
+                "需求原始内容",
+                structuredData(),
+                List.of("assets-saps"),
+                List.of(),
+                List.of(),
+                "已确认",
+                "SUCCEEDED",
+                null,
+                LocalDateTime.parse("2026-06-01T10:05:00"),
+                null,
+                List.of(),
+                List.of(),
+                null,
+                LocalDateTime.parse("2026-06-01T10:00:00"),
+                LocalDateTime.parse("2026-06-01T10:05:00")
+        );
+        McpRuntimeService runtimeService = new McpRuntimeService(resourceService, intakeService, new FakeGitlabRepositoryService());
+
+        JsonNode response = runtimeService.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"get_requirement_test_context","arguments":{"approvalCode":"SP-20260601","environmentCode":"test"}}}
+                """));
+
+        String text = response.at("/result/content/0/text").asText();
+        assertTrue(text.contains("\"resolutionStatus\" : \"RESOLVED\""));
+        assertTrue(text.contains("\"developmentBranchName\" : \"feature/demo\""));
+        assertTrue(text.contains("\"code\" : \"BL000007\""));
+        assertTrue(text.contains("\"jiatai-hp-db-test\""));
+        assertTrue(text.contains("\"jiatai-hp-server-test\""));
+        assertTrue(text.contains("\"profiles\" : [ \"readonly\" ]"));
+        assertTrue(text.contains("\"profiles\" : [ \"diagnostic\" ]"));
+        assertTrue(text.contains("\"codeCacheRoot\" : \"data/git-cache/ca-assets\""));
+        assertTrue(!text.contains("plain-gitlab-token"));
+        assertEquals(88L, intakeService.detailIntakeId);
+        assertEquals(false, intakeService.detailRecordView);
     }
 
     @Test
@@ -200,11 +270,15 @@ class McpRuntimeServiceTest {
     }
 
     private Map<String, Object> databaseTarget(String key, String businessLine) {
+        return databaseTarget(key, businessLine, "prod");
+    }
+
+    private Map<String, Object> databaseTarget(String key, String businessLine, String environmentCode) {
         return Map.of(
                 "key", key,
                 "businessLineCode", businessLine,
                 "businessLineCodes", List.of(businessLine),
-                "environmentCode", "prod",
+                "environmentCode", environmentCode,
                 "name", businessLine + "-生产库",
                 "host", "127.0.0.1",
                 "port", 3306,
@@ -217,6 +291,29 @@ class McpRuntimeServiceTest {
                         "maxResultBytes", 65536
                 ))
         );
+    }
+
+    private Map<String, Object> serverTarget(String key, String businessLine, String environmentCode, String systemName) {
+        Map<String, Object> target = new java.util.LinkedHashMap<>();
+        target.put("key", key);
+        target.put("businessLineCode", businessLine);
+        target.put("businessLineCodes", List.of(businessLine));
+        target.put("environmentCode", environmentCode);
+        target.put("name", businessLine + "-测试服务");
+        target.put("systemName", systemName);
+        target.put("systemNames", List.of(systemName));
+        target.put("host", "127.0.0.1");
+        target.put("port", 22);
+        target.put("username", "ops");
+        target.put("password", "secret");
+        target.put("allowedServices", List.of(systemName));
+        target.put("allowedLogPaths", List.of("/data/logs/" + systemName + "/app.log"));
+        target.put("profiles", List.of(Map.of(
+                "key", "diagnostic",
+                "maxOutputLines", 500,
+                "timeoutSeconds", 10
+        )));
+        return target;
     }
 
     private McpResourceService emptyResourceService() {
@@ -247,6 +344,7 @@ class McpRuntimeServiceTest {
                 "SP-20260601",
                 "2026-06-01",
                 "研发需求",
+                "高",
                 "feature/mcp",
                 null,
                 "摘要",
@@ -297,7 +395,7 @@ class McpRuntimeServiceTest {
                 "让 MCP 读取需求详情",
                 "研发部",
                 "汇浦",
-                null,
+                "BL000007",
                 null,
                 null,
                 null,

@@ -16,6 +16,7 @@ import cn.aslight.workhub.service.workitem.WorkItemFollowUpService;
 import cn.aslight.workhub.service.workitem.WorkItemService;
 import cn.aslight.workhub.service.workitem.WorkItemTransitionService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,6 +56,7 @@ public class WorkItemController {
      * @return 列表结果
      */
     @GetMapping
+    @PreAuthorize("hasAuthority('work-item:view')")
     public ApiResponse<PageResponse<WorkItemSummaryResponse>> list(@RequestParam(required = false) Long projectId,
                                                                    @RequestParam(required = false) String status,
                                                                    @RequestParam(required = false) String type,
@@ -70,6 +72,7 @@ public class WorkItemController {
      * @return 详情结果
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('work-item:view')")
     public ApiResponse<WorkItemDetailResponse> detail(@PathVariable Long id) {
         return ApiResponse.success(workItemService.detail(id));
     }
@@ -81,6 +84,7 @@ public class WorkItemController {
      * @return 新建结果
      */
     @PostMapping
+    @PreAuthorize("hasAuthority('work-item:create') or hasAuthority('work-item:manage')")
     public ApiResponse<WorkItemDetailResponse> create(@Valid @RequestBody WorkItemCreateRequest request,
                                                       Authentication authentication) {
         return ApiResponse.success(workItemService.create(request, authentication.getName()));
@@ -94,6 +98,7 @@ public class WorkItemController {
      * @return 更新结果
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('work-item:update') or hasAuthority('work-item:manage')")
     public ApiResponse<WorkItemDetailResponse> update(@PathVariable Long id,
                                                       @Valid @RequestBody WorkItemUpdateRequest request) {
         return ApiResponse.success(workItemService.update(id, request));
@@ -108,6 +113,7 @@ public class WorkItemController {
      * @return 更新后的工作项详情
      */
     @PostMapping("/{id}/assign")
+    @PreAuthorize("hasAuthority('work-item:assign') or hasAuthority('work-item:manage')")
     public ApiResponse<WorkItemDetailResponse> assign(@PathVariable Long id,
                                                       @Valid @RequestBody WorkItemAssignRequest request,
                                                       Authentication authentication) {
@@ -121,6 +127,7 @@ public class WorkItemController {
      * @return 跟踪记录列表
      */
     @GetMapping("/{id}/follow-ups")
+    @PreAuthorize("hasAuthority('work-item:view')")
     public ApiResponse<PageResponse<WorkItemFollowUpResponse>> listFollowUps(@PathVariable Long id) {
         List<WorkItemFollowUpResponse> items = workItemFollowUpService.list(id);
         return ApiResponse.success(new PageResponse<>(items.size(), items));
@@ -135,6 +142,7 @@ public class WorkItemController {
      * @return 新建后的跟踪记录
      */
     @PostMapping("/{id}/follow-ups")
+    @PreAuthorize("hasAuthority('work-item:follow-up') or hasAuthority('work-item:manage')")
     public ApiResponse<WorkItemFollowUpResponse> addFollowUp(@PathVariable Long id,
                                                              @Valid @RequestBody WorkItemFollowUpRequest request,
                                                              Authentication authentication) {
@@ -148,6 +156,7 @@ public class WorkItemController {
      * @return 状态流转列表
      */
     @GetMapping("/{id}/transitions")
+    @PreAuthorize("hasAuthority('work-item:view')")
     public ApiResponse<PageResponse<WorkItemTransitionResponse>> listTransitions(@PathVariable Long id) {
         List<WorkItemTransitionResponse> items = workItemTransitionService.list(id);
         return ApiResponse.success(new PageResponse<>(items.size(), items));
@@ -162,6 +171,7 @@ public class WorkItemController {
      * @return 新建后的流转记录
      */
     @PostMapping("/{id}/transitions")
+    @PreAuthorize("hasAuthority('work-item:transition')")
     public ApiResponse<WorkItemTransitionResponse> transition(@PathVariable Long id,
                                                               @Valid @RequestBody WorkItemTransitionRequest request,
                                                               Authentication authentication) {

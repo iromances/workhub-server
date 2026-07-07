@@ -1,24 +1,16 @@
 package cn.aslight.workhub.model.payment;
 
-import jakarta.validation.constraints.NotBlank;
-
 import java.time.LocalDateTime;
 
 /**
- * 秘钥文件上传请求。
+ * 商户秘钥文件保存请求。
  */
 public class PaymentSecretFileUploadRequest {
 
-    @NotBlank(message = "不能为空")
     private String secretName;
-
-    @NotBlank(message = "不能为空")
     private String secretType;
-
-    @NotBlank(message = "不能为空")
     private String fileValueType;
-
-    private Boolean activateNow;
+    private String status;
     private LocalDateTime validFrom;
     private LocalDateTime validTo;
     private String remark;
@@ -47,12 +39,12 @@ public class PaymentSecretFileUploadRequest {
         this.fileValueType = fileValueType;
     }
 
-    public Boolean getActivateNow() {
-        return activateNow;
+    public String getStatus() {
+        return status;
     }
 
-    public void setActivateNow(Boolean activateNow) {
-        this.activateNow = activateNow;
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public LocalDateTime getValidFrom() {

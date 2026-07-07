@@ -509,7 +509,7 @@ public class DevelopmentAnalysisService {
                     trimToNull(item.risk())
             ));
         }
-        validateWorkItemSystemTags(workItems, businessLineKeyForValidation(project, businessLine), existingDraft);
+        workItems = canonicalizeWorkItemSystemTags(workItems, businessLineKeyForValidation(project, businessLine), existingDraft);
 
         validateOptionalWorkItemEfforts(workItems);
         String developmentEstimatedEffort = sumEstimatedEffort(workItems, null);
@@ -1248,8 +1248,14 @@ public class DevelopmentAnalysisService {
     private void validateWorkItemSystemTags(List<DevelopmentWorkItemDraft> workItems,
                                             String businessLine,
                                             DevelopmentAnalysisDraft existingDraft) {
+        canonicalizeWorkItemSystemTags(workItems, businessLine, existingDraft);
+    }
+
+    private List<DevelopmentWorkItemDraft> canonicalizeWorkItemSystemTags(List<DevelopmentWorkItemDraft> workItems,
+                                                                          String businessLine,
+                                                                          DevelopmentAnalysisDraft existingDraft) {
         if (workItems == null || workItems.isEmpty()) {
-            return;
+            return List.of();
         }
         String normalizedBusinessLine = trimToNull(businessLine);
         if (normalizedBusinessLine == null) {
@@ -1257,20 +1263,93 @@ public class DevelopmentAnalysisService {
         }
         List<String> allowedSystems = involvedSystemMapper.findSelectableByBusinessLine(normalizedBusinessLine).stream()
                 .map(ProjectInvolvedSystemEntity::getSystemName)
+                .map(this::trimToNull)
+                .filter(value -> value != null)
                 .toList();
         List<String> existingSystems = collectExistingSystemTags(existingDraft);
+        List<DevelopmentWorkItemDraft> normalizedItems = new ArrayList<>();
         for (int i = 0; i < workItems.size(); i++) {
             DevelopmentWorkItemDraft item = workItems.get(i);
             List<String> systemTags = item == null ? List.of() : sanitizeList(item.systemTags());
             if (systemTags.isEmpty()) {
                 throw new IllegalArgumentException("第 " + (i + 1) + " 个研发任务必须选择涉及系统");
             }
+            List<String> normalizedSystemTags = new ArrayList<>();
             for (String systemTag : systemTags) {
+                String normalizedSystemTag = resolveAllowedSystemTag(systemTag, allowedSystems);
+                if (normalizedSystemTag != null) {
+                    if (!normalizedSystemTags.contains(normalizedSystemTag)) {
+                        normalizedSystemTags.add(normalizedSystemTag);
+                    }
+                    continue;
+                }
+                if (existingSystems.contains(systemTag)) {
+                    if (!normalizedSystemTags.contains(systemTag)) {
+                        normalizedSystemTags.add(systemTag);
+                    }
+                    continue;
+                }
                 if (!allowedSystems.contains(systemTag) && !existingSystems.contains(systemTag)) {
                     throw new IllegalArgumentException("涉及系统不在当前业务线或中台系统清单中：" + systemTag);
                 }
             }
+            normalizedItems.add(withSystemTags(item, normalizedSystemTags));
         }
+        return normalizedItems;
+    }
+
+    private String resolveAllowedSystemTag(String systemTag, List<String> allowedSystems) {
+        String normalized = trimToNull(systemTag);
+        if (normalized == null || allowedSystems == null || allowedSystems.isEmpty()) {
+            return null;
+        }
+        for (String allowedSystem : allowedSystems) {
+            if (normalized.equals(allowedSystem)) {
+                return allowedSystem;
+            }
+        }
+        for (String allowedSystem : allowedSystems) {
+            if (normalized.equalsIgnoreCase(allowedSystem)) {
+                return allowedSystem;
+            }
+        }
+        List<String> suffixMatches = allowedSystems.stream()
+                .filter(allowedSystem -> isUniqueSuffixAliasCandidate(normalized, allowedSystem))
+                .toList();
+        return suffixMatches.size() == 1 ? suffixMatches.getFirst() : null;
+    }
+
+    private boolean isUniqueSuffixAliasCandidate(String systemTag, String allowedSystem) {
+        String normalizedTag = trimToNull(systemTag);
+        String normalizedAllowed = trimToNull(allowedSystem);
+        if (normalizedTag == null || normalizedAllowed == null || !normalizedTag.contains("-")) {
+            return false;
+        }
+        return normalizedAllowed.length() > normalizedTag.length()
+                && normalizedAllowed.toLowerCase().endsWith("-" + normalizedTag.toLowerCase());
+    }
+
+    private DevelopmentWorkItemDraft withSystemTags(DevelopmentWorkItemDraft item, List<String> systemTags) {
+        return new DevelopmentWorkItemDraft(
+                item.title(),
+                item.description(),
+                item.requirementChangePoint(),
+                item.taskType(),
+                item.targetResources(),
+                item.changePoints(),
+                systemTags,
+                item.evidenceRefs(),
+                item.confidence(),
+                item.moduleName(),
+                item.relatedFiles(),
+                item.estimatedEffort(),
+                item.ownerUserName(),
+                item.priority(),
+                item.plannedStartDate(),
+                item.plannedEndDate(),
+                item.dependency(),
+                item.risk()
+        );
     }
 
     private List<String> collectExistingSystemTags(DevelopmentAnalysisDraft draft) {

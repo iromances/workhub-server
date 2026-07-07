@@ -25,7 +25,6 @@ public class PaymentMerchantSaveRequest {
     @NotBlank(message = "不能为空")
     private String status;
 
-    private String appId;
     private String settlementSubject;
     private List<String> purposeCodes;
     private String remark;
@@ -68,14 +67,6 @@ public class PaymentMerchantSaveRequest {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public String getAppId() {
-        return appId;
-    }
-
-    public void setAppId(String appId) {
-        this.appId = appId;
     }
 
     public String getSettlementSubject() {

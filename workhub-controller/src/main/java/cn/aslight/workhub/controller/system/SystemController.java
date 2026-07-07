@@ -7,6 +7,7 @@ import cn.aslight.workhub.model.system.DeveloperResourceSaveRequest;
 import cn.aslight.workhub.model.system.UserOptionResponse;
 import cn.aslight.workhub.service.system.DeveloperResourceService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -51,6 +52,7 @@ public class SystemController {
      * @return 研发人员资源列表
      */
     @GetMapping("/developer-options")
+    @PreAuthorize("hasAuthority('project:developer:view') or hasAuthority('project:developer:manage') or hasAuthority('work-item:view') or hasAuthority('intake:record:view')")
     public ApiResponse<PageResponse<UserOptionResponse>> listDeveloperOptions() {
         List<UserOptionResponse> items = developerResourceService.listOptions();
         return ApiResponse.success(new PageResponse<>(items.size(), items));
@@ -63,6 +65,7 @@ public class SystemController {
      * @return 研发人员资源列表
      */
     @GetMapping("/developers")
+    @PreAuthorize("hasAuthority('project:developer:view') or hasAuthority('project:developer:manage')")
     public ApiResponse<PageResponse<DeveloperResourceResponse>> listDevelopers(@RequestParam(required = false) String keyword) {
         List<DeveloperResourceResponse> items = developerResourceService.list(keyword);
         return ApiResponse.success(new PageResponse<>(items.size(), items));
@@ -75,6 +78,7 @@ public class SystemController {
      * @return 新增后的研发人员
      */
     @PostMapping("/developers")
+    @PreAuthorize("hasAuthority('project:developer:create') or hasAuthority('project:developer:manage')")
     public ApiResponse<DeveloperResourceResponse> createDeveloper(@Valid @RequestBody DeveloperResourceSaveRequest request) {
         return ApiResponse.success(developerResourceService.create(request));
     }
@@ -87,6 +91,7 @@ public class SystemController {
      * @return 更新后的研发人员
      */
     @PutMapping("/developers/{id}")
+    @PreAuthorize("hasAuthority('project:developer:update') or hasAuthority('project:developer:manage')")
     public ApiResponse<DeveloperResourceResponse> updateDeveloper(@PathVariable Long id,
                                                                   @Valid @RequestBody DeveloperResourceSaveRequest request) {
         return ApiResponse.success(developerResourceService.update(id, request));
@@ -99,6 +104,7 @@ public class SystemController {
      * @return 删除结果
      */
     @DeleteMapping("/developers/{id}")
+    @PreAuthorize("hasAuthority('project:developer:delete') or hasAuthority('project:developer:manage')")
     public ApiResponse<Void> deleteDeveloper(@PathVariable Long id) {
         developerResourceService.delete(id);
         return ApiResponse.success(null);

@@ -73,7 +73,6 @@ public class PaymentMerchantService {
                 detail.merchantCode(),
                 detail.merchantName(),
                 detail.environment(),
-                detail.appId(),
                 detail.settlementSubject(),
                 detail.status(),
                 detail.remark(),
@@ -157,7 +156,6 @@ public class PaymentMerchantService {
         entity.setMerchantName(PaymentCatalogs.requireText(request.getMerchantName(), "merchantName"));
         entity.setEnvironment(PaymentCatalogs.normalizeEnvironment(request.getEnvironment()));
         entity.setStatus(PaymentCatalogs.normalizeStatus(request.getStatus(), "status"));
-        entity.setAppId(PaymentCatalogs.trimToNull(request.getAppId()));
         entity.setSettlementSubject(PaymentCatalogs.trimToNull(request.getSettlementSubject()));
         entity.setRemark(PaymentCatalogs.trimToNull(request.getRemark()));
         return entity;
@@ -177,7 +175,6 @@ public class PaymentMerchantService {
                 response.merchantCode(),
                 response.merchantName(),
                 response.environment(),
-                response.appId(),
                 paymentMerchantMapper.findPurposeCodes(response.id()),
                 response.status()
         );

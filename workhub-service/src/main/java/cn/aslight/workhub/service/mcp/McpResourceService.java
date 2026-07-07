@@ -197,8 +197,11 @@ public class McpResourceService {
             businessLineEntities = List.of();
         }
         for (BusinessLineEntity entity : businessLineEntities) {
+            String code = trimToNull(entity.getBusinessLineCode());
             String name = trimToNull(entity.getBusinessLineName());
-            if (name != null) {
+            if (code != null) {
+                configuredLines.put(code, entity);
+            } else if (name != null) {
                 configuredLines.put(name, entity);
             }
         }
@@ -215,19 +218,31 @@ public class McpResourceService {
                                                         BusinessLineEntity entity,
                                                         List<ProjectInvolvedSystemEntity> systems) {
         Map<String, Object> item = new LinkedHashMap<>();
+        String name = entity == null ? code : firstNonBlank(entity.getBusinessLineName(), code);
         item.put("code", code);
-        item.put("name", entity == null ? code : entity.getBusinessLineName());
+        item.put("name", name);
         item.put("gitlabGroupName", entity == null ? null : trimToNull(entity.getGitlabGroupName()));
-        item.put("involvedSystems", systemsByScope(systems, "BUSINESS_LINE", code));
+        item.put("involvedSystems", systemsByScope(systems, "BUSINESS_LINE", code, name));
         item.put("globalSystems", systemsByScope(systems, "MIDDLE_PLATFORM", ""));
         item.put("enabled", entity == null || !Boolean.FALSE.equals(entity.getEnabled()));
         return item;
     }
 
-    private List<String> systemsByScope(List<ProjectInvolvedSystemEntity> systems, String scope, String businessLine) {
+    private List<String> systemsByScope(List<ProjectInvolvedSystemEntity> systems, String scope, String... businessLineAliases) {
+        Set<String> aliases = new LinkedHashSet<>();
+        if (businessLineAliases != null) {
+            for (String alias : businessLineAliases) {
+                String normalized = trimToNull(alias);
+                if (normalized != null) {
+                    aliases.add(normalized);
+                }
+            }
+        }
         return systems.stream()
                 .filter(item -> scope.equals(item.getSystemScope()))
-                .filter(item -> businessLine == null || businessLine.equals(nullToEmpty(item.getBusinessLine())))
+                .filter(item -> aliases.isEmpty()
+                        || aliases.contains(nullToEmpty(item.getBusinessLine()))
+                        || aliases.contains(nullToEmpty(item.getBusinessLineCode())))
                 .map(ProjectInvolvedSystemEntity::getSystemName)
                 .map(this::trimToNull)
                 .filter(value -> value != null)

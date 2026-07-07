@@ -4,6 +4,7 @@ import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakeHistoryResponse;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisResponse;
 import cn.aslight.workhub.model.intake.IntakeBusinessLineUpdateRequest;
+import cn.aslight.workhub.model.intake.IntakePriorityUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
 import cn.aslight.workhub.model.intake.IntakeTodoResponse;
@@ -172,6 +173,7 @@ class IntakeControllerTest {
                         "202603250009",
                         "2026/3/25 16:17",
                         "研发需求",
+                        "高",
                         null,
                         null,
                         "沃橙绑卡至嘉泰保理",
@@ -215,6 +217,7 @@ class IntakeControllerTest {
                 .andExpect(jsonPath("$.data.items[0].approvalCode").value("202603250009"))
                 .andExpect(jsonPath("$.data.items[0].submittedTime").value("2026/3/25 16:17"))
                 .andExpect(jsonPath("$.data.items[0].requirementType").value("研发需求"))
+                .andExpect(jsonPath("$.data.items[0].priority").value("高"))
                 .andExpect(jsonPath("$.data.items[0].requirementDigest").value("沃橙绑卡至嘉泰保理"))
                 .andExpect(jsonPath("$.data.items[0].department").value("供应链业务部"))
                 .andExpect(jsonPath("$.data.items[0].requirementName").value("沃橙项目增加客户绑卡至嘉泰保理的需求0325"))
@@ -263,6 +266,26 @@ class IntakeControllerTest {
                 .andExpect(jsonPath("$.data.total").value(0));
 
         verify(intakeService).list(eq(null), eq(null), eq(null), eq(null), eq(null), eq("研发需求"), eq(null), eq(null), eq(null));
+    }
+
+    @Test
+    void updatePriority_shouldExposePriorityApi() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        IntakeDetailResponse detail = simpleDetail(9L, "待排期");
+        when(intakeService.updatePriority(eq(9L), any(IntakePriorityUpdateRequest.class), eq("admin"))).thenReturn(detail);
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
+
+        mockMvc.perform(post("/api/intake/9/priority")
+                        .principal(new UsernamePasswordAuthenticationToken("admin", "N/A"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"priority":"高"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(9));
+
+        verify(intakeService).updatePriority(eq(9L), any(IntakePriorityUpdateRequest.class), eq("admin"));
     }
 
     @Test

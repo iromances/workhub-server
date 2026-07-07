@@ -80,7 +80,7 @@ public class PaymentMerchantCredentialService {
         if (existing == null || !merchantId.equals(existing.getMerchantId())) {
             throw new IllegalArgumentException("商户敏感凭据不存在");
         }
-        PaymentMerchantCredentialEntity entity = toEntity(merchantId, existing.getCredentialKey(), request);
+        PaymentMerchantCredentialEntity entity = toEntity(merchantId, existing.getCredentialKey(), request, existing);
         entity.setId(credentialId);
         paymentMerchantCredentialMapper.update(entity);
         paymentAuditService.record(
@@ -97,15 +97,31 @@ public class PaymentMerchantCredentialService {
     private PaymentMerchantCredentialEntity toEntity(Long merchantId,
                                                      String credentialKey,
                                                      PaymentMerchantCredentialSaveRequest request) {
-        String rawValue = PaymentCatalogs.requireText(request.getCredentialValue(), "credentialValue");
+        return toEntity(merchantId, credentialKey, request, null);
+    }
+
+    private PaymentMerchantCredentialEntity toEntity(Long merchantId,
+                                                     String credentialKey,
+                                                     PaymentMerchantCredentialSaveRequest request,
+                                                     PaymentMerchantCredentialEntity existing) {
+        String rawValue = PaymentCatalogs.trimToNull(request.getCredentialValue());
+        if (rawValue == null && existing == null) {
+            throw new IllegalArgumentException("credentialValue 不能为空");
+        }
         PaymentMerchantCredentialEntity entity = new PaymentMerchantCredentialEntity();
         entity.setMerchantId(merchantId);
         entity.setCredentialKey(credentialKey);
         entity.setCredentialName(PaymentCatalogs.requireText(request.getCredentialName(), "credentialName"));
         entity.setCredentialType(PaymentCatalogs.normalizeCredentialType(request.getCredentialType()));
-        entity.setEncryptedValue(Boolean.TRUE.equals(request.getPlainStorage()) ? rawValue : paymentCryptoService.encrypt(rawValue));
-        entity.setMaskedValue(paymentCryptoService.mask(rawValue));
-        entity.setFingerprint(paymentCryptoService.fingerprint(rawValue));
+        if (rawValue == null) {
+            entity.setEncryptedValue(existing.getEncryptedValue());
+            entity.setMaskedValue(existing.getMaskedValue());
+            entity.setFingerprint(existing.getFingerprint());
+        } else {
+            entity.setEncryptedValue(Boolean.TRUE.equals(request.getPlainStorage()) ? rawValue : paymentCryptoService.encrypt(rawValue));
+            entity.setMaskedValue(paymentCryptoService.mask(rawValue));
+            entity.setFingerprint(paymentCryptoService.fingerprint(rawValue));
+        }
         entity.setStatus(PaymentCatalogs.normalizeStatus(request.getStatus(), "status"));
         entity.setRemark(PaymentCatalogs.trimToNull(request.getRemark()));
         return entity;

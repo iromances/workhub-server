@@ -8,6 +8,7 @@ import cn.aslight.workhub.model.payment.PaymentPurposeOptionResponse;
 import cn.aslight.workhub.service.payment.PaymentCatalogService;
 import cn.aslight.workhub.service.payment.PaymentProjectBindingService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,6 +38,7 @@ public class PaymentBindingController {
     }
 
     @GetMapping("/bindings")
+    @PreAuthorize("hasAuthority('payment:config:view') or hasAuthority('payment:config:manage')")
     public ApiResponse<PageResponse<PaymentProjectBindingResponse>> list(@RequestParam(required = false) Long projectId,
                                                                          @RequestParam(required = false) String businessLine,
                                                                          @RequestParam(required = false) Long merchantId,
@@ -49,12 +51,14 @@ public class PaymentBindingController {
     }
 
     @PostMapping("/bindings")
+    @PreAuthorize("hasAuthority('payment:binding:manage') or hasAuthority('payment:config:manage')")
     public ApiResponse<PaymentProjectBindingResponse> create(@Valid @RequestBody PaymentProjectBindingSaveRequest request,
                                                              Principal principal) {
         return ApiResponse.success(paymentProjectBindingService.create(request, operator(principal)));
     }
 
     @PutMapping("/bindings/{id}")
+    @PreAuthorize("hasAuthority('payment:binding:manage') or hasAuthority('payment:config:manage')")
     public ApiResponse<PaymentProjectBindingResponse> update(@PathVariable Long id,
                                                              @Valid @RequestBody PaymentProjectBindingSaveRequest request,
                                                              Principal principal) {
@@ -62,12 +66,14 @@ public class PaymentBindingController {
     }
 
     @GetMapping("/projects/{projectId}/bindings/resolve")
+    @PreAuthorize("hasAuthority('payment:config:view') or hasAuthority('payment:config:manage')")
     public ApiResponse<PaymentProjectBindingResponse> resolve(@PathVariable Long projectId,
                                                               @RequestParam String purposeCode) {
         return ApiResponse.success(paymentProjectBindingService.resolve(projectId, purposeCode));
     }
 
     @GetMapping("/purposes")
+    @PreAuthorize("hasAuthority('payment:config:view') or hasAuthority('payment:config:manage')")
     public ApiResponse<List<PaymentPurposeOptionResponse>> listPurposes() {
         return ApiResponse.success(paymentCatalogService.listPurposes());
     }

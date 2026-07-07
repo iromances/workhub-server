@@ -9,6 +9,7 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,6 +43,7 @@ public class AttachmentController {
      * @return 附件下载响应
      */
     @GetMapping("/{id}/download")
+    @PreAuthorize("hasAuthority('intake:record:view')")
     public ResponseEntity<Resource> download(@PathVariable Long id) {
         AttachmentService.AttachmentResource attachment = attachmentService.loadAsResource(id);
         String contentType = attachment.entity().getContentType() == null
@@ -65,6 +67,7 @@ public class AttachmentController {
      * @return 更新后的需求详情
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('intake:attachment:manage') or hasAuthority('intake:record:update')")
     public ApiResponse<IntakeDetailResponse> delete(@PathVariable Long id,
                                                     @RequestParam Long intakeId,
                                                     Authentication authentication) {
@@ -81,6 +84,7 @@ public class AttachmentController {
      * @return 更新后的需求详情
      */
     @PostMapping("/{id}/replace")
+    @PreAuthorize("hasAuthority('intake:attachment:manage') or hasAuthority('intake:record:update')")
     public ApiResponse<IntakeDetailResponse> replace(@PathVariable Long id,
                                                      @RequestParam Long intakeId,
                                                      @RequestParam(name = "file") MultipartFile file,

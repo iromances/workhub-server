@@ -3,7 +3,7 @@ package cn.aslight.workhub.controller.payment;
 import cn.aslight.workhub.model.payment.PaymentMerchantDetailResponse;
 import cn.aslight.workhub.model.payment.PaymentMerchantCredentialResponse;
 import cn.aslight.workhub.model.payment.PaymentMerchantParamResponse;
-import cn.aslight.workhub.model.payment.PaymentSecretFileUploadRequest;
+import cn.aslight.workhub.model.payment.PaymentSecretDownloadResponse;
 import cn.aslight.workhub.model.payment.PaymentSecretSummaryResponse;
 import cn.aslight.workhub.model.payment.PaymentMerchantSummaryResponse;
 import cn.aslight.workhub.service.payment.PaymentMerchantCredentialService;
@@ -12,7 +12,6 @@ import cn.aslight.workhub.service.payment.PaymentMerchantService;
 import cn.aslight.workhub.service.payment.PaymentSecretService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -24,9 +23,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class PaymentMerchantControllerTest {
@@ -45,7 +45,6 @@ class PaymentMerchantControllerTest {
                 "M0001",
                 "易宝主商户",
                 "PROD",
-                "app-prod",
                 "某某保理",
                 "ACTIVE",
                 "主代收商户",
@@ -54,6 +53,10 @@ class PaymentMerchantControllerTest {
                         11L,
                         "notifyUrl",
                         "URL",
+                        "TEXT",
+                        null,
+                        null,
+                        null,
                         false,
                         "https://demo/callback",
                         null,
@@ -110,7 +113,7 @@ class PaymentMerchantControllerTest {
         PaymentMerchantCredentialService credentialService = mock(PaymentMerchantCredentialService.class);
         PaymentSecretService secretService = mock(PaymentSecretService.class);
         when(merchantService.list(eq("ACTIVE"), eq(1L), eq(10L), eq("BL000001"), eq("WITHHOLD"), eq("M0001"))).thenReturn(List.of(
-                new PaymentMerchantSummaryResponse(8L, 1L, "YEEPAY", "易宝支付", "M0001", "易宝主商户", "PROD", "app-prod", List.of("WITHHOLD"), "ACTIVE")
+                new PaymentMerchantSummaryResponse(8L, 1L, "YEEPAY", "易宝支付", "M0001", "易宝主商户", "PROD", List.of("WITHHOLD"), "ACTIVE")
         ));
 
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
@@ -133,50 +136,44 @@ class PaymentMerchantControllerTest {
     }
 
     @Test
-    void createSecretFromFile_shouldAcceptMultipartFileAndMetadata() throws Exception {
+    void deleteParam_shouldCallService() throws Exception {
         PaymentMerchantService merchantService = mock(PaymentMerchantService.class);
         PaymentMerchantParamService paramService = mock(PaymentMerchantParamService.class);
         PaymentMerchantCredentialService credentialService = mock(PaymentMerchantCredentialService.class);
         PaymentSecretService secretService = mock(PaymentSecretService.class);
-        when(secretService.createFromFile(eq(8L), any(PaymentSecretFileUploadRequest.class), any(), eq("system"))).thenReturn(List.of(
-                new PaymentSecretSummaryResponse(
-                        21L,
-                        "merchant-cert",
-                        "CERTIFICATE",
-                        2,
-                        "********",
-                        "fingerprint",
-                        "AES/GCM/NoPadding",
-                        "ACTIVE",
-                        null,
-                        null,
-                        "生产证书",
-                        LocalDateTime.of(2026, 4, 3, 12, 0)
-                )
+        when(paramService.delete(8L, 11L, "admin")).thenReturn(List.of());
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+                new PaymentMerchantController(merchantService, paramService, credentialService, secretService)
+        ).build();
+
+        mockMvc.perform(delete("/api/payment/merchants/8/params/11")
+                        .principal(() -> "admin"))
+                .andExpect(status().isOk());
+
+        verify(paramService).delete(8L, 11L, "admin");
+    }
+
+    @Test
+    void downloadSecretFile_shouldReturnAttachment() throws Exception {
+        PaymentMerchantService merchantService = mock(PaymentMerchantService.class);
+        PaymentMerchantParamService paramService = mock(PaymentMerchantParamService.class);
+        PaymentMerchantCredentialService credentialService = mock(PaymentMerchantCredentialService.class);
+        PaymentSecretService secretService = mock(PaymentSecretService.class);
+        when(secretService.downloadFile(8L, 21L)).thenReturn(new PaymentSecretDownloadResponse(
+                "merchant.p12",
+                "application/x-pkcs12",
+                new byte[]{0x01, 0x02}
         ));
 
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
                 new PaymentMerchantController(merchantService, paramService, credentialService, secretService)
         ).build();
-        MockMultipartFile file = new MockMultipartFile(
-                "file",
-                "merchant.p12",
-                "application/x-pkcs12",
-                new byte[]{0x01, 0x02}
-        );
 
-        mockMvc.perform(multipart("/api/payment/merchants/8/secrets/file")
-                        .file(file)
-                        .param("secretName", "merchant-cert")
-                        .param("secretType", "CERTIFICATE")
-                        .param("fileValueType", "BINARY")
-                        .param("activateNow", "true")
-                        .param("remark", "生产证书")
-                        .accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/payment/merchants/8/secrets/21/file"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].secretName").value("merchant-cert"))
-                .andExpect(jsonPath("$.data[0].versionNo").value(2));
-
-        verify(secretService).createFromFile(eq(8L), any(PaymentSecretFileUploadRequest.class), any(), eq("system"));
+                .andExpect(header().string("Content-Disposition", "attachment; filename*=UTF-8''merchant.p12"))
+                .andExpect(header().string("Content-Type", "application/x-pkcs12"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().bytes(new byte[]{0x01, 0x02}));
     }
 }

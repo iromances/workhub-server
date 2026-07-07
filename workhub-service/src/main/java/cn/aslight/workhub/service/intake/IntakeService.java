@@ -14,6 +14,7 @@ import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakeHistoryEntity;
 import cn.aslight.workhub.model.intake.IntakeHistoryResponse;
 import cn.aslight.workhub.model.intake.IntakePauseRequest;
+import cn.aslight.workhub.model.intake.IntakePriorityUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeRelatedWorkItemResponse;
 import cn.aslight.workhub.model.intake.IntakeTodoEntity;
 import cn.aslight.workhub.model.intake.IntakeTodoResponse;
@@ -166,6 +167,8 @@ public class IntakeService {
             IntakeDemandStatusRules.TERMINATED,
             IntakeDemandStatusRules.PAUSED
     );
+    private static final String DEFAULT_DEMAND_PRIORITY = "中";
+    private static final List<String> DEMAND_PRIORITY_SORT_ORDER = List.of("高", "中", "低");
 
     private final IntakeMapper intakeMapper;
     private final IntakeHistoryMapper intakeHistoryMapper;
@@ -381,6 +384,7 @@ public class IntakeService {
                 .filter(item -> matchesReleasedDate(item, normalizedReleasedStartDate, normalizedReleasedEndDate))
                 .sorted(Comparator.comparingInt(this::enrichmentSortOrder)
                         .thenComparingInt(this::demandStatusSortOrder)
+                        .thenComparingInt(this::demandPrioritySortOrder)
                         .thenComparing(IntakeSummaryResponse::receivedAt, Comparator.nullsLast(Comparator.reverseOrder()))
                         .thenComparing(IntakeSummaryResponse::id, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
@@ -875,6 +879,25 @@ public class IntakeService {
         return detail(id, null, false);
     }
 
+    @Transactional
+    public IntakeDetailResponse updatePriority(Long id,
+                                               IntakePriorityUpdateRequest request,
+                                               String operatorUserName) {
+        IntakeRecordEntity entity = requireExisting(id);
+        String priority = requireDemandPriority(request == null ? null : request.getPriority());
+        String previousPriority = trimToNull(entity.getPriority());
+        if (Objects.equals(previousPriority, priority)) {
+            return detail(id, null, false);
+        }
+        intakeMapper.updatePriority(id, priority);
+        recordHistory(id,
+                "UPDATE",
+                "修改优先级",
+                "优先级：" + defaultHistoryValue(previousPriority) + " -> " + priority,
+                operatorUserName);
+        return detail(id, null, false);
+    }
+
     /**
      * 为数据提取/运维类需求生成 SQL 草稿。
      *
@@ -923,6 +946,9 @@ public class IntakeService {
         entity.setDevelopmentOwnerUserName(trimToNull(request.getDevelopmentOwnerUserName()));
         IntakeStructuredData structuredData = normalizeStructuredData(intakeStructuredDataExtractor.extract(entity.getRawContent()));
         intakeStructuredFieldNormalizer.applyStructuredData(entity, structuredData);
+        if (trimToNull(entity.getPriority()) == null) {
+            entity.setPriority(DEFAULT_DEMAND_PRIORITY);
+        }
         entity.setStructuredDataJson(null);
         entity.setAiDraftJson(null);
         entity.setIntakeStatus(IntakeStatusRules.PENDING);
@@ -1181,6 +1207,7 @@ public class IntakeService {
                 structuredData == null ? null : structuredData.approvalCode(),
                 structuredData == null ? null : structuredData.submittedTime(),
                 structuredData == null ? null : structuredData.requirementType(),
+                entity.getPriority(),
                 structuredData == null ? null : structuredData.developmentBranchName(),
                 structuredData == null ? null : structuredData.zentaoUrl(),
                 structuredData == null ? null : structuredData.requirementDigest(),
@@ -2117,6 +2144,14 @@ public class IntakeService {
         return normalized;
     }
 
+    private String requireDemandPriority(String value) {
+        String priority = requireValue(value, "优先级不能为空");
+        if (!DEMAND_PRIORITY_SORT_ORDER.contains(priority)) {
+            throw new IllegalArgumentException("优先级仅支持高、中、低");
+        }
+        return priority;
+    }
+
     private String requireEffortValue(String value, String errorMessage) {
         String normalized = EffortUnitNormalizer.normalizeEffort(requireValue(value, errorMessage));
         if (!isNormalizedEffort(normalized)) {
@@ -2604,6 +2639,15 @@ public class IntakeService {
         }
         int order = DEMAND_STATUS_SORT_ORDER.indexOf(demandStatus);
         return order >= 0 ? order : DEMAND_STATUS_SORT_ORDER.size();
+    }
+
+    private int demandPrioritySortOrder(IntakeSummaryResponse item) {
+        String priority = item == null ? null : trimToNull(item.priority());
+        if (priority == null) {
+            return DEMAND_PRIORITY_SORT_ORDER.size();
+        }
+        int order = DEMAND_PRIORITY_SORT_ORDER.indexOf(priority);
+        return order >= 0 ? order : DEMAND_PRIORITY_SORT_ORDER.size();
     }
 
     private int enrichmentSortOrder(IntakeSummaryResponse item) {

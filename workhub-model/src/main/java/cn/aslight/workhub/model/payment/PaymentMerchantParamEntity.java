@@ -9,6 +9,10 @@ public class PaymentMerchantParamEntity {
     private Long merchantId;
     private String paramKey;
     private String valueType;
+    private String sourceType;
+    private String fileName;
+    private String fileContentType;
+    private String fileValueType;
     private Boolean sensitiveFlag;
     private String plainValue;
     private String encryptedValue;
@@ -45,6 +49,38 @@ public class PaymentMerchantParamEntity {
 
     public void setValueType(String valueType) {
         this.valueType = valueType;
+    }
+
+    public String getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(String sourceType) {
+        this.sourceType = sourceType;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getFileContentType() {
+        return fileContentType;
+    }
+
+    public void setFileContentType(String fileContentType) {
+        this.fileContentType = fileContentType;
+    }
+
+    public String getFileValueType() {
+        return fileValueType;
+    }
+
+    public void setFileValueType(String fileValueType) {
+        this.fileValueType = fileValueType;
     }
 
     public Boolean getSensitiveFlag() {
