@@ -1,5 +1,7 @@
 target/
 .idea/
+.codex-tmp/
+.tmp/
 .DS_Store
 *.log
 logs/
