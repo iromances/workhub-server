@@ -5,6 +5,8 @@ import cn.aslight.workhub.dao.mcp.McpResourceMapper;
 import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.dao.project.ProjectInvolvedSystemMapper;
 import cn.aslight.workhub.model.mcp.McpCatalogResponse;
+import cn.aslight.workhub.model.mcp.McpAuditPageResponse;
+import cn.aslight.workhub.model.mcp.McpBastionEntity;
 import cn.aslight.workhub.model.mcp.McpResourceEntity;
 import cn.aslight.workhub.model.mcp.McpResourceResponse;
 import cn.aslight.workhub.model.mcp.McpResourceSaveRequest;
@@ -12,8 +14,11 @@ import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.model.project.ProjectInvolvedSystemEntity;
 import cn.aslight.workhub.service.system.SysConfigService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -21,25 +26,60 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class McpResourceServiceTest {
 
+    @TempDir
+    Path tempDir;
+
+    @Test
+    void auditEntries_shouldReturnNewestFirstPagedResultsAndValidTotal() throws Exception {
+        McpResourceService service = new McpResourceService(
+                mock(McpResourceMapper.class),
+                new McpCryptoService(testProperties()),
+                mock(McpBastionService.class),
+                mock(BusinessLineMapper.class),
+                mock(ProjectInvolvedSystemMapper.class),
+                mock(SysConfigService.class)
+        );
+        Path auditLog = tempDir.resolve("mcp-audit.jsonl");
+        Files.write(auditLog, List.of(
+                "{\"timestamp\":\"2026-07-21T10:00:01Z\",\"tool\":\"tool-1\"}",
+                "{\"timestamp\":\"2026-07-21T10:00:02Z\",\"tool\":\"tool-2\"}",
+                "",
+                "{\"timestamp\":\"2026-07-21T10:00:03Z\",\"tool\":\"tool-3\"}",
+                "{\"timestamp\":\"2026-07-21T10:00:04Z\",\"tool\":\"tool-4\"}",
+                "{\"timestamp\":\"2026-07-21T10:00:05Z\",\"tool\":\"tool-5\"}"
+        ));
+
+        McpAuditPageResponse page = service.auditEntries(auditLog, 2, 2);
+
+        assertEquals(5, page.total());
+        assertEquals(2, page.items().size());
+        assertEquals("tool-3", page.items().get(0).fields().get("tool"));
+        assertEquals("tool-2", page.items().get(1).fields().get("tool"));
+    }
+
     @Test
     void createDatabase_shouldEncryptPasswordAndExposeOnlyConfiguredFlag() {
         McpResourceMapper mapper = mock(McpResourceMapper.class);
         McpCryptoService cryptoService = new McpCryptoService(testProperties());
-        McpResourceSchemaInitializer schemaInitializer = mock(McpResourceSchemaInitializer.class);
+        McpBastionService bastionService = mock(McpBastionService.class);
         McpResourceService service = new McpResourceService(
                 mapper,
                 cryptoService,
-                schemaInitializer,
+                bastionService,
                 mock(BusinessLineMapper.class),
                 mock(ProjectInvolvedSystemMapper.class),
                 mock(SysConfigService.class)
@@ -55,6 +95,7 @@ class McpResourceServiceTest {
         when(mapper.findById(1L)).thenAnswer(invocation -> saved.get());
 
         McpResourceSaveRequest request = databaseRequest();
+        request.setSystemNames(List.of("crm-api", "crm-admin"));
 
         McpResourceResponse response = service.create(request);
 
@@ -62,19 +103,57 @@ class McpResourceServiceTest {
         verify(mapper).insert(captor.capture());
         assertNotEquals("plain-db-password", captor.getValue().getPasswordEncrypted());
         assertTrue(captor.getValue().getPasswordEncrypted().startsWith("mcp:v1:"));
+        assertEquals("[\"crm-api\",\"crm-admin\"]", captor.getValue().getSystemName());
+        assertEquals(List.of("crm-api", "crm-admin"), response.systemNames());
         assertTrue(response.passwordConfigured());
+    }
+
+    @Test
+    void createDatabase_shouldPersistSystemNamesLongerThanLegacyColumnLimit() {
+        McpResourceMapper mapper = mock(McpResourceMapper.class);
+        McpResourceService service = new McpResourceService(
+                mapper,
+                new McpCryptoService(testProperties()),
+                mock(McpBastionService.class),
+                mock(BusinessLineMapper.class),
+                mock(ProjectInvolvedSystemMapper.class),
+                mock(SysConfigService.class)
+        );
+        AtomicReference<McpResourceEntity> saved = new AtomicReference<>();
+        when(mapper.findByTargetKey("crm-test-mysql")).thenReturn(null);
+        org.mockito.Mockito.doAnswer(invocation -> {
+            McpResourceEntity entity = invocation.getArgument(0);
+            entity.setId(1L);
+            saved.set(entity);
+            return null;
+        }).when(mapper).insert(any());
+        when(mapper.findById(1L)).thenAnswer(invocation -> saved.get());
+
+        McpResourceSaveRequest request = databaseRequest();
+        request.setSystemNames(List.of(
+                "scf-intf-zhonghua", "scf-merchant-gateway", "scf-front-gateway",
+                "scf_h5", "scf_channel_admin", "scf-ops-reporting", "scf-saps",
+                "scf-payment", "scf-order", "scf-op-gateway", "scf-intf-common",
+                "scf-gateway", "scf_admin"
+        ));
+
+        McpResourceResponse response = service.create(request);
+
+        assertTrue(saved.get().getSystemName().length() > 128);
+        assertEquals(13, response.systemNames().size());
+        assertEquals("scf-order", response.systemNames().get(8));
     }
 
     @Test
     void createDatabase_shouldGenerateTargetKeyAndNameWhenBlank() {
         McpResourceMapper mapper = mock(McpResourceMapper.class);
         McpCryptoService cryptoService = new McpCryptoService(testProperties());
-        McpResourceSchemaInitializer schemaInitializer = mock(McpResourceSchemaInitializer.class);
+        McpBastionService bastionService = mock(McpBastionService.class);
         BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
         McpResourceService service = new McpResourceService(
                 mapper,
                 cryptoService,
-                schemaInitializer,
+                bastionService,
                 businessLineMapper,
                 mock(ProjectInvolvedSystemMapper.class),
                 mock(SysConfigService.class)
@@ -103,15 +182,98 @@ class McpResourceServiceTest {
     }
 
     @Test
+    void createDatabase_shouldAllowPublicResourceWithoutBusinessLineAndExposeFeatureTags() {
+        McpResourceMapper mapper = mock(McpResourceMapper.class);
+        McpResourceService service = new McpResourceService(
+                mapper,
+                new McpCryptoService(testProperties()),
+                mock(McpBastionService.class),
+                mock(BusinessLineMapper.class),
+                mock(ProjectInvolvedSystemMapper.class),
+                mock(SysConfigService.class)
+        );
+        AtomicReference<McpResourceEntity> saved = new AtomicReference<>();
+        when(mapper.findByTargetKey("public-test-db-10-0-0-10-3306")).thenReturn(null);
+        org.mockito.Mockito.doAnswer(invocation -> {
+            McpResourceEntity entity = invocation.getArgument(0);
+            entity.setId(9L);
+            saved.set(entity);
+            return null;
+        }).when(mapper).insert(any());
+        when(mapper.findById(9L)).thenAnswer(invocation -> saved.get());
+
+        McpResourceSaveRequest request = databaseRequest();
+        request.setTargetKey(null);
+        request.setName(null);
+        request.setPublicResource(true);
+        request.setBusinessLineCode(null);
+        request.setBusinessLineCodes(List.of());
+        request.setFeatureTags(List.of(" 禅道 ", "支付", "禅道"));
+
+        McpResourceResponse response = service.create(request);
+
+        assertTrue(response.publicResource());
+        assertEquals(List.of("禅道", "支付"), response.featureTags());
+        assertEquals(List.of(), response.businessLineCodes());
+        assertEquals("", saved.get().getBusinessLineCode());
+        assertEquals("[\"禅道\",\"支付\"]", saved.get().getFeatureTagsJson());
+        assertEquals("public-test-db-10-0-0-10-3306", response.targetKey());
+        assertEquals("公共资源 test 数据库目标 10.0.0.10:3306", response.name());
+        verify(mapper, never()).insertBusinessLineBinding(anyLong(), anyString());
+    }
+
+    @Test
+    void createDatabase_shouldPersistSelectedBastionId() {
+        McpResourceMapper mapper = mock(McpResourceMapper.class);
+        McpCryptoService cryptoService = new McpCryptoService(testProperties());
+        McpBastionService bastionService = mock(McpBastionService.class);
+        McpResourceService service = new McpResourceService(
+                mapper,
+                cryptoService,
+                bastionService,
+                mock(BusinessLineMapper.class),
+                mock(ProjectInvolvedSystemMapper.class),
+                mock(SysConfigService.class)
+        );
+        AtomicReference<McpResourceEntity> saved = new AtomicReference<>();
+        McpBastionEntity bastion = new McpBastionEntity();
+        bastion.setId(8L);
+        bastion.setName("生产堡垒机");
+        bastion.setHost("10.10.0.8");
+        bastion.setPort(22);
+        bastion.setUsername("workhub");
+        bastion.setEnabled(true);
+        when(mapper.findByTargetKey("crm-test-mysql")).thenReturn(null);
+        when(bastionService.requireEnabled(8L)).thenReturn(bastion);
+        when(bastionService.requireExisting(8L)).thenReturn(bastion);
+        org.mockito.Mockito.doAnswer(invocation -> {
+            McpResourceEntity entity = invocation.getArgument(0);
+            entity.setId(1L);
+            saved.set(entity);
+            return null;
+        }).when(mapper).insert(any());
+        when(mapper.findById(1L)).thenAnswer(invocation -> saved.get());
+        McpResourceSaveRequest request = databaseRequest();
+        request.setSshBastionEnabled(true);
+        request.setBastionId(8L);
+
+        McpResourceResponse response = service.create(request);
+
+        assertEquals(8L, saved.get().getBastionId());
+        assertEquals(8L, response.bastionId());
+        assertEquals("生产堡垒机", response.bastionName());
+    }
+
+    @Test
     void createServer_shouldGenerateNextAvailableTargetKeyWhenBaseKeyExists() {
         McpResourceMapper mapper = mock(McpResourceMapper.class);
         McpCryptoService cryptoService = new McpCryptoService(testProperties());
-        McpResourceSchemaInitializer schemaInitializer = mock(McpResourceSchemaInitializer.class);
+        McpBastionService bastionService = mock(McpBastionService.class);
         BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
         McpResourceService service = new McpResourceService(
                 mapper,
                 cryptoService,
-                schemaInitializer,
+                bastionService,
                 businessLineMapper,
                 mock(ProjectInvolvedSystemMapper.class),
                 mock(SysConfigService.class)
@@ -131,23 +293,43 @@ class McpResourceServiceTest {
         McpResourceSaveRequest request = serverRequest();
         request.setTargetKey(null);
         request.setName(null);
+        request.setAllowedLogPaths(List.of(" /data/logs/assets-saps/ ", "/opt/services/payment/logs"));
 
         McpResourceResponse response = service.create(request);
 
         assertEquals("bl000007-prod-server-10-0-1-20-22-2", response.targetKey());
         assertEquals("汇浦 prod 服务器目标 10.0.1.20:22", response.name());
+        assertEquals(List.of("/data/logs/assets-saps", "/opt/services/payment/logs"), response.allowedLogPaths());
+    }
+
+    @Test
+    void createServer_shouldRejectRelativeLogDirectoryWhitelist() {
+        McpResourceService service = new McpResourceService(
+                mock(McpResourceMapper.class),
+                new McpCryptoService(testProperties()),
+                mock(McpBastionService.class),
+                mock(BusinessLineMapper.class),
+                mock(ProjectInvolvedSystemMapper.class),
+                mock(SysConfigService.class)
+        );
+        McpResourceSaveRequest request = serverRequest();
+        request.setAllowedLogPaths(List.of("logs/assets-saps"));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.create(request));
+
+        assertEquals("日志目录白名单必须配置绝对路径：logs/assets-saps", ex.getMessage());
     }
 
     @Test
     void createServer_shouldAllowBlankSystemNamesAsAllSystemsInBusinessLine() {
         McpResourceMapper mapper = mock(McpResourceMapper.class);
         McpCryptoService cryptoService = new McpCryptoService(testProperties());
-        McpResourceSchemaInitializer schemaInitializer = mock(McpResourceSchemaInitializer.class);
+        McpBastionService bastionService = mock(McpBastionService.class);
         BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
         McpResourceService service = new McpResourceService(
                 mapper,
                 cryptoService,
-                schemaInitializer,
+                bastionService,
                 businessLineMapper,
                 mock(ProjectInvolvedSystemMapper.class),
                 mock(SysConfigService.class)
@@ -180,11 +362,11 @@ class McpResourceServiceTest {
     void catalog_shouldDecryptStoredPasswordOnlyForMcpRuntime() {
         McpResourceMapper mapper = mock(McpResourceMapper.class);
         McpCryptoService cryptoService = new McpCryptoService(testProperties());
-        McpResourceSchemaInitializer schemaInitializer = mock(McpResourceSchemaInitializer.class);
+        McpBastionService bastionService = mock(McpBastionService.class);
         McpResourceService service = new McpResourceService(
                 mapper,
                 cryptoService,
-                schemaInitializer,
+                bastionService,
                 mock(BusinessLineMapper.class),
                 mock(ProjectInvolvedSystemMapper.class),
                 mock(SysConfigService.class)
@@ -196,6 +378,7 @@ class McpResourceServiceTest {
         entity.setBusinessLineCode("crm");
         entity.setEnvironmentCode("test");
         entity.setName("CRM 测试库");
+        entity.setSystemName("[\"crm-api\",\"crm-admin\"]");
         entity.setHost("10.0.0.10");
         entity.setPort(3306);
         entity.setDatabaseSchema("crm");
@@ -211,20 +394,74 @@ class McpResourceServiceTest {
         McpCatalogResponse catalog = service.catalog();
 
         assertEquals("plain-db-password", catalog.databaseTargets().getFirst().get("password"));
+        assertEquals("crm-api", catalog.databaseTargets().getFirst().get("systemName"));
+        assertEquals(List.of("crm-api", "crm-admin"), catalog.databaseTargets().getFirst().get("systemNames"));
+    }
+
+    @Test
+    void catalog_shouldResolveDatabaseTunnelFromSelectedBastion() {
+        McpResourceMapper mapper = mock(McpResourceMapper.class);
+        McpCryptoService cryptoService = new McpCryptoService(testProperties());
+        McpBastionService bastionService = mock(McpBastionService.class);
+        McpResourceService service = new McpResourceService(
+                mapper,
+                cryptoService,
+                bastionService,
+                mock(BusinessLineMapper.class),
+                mock(ProjectInvolvedSystemMapper.class),
+                mock(SysConfigService.class)
+        );
+        McpResourceEntity entity = new McpResourceEntity();
+        entity.setId(1L);
+        entity.setResourceType("DATABASE");
+        entity.setTargetKey("crm-test-mysql");
+        entity.setBusinessLineCode("crm");
+        entity.setEnvironmentCode("test");
+        entity.setName("CRM 测试库");
+        entity.setHost("10.0.0.10");
+        entity.setPort(3306);
+        entity.setUsername("readonly");
+        entity.setPasswordEncrypted(cryptoService.encrypt("plain-db-password"));
+        entity.setSshBastionEnabled(true);
+        entity.setBastionId(8L);
+        entity.setAllowedServicesJson("[]");
+        entity.setAllowedLogPathsJson("[]");
+        entity.setProfilesJson("[{\"key\":\"readonly\",\"maxRows\":100,\"queryTimeoutSeconds\":10,\"maxResultBytes\":65536}]");
+        entity.setEnabled(true);
+        McpBastionEntity bastion = new McpBastionEntity();
+        bastion.setId(8L);
+        bastion.setName("生产堡垒机");
+        bastion.setHost("10.10.0.8");
+        bastion.setPort(22);
+        bastion.setUsername("workhub");
+        bastion.setPasswordEncrypted(cryptoService.encrypt("plain-bastion-password"));
+        bastion.setEnabled(true);
+        when(mapper.findAll(isNull(), isNull(), isNull(), isNull(), anyBoolean())).thenReturn(List.of(entity));
+        when(mapper.findById(1L)).thenReturn(entity);
+        when(bastionService.requireExisting(8L)).thenReturn(bastion);
+        when(bastionService.decryptPassword(bastion)).thenReturn("plain-bastion-password");
+
+        McpCatalogResponse catalog = service.catalog();
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> tunnel = (Map<String, Object>) catalog.databaseTargets().getFirst().get("sshTunnel");
+        assertEquals("10.10.0.8", tunnel.get("bastionHost"));
+        assertEquals("workhub", tunnel.get("bastionUser"));
+        assertEquals("plain-bastion-password", tunnel.get("password"));
     }
 
     @Test
     void catalog_shouldExposeBusinessLineSystemsKnowledgeAndGitlabSummaryWithoutToken() {
         McpResourceMapper mapper = mock(McpResourceMapper.class);
         McpCryptoService cryptoService = new McpCryptoService(testProperties());
-        McpResourceSchemaInitializer schemaInitializer = mock(McpResourceSchemaInitializer.class);
+        McpBastionService bastionService = mock(McpBastionService.class);
         BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         SysConfigService sysConfigService = mock(SysConfigService.class);
         McpResourceService service = new McpResourceService(
                 mapper,
                 cryptoService,
-                schemaInitializer,
+                bastionService,
                 businessLineMapper,
                 involvedSystemMapper,
                 sysConfigService
@@ -280,13 +517,13 @@ class McpResourceServiceTest {
     void catalog_shouldUseBusinessLineCodeAndMatchSystemBindingsByCodeOrName() {
         McpResourceMapper mapper = mock(McpResourceMapper.class);
         McpCryptoService cryptoService = new McpCryptoService(testProperties());
-        McpResourceSchemaInitializer schemaInitializer = mock(McpResourceSchemaInitializer.class);
+        McpBastionService bastionService = mock(McpBastionService.class);
         BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         McpResourceService service = new McpResourceService(
                 mapper,
                 cryptoService,
-                schemaInitializer,
+                bastionService,
                 businessLineMapper,
                 involvedSystemMapper,
                 mock(SysConfigService.class)

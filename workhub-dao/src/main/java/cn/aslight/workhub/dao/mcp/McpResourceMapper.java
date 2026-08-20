@@ -19,6 +19,8 @@ public interface McpResourceMapper {
             SELECT id,
                    resource_type AS resourceType,
                    target_key AS targetKey,
+                   public_resource AS publicResource,
+                   feature_tags_json AS featureTagsJson,
                    business_line_code AS businessLineCode,
                    environment_code AS environmentCode,
                    name,
@@ -31,6 +33,7 @@ public interface McpResourceMapper {
                    password_encrypted AS passwordEncrypted,
                    ssh_password_encrypted AS sshPasswordEncrypted,
                    ssh_bastion_enabled AS sshBastionEnabled,
+                   bastion_id AS bastionId,
                    ssh_bastion_host AS sshBastionHost,
                    ssh_bastion_port AS sshBastionPort,
                    ssh_bastion_user AS sshBastionUser,
@@ -50,7 +53,8 @@ public interface McpResourceMapper {
             </if>
             <if test="businessLineCode != null and businessLineCode != ''">
               AND (
-                business_line_code = #{businessLineCode}
+                public_resource = 1
+                OR business_line_code = #{businessLineCode}
                 OR EXISTS (
                   SELECT 1
                   FROM mcp_resource_business_line rel
@@ -70,9 +74,10 @@ public interface McpResourceMapper {
                 target_key LIKE CONCAT('%', #{keyword}, '%')
                 OR name LIKE CONCAT('%', #{keyword}, '%')
                 OR host LIKE CONCAT('%', #{keyword}, '%')
+                OR feature_tags_json LIKE CONCAT('%', #{keyword}, '%')
               )
             </if>
-            ORDER BY business_line_code ASC, environment_code ASC, resource_type ASC, target_key ASC
+            ORDER BY public_resource DESC, business_line_code ASC, environment_code ASC, resource_type ASC, target_key ASC
             </script>
             """)
     List<McpResourceEntity> findAll(@Param("resourceType") String resourceType,
@@ -85,6 +90,8 @@ public interface McpResourceMapper {
             SELECT id,
                    resource_type AS resourceType,
                    target_key AS targetKey,
+                   public_resource AS publicResource,
+                   feature_tags_json AS featureTagsJson,
                    business_line_code AS businessLineCode,
                    environment_code AS environmentCode,
                    name,
@@ -97,6 +104,7 @@ public interface McpResourceMapper {
                    password_encrypted AS passwordEncrypted,
                    ssh_password_encrypted AS sshPasswordEncrypted,
                    ssh_bastion_enabled AS sshBastionEnabled,
+                   bastion_id AS bastionId,
                    ssh_bastion_host AS sshBastionHost,
                    ssh_bastion_port AS sshBastionPort,
                    ssh_bastion_user AS sshBastionUser,
@@ -118,6 +126,8 @@ public interface McpResourceMapper {
             SELECT id,
                    resource_type AS resourceType,
                    target_key AS targetKey,
+                   public_resource AS publicResource,
+                   feature_tags_json AS featureTagsJson,
                    business_line_code AS businessLineCode,
                    environment_code AS environmentCode,
                    name,
@@ -130,6 +140,7 @@ public interface McpResourceMapper {
                    password_encrypted AS passwordEncrypted,
                    ssh_password_encrypted AS sshPasswordEncrypted,
                    ssh_bastion_enabled AS sshBastionEnabled,
+                   bastion_id AS bastionId,
                    ssh_bastion_host AS sshBastionHost,
                    ssh_bastion_port AS sshBastionPort,
                    ssh_bastion_user AS sshBastionUser,
@@ -152,6 +163,8 @@ public interface McpResourceMapper {
             INSERT INTO mcp_resource_config (
                 resource_type,
                 target_key,
+                public_resource,
+                feature_tags_json,
                 business_line_code,
                 environment_code,
                 name,
@@ -164,6 +177,7 @@ public interface McpResourceMapper {
                 password_encrypted,
                 ssh_password_encrypted,
                 ssh_bastion_enabled,
+                bastion_id,
                 ssh_bastion_host,
                 ssh_bastion_port,
                 ssh_bastion_user,
@@ -177,6 +191,8 @@ public interface McpResourceMapper {
             ) VALUES (
                 #{resourceType},
                 #{targetKey},
+                #{publicResource},
+                #{featureTagsJson},
                 #{businessLineCode},
                 #{environmentCode},
                 #{name},
@@ -189,6 +205,7 @@ public interface McpResourceMapper {
                 #{passwordEncrypted},
                 #{sshPasswordEncrypted},
                 #{sshBastionEnabled},
+                #{bastionId},
                 #{sshBastionHost},
                 #{sshBastionPort},
                 #{sshBastionUser},
@@ -208,6 +225,8 @@ public interface McpResourceMapper {
             UPDATE mcp_resource_config
             SET resource_type = #{resourceType},
                 target_key = #{targetKey},
+                public_resource = #{publicResource},
+                feature_tags_json = #{featureTagsJson},
                 business_line_code = #{businessLineCode},
                 environment_code = #{environmentCode},
                 name = #{name},
@@ -220,6 +239,7 @@ public interface McpResourceMapper {
                 password_encrypted = #{passwordEncrypted},
                 ssh_password_encrypted = #{sshPasswordEncrypted},
                 ssh_bastion_enabled = #{sshBastionEnabled},
+                bastion_id = #{bastionId},
                 ssh_bastion_host = #{sshBastionHost},
                 ssh_bastion_port = #{sshBastionPort},
                 ssh_bastion_user = #{sshBastionUser},

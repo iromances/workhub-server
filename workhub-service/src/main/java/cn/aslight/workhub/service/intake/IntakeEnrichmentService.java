@@ -243,6 +243,9 @@ public class IntakeEnrichmentService {
                     null,
                     null,
                     null,
+                    null,
+                    null,
+                    null,
                     List.of(),
                     safeSummaries,
                     null
@@ -263,6 +266,7 @@ public class IntakeEnrichmentService {
                 structuredData.requirementSummary(),
                 structuredData.department(),
                 structuredData.businessLine(),
+                structuredData.businessLineCode(),
                 structuredData.remark(),
                 structuredData.plannedDueDate(),
                 structuredData.plannedDevelopmentStartDate(),
@@ -272,6 +276,9 @@ public class IntakeEnrichmentService {
                 structuredData.actualEffort(),
                 structuredData.testingStartedDate(),
                 structuredData.actualCompletedTime(),
+                structuredData.scheduledAcceptanceDate(),
+                structuredData.actualTestingEffort(),
+                structuredData.actualTestingCompletedDate(),
                 structuredData.acceptanceTime(),
                 structuredData.releasedTime(),
                 structuredData.closedTime(),
@@ -305,6 +312,7 @@ public class IntakeEnrichmentService {
                 firstNonBlank(enriched.requirementSummary(), baseline.requirementSummary()),
                 firstNonBlank(enriched.department(), baseline.department()),
                 firstNonBlank(enriched.businessLine(), baseline.businessLine()),
+                firstNonBlank(enriched.businessLineCode(), baseline.businessLineCode()),
                 firstNonBlank(enriched.remark(), baseline.remark()),
                 firstNonBlank(enriched.plannedDueDate(), baseline.plannedDueDate()),
                 firstNonBlank(enriched.plannedDevelopmentStartDate(), baseline.plannedDevelopmentStartDate()),
@@ -314,6 +322,9 @@ public class IntakeEnrichmentService {
                 firstNonBlank(enriched.actualEffort(), baseline.actualEffort()),
                 firstNonBlank(enriched.testingStartedDate(), baseline.testingStartedDate()),
                 firstNonBlank(enriched.actualCompletedTime(), baseline.actualCompletedTime()),
+                firstNonBlank(enriched.scheduledAcceptanceDate(), baseline.scheduledAcceptanceDate()),
+                firstNonBlank(enriched.actualTestingEffort(), baseline.actualTestingEffort()),
+                firstNonBlank(enriched.actualTestingCompletedDate(), baseline.actualTestingCompletedDate()),
                 firstNonBlank(enriched.acceptanceTime(), baseline.acceptanceTime()),
                 baseline.releasedTime(),
                 firstNonBlank(enriched.closedTime(), baseline.closedTime()),
@@ -356,6 +367,7 @@ public class IntakeEnrichmentService {
                 structuredData.requirementSummary(),
                 structuredData.department(),
                 structuredData.businessLine(),
+                structuredData.businessLineCode(),
                 structuredData.remark(),
                 structuredData.plannedDueDate(),
                 structuredData.plannedDevelopmentStartDate(),
@@ -365,6 +377,9 @@ public class IntakeEnrichmentService {
                 structuredData.actualEffort(),
                 structuredData.testingStartedDate(),
                 structuredData.actualCompletedTime(),
+                structuredData.scheduledAcceptanceDate(),
+                structuredData.actualTestingEffort(),
+                structuredData.actualTestingCompletedDate(),
                 structuredData.acceptanceTime(),
                 structuredData.releasedTime(),
                 structuredData.closedTime(),
@@ -406,38 +421,38 @@ public class IntakeEnrichmentService {
         }
         return new IntakeStructuredData(
                 legacyPayload == null ? null : legacyPayload.category(),
-                entity.getApprovalTitle(),
-                entity.getProposerName(),
-                entity.getDevelopmentOwnerUserName(),
-                entity.getApprovalCode(),
-                formatDateTime(entity.getSubmittedAt()),
-                entity.getRequirementType(),
-                entity.getDevelopmentBranchName(),
-                entity.getZentaoUrl(),
-                entity.getRequirementDigest(),
-                entity.getRequirementName(),
-                entity.getRequirementSummary(),
-                entity.getDepartment(),
-                entity.getBusinessLine(),
-                entity.getBusinessLineCode(),
-                entity.getRemark(),
-                formatDate(entity.getPlannedDueDate()),
-                formatDate(entity.getPlannedDevelopmentStartDate()),
-                formatDate(entity.getPlannedTestingStartDate()),
-                formatDate(entity.getPlannedReleaseDate()),
-                formatDate(entity.getDevelopmentStartedDate()),
-                entity.getActualEffort(),
-                formatDate(entity.getTestingStartedDate()),
-                formatDate(entity.getActualCompletedDate()),
-                formatDate(entity.getScheduledAcceptanceDate()),
-                entity.getActualTestingEffort(),
-                formatDate(entity.getActualTestingCompletedDate()),
-                formatDate(entity.getAcceptanceDate()),
-                formatDate(entity.getReleasedDate()),
-                formatDate(entity.getClosedDate()),
-                entity.getCloseReason(),
-                entity.getProjectHint(),
-                toStructuredFields(fieldEntities),
+                firstNonBlank(entity.getApprovalTitle(), legacyPayload == null ? null : legacyPayload.approvalTitle()),
+                firstNonBlank(entity.getProposerName(), legacyPayload == null ? null : legacyPayload.proposerName()),
+                firstNonBlank(entity.getDevelopmentOwnerUserName(), legacyPayload == null ? null : legacyPayload.developmentOwnerUserName()),
+                firstNonBlank(entity.getApprovalCode(), legacyPayload == null ? null : legacyPayload.approvalCode()),
+                firstNonBlank(formatDateTime(entity.getSubmittedAt()), legacyPayload == null ? null : legacyPayload.submittedTime()),
+                firstNonBlank(entity.getRequirementType(), legacyPayload == null ? null : legacyPayload.requirementType()),
+                firstNonBlank(entity.getDevelopmentBranchName(), legacyPayload == null ? null : legacyPayload.developmentBranchName()),
+                firstNonBlank(entity.getZentaoUrl(), legacyPayload == null ? null : legacyPayload.zentaoUrl()),
+                firstNonBlank(legacyPayload == null ? null : legacyPayload.requirementDigest(), entity.getRequirementDigest()),
+                firstNonBlank(legacyPayload == null ? null : legacyPayload.requirementName(), entity.getRequirementName()),
+                firstNonBlank(legacyPayload == null ? null : legacyPayload.requirementSummary(), entity.getRequirementSummary()),
+                firstNonBlank(entity.getDepartment(), legacyPayload == null ? null : legacyPayload.department()),
+                firstNonBlank(entity.getBusinessLine(), legacyPayload == null ? null : legacyPayload.businessLine()),
+                firstNonBlank(entity.getBusinessLineCode(), legacyPayload == null ? null : legacyPayload.businessLineCode()),
+                firstNonBlank(entity.getRemark(), legacyPayload == null ? null : legacyPayload.remark()),
+                firstNonBlank(formatDate(entity.getPlannedDueDate()), legacyPayload == null ? null : legacyPayload.plannedDueDate()),
+                firstNonBlank(formatDate(entity.getPlannedDevelopmentStartDate()), legacyPayload == null ? null : legacyPayload.plannedDevelopmentStartDate()),
+                firstNonBlank(formatDate(entity.getPlannedTestingStartDate()), legacyPayload == null ? null : legacyPayload.plannedTestingStartDate()),
+                firstNonBlank(formatDate(entity.getPlannedReleaseDate()), legacyPayload == null ? null : legacyPayload.plannedReleaseDate()),
+                firstNonBlank(formatDate(entity.getDevelopmentStartedDate()), legacyPayload == null ? null : legacyPayload.developmentStartedDate()),
+                firstNonBlank(entity.getActualEffort(), legacyPayload == null ? null : legacyPayload.actualEffort()),
+                firstNonBlank(formatDate(entity.getTestingStartedDate()), legacyPayload == null ? null : legacyPayload.testingStartedDate()),
+                firstNonBlank(formatDate(entity.getActualCompletedDate()), legacyPayload == null ? null : legacyPayload.actualCompletedTime()),
+                firstNonBlank(formatDate(entity.getScheduledAcceptanceDate()), legacyPayload == null ? null : legacyPayload.scheduledAcceptanceDate()),
+                firstNonBlank(entity.getActualTestingEffort(), legacyPayload == null ? null : legacyPayload.actualTestingEffort()),
+                firstNonBlank(formatDate(entity.getActualTestingCompletedDate()), legacyPayload == null ? null : legacyPayload.actualTestingCompletedDate()),
+                firstNonBlank(formatDate(entity.getAcceptanceDate()), legacyPayload == null ? null : legacyPayload.acceptanceTime()),
+                firstNonBlank(formatDate(entity.getReleasedDate()), legacyPayload == null ? null : legacyPayload.releasedTime()),
+                firstNonBlank(formatDate(entity.getClosedDate()), legacyPayload == null ? null : legacyPayload.closedTime()),
+                firstNonBlank(entity.getCloseReason(), legacyPayload == null ? null : legacyPayload.closeReason()),
+                firstNonBlank(entity.getProjectHint(), legacyPayload == null ? null : legacyPayload.projectHint()),
+                mergeStructuredFields(fieldEntities, legacyPayload),
                 legacyPayload == null || legacyPayload.attachmentSummaries() == null ? List.of() : legacyPayload.attachmentSummaries(),
                 legacyPayload == null ? null : legacyPayload.sqlDraft()
         );
@@ -484,6 +499,18 @@ public class IntakeEnrichmentService {
         return entities.stream()
                 .map(entity -> new IntakeStructuredField(entity.getFieldLabel(), entity.getFieldValue()))
                 .toList();
+    }
+
+    private List<IntakeStructuredField> mergeStructuredFields(List<IntakeStructuredFieldEntity> entities,
+                                                              IntakeStructuredData legacyPayload) {
+        List<IntakeStructuredField> formalFields = toStructuredFields(entities);
+        List<IntakeStructuredField> legacyFields = legacyPayload == null || legacyPayload.fields() == null
+                ? List.of()
+                : legacyPayload.fields();
+        if (!legacyFields.isEmpty()) {
+            return legacyFields;
+        }
+        return formalFields;
     }
 
     private String formatDate(LocalDate value) {

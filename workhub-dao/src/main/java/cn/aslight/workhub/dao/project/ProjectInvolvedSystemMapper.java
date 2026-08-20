@@ -19,7 +19,7 @@ public interface ProjectInvolvedSystemMapper {
 
     @Select({
             "<script>",
-            "SELECT s.id, s.system_scope, COALESCE(bl.business_line_name, s.business_line) AS business_line,",
+            "SELECT s.id, s.system_scope, COALESCE(bl.business_line_name, '') AS business_line,",
             "s.business_line_code, s.system_name, s.description, s.enabled, s.sort_order, s.created_at, s.updated_at",
             "FROM pm_project_involved_system s",
             "LEFT JOIN pm_business_line bl ON bl.business_line_code = s.business_line_code",
@@ -49,7 +49,7 @@ public interface ProjectInvolvedSystemMapper {
     @Select("""
             SELECT s.id,
                    s.system_scope,
-                   COALESCE(bl.business_line_name, s.business_line) AS business_line,
+                   COALESCE(bl.business_line_name, '') AS business_line,
                    s.business_line_code,
                    s.system_name,
                    s.description,
@@ -64,11 +64,13 @@ public interface ProjectInvolvedSystemMapper {
     ProjectInvolvedSystemEntity findById(Long id);
 
     @Select("""
-            SELECT id, system_scope, business_line, business_line_code, system_name, description, enabled, sort_order, created_at, updated_at
-            FROM pm_project_involved_system
-            WHERE system_scope = #{systemScope}
-              AND business_line_code = #{businessLine}
-              AND system_name = #{systemName}
+            SELECT s.id, s.system_scope, COALESCE(bl.business_line_name, '') AS business_line,
+                   s.business_line_code, s.system_name, s.description, s.enabled, s.sort_order, s.created_at, s.updated_at
+            FROM pm_project_involved_system s
+            LEFT JOIN pm_business_line bl ON bl.business_line_code = s.business_line_code
+            WHERE s.system_scope = #{systemScope}
+              AND s.business_line_code = #{businessLine}
+              AND s.system_name = #{systemName}
             LIMIT 1
             """)
     ProjectInvolvedSystemEntity findByIdentity(@Param("systemScope") String systemScope,
@@ -78,7 +80,7 @@ public interface ProjectInvolvedSystemMapper {
     @Select("""
             SELECT s.id,
                    s.system_scope,
-                   COALESCE(bl.business_line_name, s.business_line) AS business_line,
+                   COALESCE(bl.business_line_name, '') AS business_line,
                    s.business_line_code,
                    s.system_name,
                    s.description,
@@ -94,7 +96,6 @@ public interface ProjectInvolvedSystemMapper {
                      AND (
                             s.business_line_code = #{businessLine}
                          OR bl.business_line_name = #{businessLine}
-                         OR s.business_line = #{businessLine}
                      ))
                  OR (s.system_scope = 'MIDDLE_PLATFORM' AND s.business_line_code = '')
               )
@@ -111,9 +112,9 @@ public interface ProjectInvolvedSystemMapper {
 
     @Insert("""
             INSERT INTO pm_project_involved_system (
-                system_scope, business_line, business_line_code, system_name, description, enabled, sort_order
+                system_scope, business_line_code, system_name, description, enabled, sort_order
             ) VALUES (
-                #{systemScope}, #{businessLine}, #{businessLineCode}, #{systemName}, #{description}, #{enabled}, #{sortOrder}
+                #{systemScope}, #{businessLineCode}, #{systemName}, #{description}, #{enabled}, #{sortOrder}
             )
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
@@ -122,7 +123,6 @@ public interface ProjectInvolvedSystemMapper {
     @Update("""
             UPDATE pm_project_involved_system
             SET system_scope = #{systemScope},
-                business_line = #{businessLine},
                 business_line_code = #{businessLineCode},
                 system_name = #{systemName},
                 description = #{description},

@@ -16,6 +16,8 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -95,9 +97,16 @@ public class AttachmentTextExtractionService {
             case "docx" -> extractDocx(path);
             case "doc" -> extractDoc(path);
             case "xlsx", "xls" -> extractWorkbook(path);
+            case "html", "htm" -> extractHtml(path);
             case "txt", "csv", "md", "json", "xml", "yaml", "yml", "log" -> Files.readString(path, StandardCharsets.UTF_8);
             default -> throw new IllegalArgumentException("暂不支持的附件类型");
         };
+    }
+
+    private String extractHtml(Path path) throws IOException {
+        Document document = Jsoup.parse(path.toFile(), null);
+        document.select("script, style, noscript, template").remove();
+        return document.body() == null ? document.text() : document.body().text();
     }
 
     private String extractPdf(Path path) throws IOException {

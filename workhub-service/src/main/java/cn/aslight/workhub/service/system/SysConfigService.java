@@ -5,10 +5,13 @@ import cn.aslight.workhub.model.system.SysConfigItemEntity;
 import cn.aslight.workhub.model.system.SysConfigResponse;
 import cn.aslight.workhub.model.system.SysConfigSaveRequest;
 import cn.aslight.workhub.service.payment.PaymentCryptoService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 系统配置服务。
@@ -21,10 +24,19 @@ public class SysConfigService {
 
     private final SysConfigMapper sysConfigMapper;
     private final PaymentCryptoService cryptoService;
+    private final SystemAuditService auditService;
 
     public SysConfigService(SysConfigMapper sysConfigMapper, PaymentCryptoService cryptoService) {
+        this(sysConfigMapper, cryptoService, null);
+    }
+
+    @Autowired
+    public SysConfigService(SysConfigMapper sysConfigMapper,
+                            PaymentCryptoService cryptoService,
+                            SystemAuditService auditService) {
         this.sysConfigMapper = sysConfigMapper;
         this.cryptoService = cryptoService;
+        this.auditService = auditService;
     }
 
     public List<SysConfigResponse> list(String configGroup, String keyword) {
@@ -35,18 +47,33 @@ public class SysConfigService {
 
     @Transactional
     public SysConfigResponse create(SysConfigSaveRequest request) {
+        return create(request, null, null);
+    }
+
+    @Transactional
+    public SysConfigResponse create(SysConfigSaveRequest request, String operator, String ip) {
         SysConfigItemEntity entity = toEntity(new SysConfigItemEntity(), request);
         sysConfigMapper.insert(entity);
-        return toResponse(requireExisting(entity.getId()));
+        SysConfigItemEntity created = requireExisting(entity.getId());
+        audit("CREATE", null, created, operator, ip);
+        return toResponse(created);
     }
 
     @Transactional
     public SysConfigResponse update(Long id, SysConfigSaveRequest request) {
+        return update(id, request, null, null);
+    }
+
+    @Transactional
+    public SysConfigResponse update(Long id, SysConfigSaveRequest request, String operator, String ip) {
         SysConfigItemEntity existing = requireExisting(id);
+        String beforeSnapshot = auditSnapshot(existing);
         SysConfigItemEntity entity = toEntity(existing, request);
         entity.setId(id);
         sysConfigMapper.update(entity);
-        return toResponse(requireExisting(id));
+        SysConfigItemEntity updated = requireExisting(id);
+        audit("UPDATE", beforeSnapshot, updated, operator, ip);
+        return toResponse(updated);
     }
 
     public String requirePlainValue(String configGroup, String configKey) {
@@ -64,6 +91,23 @@ public class SysConfigService {
     public String findPlainValue(String configGroup, String configKey) {
         SysConfigItemEntity entity = sysConfigMapper.findEnabledByKey(configGroup, configKey);
         return entity == null ? null : resolvePlainValue(entity);
+    }
+
+    /**
+     * 供服务端运行时一次性读取同组已启用配置，敏感值只在当前进程内解密，不得用于接口响应。
+     */
+    public Map<String, String> findPlainValues(String configGroup) {
+        Map<String, String> values = new LinkedHashMap<>();
+        for (SysConfigItemEntity entity : sysConfigMapper.findAll(requireValue(configGroup, "配置分组不能为空"), null)) {
+            if (!Boolean.TRUE.equals(entity.getEnabled())) {
+                continue;
+            }
+            String value = resolvePlainValue(entity);
+            if (value != null) {
+                values.put(entity.getConfigKey(), value);
+            }
+        }
+        return Map.copyOf(values);
     }
 
     private SysConfigItemEntity requireExisting(Long id) {
@@ -120,6 +164,37 @@ public class SysConfigService {
             return cryptoService.decrypt(entity.getEncryptedValue());
         }
         return trimToNull(entity.getPlainValue());
+    }
+
+    private void audit(String actionType,
+                       String beforeSnapshot,
+                       SysConfigItemEntity after,
+                       String operator,
+                       String ip) {
+        if (auditService == null) {
+            return;
+        }
+        auditService.operation(
+                operator,
+                "system:config:manage",
+                actionType,
+                "SYS_CONFIG_ITEM",
+                String.valueOf(after.getId()),
+                beforeSnapshot,
+                auditSnapshot(after),
+                "SUCCESS",
+                null,
+                ip
+        );
+    }
+
+    private String auditSnapshot(SysConfigItemEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return "{configGroup=%s, configKey=%s, valueType=%s, enabled=%s, value=***}"
+                .formatted(entity.getConfigGroup(), entity.getConfigKey(),
+                        entity.getValueType(), entity.getEnabled());
     }
 
     private String normalizeValueType(String valueType) {

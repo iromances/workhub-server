@@ -1,9 +1,11 @@
 package cn.aslight.workhub.service.mcp;
 
+import cn.aslight.workhub.dao.project.BusinessLineAccessConfigMapper;
 import cn.aslight.workhub.model.mcp.McpCatalogResponse;
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
+import cn.aslight.workhub.model.project.BusinessLineAccessConfigEntity;
 import cn.aslight.workhub.service.intake.GitlabRepositoryService;
 import cn.aslight.workhub.service.intake.IntakeService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,11 +18,69 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class McpRuntimeServiceTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Test
+    void handleHttp_shouldNegotiateCurrentProtocolAndReturnInstructions() throws Exception {
+        McpRuntimeService runtimeService = new McpRuntimeService(emptyResourceService(), new FakeIntakeService(), new FakeGitlabRepositoryService());
+
+        McpRuntimeService.HttpResponse httpResponse = runtimeService.handleHttp("""
+                {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"codex","version":"0.144.2"}}}
+                """, null);
+        JsonNode response = objectMapper.readTree(httpResponse.body());
+
+        assertEquals(200, httpResponse.status());
+        assertEquals("2025-11-25", response.at("/result/protocolVersion").asText());
+        assertTrue(response.at("/result/instructions").asText().contains("数据库只允许只读 SQL"));
+    }
+
+    @Test
+    void handleHttp_shouldAcceptInitializedNotificationWithoutResponseBody() {
+        McpRuntimeService runtimeService = new McpRuntimeService(emptyResourceService(), new FakeIntakeService(), new FakeGitlabRepositoryService());
+
+        McpRuntimeService.HttpResponse response = runtimeService.handleHttp("""
+                {"jsonrpc":"2.0","method":"notifications/initialized","params":{}}
+                """, "2025-11-25");
+
+        assertEquals(202, response.status());
+        assertNull(response.body());
+    }
+
+    @Test
+    void handleHttp_shouldReturnJsonRpcErrorsForMalformedJsonAndUnsupportedProtocol() throws Exception {
+        McpRuntimeService runtimeService = new McpRuntimeService(emptyResourceService(), new FakeIntakeService(), new FakeGitlabRepositoryService());
+
+        McpRuntimeService.HttpResponse malformed = runtimeService.handleHttp("{", null);
+        McpRuntimeService.HttpResponse unsupported = runtimeService.handleHttp("""
+                {"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}
+                """, "2024-11-05");
+        McpRuntimeService.HttpResponse codexPreview = runtimeService.handleHttp("""
+                {"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}
+                """, "2026-07-28");
+
+        assertEquals(400, malformed.status());
+        assertEquals(-32700, objectMapper.readTree(malformed.body()).at("/error/code").asInt());
+        assertEquals(400, unsupported.status());
+        assertEquals(-32602, objectMapper.readTree(unsupported.body()).at("/error/code").asInt());
+        assertEquals(200, codexPreview.status());
+    }
+
+    @Test
+    void handle_shouldReturnToolExecutionErrorsAsToolResults() throws Exception {
+        McpRuntimeService runtimeService = new McpRuntimeService(emptyResourceService(), new FakeIntakeService(), new FakeGitlabRepositoryService());
+
+        JsonNode response = runtimeService.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"unknown_tool","arguments":{}}}
+                """));
+
+        assertTrue(response.at("/result/isError").asBoolean());
+        assertTrue(response.at("/result/content/0/text").asText().contains("未知 MCP 工具"));
+    }
 
     @Test
     void handle_shouldListTargetsFromCurrentWorkhubCatalog() throws Exception {
@@ -94,6 +154,39 @@ class McpRuntimeServiceTest {
         assertTrue(text.contains("projectVaultPath"));
         assertTrue(text.contains("accessTokenConfigured"));
         assertTrue(!text.contains("plain-gitlab-token"));
+    }
+
+    @Test
+    void handle_shouldExposePublicResourceAndFeatureTagsInEveryBusinessLineContext() throws Exception {
+        McpResourceService resourceService = resourceService(new McpCatalogResponse(
+                List.of(Map.of(
+                        "code", "BL000001",
+                        "name", "保费分期",
+                        "gitlabGroupName", "scf",
+                        "involvedSystems", List.of("scf-order"),
+                        "globalSystems", List.of(),
+                        "enabled", true
+                )),
+                List.of(Map.of("code", "test", "name", "测试环境", "production", false, "enabled", true)),
+                List.of(publicDatabaseTarget("public-test-db-zentao", "禅道")),
+                List.of(),
+                Map.of(),
+                Map.of()
+        ));
+        McpRuntimeService runtimeService = new McpRuntimeService(
+                resourceService,
+                new FakeIntakeService(),
+                new FakeGitlabRepositoryService()
+        );
+
+        JsonNode response = runtimeService.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":20,"method":"tools/call","params":{"name":"get_business_line_context","arguments":{"businessLine":"BL000001"}}}
+                """));
+
+        String text = response.at("/result/content/0/text").asText();
+        assertTrue(text.contains("public-test-db-zentao"));
+        assertTrue(text.contains("\"publicResource\" : true"));
+        assertTrue(text.contains("\"featureTags\" : [ \"禅道\" ]"));
     }
 
     @Test
@@ -180,8 +273,9 @@ class McpRuntimeServiceTest {
                 {"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"search_intakes","arguments":{}}}
                 """));
 
-        assertEquals(-32603, response.at("/error/code").asInt());
-        assertTrue(response.at("/error/message").asText().contains("审批编号、需求名称或摘要关键词至少填写一个"));
+        assertTrue(response.at("/result/isError").asBoolean());
+        assertTrue(response.at("/result/content/0/text").asText()
+                .contains("审批编号、需求名称或摘要关键词至少填写一个"));
     }
 
     @Test
@@ -196,7 +290,10 @@ class McpRuntimeServiceTest {
                         "enabled", true
                 )),
                 List.of(Map.of("code", "test", "name", "测试环境", "production", false, "enabled", true)),
-                List.of(databaseTarget("jiatai-hp-db-test", "BL000007", "test")),
+                List.of(
+                        databaseTarget("jiatai-hp-db-test", "BL000007", "test", "assets-saps"),
+                        databaseTarget("unrelated-db-test", "BL000007", "test", "assets-admin")
+                ),
                 List.of(serverTarget("jiatai-hp-server-test", "BL000007", "test", "assets-saps")),
                 Map.of("projectVaultPath", "/mnt/workhub/project-knowledge"),
                 Map.of(
@@ -232,7 +329,16 @@ class McpRuntimeServiceTest {
                 LocalDateTime.parse("2026-06-01T10:00:00"),
                 LocalDateTime.parse("2026-06-01T10:05:00")
         );
-        McpRuntimeService runtimeService = new McpRuntimeService(resourceService, intakeService, new FakeGitlabRepositoryService());
+        BusinessLineAccessConfigMapper accessConfigMapper = new FakeBusinessLineAccessConfigMapper(List.of(
+                accessConfig("BL000007", "test", "OPERATIONS", "运营端",
+                        "https://ops.example.test", null, true)
+        ));
+        McpRuntimeService runtimeService = new McpRuntimeService(
+                resourceService,
+                intakeService,
+                new FakeGitlabRepositoryService(),
+                accessConfigMapper
+        );
 
         JsonNode response = runtimeService.handle(objectMapper.readTree("""
                 {"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"get_requirement_test_context","arguments":{"approvalCode":"SP-20260601","environmentCode":"test"}}}
@@ -243,13 +349,73 @@ class McpRuntimeServiceTest {
         assertTrue(text.contains("\"developmentBranchName\" : \"feature/demo\""));
         assertTrue(text.contains("\"code\" : \"BL000007\""));
         assertTrue(text.contains("\"jiatai-hp-db-test\""));
+        assertTrue(!text.contains("unrelated-db-test"));
         assertTrue(text.contains("\"jiatai-hp-server-test\""));
         assertTrue(text.contains("\"profiles\" : [ \"readonly\" ]"));
         assertTrue(text.contains("\"profiles\" : [ \"diagnostic\" ]"));
         assertTrue(text.contains("\"codeCacheRoot\" : \"data/git-cache/ca-assets\""));
+        assertTrue(text.contains("\"accessEndpoints\""));
+        assertTrue(text.contains("\"effectiveUrl\" : \"https://ops.example.test\""));
         assertTrue(!text.contains("plain-gitlab-token"));
         assertEquals(88L, intakeService.detailIntakeId);
         assertEquals(false, intakeService.detailRecordView);
+    }
+
+    @Test
+    void handle_shouldReturnEnabledAccessEndpointsForRequestedEnvironment() throws Exception {
+        McpResourceService resourceService = resourceService(new McpCatalogResponse(
+                List.of(Map.of(
+                        "code", "BL000009",
+                        "name", "创新保理",
+                        "gitlabGroupName", "ca-assets",
+                        "involvedSystems", List.of("assets-saps"),
+                        "globalSystems", List.of(),
+                        "enabled", true
+                )),
+                List.of(
+                        Map.of("code", "test", "name", "测试环境", "production", false, "enabled", true),
+                        Map.of("code", "prod", "name", "生产环境", "production", true, "enabled", true)
+                ),
+                List.of(),
+                List.of(),
+                Map.of(),
+                Map.of()
+        ));
+        BusinessLineAccessConfigMapper accessConfigMapper = new FakeBusinessLineAccessConfigMapper(List.of(
+                accessConfig("BL000009", "test", "OPERATIONS", "运营端", "https://ops.example.test", null, true),
+                accessConfig("BL000009", "test", "GATEWAY", "统一网关", "https://gateway.example.test/", "/asset-api", true),
+                accessConfig("BL000009", "prod", "GATEWAY", "生产网关", "https://gateway.example.com", "/asset-api", true),
+                accessConfig("BL000009", "test", "CLIENT", "停用客户端", "https://disabled.example.test", null, false)
+        ));
+        McpRuntimeService runtimeService = new McpRuntimeService(
+                resourceService,
+                new FakeIntakeService(),
+                new FakeGitlabRepositoryService(),
+                accessConfigMapper
+        );
+
+        JsonNode testResponse = runtimeService.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"get_business_line_test_context","arguments":{"businessLine":"BL000009","environmentCode":"test"}}}
+                """));
+        JsonNode testContext = objectMapper.readTree(testResponse.at("/result/content/0/text").asText())
+                .path("testContext");
+
+        assertEquals(2, testContext.path("accessEndpoints").size());
+        assertEquals("https://ops.example.test",
+                testContext.at("/accessEndpoints/0/effectiveUrl").asText());
+        assertEquals("/asset-api", testContext.at("/accessEndpoints/1/pathPrefix").asText());
+        assertEquals("https://gateway.example.test/asset-api",
+                testContext.at("/accessEndpoints/1/effectiveUrl").asText());
+        assertTrue(testContext.path("accessEndpoints").toString().contains("OPERATIONS"));
+        assertTrue(!testContext.path("accessEndpoints").toString().contains("生产网关"));
+        assertTrue(!testContext.path("accessEndpoints").toString().contains("停用客户端"));
+
+        JsonNode generalResponse = runtimeService.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"get_business_line_context","arguments":{"businessLine":"BL000009"}}}
+                """));
+        JsonNode generalContext = objectMapper.readTree(generalResponse.at("/result/content/0/text").asText());
+        assertEquals(3, generalContext.path("accessEndpoints").size());
+        assertTrue(generalContext.path("accessEndpoints").toString().contains("生产网关"));
     }
 
     @Test
@@ -274,23 +440,44 @@ class McpRuntimeServiceTest {
     }
 
     private Map<String, Object> databaseTarget(String key, String businessLine, String environmentCode) {
-        return Map.of(
-                "key", key,
-                "businessLineCode", businessLine,
-                "businessLineCodes", List.of(businessLine),
-                "environmentCode", environmentCode,
-                "name", businessLine + "-生产库",
-                "host", "127.0.0.1",
-                "port", 3306,
-                "username", "readonly",
-                "password", "secret",
-                "profiles", List.of(Map.of(
+        return databaseTarget(key, businessLine, environmentCode, null);
+    }
+
+    private Map<String, Object> databaseTarget(String key,
+                                               String businessLine,
+                                               String environmentCode,
+                                               String systemName) {
+        Map<String, Object> target = new java.util.LinkedHashMap<>();
+        target.put("key", key);
+        target.put("businessLineCode", businessLine);
+        target.put("businessLineCodes", List.of(businessLine));
+        target.put("environmentCode", environmentCode);
+        target.put("name", businessLine + "-生产库");
+        if (systemName != null) {
+            target.put("systemName", systemName);
+            target.put("systemNames", List.of(systemName));
+        }
+        target.put("host", "127.0.0.1");
+        target.put("port", 3306);
+        target.put("username", "readonly");
+        target.put("password", "secret");
+        target.put("profiles", List.of(Map.of(
                         "key", "readonly",
                         "maxRows", 100,
                         "queryTimeoutSeconds", 10,
                         "maxResultBytes", 65536
-                ))
-        );
+                )));
+        return target;
+    }
+
+    private Map<String, Object> publicDatabaseTarget(String key, String featureTag) {
+        Map<String, Object> target = databaseTarget(key, "", "test", null);
+        target.put("publicResource", true);
+        target.put("featureTags", List.of(featureTag));
+        target.put("businessLineCode", "");
+        target.put("businessLineCodes", List.of());
+        target.put("name", featureTag + "公共数据库");
+        return target;
     }
 
     private Map<String, Object> serverTarget(String key, String businessLine, String environmentCode, String systemName) {
@@ -314,6 +501,24 @@ class McpRuntimeServiceTest {
                 "timeoutSeconds", 10
         )));
         return target;
+    }
+
+    private BusinessLineAccessConfigEntity accessConfig(String businessLineCode,
+                                                        String environmentCode,
+                                                        String endpointType,
+                                                        String endpointName,
+                                                        String endpointUrl,
+                                                        String pathPrefix,
+                                                        boolean enabled) {
+        BusinessLineAccessConfigEntity entity = new BusinessLineAccessConfigEntity();
+        entity.setBusinessLineCode(businessLineCode);
+        entity.setEnvironmentCode(environmentCode);
+        entity.setEndpointType(endpointType);
+        entity.setEndpointName(endpointName);
+        entity.setEndpointUrl(endpointUrl);
+        entity.setPathPrefix(pathPrefix);
+        entity.setEnabled(enabled);
+        return entity;
     }
 
     private McpResourceService emptyResourceService() {
@@ -429,6 +634,31 @@ class McpRuntimeServiceTest {
         @Override
         public McpCatalogResponse catalog() {
             return catalog;
+        }
+    }
+
+    private static class FakeBusinessLineAccessConfigMapper implements BusinessLineAccessConfigMapper {
+        private final List<BusinessLineAccessConfigEntity> configs;
+
+        private FakeBusinessLineAccessConfigMapper(List<BusinessLineAccessConfigEntity> configs) {
+            this.configs = configs;
+        }
+
+        @Override
+        public List<BusinessLineAccessConfigEntity> findByBusinessLineCodes(List<String> businessLineCodes) {
+            return configs.stream()
+                    .filter(config -> businessLineCodes.contains(config.getBusinessLineCode()))
+                    .toList();
+        }
+
+        @Override
+        public int deleteByBusinessLineCode(String businessLineCode) {
+            throw new UnsupportedOperationException("测试只读 Mapper 不支持删除");
+        }
+
+        @Override
+        public int insert(BusinessLineAccessConfigEntity entity) {
+            throw new UnsupportedOperationException("测试只读 Mapper 不支持新增");
         }
     }
 

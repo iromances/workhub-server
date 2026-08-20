@@ -65,7 +65,7 @@ public class McpToolRegistry {
                         registry.requireText(args, "profileKey"),
                         registry.requireText(args, "service")
                 ));
-        registry.register("read_service_logs", "Read recent logs from a whitelisted service or log path.",
+        registry.register("read_service_logs", "Read recent logs from a whitelisted service or a log file below an allowed directory.",
                 registry.objectSchema(List.of("targetKey", "profileKey"), "service", "logPath", "lines"),
                 args -> serverService.readServiceLogs(
                         registry.requireText(args, "targetKey"),
@@ -73,6 +73,15 @@ public class McpToolRegistry {
                         registry.optionalText(args, "service"),
                         registry.optionalText(args, "logPath"),
                         registry.optionalText(args, "lines")
+                ));
+        registry.register("search_service_logs", "Search one allowed plain-text or ZIP log file with a fixed string and a bounded match count.",
+                registry.objectSchema(List.of("targetKey", "profileKey", "logPath", "keyword"), "maxMatches"),
+                args -> serverService.searchServiceLogs(
+                        registry.requireText(args, "targetKey"),
+                        registry.requireText(args, "profileKey"),
+                        registry.requireText(args, "logPath"),
+                        registry.requireText(args, "keyword"),
+                        registry.optionalText(args, "maxMatches")
                 ));
         return registry;
     }
@@ -155,11 +164,11 @@ public class McpToolRegistry {
         context.put("gitlab", gitlabContext(catalog, matched));
         context.put("knowledge", knowledgeContext(catalog, code));
         context.put("databaseTargets", catalog.databaseTargets().stream()
-                .filter(target -> matchesBusinessLine(target.businessLineCodes(), matched))
+                .filter(target -> target.publicResource() || matchesBusinessLine(target.businessLineCodes(), matched))
                 .map(this::databaseTargetSummary)
                 .toList());
         context.put("serverTargets", catalog.serverTargets().stream()
-                .filter(target -> matchesBusinessLine(target.businessLineCodes(), matched))
+                .filter(target -> target.publicResource() || matchesBusinessLine(target.businessLineCodes(), matched))
                 .map(this::serverTargetSummary)
                 .toList());
         return context;
@@ -226,10 +235,14 @@ public class McpToolRegistry {
     private Map<String, Object> databaseTargetSummary(McpResourceCatalog.DatabaseTarget target) {
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("key", target.key());
+        summary.put("publicResource", target.publicResource());
+        summary.put("featureTags", target.featureTags());
         summary.put("businessLineCode", target.businessLineCode());
         summary.put("businessLineCodes", target.businessLineCodes());
         summary.put("environmentCode", target.environmentCode());
         summary.put("name", target.name());
+        summary.put("systemName", target.systemName());
+        summary.put("systemNames", target.systemNames());
         summary.put("schema", target.schema());
         summary.put("profiles", target.profiles().stream().map(McpResourceCatalog.DatabaseTarget.DatabaseProfile::key).toList());
         return summary;
@@ -238,6 +251,8 @@ public class McpToolRegistry {
     private Map<String, Object> serverTargetSummary(McpResourceCatalog.ServerTarget target) {
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("key", target.key());
+        summary.put("publicResource", target.publicResource());
+        summary.put("featureTags", target.featureTags());
         summary.put("businessLineCode", target.businessLineCode());
         summary.put("businessLineCodes", target.businessLineCodes());
         summary.put("environmentCode", target.environmentCode());

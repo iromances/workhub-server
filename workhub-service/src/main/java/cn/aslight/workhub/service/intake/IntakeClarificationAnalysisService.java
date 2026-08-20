@@ -183,7 +183,8 @@ public class IntakeClarificationAnalysisService {
                     knowledgeBaseContext
             );
             IntakeClarificationAnalysisEntity completed = requireAnalysisEntity(analysisId);
-            completed.setBusinessLine(project.businessLine());
+            completed.setBusinessLineCode(project.businessLineCode());
+            completed.setBusinessLine(null);
             completed.setAnalysisStatus(resolveDraftStatus(items));
             completed.setAnalysisMessage(items.isEmpty() ? "AI 未发现需要人工澄清的事项，可直接确认澄清完成。" : null);
             completed.setItemsJson(writeItemsJson(items));
@@ -216,7 +217,8 @@ public class IntakeClarificationAnalysisService {
             entity.setIntakeId(intakeId);
             entity.setCreatedBy(operatorUserName);
         }
-        entity.setBusinessLine(businessLine);
+        entity.setBusinessLineCode(resolveBusinessLineCode(businessLine));
+        entity.setBusinessLine(null);
         entity.setAnalysisStatus(status);
         entity.setAnalysisMessage(message);
         entity.setItemsJson(itemsJson);
@@ -236,6 +238,18 @@ public class IntakeClarificationAnalysisService {
             return project;
         }
         return syntheticProject(businessLine);
+    }
+
+    private String resolveBusinessLineCode(String businessLine) {
+        String normalized = trimToNull(businessLine);
+        if (normalized == null) {
+            return null;
+        }
+        ProjectDetailResponse project = projectMapper.findFirstDetailByBusinessLine(normalized);
+        if (project != null && trimToNull(project.businessLineCode()) != null) {
+            return project.businessLineCode();
+        }
+        return normalized.matches("BL[0-9]{6}") ? normalized : null;
     }
 
     private ProjectDetailResponse syntheticProject(String businessLine) {

@@ -113,7 +113,7 @@ class PaymentProjectBindingServiceTest {
         ArgumentCaptor<PaymentProjectBindingEntity> entityCaptor = ArgumentCaptor.forClass(PaymentProjectBindingEntity.class);
         verify(bindingMapper).insert(entityCaptor.capture());
         assertEquals("BL000001", entityCaptor.getValue().getBusinessLineCode());
-        assertEquals("资产业务", entityCaptor.getValue().getBusinessLine());
+        assertEquals(null, entityCaptor.getValue().getBusinessLine());
         assertEquals("BL000001", response.businessLineCode());
         assertEquals("资产业务", response.businessLine());
     }
@@ -261,7 +261,7 @@ class PaymentProjectBindingServiceTest {
         ArgumentCaptor<PaymentProjectBindingEntity> entityCaptor = ArgumentCaptor.forClass(PaymentProjectBindingEntity.class);
         verify(bindingMapper).insert(entityCaptor.capture());
         assertEquals(null, entityCaptor.getValue().getProjectId());
-        assertEquals("资产业务", entityCaptor.getValue().getBusinessLine());
+        assertEquals(null, entityCaptor.getValue().getBusinessLine());
         assertEquals(101L, response.id());
         assertEquals(null, response.projectId());
         assertEquals("资产业务", response.businessLine());

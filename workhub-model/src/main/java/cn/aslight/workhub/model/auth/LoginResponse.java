@@ -8,6 +8,7 @@ import java.util.List;
 public record LoginResponse(String token,
                             String userName,
                             String displayName,
+                            String avatarUrl,
                             Boolean mustChangePassword,
                             List<String> roles,
                             List<String> permissions) {

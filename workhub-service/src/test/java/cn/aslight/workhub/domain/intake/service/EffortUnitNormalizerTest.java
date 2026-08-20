@@ -41,9 +41,16 @@ class EffortUnitNormalizerTest {
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
+                null,
                 "1.5d",
                 null,
                 null,
+                "2026/07/08",
+                "0.5d",
+                "2026/07/09",
                 null,
                 null,
                 null,
@@ -73,6 +80,9 @@ class EffortUnitNormalizerTest {
         IntakeAIDraft normalizedDraft = EffortUnitNormalizer.normalizeDraft(draft);
 
         assertEquals("12h", normalizedStructuredData.actualEffort());
+        assertEquals("4h", normalizedStructuredData.actualTestingEffort());
+        assertEquals("2026/07/08", normalizedStructuredData.scheduledAcceptanceDate());
+        assertEquals("2026/07/09", normalizedStructuredData.actualTestingCompletedDate());
         assertEquals("4h", normalizedDraft.taskBreakdownSuggestions().get(0).estimatedEffort());
         assertEquals("8h", normalizedDraft.taskBreakdownSuggestions().get(1).estimatedEffort());
     }

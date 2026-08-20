@@ -176,7 +176,8 @@ public class PaymentMerchantService {
                 response.merchantName(),
                 response.environment(),
                 paymentMerchantMapper.findPurposeCodes(response.id()),
-                response.status()
+                response.status(),
+                response.remark()
         );
     }
 

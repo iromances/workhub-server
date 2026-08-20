@@ -27,7 +27,7 @@ class PaymentChannelControllerTest {
     void list_shouldExposeChannelItems() throws Exception {
         PaymentChannelService paymentChannelService = mock(PaymentChannelService.class);
         when(paymentChannelService.list(eq(1L), eq("ACTIVE"))).thenReturn(List.of(
-                new PaymentChannelSummaryResponse(1L, "YEEPAY", "易宝支付", "易宝", "ACTIVE")
+                new PaymentChannelSummaryResponse(1L, "YEEPAY", "易宝支付", "易宝", "ACTIVE", "主支付渠道")
         ));
 
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new PaymentChannelController(paymentChannelService)).build();
@@ -39,7 +39,8 @@ class PaymentChannelControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(1))
                 .andExpect(jsonPath("$.data.items[0].code").value("YEEPAY"))
-                .andExpect(jsonPath("$.data.items[0].name").value("易宝支付"));
+                .andExpect(jsonPath("$.data.items[0].name").value("易宝支付"))
+                .andExpect(jsonPath("$.data.items[0].description").value("主支付渠道"));
     }
 
     @Test

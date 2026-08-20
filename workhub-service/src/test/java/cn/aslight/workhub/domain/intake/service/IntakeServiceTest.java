@@ -1292,6 +1292,42 @@ class IntakeServiceTest {
     }
 
     @Test
+    void detail_shouldMergePartialFormalFieldsWithLegacyAiPayload() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                new IntakeStructuredDataExtractor(),
+                mock(IntakeEnrichmentService.class),
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity entity = new IntakeRecordEntity();
+        entity.setId(302L);
+        entity.setBusinessLine("账单管理");
+        entity.setRequirementDigest("需求描述：趣学呗平台因为账户已经被封控");
+        entity.setStructuredDataJson("""
+                {"category":"需求审批","requirementName":"易单通、趣学呗业财凭证修改","requirementDigest":"线上还款凭证推送调整","businessLine":"数智金融","fields":[{"label":"需求名称","value":"易单通、趣学呗业财凭证修改"}],"attachmentSummaries":[]}
+                """);
+        entity.setEnrichmentStatus("SUCCEEDED");
+        entity.setIntakeStatus("待整理");
+        when(intakeMapper.findById(302L)).thenReturn(entity);
+        when(attachmentService.listIntakeAttachments(302L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(302L, 20)).thenReturn(List.of());
+
+        var detail = service.detail(302L);
+
+        assertEquals("账单管理", detail.structuredData().businessLine());
+        assertEquals("易单通、趣学呗业财凭证修改", detail.structuredData().requirementName());
+        assertEquals("线上还款凭证推送调整", detail.structuredData().requirementDigest());
+        assertEquals(1, detail.structuredData().fields().size());
+    }
+
+    @Test
     void updateZentaoLink_shouldPersistUrlAndRecordHistory() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);

@@ -25,13 +25,15 @@ public interface UserMapper {
     List<UserOptionResponse> findActiveUsers();
 
     @Select("""
-            SELECT member_user_name AS userName,
-                   member_display_name AS displayName,
-                   business_line AS businessLine
-            FROM pm_business_line_member
-            WHERE business_line = #{businessLine}
-              AND enabled = 1
-            ORDER BY id ASC
+            SELECT m.member_user_name AS userName,
+                   m.member_display_name AS displayName,
+                   bl.business_line_name AS businessLine
+            FROM pm_business_line_member m
+            JOIN pm_business_line bl ON bl.business_line_code = m.business_line_code
+            WHERE (m.business_line_code = #{businessLine}
+                   OR bl.business_line_name = #{businessLine})
+              AND m.enabled = 1
+            ORDER BY m.id ASC
             """)
     List<UserOptionResponse> findBusinessLineMembers(@Param("businessLine") String businessLine);
 

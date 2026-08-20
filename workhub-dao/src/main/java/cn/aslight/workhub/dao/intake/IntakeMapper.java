@@ -27,8 +27,8 @@ public interface IntakeMapper {
             "received_at,",
             "raw_content,",
             "development_owner_user_name,",
-            "structured_data_json,",
-            "ai_draft_json,",
+            "CASE WHEN JSON_VALID(structured_data_json) THEN JSON_SET(JSON_REMOVE(structured_data_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE structured_data_json END AS structured_data_json,",
+            "CASE WHEN JSON_VALID(ai_draft_json) THEN JSON_SET(JSON_REMOVE(ai_draft_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE ai_draft_json END AS ai_draft_json,",
             "intake_status,",
             "demand_status,",
             "pause_previous_demand_status,",
@@ -48,7 +48,7 @@ public interface IntakeMapper {
             "requirement_summary,",
             "requirement_digest,",
             "department,",
-            "business_line,",
+            "(SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1) AS business_line,",
             "business_line_code,",
             "project_hint,",
             "development_branch_name,",
@@ -84,7 +84,7 @@ public interface IntakeMapper {
             " FROM pm_intake_development_analysis da",
             " WHERE da.intake_id = pm_intake_record.id",
             " ORDER BY da.id DESC LIMIT 1) AS testing_estimated_effort,",
-            "(SELECT da.draft_json",
+            "(SELECT CASE WHEN JSON_VALID(da.draft_json) THEN JSON_SET(JSON_REMOVE(da.draft_json, '$.businessLine'), '$.businessLineCode', da.business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(da.business_line_code AS BINARY) LIMIT 1)) ELSE da.draft_json END",
             " FROM pm_intake_development_analysis da",
             " WHERE da.intake_id = pm_intake_record.id",
             " ORDER BY da.id DESC LIMIT 1) AS latest_development_draft_json,",
@@ -104,7 +104,13 @@ public interface IntakeMapper {
             "AND intake_status = #{status}",
             "</if>",
             "</where>",
-            "ORDER BY CASE WHEN demand_status IN ('已完成', '终止关闭') THEN 1 ELSE 0 END, received_at DESC, id DESC",
+            "ORDER BY CASE demand_status",
+            "WHEN '待澄清' THEN 0 WHEN '待处理' THEN 1 WHEN '处理中' THEN 2 WHEN '待评估' THEN 3",
+            "WHEN '待排期' THEN 4 WHEN '待设计' THEN 5 WHEN '开发中' THEN 6 WHEN '测试中' THEN 7",
+            "WHEN '待验收' THEN 8 WHEN '待上线' THEN 9 WHEN '已收录' THEN 10 WHEN '已暂停' THEN 11",
+            "WHEN '已完成' THEN 12 WHEN '终止关闭' THEN 13 ELSE 14 END,",
+            "CASE priority WHEN '高' THEN 0 WHEN '中' THEN 1 WHEN '低' THEN 2 ELSE 3 END,",
+            "received_at DESC, id DESC",
             "</script>"
     })
     List<IntakeRecordEntity> findAll(@Param("status") String status);
@@ -118,8 +124,8 @@ public interface IntakeMapper {
                    received_at,
                    raw_content,
                    development_owner_user_name,
-                   structured_data_json,
-                   ai_draft_json,
+                   CASE WHEN JSON_VALID(structured_data_json) THEN JSON_SET(JSON_REMOVE(structured_data_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE structured_data_json END AS structured_data_json,
+                   CASE WHEN JSON_VALID(ai_draft_json) THEN JSON_SET(JSON_REMOVE(ai_draft_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE ai_draft_json END AS ai_draft_json,
                    intake_status,
                    demand_status,
                    pause_previous_demand_status,
@@ -139,7 +145,7 @@ public interface IntakeMapper {
                    requirement_summary,
                    requirement_digest,
                    department,
-                   business_line,
+                   (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1) AS business_line,
                    business_line_code,
                    project_hint,
                    development_branch_name,
@@ -163,7 +169,7 @@ public interface IntakeMapper {
                    actual_testing_effort,
                    priority,
                    urgency,
-                   (SELECT da.draft_json
+                   (SELECT CASE WHEN JSON_VALID(da.draft_json) THEN JSON_SET(JSON_REMOVE(da.draft_json, '$.businessLine'), '$.businessLineCode', da.business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(da.business_line_code AS BINARY) LIMIT 1)) ELSE da.draft_json END
                     FROM pm_intake_development_analysis da
                     WHERE da.intake_id = pm_intake_record.id
                     ORDER BY da.id DESC LIMIT 1) AS latest_development_draft_json,
@@ -187,8 +193,8 @@ public interface IntakeMapper {
                    received_at,
                    raw_content,
                    development_owner_user_name,
-                   structured_data_json,
-                   ai_draft_json,
+                   CASE WHEN JSON_VALID(structured_data_json) THEN JSON_SET(JSON_REMOVE(structured_data_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE structured_data_json END AS structured_data_json,
+                   CASE WHEN JSON_VALID(ai_draft_json) THEN JSON_SET(JSON_REMOVE(ai_draft_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE ai_draft_json END AS ai_draft_json,
                    intake_status,
                    demand_status,
                    pause_previous_demand_status,
@@ -208,7 +214,7 @@ public interface IntakeMapper {
                    requirement_summary,
                    requirement_digest,
                    department,
-                   business_line,
+                   (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1) AS business_line,
                    business_line_code,
                    project_hint,
                    development_branch_name,
@@ -232,7 +238,7 @@ public interface IntakeMapper {
                    actual_testing_effort,
                    priority,
                    urgency,
-                   (SELECT da.draft_json
+                   (SELECT CASE WHEN JSON_VALID(da.draft_json) THEN JSON_SET(JSON_REMOVE(da.draft_json, '$.businessLine'), '$.businessLineCode', da.business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(da.business_line_code AS BINARY) LIMIT 1)) ELSE da.draft_json END
                     FROM pm_intake_development_analysis da
                     WHERE da.intake_id = pm_intake_record.id
                     ORDER BY da.id DESC LIMIT 1) AS latest_development_draft_json,
@@ -276,7 +282,6 @@ public interface IntakeMapper {
                 requirement_summary,
                 requirement_digest,
                 department,
-                business_line,
                 business_line_code,
                 project_hint,
                 development_branch_name,
@@ -311,8 +316,8 @@ public interface IntakeMapper {
                 #{receivedAt},
                 #{rawContent},
                 #{developmentOwnerUserName},
-                #{structuredDataJson},
-                #{aiDraftJson},
+                CASE WHEN JSON_VALID(#{structuredDataJson}) THEN JSON_REMOVE(#{structuredDataJson}, '$.businessLine') ELSE #{structuredDataJson} END,
+                CASE WHEN JSON_VALID(#{aiDraftJson}) THEN JSON_REMOVE(#{aiDraftJson}, '$.businessLine') ELSE #{aiDraftJson} END,
                 #{intakeStatus},
                 #{demandStatus},
                 #{enrichmentStatus},
@@ -329,7 +334,6 @@ public interface IntakeMapper {
                 #{requirementSummary},
                 #{requirementDigest},
                 #{department},
-                #{businessLine},
                 #{businessLineCode},
                 #{projectHint},
                 #{developmentBranchName},
@@ -363,7 +367,7 @@ public interface IntakeMapper {
 
     @Update("""
             UPDATE pm_intake_record
-            SET ai_draft_json = #{aiDraftJson},
+            SET ai_draft_json = CASE WHEN JSON_VALID(#{aiDraftJson}) THEN JSON_REMOVE(#{aiDraftJson}, '$.businessLine') ELSE #{aiDraftJson} END,
                 intake_status = #{intakeStatus}
             WHERE id = #{id}
             """)
@@ -385,7 +389,7 @@ public interface IntakeMapper {
 
     @Update("""
             UPDATE pm_intake_record
-            SET structured_data_json = #{structuredDataJson},
+            SET structured_data_json = CASE WHEN JSON_VALID(#{structuredDataJson}) THEN JSON_REMOVE(#{structuredDataJson}, '$.businessLine') ELSE #{structuredDataJson} END,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = #{id}
             """)
@@ -409,7 +413,7 @@ public interface IntakeMapper {
 
     @Update("""
             UPDATE pm_intake_record
-            SET structured_data_json = #{structuredDataJson},
+            SET structured_data_json = CASE WHEN JSON_VALID(#{structuredDataJson}) THEN JSON_REMOVE(#{structuredDataJson}, '$.businessLine') ELSE #{structuredDataJson} END,
                 demand_status = #{demandStatus},
                 enrichment_status = #{enrichmentStatus},
                 enrichment_error_summary = #{enrichmentErrorSummary},
@@ -436,7 +440,6 @@ public interface IntakeMapper {
                 requirement_summary = #{requirementSummary},
                 requirement_digest = #{requirementDigest},
                 department = #{department},
-                business_line = #{businessLine},
                 business_line_code = #{businessLineCode},
                 project_hint = #{projectHint},
                 development_branch_name = #{developmentBranchName},
@@ -478,7 +481,7 @@ public interface IntakeMapper {
 
     @Update("""
             UPDATE pm_intake_record
-            SET structured_data_json = #{structuredDataJson},
+            SET structured_data_json = CASE WHEN JSON_VALID(#{structuredDataJson}) THEN JSON_REMOVE(#{structuredDataJson}, '$.businessLine') ELSE #{structuredDataJson} END,
                 development_owner_user_name = #{developmentOwnerUserName},
                 demand_status = #{demandStatus},
                 updated_at = CURRENT_TIMESTAMP

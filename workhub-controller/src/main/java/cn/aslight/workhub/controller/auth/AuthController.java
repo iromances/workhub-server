@@ -4,16 +4,25 @@ import cn.aslight.workhub.common.api.ApiResponse;
 import cn.aslight.workhub.model.auth.ChangePasswordRequest;
 import cn.aslight.workhub.model.auth.LoginRequest;
 import cn.aslight.workhub.model.auth.LoginResponse;
+import cn.aslight.workhub.model.auth.UpdateProfileRequest;
 import cn.aslight.workhub.model.auth.UserProfileResponse;
 import cn.aslight.workhub.service.auth.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 认证接口控制器。
@@ -49,6 +58,37 @@ public class AuthController {
     @GetMapping("/me")
     public ApiResponse<UserProfileResponse> currentUser(Authentication authentication) {
         return ApiResponse.success(authService.currentUser(authentication.getName()));
+    }
+
+    /**
+     * 修改当前登录用户资料。
+     */
+    @PutMapping("/me")
+    public ApiResponse<UserProfileResponse> updateProfile(@Valid @RequestBody UpdateProfileRequest request,
+                                                          Authentication authentication,
+                                                          HttpServletRequest httpRequest) {
+        return ApiResponse.success(authService.updateProfile(authentication.getName(), request, clientIp(httpRequest)));
+    }
+
+    /**
+     * 上传当前登录用户头像。
+     */
+    @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<UserProfileResponse> uploadAvatar(@RequestParam(name = "file") MultipartFile file,
+                                                         Authentication authentication,
+                                                         HttpServletRequest httpRequest) {
+        return ApiResponse.success(authService.uploadAvatar(authentication.getName(), file, clientIp(httpRequest)));
+    }
+
+    /**
+     * 读取头像文件。
+     */
+    @GetMapping("/avatars/{fileName}")
+    public ResponseEntity<Resource> avatar(@PathVariable String fileName) {
+        AuthService.AvatarResource avatar = authService.loadAvatar(fileName);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, avatar.contentType())
+                .body(avatar.resource());
     }
 
     /**

@@ -8,6 +8,9 @@ import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeStructuredField;
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
 import cn.aslight.workhub.model.system.UserOptionResponse;
+import cn.aslight.workhub.service.ai.AiGatewayClient;
+import cn.aslight.workhub.service.ai.AiGatewayRequest;
+import cn.aslight.workhub.service.ai.AiGatewayResult;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
@@ -26,6 +29,8 @@ import java.util.regex.Pattern;
 @Component
 public class CodexCliDevelopmentAnalysisGenerator {
 
+    private static final String ANALYZE_USE_CASE_CODE = "intake.development.analyze";
+    private static final String ADJUST_USE_CASE_CODE = "intake.development.adjust";
     private static final String OUTPUT_SCHEMA = """
             {
               "type": "object",
@@ -67,14 +72,14 @@ public class CodexCliDevelopmentAnalysisGenerator {
             }
             """;
 
-    private final CodexCliClient codexCliClient;
+    private final AiGatewayClient aiGatewayClient;
     private final ChinaWorkdayCalendar chinaWorkdayCalendar;
     private final ObjectMapper objectMapper;
 
-    public CodexCliDevelopmentAnalysisGenerator(CodexCliClient codexCliClient,
+    public CodexCliDevelopmentAnalysisGenerator(AiGatewayClient aiGatewayClient,
                                                 ChinaWorkdayCalendar chinaWorkdayCalendar,
                                                 ObjectMapper objectMapper) {
-        this.codexCliClient = codexCliClient;
+        this.aiGatewayClient = aiGatewayClient;
         this.chinaWorkdayCalendar = chinaWorkdayCalendar;
         this.objectMapper = objectMapper;
     }
@@ -86,7 +91,13 @@ public class CodexCliDevelopmentAnalysisGenerator {
                                              List<UserOptionResponse> developers,
                                              String requirementMarkdownContext,
                                              String knowledgeBaseContext) {
-        return execute(buildPrompt(entity, structuredData, project, repositoryBundle, developers, requirementMarkdownContext, knowledgeBaseContext, null), project, repositoryBundle, developers);
+        return execute(
+                ANALYZE_USE_CASE_CODE,
+                buildPrompt(entity, structuredData, project, repositoryBundle, developers, requirementMarkdownContext, knowledgeBaseContext, null),
+                project,
+                repositoryBundle,
+                developers
+        );
     }
 
     public DevelopmentAnalysisDraft adjust(DevelopmentAnalysisDraft currentDraft,
@@ -94,28 +105,36 @@ public class CodexCliDevelopmentAnalysisGenerator {
                                            ProjectDetailResponse project,
                                            GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle,
                                            List<UserOptionResponse> developers) {
-        return execute(buildAdjustmentPrompt(currentDraft, userMessage, developers, repositoryBundle), project, repositoryBundle, developers);
+        return execute(
+                ADJUST_USE_CASE_CODE,
+                buildAdjustmentPrompt(currentDraft, userMessage, developers, repositoryBundle),
+                project,
+                repositoryBundle,
+                developers
+        );
     }
 
-    private DevelopmentAnalysisDraft execute(String prompt,
+    private DevelopmentAnalysisDraft execute(String useCaseCode,
+                                             String prompt,
                                              ProjectDetailResponse project,
                                              GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle,
                                              List<UserOptionResponse> developers) {
-        if (!codexCliClient.isEnabled()) {
-            throw new IllegalArgumentException("Codex CLI 未启用，不能执行代码影响分析");
+        if (!aiGatewayClient.isConfigured(useCaseCode)) {
+            throw new IllegalArgumentException("AI 场景未配置或已停用，不能执行代码影响分析");
         }
-        CodexCliClient.CodexCliResult result = codexCliClient.execute(new CodexCliClient.CodexCliRequest(
+        AiGatewayResult result = aiGatewayClient.executeStructured(AiGatewayRequest.structured(
+                useCaseCode,
+                prompt,
                 repositoryBundle.localRoot(),
                 repositoryBundle.repositories().stream().map(item -> item.localPath().toString()).toList(),
                 List.of(),
-                OUTPUT_SCHEMA,
-                prompt
+                OUTPUT_SCHEMA
         ));
         if (!result.succeeded()) {
             throw new IllegalArgumentException(result.failureSummary());
         }
         try {
-            RawDevelopmentAnalysis raw = objectMapper.readValue(result.outputJson(), RawDevelopmentAnalysis.class);
+            RawDevelopmentAnalysis raw = objectMapper.readValue(result.output(), RawDevelopmentAnalysis.class);
             List<DevelopmentWorkItemDraft> workItems = normalizeWorkItems(raw.workItems(), project, repositoryBundle);
             int totalEffortHours = sumEstimatedEffortHours(workItems);
             return new DevelopmentAnalysisDraft(

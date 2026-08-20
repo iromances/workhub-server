@@ -2,6 +2,8 @@
 
 生成日期：2026-07-03
 
+最后更新：2026-08-14（补充自营/直营渠道注册、新建订单及向保司放款前链路）
+
 ## 1. 本次排查上下文
 
 | 项目 | 内容 |
@@ -27,10 +29,10 @@
 | scf-merchant-gateway | master | 3f36c88 | 3f36c88 | 商户网关 |
 | scf-op-gateway | master | e8a8fdf | e8a8fdf | 运营网关 |
 | scf-ops-reporting | master | 6258085 | 6258085 | 报表补充 |
-| scf-order | master | 68de546 | 68de546 | 进件、订单、放款、融资主流程 |
-| scf-payment | master | 59f0997 | 59f0997 | 支付、代扣、代付、渠道对账 |
-| scf-saps | master | c28f4ae | c28f4ae | 出账、清结算、还款计划、对账单 |
-| scf_channel_admin | scf_selfoperation_20251016 | 8e68a80 | 未检出 | 非 master，本次不作为主证据 |
+| scf-order | master | 2c1e1ac | 2c1e1ac | 进件、订单、放款、融资主流程 |
+| scf-payment | master | 3b84cd2 | 3b84cd2 | 支付、代扣、代付、渠道对账 |
+| scf-saps | master | 72819c9 | 72819c9 | 出账、清结算、还款计划、对账单、账单还款通知 |
+| scf_channel_admin | scf_selfoperation_20251016 | 8e68a80 | 未检出 | 仓库无 master，作为自营渠道端页面入口证据 |
 | scf_h5 | master | 6701822 | 6701822 | H5 订单、还款、线下还款入口 |
 
 ### 1.2 证据口径与限制
@@ -170,6 +172,213 @@ flowchart LR
 | 外部订单取消 | `orderCancel` 根据 `orderNo` 或 `applicationNo` 定位申请单并销毁/取消 |
 | 审核异步通知丢失 | 提供审核结果查询与异步通知补偿入口 |
 | 材料不完整 | 使用补件和贷后补材料接口补齐 |
+
+#### 5.1.6 自营渠道进件
+
+##### 适用范围与结论
+
+本节反向梳理的范围为：内部自营渠道开通→渠道端新建订单→预审→分期方案→提交进件→绑卡和签约→首笔款→进入待放款并生成向保司放款申请。实际银行打款、放款后融资和贷后分润不在本节范围内。
+
+以需求 `202608070008` “新增自营渠道江苏易吾”为例，如果业务流程、合同套系、绑卡商户号和向保司放款规则均复用山西鸿瑞坤，则截止“向保司发起放款”为止，生产 `master` 现有主链路不需要新增渠道专属代码，主要是渠道、项目、产品、合同、支付和权限配置。
+
+需求特有的“9 期渠道服务费率 3.8%，并入首笔款收取”也已被通用代码覆盖：
+
+- `SelfOperatedOrderService.calculateAmount` 从产品费率中读取渠道服务费率，并按车辆/订单维度计算。
+- 首笔款公式已是“首付款 + 渠道服务费 + 运营服务费 + 其他费用”。
+- `SelfOperatedOrderService.generateFirstPaymentSlip` 已将渠道服务费作为 SAPS 缴费单科目 `10203` 下发。
+- 渠道端的分期方案和订单详情已有“渠道服务费”字段展示。
+
+##### 渠道注册与开通入口
+
+| 层级 | 入口 | 代码定位 | 现有处理 |
+| --- | --- | --- | --- |
+| 渠道端启动 | 登录后获取渠道信息 | `scf_channel_admin/src/store/modules/user.ts#getChannelInfo` | 调用 `GET /channel/info`，保存 `channelInfo`；路由守卫再根据渠道状态、企业认证和授权状态控制页面访问 |
+| 后端查询/首次初始化 | `GET /channel/info?userCode=...` | `ChannelController.info`→`ChannelServiceImpl.info` | 若账号未绑定渠道，自动发起企业认证、生成 `CH` 渠道编号，写入 `type=2`、启用状态，并建立渠道超级管理员 |
+| 运营端渠道建档 | `POST /channel/save`、`POST /channel/commit` | `ChannelController.save/commit`→`ChannelServiceImpl.save/commit` | 保存或提交渠道信息，用于人工建档、补齐资料和提交认证流程 |
+| 渠道账号开通 | `POST /channelEmp/create` | `ChannelEmpController.create`→`ChannelEmpService.create` | 创建渠道员工登录账号并建立 `userCode`与`channelCode` 关联；渠道端账号管理页面使用该入口 |
+| 权限分配 | 渠道账号、角色、菜单权限 | `scf_channel_admin` 账号管理/权限分配页面，SSO 角色菜单接口 | 需给渠道超级管理员和操作员配置订单、账单等必要权限 |
+
+注意开通顺序：如果运营端已经建好渠道，应先通过 `/channelEmp/create` 把渠道登录账号绑定到该 `channelCode`，再让账号首次登录。`ChannelServiceImpl.info` 判断是否已有渠道的依据是 `channel_emp.user_code`；如未建立该关联，首次访问 `/channel/info` 会走“自动新建渠道”分支，存在重复渠道建档风险。
+
+##### 渠道端新建订单代码入口
+
+| 层级 | 入口 | 代码定位 | 处理要点 |
+| --- | --- | --- | --- |
+| 前端 | 客户订单页“新建订单” | `scf_channel_admin/src/views/order/customerOrder.vue#addOrder` | 调用 `POST /api/application/v2/blank`，获取申请单号后跳转到 `addOrder.vue` |
+| 前端请求定义 | `createOrder` | `scf_channel_admin/src/api/api_list.ts` | 映射到 `scf-order /api/application/v2/blank` |
+| 后端 | `POST /api/application/v2/blank` | `ApplicationProprietaryController.generateBlankOrder` | 从 header `Channelcode` 识别渠道，绑定渠道项目、垫资方/供应商，生成 `NEW` 申请单和 `application_loan` |
+
+新建空白订单时，现代码默认 `model=2`、`repaymentType=4`，并且假设“一个渠道只有一个可用项目”，从渠道关联项目中直接取第一个。
+
+##### 向保司放款前主链路与接入点
+
+| 节点 | 主入口/处理器 | 新增渠道的接入内容 |
+| --- | --- | --- |
+| 订单基础资料 | `ApplicationProprietaryController` 下的 `/order/type`、`/customer`、`/company`、车辆/保司信息接口 | 通用入参和校验，配置项目与产品后复用 |
+| 提交预审 | 渠道端提交→`SelfOperatedOrderService.riskControlAudit` | 项目需配置 `preRiskModel`；预审通过后按“项目 + 风险等级”匹配产品 |
+| 分期方案 | `POST /api/application/v2/installment/plan/calculate`、`POST /api/application/v2/installment/plan` | 产品配置 9 期、10% 首付比例、3.2% 运营服务费率和 3.8% 渠道服务费率；代码按配置试算并固化金额 |
+| 提交进件 | `POST /api/application/v2/submit/apply`→`SelfOperatedOrderService.submitApply` | 校验项目、客户、保司、车辆、保证金和分期方案，生成还款计划，订单进入待绑卡 |
+| 绑卡 | H5/Payment 的 `/api/card/binding/client/apply`、`/confirm`；回调 `POST /api/application/v2/bank/card/binding` | 项目/产品绑定支付商户和签约参数，复用存量自营绑卡链路 |
+| 合同签署 | `SelfOperatedOrderService`→`ContractSigningService.startSignByScene` | 复用场景 `BINDING_CARD`、`BINDING_SUCCESS`，在新项目下按山西鸿瑞坤复制合同模板、签署规则和静默签章授权 |
+| 首笔款 | `SelfOperatedOrderService.generateFirstPaymentSlip`→SAPS `/api/generate/payment/slip` | 配置渠道 `downPaymentMethod`；缴费单可包含首付款 `201`、运营服务费 `10201`、渠道服务费 `10203`、其他代付 `103` |
+| 首笔款成功回调 | SAPS→`POST /api/application/first/payment/slip/result`→`ApplicationController.firstPaymentSlipResult` | SAPS 仅在缴费单成功时通知；订单从 `WAIT_PAYMENT` 进入 `WAIT_LOAN`，并异步调用 `LoanOrderService.ZyLoanApply` |
+| 向保司发起放款 | `LoanOrderServiceImpl.ZyLoanApply`→`encapsulationRequestParams`→`loanApply`→`LoanOrderServiceTransational.dealLoanApply` | 以 `channelType=2` 组装自营放款申请；收款方来自 `application_insurance_company` 保司收款账户，金额为 `application_loan.loan_amount`；放款前再校验首笔款、产品还款方式/期数和绑卡协议 |
+
+##### 自营渠道进件至保司放款时序图
+
+渠道注册和账号绑定是本时序的前置条件。图中仍保留首次登录检查，用于表达它与渠道注册链路的衔接关系。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Operator as 渠道操作员
+    actor Customer as 客户
+    participant Admin as scf_channel_admin
+    participant Order as scf-order
+    participant Risk as 风控服务
+    participant H5 as 客户H5
+    participant Sign as 电子签约服务
+    participant Saps as scf-saps
+    participant Payment as scf-payment
+    participant Bank as 银行/支付通道
+    participant Insurer as 保司收款账户
+
+    rect rgb(240, 248, 255)
+        Note over Operator,Order: 前置：参考渠道注册与开通链路
+        Operator->>Admin: 登录渠道端
+        Admin->>Order: GET /channel/info(userCode)
+        alt channel_emp已绑定channelCode
+            Order-->>Admin: 返回已有自营渠道信息
+        else 账号未绑定渠道
+            Order->>Order: 自动创建type=2渠道、企业认证和超管员
+            Order-->>Admin: 返回新渠道信息
+            Note over Admin,Order: 运营端已建渠道但未绑账号时，存在重复建档风险
+        end
+    end
+
+    rect rgb(245, 255, 245)
+        Operator->>Admin: 点击“新建订单”
+        Admin->>Order: POST /api/application/v2/blank<br/>Header: Channelcode
+        Order->>Order: 查渠道及关联项目，默认取projects.get(0)
+        Order->>Order: 创建amp_application(NEW)<br/>创建application_loan(model=2, repaymentType=4)
+        Order-->>Admin: 返回applicationNo
+
+        loop 填写进件资料
+            Operator->>Admin: 订单类型、客户/企业、车辆、保司及保费
+            Admin->>Order: /order/type、/customer、/company及车辆/保司接口
+            Order-->>Admin: 保存结果
+        end
+
+        Operator->>Admin: 提交预审
+        Admin->>Order: POST /api/application/v2/submit/pre/audit
+        Order->>Risk: riskCredit(preRiskModel, customer, applicationNo)
+        Risk-->>Order: riskResult + riskLevel
+        alt 预审通过
+            Order->>Order: PRE_AUDIT_PASS<br/>按项目+riskLevel匹配并固化产品
+        else 预审拒绝
+            Order->>Order: PRE_AUDIT_REJECT
+            Order-->>Admin: 返回拒绝结果，流程结束
+        end
+
+        Operator->>Admin: 选择融资险种和期数
+        Admin->>Order: POST /installment/plan/calculate
+        Order->>Order: 按产品费率计算首付款、运营/渠道服务费及还款计划
+        Order-->>Admin: 返回试算方案
+        Admin->>Order: POST /installment/plan
+        Order->>Order: 固化分期方案和费用
+
+        Operator->>Admin: 提交进件
+        Admin->>Order: POST /api/application/v2/submit/apply
+        Order->>Order: 校验保司/车辆/项目额度/保证金<br/>保存还款计划
+        Order->>Order: 状态→WAIT_BIND_CARD
+        Order-->>Admin: 进件提交成功
+    end
+
+    rect rgb(255, 250, 240)
+        Customer->>H5: 进入绑卡页面并提交卡信息
+        H5->>Payment: /api/card/binding/client/apply + /confirm
+        Payment-->>Order: POST /api/application/v2/bank/card/binding
+        Order->>Order: 保存绑卡信息，状态→WAIT_SIGN
+
+        Order->>Sign: startSignByScene(BINDING_CARD, projectNo)
+        Sign-->>Customer: 客户/企业合同签署
+        Customer-->>Sign: 完成签署
+        Sign-->>Order: 客户签约成功回调
+        Order->>Order: 状态→WAIT_INSURANCE_SIGN
+
+        alt 保司线上签章
+            Order->>Sign: startSignByScene(BINDING_SUCCESS, projectNo)
+            Sign-->>Order: 各车投保单签章结果
+        else 保司线下签章
+            Note over Operator,Order: 等待运营人员确认签署完成
+        end
+        Order->>Order: 全部投保单完成，状态→WAIT_PAYMENT
+
+        Order->>Saps: POST /api/generate/payment/slip<br/>科目201/10201/10203/103
+        Saps-->>Order: 返回firstPaymentSlipNo
+        Customer->>Saps: 支付首笔款
+        Saps-->>Order: POST /api/application/first/payment/slip/result
+        Order->>Order: firstPaymentStatus=PAY_SUCCESS<br/>申请单状态→WAIT_LOAN
+    end
+
+    rect rgb(255, 245, 245)
+        Order->>Order: ZyLoanApply<br/>以channelType=2生成自营放款单
+        Order->>Order: 从application_insurance_company取保司收款账户<br/>放款金额=application_loan.loan_amount
+        Order->>Order: 校验首笔款、期数/还款方式、绑卡协议和在贷额度
+
+        opt 产品配置需要放款风控
+            Order->>Risk: riskLoan(loanApplicationNo, loanAmount)
+            Risk-->>Order: 异步风控审批结果
+        end
+        Order->>Order: 风控通过，loan_order状态→WAIT_LOAN
+
+        alt isAutoPayment=true
+            Order->>Order: 自动startPayment
+        else isAutoPayment=false
+            Note over Operator,Order: 由loanPayment任务/人工入口触发startPayment
+        end
+
+        Order->>Saps: POST /api/transferTransaction/generatePaymentOrder<br/>transferType=LOAN
+        Saps->>Payment: remit(保司收款账户、loanAmount)
+        Payment->>Bank: 发起银行转账
+        Bank->>Insurer: 向保司账户打款
+        Bank-->>Payment: 成功/失败/处理中
+        Payment-->>Saps: 放款结果
+        Saps-->>Order: 放款结果/查询结果
+        Order->>Order: 更新loan_payment及<br/>LOAN_SUCCESS/LOAN_FAILURE/ON_LOAN
+        Order-->>Admin: 渠道端查询最新订单状态
+    end
+```
+
+图中“风控通过后自动放款”不是固定行为：是否自动调用 `startPayment` 取决于 `commonParamConfig.isAutoPayment`；关闭时，放款单保持 `WAIT_LOAN`，等待 `loanPayment` 任务或人工入口发起付款。
+
+##### 新增江苏易吾需落地的配置
+
+| 配置域 | 必须落地的内容 |
+| --- | --- |
+| 渠道与账号 | 新增内部自营渠道、开通渠道管理员/操作员、完成企业实名认证和静默签章授权 |
+| 项目 | 以山西鸿瑞坤为模板新增江苏易吾项目，绑定渠道、运营商、技术服务方、垫资方，配置保证金/额度、单笔限额、商业险限制、展业区域和预审模型 |
+| 产品 | 仅开放 9 期，首付比例 10%，9 期运营服务费率 3.2%，9 期渠道服务费率 3.8%，宽限期和其他产品参数按需求维护 |
+| 风控与产品映射 | 配置 `preRiskModel`、风险等级到江苏易吾产品的映射 |
+| 合同 | 在新项目维度复制山西鸿瑞坤的合同套系、签署场景和邮件通知配置 |
+| 支付 | 配置 `downPaymentMethod`、绑卡/代扣商户路由和相关签约参数 |
+| 保司 | 进件时必须维护保司名称、收款账号、收款行、联行号和付款摘要，这些字段直接用于向保司放款 |
+| 权限与任务 | 配置渠道端订单、账单操作权限，并确认自营签约、缴费单和放款申请重试任务可正常处理新项目 |
+
+##### 只有出现以下差异才需要改代码
+
+| 差异 | 需调整的代码边界 |
+| --- | --- |
+| 同一渠道需同时选择多个项目 | `generateBlankOrder` 现在直接取渠道项目列表第一个；需在渠道端增加项目选择，并调整新建订单入参和后端项目匹配 |
+| 期望“运营端提交渠道”后自动完成账号开通 | `ChannelServiceImpl.commit` 目前只保存渠道并更新 `channel.user_code`，渠道员工关联由 `/channelEmp/create` 另行建立；如要一键开通，需增加账号创建、关联和幂等校验 |
+| 还款模式不是现有自营模式 | `generateBlankOrder` 已固定 `model=2`、`repaymentType=4`；如新项目不同，应改为产品/项目配置驱动 |
+| 需融资非商业险且期数不是 3 期 | 分期方案代码将 `nonCiFinancingPeriod` 固定为 3，需改造试算、保存和费率匹配；江苏易吾仅商业险，不触发该改造 |
+| 首笔款公式或费用科目不同 | 如仅费率不同不需改代码；如新增第五类费用、更换付款人/收款人或改变计算基数，需同时调整 `calculateAmount`、`generateFirstPaymentSlip`和 SAPS 科目/结算处理 |
+| 签约步骤、签约主体或合同生成条件不同 | 可用项目合同场景配置表达时只改配置；需跳过/增加/重排节点时，调整 `SelfOperatedOrderService` 和合同回调分发逻辑 |
+| 向保司放款需多收款方、拆分金额或改变收款对象 | `encapsulationRequestParams` 当前按“一张订单、一家保司、一个收款账户、全额 `loanAmount`”组装；需调整放款请求、校验和支付侧明细生成 |
+| 风控产品匹配规则无法用“项目预审模型 + 风险等级→产品”表达 | 调整 `riskControlAudit`、风控请求参数和产品选择策略 |
+
+需求中“整笔订单结清后，渠道开票再通过分润对账单结算渠道服务费”属于放款后清结算范围，不能由本节的放款前链路推导为“已无需改造”；应另行核对现有分润对账单的生成条件、结清口径、发票审核和付款科目是否完整覆盖需求。
 
 ### 5.2 放款
 
@@ -376,6 +585,54 @@ flowchart LR
 | 批扣失败 | 记录失败原因，后续可重试或转人工 |
 | 账单和支付金额不一致 | 清分差异留在交易和 pay detail 表，必要时挂账 |
 | 线下回款 | 线下还款申请和挂账入账后由挂账清分任务处理 |
+
+#### 5.5.6 客户账单还款短信通知
+
+##### 业务目的
+
+`scf-saps` 通过 XXL-JOB 定时向符合条件的内部自营订单客户发送账单还款提醒，引导客户在“先行通车管家”公众号查询并支付。
+
+##### 入口与时间窗口
+
+| 项目 | 代码口径 |
+| --- | --- |
+| XXL-JOB Handler | `repaymentSmsSchedule` |
+| 默认通知类型 | `T_3`、`T_1`、`T_0` |
+| 目标还款日 | 基准日期分别加 3 天、1 天、0 天 |
+| 设计执行时间 | 还款日前 3 天 12:00、前 1 天 12:00、当天 12:00 |
+| 可选任务参数 | 基准日期、申请单号、账单编号、客户编号、短信类型、测试模式 |
+
+`RepaymentSmsSchedule` 注释声明了 12:00 的设计时间；实际生产 cron、任务启停和执行器以 XXL-JOB 管理端配置为准。
+
+##### 发送条件与处理链路
+
+1. 查询 `customer_bill.last_pay_date` 等于目标还款日、`unpaid_amount > 0` 的客户账单。
+2. 通过 `loan_order.application_no` 查询订单，仅处理 `channel_type = SELF_OPERATED` 的内部自营订单。
+3. 按“账单编号 + SMS + 时间窗口 + 最后付款日”查询 `customer_notify_record`；已成功发送则跳过，避免同类型重复通知。
+4. 通过 `scf-order` 客户信息接口取手机号，传入申请单号、还款日和待还金额。
+5. `SmsServiceImpl` 调用消息平台文本短信接口，模板键为 `bill.payment.remind`，来源平台为 `scf-saps`。
+6. 发送结果写回 `customer_notify_record`；测试模式只记录模拟成功，不实际发送。
+
+##### 短信内容
+
+代码中的参考内容为：
+
+> 【先行通】提示：尊敬的顾客，您的订单{applicationNo}本期账单还款日为{payDate}，待还款{paymentAmount}元，请及时关注“先行通车管家”公众号查询并按时支付，谢谢您的配合。如已支付请忽略此短信。
+
+最终下发文案以消息平台 `bill.payment.remind` 模板配置为准；代码中的 `buildSmsContent` 仅用于通知记录和日志参考。
+
+##### 事实、推断与待验证
+
+- **事实**：`master` 代码存在上述定时任务、账单筛选、内部自营校验、通知去重、模板参数和发送结果记录逻辑。
+- **事实**：2026-07-14 提供的生产短信截图中，还款日为当天，收到时间为 12:04，文案与代码参考模板一致。本页不保存截图中的完整订单号、手机号或金额。
+- **推断**：该截图高度符合 T0 当天 12:00 任务执行后的下发结果，但截图本身不能替代 XXL-JOB 执行日志。
+- **待验证**：生产 XXL-JOB 当前 cron、启停状态、执行结果，以及消息平台当前模板版本，需通过 WorkHub 受控 MCP 或管理端进一步只读核验。
+
+##### 风险与运维注意事项
+
+- 账单筛选 SQL 只直接限制 `last_pay_date` 和 `unpaid_amount > 0`，没有同时限制 `is_delete`、`settlement_status` 或其他结清状态。如客户已支付，但账单待还金额在任务执行前未及时更新，仍可能收到提醒。
+- 通知记录只在同类型已成功时去重；失败记录可进入重试计数。代码中存在 `retryFailedNotifications` 方法，但在已检索的 `master` 范围内未发现对应 XXL-JOB 入口，自动重试调度需另行确认。
+- 排查“已支付仍收到短信”时，应按任务执行时点依次核对客户账单待还金额、清分/结算完成时间、`customer_notify_record` 和短信平台返回结果。
 
 ### 5.6 对账单
 
@@ -1067,6 +1324,7 @@ flowchart TD
 | 任务 | 作用 |
 | --- | --- |
 | `operatorBillSettleAndNotifySchedule` | 运营商账单结算和通知 |
+| `repaymentSmsSchedule` | 内部自营客户账单还款提醒短信，默认处理 T-3、T-1、T0 |
 | `repaymentPlanOverdueSchedule` | 还款计划逾期处理 |
 | `customerBillFeeRecordSchedule` | 客户账单费用记录生成 |
 | `funderBillMigrateSchedule` | 资方账单迁移 |

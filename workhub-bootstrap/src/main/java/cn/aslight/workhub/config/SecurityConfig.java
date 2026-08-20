@@ -1,6 +1,7 @@
 package cn.aslight.workhub.config;
 
 import cn.aslight.workhub.security.JwtAuthenticationFilter;
+import cn.aslight.workhub.security.McpAccessTokenAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -23,7 +24,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    RestAuthenticationHandlers restAuthenticationHandlers,
-                                                   JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+                                                   JwtAuthenticationFilter jwtAuthenticationFilter,
+                                                   McpAccessTokenAuthenticationFilter mcpAccessTokenAuthenticationFilter) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
@@ -33,10 +35,12 @@ public class SecurityConfig {
                         .accessDeniedHandler(restAuthenticationHandlers)
                 )
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/system/ping", "/api/auth/login", "/api/wecom/callback/**").permitAll()
+                        .requestMatchers("/api/system/ping", "/api/auth/login", "/api/auth/avatars/**", "/api/wecom/callback/**").permitAll()
+                        .requestMatchers("/api/mcp/runtime").hasRole("MCP")
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(mcpAccessTokenAuthenticationFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }

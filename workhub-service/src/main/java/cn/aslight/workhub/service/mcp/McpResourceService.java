@@ -4,6 +4,8 @@ import cn.aslight.workhub.dao.mcp.McpResourceMapper;
 import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.dao.project.ProjectInvolvedSystemMapper;
 import cn.aslight.workhub.model.mcp.McpAuditEntryResponse;
+import cn.aslight.workhub.model.mcp.McpAuditPageResponse;
+import cn.aslight.workhub.model.mcp.McpBastionEntity;
 import cn.aslight.workhub.model.mcp.McpCatalogResponse;
 import cn.aslight.workhub.model.mcp.McpResourceEntity;
 import cn.aslight.workhub.model.mcp.McpResourceProfile;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -37,7 +40,7 @@ public class McpResourceService {
 
     private final McpResourceMapper mcpResourceMapper;
     private final McpCryptoService mcpCryptoService;
-    private final McpResourceSchemaInitializer schemaInitializer;
+    private final McpBastionService mcpBastionService;
     private final BusinessLineMapper businessLineMapper;
     private final ProjectInvolvedSystemMapper involvedSystemMapper;
     private final SysConfigService sysConfigService;
@@ -45,13 +48,13 @@ public class McpResourceService {
 
     public McpResourceService(McpResourceMapper mcpResourceMapper,
                               McpCryptoService mcpCryptoService,
-                              McpResourceSchemaInitializer schemaInitializer,
+                              McpBastionService mcpBastionService,
                               BusinessLineMapper businessLineMapper,
                               ProjectInvolvedSystemMapper involvedSystemMapper,
                               SysConfigService sysConfigService) {
         this.mcpResourceMapper = mcpResourceMapper;
         this.mcpCryptoService = mcpCryptoService;
-        this.schemaInitializer = schemaInitializer;
+        this.mcpBastionService = mcpBastionService;
         this.businessLineMapper = businessLineMapper;
         this.involvedSystemMapper = involvedSystemMapper;
         this.sysConfigService = sysConfigService;
@@ -63,7 +66,6 @@ public class McpResourceService {
                                           String environmentCode,
                                           String keyword,
                                           boolean enabledOnly) {
-        schemaInitializer.ensureInitialized();
         return mcpResourceMapper.findAll(normalizeResourceTypeOrNull(resourceType),
                         trimToNull(businessLineCode),
                         trimToNull(environmentCode),
@@ -76,7 +78,6 @@ public class McpResourceService {
 
     @Transactional
     public McpResourceResponse create(McpResourceSaveRequest request) {
-        schemaInitializer.ensureInitialized();
         McpResourceEntity entity = toEntity(new McpResourceEntity(), request, true);
         mcpResourceMapper.insert(entity);
         replaceBusinessLineBindings(entity.getId(), normalizeBusinessLineCodes(request));
@@ -85,7 +86,6 @@ public class McpResourceService {
 
     @Transactional
     public McpResourceResponse update(Long id, McpResourceSaveRequest request) {
-        schemaInitializer.ensureInitialized();
         McpResourceEntity existing = requireExisting(id);
         McpResourceEntity entity = toEntity(existing, request, false);
         entity.setId(id);
@@ -96,7 +96,6 @@ public class McpResourceService {
 
     @Transactional
     public void delete(Long id) {
-        schemaInitializer.ensureInitialized();
         mcpResourceMapper.deleteBusinessLineBindings(id);
         if (mcpResourceMapper.deleteById(id) == 0) {
             throw new IllegalArgumentException("MCP 资源不存在");
@@ -138,26 +137,35 @@ public class McpResourceService {
         );
     }
 
-    public List<McpAuditEntryResponse> auditEntries(int limit) {
-        int size = Math.min(Math.max(limit, 1), 500);
+    public McpAuditPageResponse auditEntries(int pageNum, int pageSize) {
         Path path = Path.of(System.getenv().getOrDefault("WORKHUB_MCP_AUDIT_LOG", "logs/mcp-audit.jsonl"));
+        return auditEntries(path, pageNum, pageSize);
+    }
+
+    McpAuditPageResponse auditEntries(Path path, int pageNum, int pageSize) {
+        int normalizedPageNum = Math.max(pageNum, 1);
+        int normalizedPageSize = Math.min(Math.max(pageSize, 1), 500);
         if (!Files.exists(path)) {
-            return List.of();
+            return new McpAuditPageResponse(0, List.of());
         }
         try {
             List<String> lines = Files.readAllLines(path);
-            int from = Math.max(lines.size() - size, 0);
+            long offset = (long) (normalizedPageNum - 1) * normalizedPageSize;
+            long total = 0;
             List<McpAuditEntryResponse> entries = new ArrayList<>();
-            for (int i = lines.size() - 1; i >= from; i--) {
+            for (int i = lines.size() - 1; i >= 0; i--) {
                 String line = lines.get(i);
                 if (line == null || line.isBlank()) {
                     continue;
                 }
                 Map<String, Object> fields = objectMapper.readValue(line, new TypeReference<>() {
                 });
-                entries.add(new McpAuditEntryResponse(fields));
+                if (total >= offset && entries.size() < normalizedPageSize) {
+                    entries.add(new McpAuditEntryResponse(fields));
+                }
+                total++;
             }
-            return entries;
+            return new McpAuditPageResponse(total, entries);
         } catch (IOException ex) {
             throw new IllegalArgumentException("读取 MCP 审计日志失败：" + ex.getMessage(), ex);
         }
@@ -166,10 +174,14 @@ public class McpResourceService {
     private Map<String, Object> databaseCatalogTarget(McpResourceResponse resource) {
         Map<String, Object> target = new LinkedHashMap<>();
         target.put("key", resource.targetKey());
+        target.put("publicResource", resource.publicResource());
+        target.put("featureTags", resource.featureTags());
         target.put("businessLineCode", resource.businessLineCode());
         target.put("businessLineCodes", resource.businessLineCodes());
         target.put("environmentCode", resource.environmentCode());
         target.put("name", resource.name());
+        target.put("systemName", resource.systemName());
+        target.put("systemNames", resource.systemNames());
         target.put("host", resource.host());
         target.put("port", resource.port());
         target.put("schema", resource.databaseSchema());
@@ -272,6 +284,8 @@ public class McpResourceService {
     private Map<String, Object> serverCatalogTarget(McpResourceResponse resource) {
         Map<String, Object> target = new LinkedHashMap<>();
         target.put("key", resource.targetKey());
+        target.put("publicResource", resource.publicResource());
+        target.put("featureTags", resource.featureTags());
         target.put("businessLineCode", resource.businessLineCode());
         target.put("businessLineCodes", resource.businessLineCodes());
         target.put("environmentCode", resource.environmentCode());
@@ -321,14 +335,18 @@ public class McpResourceService {
 
     private McpResourceEntity toEntity(McpResourceEntity entity, McpResourceSaveRequest request, boolean create) {
         String resourceType = normalizeResourceType(request.getResourceType());
+        boolean publicResource = isPublicResource(request);
+        List<String> businessLineCodes = normalizeBusinessLineCodes(request);
         validateByResourceType(resourceType, entity, request);
         GeneratedTarget generatedTarget = resolveTarget(resourceType, entity, request, create);
         entity.setResourceType(resourceType);
         entity.setTargetKey(generatedTarget.targetKey());
-        entity.setBusinessLineCode(normalizeBusinessLineCodes(request).getFirst());
+        entity.setPublicResource(publicResource);
+        entity.setFeatureTagsJson(writeJson(normalizeFeatureTags(request.getFeatureTags())));
+        entity.setBusinessLineCode(publicResource ? "" : businessLineCodes.getFirst());
         entity.setEnvironmentCode(requireValue(request.getEnvironmentCode(), "环境不能为空"));
         entity.setName(generatedTarget.name());
-        entity.setSystemName(SERVER.equals(resourceType) ? writeJson(normalizeSystemNames(request)) : null);
+        entity.setSystemName(writeJson(normalizeSystemNames(request)));
         entity.setHost(requireValue(request.getHost(), "目标主机不能为空"));
         entity.setPort(request.getPort());
         entity.setDatabaseSchema(trimToNull(request.getDatabaseSchema()));
@@ -339,13 +357,18 @@ public class McpResourceService {
         }
         entity.setSshPasswordEncrypted(encryptOrKeep(request.getSshPassword(), entity.getSshPasswordEncrypted()));
         entity.setSshBastionEnabled(Boolean.TRUE.equals(request.getSshBastionEnabled()));
-        entity.setSshBastionHost(trimToNull(request.getSshBastionHost()));
-        entity.setSshBastionPort(request.getSshBastionPort());
-        entity.setSshBastionUser(trimToNull(request.getSshBastionUser()));
-        entity.setSshBastionPasswordEncrypted(encryptOrKeep(request.getSshBastionPassword(), entity.getSshBastionPasswordEncrypted()));
-        entity.setSshIdentityFile(trimToNull(request.getSshIdentityFile()));
+        if (DATABASE.equals(resourceType)) {
+            entity.setBastionId(resolveDatabaseBastionId(entity, request));
+        } else {
+            entity.setBastionId(null);
+            entity.setSshBastionHost(trimToNull(request.getSshBastionHost()));
+            entity.setSshBastionPort(request.getSshBastionPort());
+            entity.setSshBastionUser(trimToNull(request.getSshBastionUser()));
+            entity.setSshBastionPasswordEncrypted(encryptOrKeep(request.getSshBastionPassword(), entity.getSshBastionPasswordEncrypted()));
+            entity.setSshIdentityFile(trimToNull(request.getSshIdentityFile()));
+        }
         entity.setAllowedServicesJson(writeJson(request.getAllowedServices() == null ? List.of() : request.getAllowedServices()));
-        entity.setAllowedLogPathsJson(writeJson(request.getAllowedLogPaths() == null ? List.of() : request.getAllowedLogPaths()));
+        entity.setAllowedLogPathsJson(writeJson(normalizeAllowedLogPaths(resourceType, request.getAllowedLogPaths())));
         entity.setProfilesJson(writeJson(normalizeProfiles(request.getProfiles(), resourceType)));
         entity.setEnabled(request.getEnabled() == null || request.getEnabled());
         entity.setRemark(trimToNull(request.getRemark()));
@@ -388,7 +411,7 @@ public class McpResourceService {
     }
 
     private String generatedTargetKeyBase(String resourceType, McpResourceSaveRequest request) {
-        String businessLineCode = normalizeBusinessLineCodes(request).getFirst();
+        String ownerKey = resourceOwnerKey(request);
         String environmentCode = requireValue(request.getEnvironmentCode(), "环境不能为空");
         String host = requireValue(request.getHost(), "目标主机不能为空");
         Integer port = request.getPort();
@@ -396,7 +419,7 @@ public class McpResourceService {
             throw new IllegalArgumentException("端口必须大于 0");
         }
         return String.join("-",
-                sanitizeKeyPart(businessLineCode),
+                sanitizeKeyPart(ownerKey),
                 sanitizeKeyPart(environmentCode),
                 DATABASE.equals(resourceType) ? "db" : "server",
                 sanitizeKeyPart(host),
@@ -413,8 +436,9 @@ public class McpResourceService {
     }
 
     private String generateTargetName(String resourceType, McpResourceSaveRequest request) {
-        String businessLineCode = normalizeBusinessLineCodes(request).getFirst();
-        String businessLineName = businessLineName(businessLineCode);
+        String ownerName = isPublicResource(request)
+                ? "公共资源"
+                : businessLineName(normalizeBusinessLineCodes(request).getFirst());
         String environmentCode = requireValue(request.getEnvironmentCode(), "环境不能为空");
         String host = requireValue(request.getHost(), "目标主机不能为空");
         Integer port = request.getPort();
@@ -422,7 +446,7 @@ public class McpResourceService {
             throw new IllegalArgumentException("端口必须大于 0");
         }
         String typeName = DATABASE.equals(resourceType) ? "数据库目标" : "服务器目标";
-        return businessLineName + " " + environmentCode + " " + typeName + " " + host + ":" + port;
+        return ownerName + " " + environmentCode + " " + typeName + " " + host + ":" + port;
     }
 
     private String businessLineName(String businessLineCode) {
@@ -442,7 +466,7 @@ public class McpResourceService {
             if (!hasAnySecret(request.getPassword(), request.getSecretRef(), existing.getPasswordEncrypted(), existing.getSecretRef())) {
                 throw new IllegalArgumentException("数据库密码不能为空");
             }
-            validateSshCredential(existing, request);
+            resolveDatabaseBastionId(existing, request);
             return;
         }
         if (SERVER.equals(resourceType)) {
@@ -450,6 +474,7 @@ public class McpResourceService {
             if (!hasAnySecret(request.getSshPassword(), existing.getSshPasswordEncrypted(), request.getSshIdentityFile(), existing.getSshIdentityFile())) {
                 throw new IllegalArgumentException("服务器 SSH 密码或私钥文件不能为空");
             }
+            validateLegacyBastionCredential(existing, request);
         }
     }
 
@@ -462,6 +487,9 @@ public class McpResourceService {
     }
 
     private List<String> normalizeBusinessLineCodes(McpResourceSaveRequest request) {
+        if (isPublicResource(request)) {
+            return List.of();
+        }
         List<String> values = new ArrayList<>();
         if (request.getBusinessLineCodes() != null) {
             request.getBusinessLineCodes().forEach(value -> {
@@ -481,12 +509,54 @@ public class McpResourceService {
         return values;
     }
 
+    private String resourceOwnerKey(McpResourceSaveRequest request) {
+        return isPublicResource(request) ? "public" : normalizeBusinessLineCodes(request).getFirst();
+    }
+
+    private boolean isPublicResource(McpResourceSaveRequest request) {
+        return Boolean.TRUE.equals(request.getPublicResource());
+    }
+
+    private List<String> normalizeFeatureTags(List<String> featureTags) {
+        List<String> values = new ArrayList<>();
+        if (featureTags != null) {
+            featureTags.forEach(value -> addUnique(values, value));
+        }
+        return values;
+    }
+
     private List<String> normalizeSystemNames(McpResourceSaveRequest request) {
         List<String> values = new ArrayList<>();
         if (request.getSystemNames() != null) {
             request.getSystemNames().forEach(value -> addUnique(values, value));
         }
         addUnique(values, request.getSystemName());
+        return values;
+    }
+
+    private List<String> normalizeAllowedLogPaths(String resourceType, List<String> paths) {
+        List<String> values = new ArrayList<>();
+        if (paths == null) {
+            return values;
+        }
+        for (String value : paths) {
+            String normalized = trimToNull(value);
+            if (normalized == null) {
+                continue;
+            }
+            if (SERVER.equals(resourceType)) {
+                try {
+                    Path path = Path.of(normalized).normalize();
+                    if (!path.isAbsolute()) {
+                        throw new IllegalArgumentException("日志目录白名单必须配置绝对路径：" + normalized);
+                    }
+                    normalized = path.toString();
+                } catch (InvalidPathException ex) {
+                    throw new IllegalArgumentException("日志目录白名单路径无效：" + normalized, ex);
+                }
+            }
+            addUnique(values, normalized);
+        }
         return values;
     }
 
@@ -511,10 +581,15 @@ public class McpResourceService {
 
     private McpResourceResponse toResponse(McpResourceEntity entity) {
         List<String> systemNames = readSystemNames(entity.getSystemName());
+        McpBastionEntity bastion = DATABASE.equals(entity.getResourceType()) && entity.getBastionId() != null
+                ? mcpBastionService.requireExisting(entity.getBastionId())
+                : null;
         return new McpResourceResponse(
                 entity.getId(),
                 entity.getResourceType(),
                 entity.getTargetKey(),
+                Boolean.TRUE.equals(entity.getPublicResource()),
+                readStringList(entity.getFeatureTagsJson()),
                 entity.getBusinessLineCode(),
                 businessLineCodes(entity),
                 entity.getEnvironmentCode(),
@@ -528,11 +603,15 @@ public class McpResourceService {
                 hasAnySecret(entity.getPasswordEncrypted(), entity.getSecretRef()),
                 hasAnySecret(entity.getSshPasswordEncrypted()),
                 Boolean.TRUE.equals(entity.getSshBastionEnabled()),
-                entity.getSshBastionHost(),
-                entity.getSshBastionPort(),
-                entity.getSshBastionUser(),
-                hasAnySecret(entity.getSshBastionPasswordEncrypted()),
-                entity.getSshIdentityFile(),
+                entity.getBastionId(),
+                bastion == null ? null : bastion.getName(),
+                bastion == null ? entity.getSshBastionHost() : bastion.getHost(),
+                bastion == null ? entity.getSshBastionPort() : bastion.getPort(),
+                bastion == null ? entity.getSshBastionUser() : bastion.getUsername(),
+                bastion == null
+                        ? hasAnySecret(entity.getSshBastionPasswordEncrypted())
+                        : hasAnySecret(bastion.getPasswordEncrypted()),
+                bastion == null ? entity.getSshIdentityFile() : bastion.getIdentityFile(),
                 readStringList(entity.getAllowedServicesJson()),
                 readStringList(entity.getAllowedLogPathsJson()),
                 readProfiles(entity.getProfilesJson()),
@@ -635,11 +714,28 @@ public class McpResourceService {
     }
 
     private String decryptSshBastionPassword(McpResourceResponse resource) {
+        if (resource.bastionId() != null) {
+            return mcpBastionService.decryptPassword(mcpBastionService.requireExisting(resource.bastionId()));
+        }
         McpResourceEntity entity = requireExisting(resource.id());
         return mcpCryptoService.decrypt(entity.getSshBastionPasswordEncrypted());
     }
 
-    private void validateSshCredential(McpResourceEntity existing, McpResourceSaveRequest request) {
+    private Long resolveDatabaseBastionId(McpResourceEntity existing, McpResourceSaveRequest request) {
+        if (!Boolean.TRUE.equals(request.getSshBastionEnabled())) {
+            return null;
+        }
+        Long bastionId = request.getBastionId();
+        if (bastionId == null
+                && Boolean.TRUE.equals(existing.getSshBastionEnabled())
+                && existing.getBastionId() != null) {
+            bastionId = existing.getBastionId();
+        }
+        mcpBastionService.requireEnabled(bastionId);
+        return bastionId;
+    }
+
+    private void validateLegacyBastionCredential(McpResourceEntity existing, McpResourceSaveRequest request) {
         if (!Boolean.TRUE.equals(request.getSshBastionEnabled())) {
             return;
         }

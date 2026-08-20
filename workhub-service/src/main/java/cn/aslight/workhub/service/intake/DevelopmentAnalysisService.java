@@ -564,7 +564,8 @@ public class DevelopmentAnalysisService {
             entity.setZentaoSyncMessage("禅道同步接口已预留，当前不会调用禅道。");
         }
         entity.setProjectId(updated.projectId());
-        entity.setBusinessLine(updated.businessLine());
+        entity.setBusinessLineCode(resolveBusinessLineCode(project, updated.businessLine()));
+        entity.setBusinessLine(null);
         entity.setRepositoryUrl(updated.repositoryUrl());
         entity.setDraftJson(writeDraftJson(updated));
         entity.setAnalysisStatus(updated.status());
@@ -625,7 +626,8 @@ public class DevelopmentAnalysisService {
             );
             DevelopmentAnalysisEntity completed = requireAnalysisEntity(analysisId);
             completed.setProjectId(project.id());
-            completed.setBusinessLine(project.businessLine());
+            completed.setBusinessLineCode(project.businessLineCode());
+            completed.setBusinessLine(null);
             completed.setRepositoryUrl(repositoryBundle.repositorySummary());
             completed.setAnalysisStatus(STATUS_DRAFT);
             completed.setAnalysisMessage(null);
@@ -773,7 +775,8 @@ public class DevelopmentAnalysisService {
             entity.setCreatedBy(operatorUserName);
         }
         entity.setProjectId(project.id());
-        entity.setBusinessLine(project.businessLine());
+        entity.setBusinessLineCode(project.businessLineCode());
+        entity.setBusinessLine(null);
         entity.setRepositoryUrl(repositoryUrl);
         entity.setAnalysisStatus(status);
         entity.setAnalysisMessage(null);
@@ -805,7 +808,8 @@ public class DevelopmentAnalysisService {
             entity.setZentaoSyncMessage("禅道同步接口已预留，当前不会调用禅道。");
         }
         entity.setProjectId(null);
-        entity.setBusinessLine(businessLine);
+        entity.setBusinessLineCode(resolveBusinessLineCode(null, businessLine));
+        entity.setBusinessLine(null);
         entity.setRepositoryUrl(null);
         entity.setAnalysisStatus(status);
         entity.setAnalysisMessage(message);
@@ -961,6 +965,18 @@ public class DevelopmentAnalysisService {
         return projectMapper.findFirstDetailByBusinessLine(normalizedBusinessLine);
     }
 
+    private String resolveBusinessLineCode(ProjectDetailResponse project, String businessLine) {
+        if (project != null && trimToNull(project.businessLineCode()) != null) {
+            return project.businessLineCode();
+        }
+        ProjectDetailResponse matched = findBusinessLineProject(businessLine);
+        if (matched != null && trimToNull(matched.businessLineCode()) != null) {
+            return matched.businessLineCode();
+        }
+        String normalized = trimToNull(businessLine);
+        return normalized != null && normalized.matches("BL[0-9]{6}") ? normalized : null;
+    }
+
     private Long retainedProjectId(DevelopmentAnalysisDraft draft, String businessLine) {
         if (draft == null || !Objects.equals(trimToNull(draft.businessLine()), trimToNull(businessLine))) {
             return null;
@@ -1011,6 +1027,9 @@ public class DevelopmentAnalysisService {
                 baseline.actualEffort(),
                 baseline.testingStartedDate(),
                 baseline.actualCompletedTime(),
+                baseline.scheduledAcceptanceDate(),
+                baseline.actualTestingEffort(),
+                baseline.actualTestingCompletedDate(),
                 baseline.acceptanceTime(),
                 baseline.releasedTime(),
                 baseline.closedTime(),

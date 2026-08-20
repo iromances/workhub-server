@@ -44,7 +44,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import tools.jackson.core.JacksonException;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -107,7 +106,6 @@ public class IntakeService {
             Map.entry("新增", "add")
     );
     private static final List<String> DEMAND_STATUS_SORT_ORDER = List.of(
-            IntakeDemandStatusRules.RECORDED,
             IntakeDemandStatusRules.CLARIFYING,
             IntakeDemandStatusRules.PENDING_PROCESSING,
             IntakeDemandStatusRules.PROCESSING,
@@ -118,6 +116,7 @@ public class IntakeService {
             IntakeDemandStatusRules.TESTING,
             IntakeDemandStatusRules.PENDING_ACCEPTANCE,
             IntakeDemandStatusRules.PENDING_RELEASE,
+            IntakeDemandStatusRules.RECORDED,
             IntakeDemandStatusRules.PAUSED,
             IntakeDemandStatusRules.COMPLETED,
             IntakeDemandStatusRules.TERMINATED
@@ -382,11 +381,7 @@ public class IntakeService {
                 .filter(item -> normalizedRequirementType == null || normalizedRequirementType.equals(item.requirementType()))
                 .filter(item -> normalizedDemandStatus == null || normalizedDemandStatus.equals(item.demandStatus()))
                 .filter(item -> matchesReleasedDate(item, normalizedReleasedStartDate, normalizedReleasedEndDate))
-                .sorted(Comparator.comparingInt(this::enrichmentSortOrder)
-                        .thenComparingInt(this::demandStatusSortOrder)
-                        .thenComparingInt(this::demandPrioritySortOrder)
-                        .thenComparing(IntakeSummaryResponse::receivedAt, Comparator.nullsLast(Comparator.reverseOrder()))
-                        .thenComparing(IntakeSummaryResponse::id, Comparator.nullsLast(Comparator.reverseOrder())))
+                .sorted(demandManagementComparator())
                 .toList();
     }
 
@@ -487,11 +482,11 @@ public class IntakeService {
                 .toList();
         List<IntakeDashboardResponse.ProgressReportDemand> pendingDemands = records.stream()
                 .filter(this::isUnreleasedDemand)
-                .sorted((left, right) -> Long.compare(sortableDemandTime(right), sortableDemandTime(left)))
+                .sorted(demandManagementComparator())
                 .map(this::toProgressReportDemand)
                 .toList();
         return new IntakeDashboardResponse.ProgressReport(
-                "项目总体进度报告",
+                "项目进度",
                 formatDashboardDateTime(generatedAt),
                 "待上线包含待验收和待上线",
                 summary,
@@ -1034,38 +1029,38 @@ public class IntakeService {
         }
         return new IntakeStructuredData(
                 legacyPayload == null ? null : legacyPayload.category(),
-                entity.getApprovalTitle(),
-                entity.getProposerName(),
-                entity.getDevelopmentOwnerUserName(),
-                entity.getApprovalCode(),
-                formatDateTime(entity.getSubmittedAt()),
-                entity.getRequirementType(),
-                entity.getDevelopmentBranchName(),
-                entity.getZentaoUrl(),
-                entity.getRequirementDigest(),
-                entity.getRequirementName(),
-                entity.getRequirementSummary(),
-                entity.getDepartment(),
-                entity.getBusinessLine(),
-                entity.getBusinessLineCode(),
-                entity.getRemark(),
-                formatDate(entity.getPlannedDueDate()),
-                formatDate(entity.getPlannedDevelopmentStartDate()),
-                formatDate(entity.getPlannedTestingStartDate()),
-                formatDate(entity.getPlannedReleaseDate()),
-                formatDate(entity.getDevelopmentStartedDate()),
-                entity.getActualEffort(),
-                formatDate(entity.getTestingStartedDate()),
-                formatDate(entity.getActualCompletedDate()),
-                formatDate(entity.getScheduledAcceptanceDate()),
-                entity.getActualTestingEffort(),
-                formatDate(entity.getActualTestingCompletedDate()),
-                formatDate(entity.getAcceptanceDate()),
-                formatDate(entity.getReleasedDate()),
-                formatDate(entity.getClosedDate()),
-                entity.getCloseReason(),
-                entity.getProjectHint(),
-                toStructuredFields(fieldEntities),
+                firstNonBlank(entity.getApprovalTitle(), legacyPayload == null ? null : legacyPayload.approvalTitle()),
+                firstNonBlank(entity.getProposerName(), legacyPayload == null ? null : legacyPayload.proposerName()),
+                firstNonBlank(entity.getDevelopmentOwnerUserName(), legacyPayload == null ? null : legacyPayload.developmentOwnerUserName()),
+                firstNonBlank(entity.getApprovalCode(), legacyPayload == null ? null : legacyPayload.approvalCode()),
+                firstNonBlank(formatDateTime(entity.getSubmittedAt()), legacyPayload == null ? null : legacyPayload.submittedTime()),
+                firstNonBlank(entity.getRequirementType(), legacyPayload == null ? null : legacyPayload.requirementType()),
+                firstNonBlank(entity.getDevelopmentBranchName(), legacyPayload == null ? null : legacyPayload.developmentBranchName()),
+                firstNonBlank(entity.getZentaoUrl(), legacyPayload == null ? null : legacyPayload.zentaoUrl()),
+                firstNonBlank(legacyPayload == null ? null : legacyPayload.requirementDigest(), entity.getRequirementDigest()),
+                firstNonBlank(legacyPayload == null ? null : legacyPayload.requirementName(), entity.getRequirementName()),
+                firstNonBlank(legacyPayload == null ? null : legacyPayload.requirementSummary(), entity.getRequirementSummary()),
+                firstNonBlank(entity.getDepartment(), legacyPayload == null ? null : legacyPayload.department()),
+                firstNonBlank(entity.getBusinessLine(), legacyPayload == null ? null : legacyPayload.businessLine()),
+                firstNonBlank(entity.getBusinessLineCode(), legacyPayload == null ? null : legacyPayload.businessLineCode()),
+                firstNonBlank(entity.getRemark(), legacyPayload == null ? null : legacyPayload.remark()),
+                firstNonBlank(formatDate(entity.getPlannedDueDate()), legacyPayload == null ? null : legacyPayload.plannedDueDate()),
+                firstNonBlank(formatDate(entity.getPlannedDevelopmentStartDate()), legacyPayload == null ? null : legacyPayload.plannedDevelopmentStartDate()),
+                firstNonBlank(formatDate(entity.getPlannedTestingStartDate()), legacyPayload == null ? null : legacyPayload.plannedTestingStartDate()),
+                firstNonBlank(formatDate(entity.getPlannedReleaseDate()), legacyPayload == null ? null : legacyPayload.plannedReleaseDate()),
+                firstNonBlank(formatDate(entity.getDevelopmentStartedDate()), legacyPayload == null ? null : legacyPayload.developmentStartedDate()),
+                firstNonBlank(entity.getActualEffort(), legacyPayload == null ? null : legacyPayload.actualEffort()),
+                firstNonBlank(formatDate(entity.getTestingStartedDate()), legacyPayload == null ? null : legacyPayload.testingStartedDate()),
+                firstNonBlank(formatDate(entity.getActualCompletedDate()), legacyPayload == null ? null : legacyPayload.actualCompletedTime()),
+                firstNonBlank(formatDate(entity.getScheduledAcceptanceDate()), legacyPayload == null ? null : legacyPayload.scheduledAcceptanceDate()),
+                firstNonBlank(entity.getActualTestingEffort(), legacyPayload == null ? null : legacyPayload.actualTestingEffort()),
+                firstNonBlank(formatDate(entity.getActualTestingCompletedDate()), legacyPayload == null ? null : legacyPayload.actualTestingCompletedDate()),
+                firstNonBlank(formatDate(entity.getAcceptanceDate()), legacyPayload == null ? null : legacyPayload.acceptanceTime()),
+                firstNonBlank(formatDate(entity.getReleasedDate()), legacyPayload == null ? null : legacyPayload.releasedTime()),
+                firstNonBlank(formatDate(entity.getClosedDate()), legacyPayload == null ? null : legacyPayload.closedTime()),
+                firstNonBlank(entity.getCloseReason(), legacyPayload == null ? null : legacyPayload.closeReason()),
+                firstNonBlank(entity.getProjectHint(), legacyPayload == null ? null : legacyPayload.projectHint()),
+                mergeStructuredFields(fieldEntities, legacyPayload),
                 legacyPayload == null || legacyPayload.attachmentSummaries() == null ? List.of() : legacyPayload.attachmentSummaries(),
                 legacyPayload == null ? null : legacyPayload.sqlDraft()
         );
@@ -1154,6 +1149,18 @@ public class IntakeService {
                 .toList();
     }
 
+    private List<IntakeStructuredField> mergeStructuredFields(List<IntakeStructuredFieldEntity> entities,
+                                                              IntakeStructuredData legacyPayload) {
+        List<IntakeStructuredField> formalFields = toStructuredFields(entities);
+        List<IntakeStructuredField> legacyFields = legacyPayload == null || legacyPayload.fields() == null
+                ? List.of()
+                : legacyPayload.fields();
+        if (!legacyFields.isEmpty()) {
+            return legacyFields;
+        }
+        return formalFields;
+    }
+
     private String formatDate(LocalDate value) {
         return value == null ? null : value.toString().replace('-', '/');
     }
@@ -1180,21 +1187,13 @@ public class IntakeService {
 
     private IntakeSummaryResponse toSummaryResponse(IntakeRecordEntity entity) {
         IntakeStructuredData structuredData = toStructuredData(entity);
-        String totalEstimatedEffort = normalizeJsonText(entity.getTotalEstimatedEffort());
+        String totalEstimatedEffort = firstNonBlank(
+                normalizeJsonText(entity.getTotalEstimatedEffort()),
+                normalizeJsonText(entity.getEstimatedEffort())
+        );
         String developmentEstimatedEffort = normalizeJsonText(entity.getDevelopmentEstimatedEffort());
         String testingEstimatedEffort = normalizeJsonText(entity.getTestingEstimatedEffort());
-        String legacyEstimatedEffort = legacyEstimatedEffort(entity.getStructuredDataJson());
-        boolean operationsRequirement = structuredData != null && isOperationsRequirement(structuredData.requirementType());
-        if (operationsRequirement) {
-            String operationsEffort = firstNonBlank(entity.getEstimatedEffort(),
-                    firstNonBlank(legacyEstimatedEffort, structuredData.actualEffort()));
-            totalEstimatedEffort = firstNonBlank(totalEstimatedEffort, operationsEffort);
-            developmentEstimatedEffort = firstNonBlank(developmentEstimatedEffort, operationsEffort);
-        }
         String testingStartedDate = structuredData == null ? null : structuredData.testingStartedDate();
-        if (operationsRequirement) {
-            testingStartedDate = firstNonBlank(testingStartedDate, structuredData.actualCompletedTime());
-        }
         return new IntakeSummaryResponse(
                 entity.getId(),
                 entity.getSourceType(),
@@ -1415,6 +1414,9 @@ public class IntakeService {
                 structuredData.actualEffort(),
                 structuredData.testingStartedDate(),
                 structuredData.actualCompletedTime(),
+                structuredData.scheduledAcceptanceDate(),
+                structuredData.actualTestingEffort(),
+                structuredData.actualTestingCompletedDate(),
                 structuredData.acceptanceTime(),
                 structuredData.releasedTime(),
                 structuredData.closedTime(),
@@ -1607,6 +1609,16 @@ public class IntakeService {
         }
         IntakeStructuredData effortNormalized = EffortUnitNormalizer.normalizeStructuredData(structuredData);
         structuredData = effortNormalized;
+        BusinessLineEntity configuredBusinessLine = findConfiguredBusinessLine(
+                structuredData.businessLineCode(),
+                structuredData.businessLine()
+        );
+        String businessLine = configuredBusinessLine == null
+                ? structuredData.businessLine()
+                : configuredBusinessLine.getBusinessLineName();
+        String businessLineCode = configuredBusinessLine == null
+                ? structuredData.businessLineCode()
+                : configuredBusinessLine.getBusinessLineCode();
         String requirementType = normalizeRequirementType(structuredData.requirementType());
         String proposerName = normalizeProposerName(structuredData.proposerName(), structuredData.approvalTitle());
         String developmentBranchName = normalizeDevelopmentBranchName(
@@ -1623,7 +1635,9 @@ public class IntakeService {
                 && java.util.Objects.equals(proposerName, structuredData.proposerName())
                 && structuredData.developmentOwnerUserName() == null
                 && java.util.Objects.equals(developmentBranchName, structuredData.developmentBranchName())
-                && java.util.Objects.equals(zentaoUrl, structuredData.zentaoUrl())) {
+                && java.util.Objects.equals(zentaoUrl, structuredData.zentaoUrl())
+                && java.util.Objects.equals(businessLine, structuredData.businessLine())
+                && java.util.Objects.equals(businessLineCode, structuredData.businessLineCode())) {
             return structuredData;
         }
         return new IntakeStructuredData(
@@ -1640,8 +1654,8 @@ public class IntakeService {
                 structuredData.requirementName(),
                 structuredData.requirementSummary(),
                 structuredData.department(),
-                structuredData.businessLine(),
-                structuredData.businessLineCode(),
+                businessLine,
+                businessLineCode,
                 structuredData.remark(),
                 structuredData.plannedDueDate(),
                 structuredData.plannedDevelopmentStartDate(),
@@ -1651,6 +1665,9 @@ public class IntakeService {
                 structuredData.actualEffort(),
                 structuredData.testingStartedDate(),
                 structuredData.actualCompletedTime(),
+                structuredData.scheduledAcceptanceDate(),
+                structuredData.actualTestingEffort(),
+                structuredData.actualTestingCompletedDate(),
                 structuredData.acceptanceTime(),
                 structuredData.releasedTime(),
                 structuredData.closedTime(),
@@ -1660,6 +1677,26 @@ public class IntakeService {
                 structuredData.attachmentSummaries(),
                 structuredData.sqlDraft()
         );
+    }
+
+    private BusinessLineEntity findConfiguredBusinessLine(String businessLineCode, String businessLine) {
+        String normalizedCode = trimToNull(businessLineCode);
+        String normalizedName = trimToNull(businessLine);
+        if (businessLineMapper == null) {
+            if (normalizedCode == null && normalizedName == null) {
+                return null;
+            }
+            BusinessLineEntity fallback = new BusinessLineEntity();
+            fallback.setBusinessLineCode(normalizedCode);
+            fallback.setBusinessLineName(normalizedName);
+            fallback.setEnabled(true);
+            return fallback;
+        }
+        BusinessLineEntity entity = normalizedCode == null ? null : businessLineMapper.findByCode(normalizedCode);
+        if (entity == null && normalizedName != null) {
+            entity = businessLineMapper.findByName(normalizedName);
+        }
+        return entity != null && Boolean.TRUE.equals(entity.getEnabled()) ? entity : null;
     }
 
     private String normalizeProposerName(String proposerName, String approvalTitle) {
@@ -1910,7 +1947,6 @@ public class IntakeService {
                 actualEffort = normalizeEffortValue(request.getActualEffort());
                 actualCompletedTime = firstNonBlank(request.getActualCompletedTime(), resolveActionDate(request.getOccurredAt()));
                 if (isOperationsRequirement(baseline.requirementType())) {
-                    testingStartedDate = firstNonBlank(testingStartedDate, actualCompletedTime);
                     releasedTime = actualCompletedTime;
                 }
             }
@@ -2000,6 +2036,9 @@ public class IntakeService {
                 baseline.actualEffort(),
                 baseline.testingStartedDate(),
                 baseline.actualCompletedTime(),
+                baseline.scheduledAcceptanceDate(),
+                baseline.actualTestingEffort(),
+                baseline.actualTestingCompletedDate(),
                 baseline.acceptanceTime(),
                 baseline.releasedTime(),
                 baseline.closedTime(),
@@ -2051,6 +2090,9 @@ public class IntakeService {
                 baseline.actualEffort(),
                 baseline.testingStartedDate(),
                 baseline.actualCompletedTime(),
+                baseline.scheduledAcceptanceDate(),
+                baseline.actualTestingEffort(),
+                baseline.actualTestingCompletedDate(),
                 baseline.acceptanceTime(),
                 baseline.releasedTime(),
                 baseline.closedTime(),
@@ -2092,6 +2134,9 @@ public class IntakeService {
                 normalized.actualEffort(),
                 normalized.testingStartedDate(),
                 normalized.actualCompletedTime(),
+                normalized.scheduledAcceptanceDate(),
+                normalized.actualTestingEffort(),
+                normalized.actualTestingCompletedDate(),
                 normalized.acceptanceTime(),
                 normalized.releasedTime(),
                 normalized.closedTime(),
@@ -2499,7 +2544,23 @@ public class IntakeService {
                 firstNonBlank(record.demandStatus(), "-"),
                 firstNonBlank(record.approvalCode(), "-"),
                 firstNonBlank(firstNonBlank(record.proposerName(), record.senderName()), "-"),
-                formatDashboardDateTime(record.submittedTime(), record.receivedAt())
+                formatDashboardDateTime(record.submittedTime(), record.receivedAt()),
+                buildProgressReportDateItems(record)
+        );
+    }
+
+    private List<IntakeDashboardResponse.ProgressReportDateItem> buildProgressReportDateItems(IntakeSummaryResponse record) {
+        LocalDate testingStartedDate = parseDashboardDate(record.testingStartedDate());
+        if (testingStartedDate == null) {
+            return List.of(
+                    new IntakeDashboardResponse.ProgressReportDateItem("开发日期", formatDashboardDate(record.developmentStartedDate())),
+                    new IntakeDashboardResponse.ProgressReportDateItem("预计提测日期", formatDashboardDate(record.plannedTestingStartDate())),
+                    new IntakeDashboardResponse.ProgressReportDateItem("预计上线日期", formatDashboardDate(record.plannedReleaseDate()))
+            );
+        }
+        return List.of(
+                new IntakeDashboardResponse.ProgressReportDateItem("实际提测日期", formatDashboardDate(testingStartedDate)),
+                new IntakeDashboardResponse.ProgressReportDateItem("预计上线日期", formatDashboardDate(record.plannedReleaseDate()))
         );
     }
 
@@ -2509,6 +2570,7 @@ public class IntakeService {
                 dashboardDemandTitle(record),
                 firstNonBlank(record.businessLine(), "未填写业务线"),
                 firstNonBlank(record.demandStatus(), "-"),
+                firstNonBlank(record.requirementType(), "-"),
                 firstNonBlank(record.approvalCode(), "-"),
                 firstNonBlank(firstNonBlank(record.proposerName(), record.senderName()), "-"),
                 formatDashboardDateTime(record.submittedTime(), record.receivedAt()),
@@ -2603,42 +2665,12 @@ public class IntakeService {
         return normalized;
     }
 
-    private String legacyEstimatedEffort(String structuredDataJson) {
-        String value = structuredJsonText(structuredDataJson, "estimatedEffort");
-        if (value == null) {
-            return null;
-        }
-        return normalizeJsonText(EffortUnitNormalizer.normalizeEffort(value));
-    }
-
-    private String structuredJsonText(String structuredDataJson, String fieldName) {
-        String normalizedJson = trimToNull(structuredDataJson);
-        if (normalizedJson == null) {
-            return null;
-        }
-        try {
-            JsonNode node = objectMapper.readTree(normalizedJson);
-            return normalizeJsonText(node.path(fieldName).asText(null));
-        } catch (JacksonException ex) {
-            return null;
-        }
-    }
-
     private boolean matchesRequirementName(IntakeSummaryResponse item, String requirementName) {
         if (requirementName == null) {
             return true;
         }
         return contains(item.requirementName(), requirementName)
                 || contains(item.requirementDigest(), requirementName);
-    }
-
-    private int demandStatusSortOrder(IntakeSummaryResponse item) {
-        String demandStatus = item == null ? null : trimToNull(item.demandStatus());
-        if (demandStatus == null) {
-            return DEMAND_STATUS_SORT_ORDER.size();
-        }
-        int order = DEMAND_STATUS_SORT_ORDER.indexOf(demandStatus);
-        return order >= 0 ? order : DEMAND_STATUS_SORT_ORDER.size();
     }
 
     private int demandPrioritySortOrder(IntakeSummaryResponse item) {
@@ -2650,9 +2682,20 @@ public class IntakeService {
         return order >= 0 ? order : DEMAND_PRIORITY_SORT_ORDER.size();
     }
 
-    private int enrichmentSortOrder(IntakeSummaryResponse item) {
-        String enrichmentStatus = item == null ? null : trimToNull(item.enrichmentStatus());
-        return IntakeEnrichmentStatus.RUNNING.equals(enrichmentStatus) ? 0 : 1;
+    private int demandStatusSortOrder(IntakeSummaryResponse item) {
+        String demandStatus = item == null ? null : trimToNull(item.demandStatus());
+        if (demandStatus == null) {
+            return DEMAND_STATUS_SORT_ORDER.size();
+        }
+        int order = DEMAND_STATUS_SORT_ORDER.indexOf(demandStatus);
+        return order >= 0 ? order : DEMAND_STATUS_SORT_ORDER.size();
+    }
+
+    private Comparator<IntakeSummaryResponse> demandManagementComparator() {
+        return Comparator.comparingInt(this::demandStatusSortOrder)
+                .thenComparingInt(this::demandPrioritySortOrder)
+                .thenComparing(IntakeSummaryResponse::receivedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(IntakeSummaryResponse::id, Comparator.nullsLast(Comparator.reverseOrder()));
     }
 
     private boolean matchesApprovalCode(IntakeSummaryResponse item, String approvalCode) {
@@ -2745,7 +2788,7 @@ public class IntakeService {
                                         String className,
                                         String tagClass) {
         private boolean matches(String demandStatus) {
-            return statuses.contains(demandStatus);
+            return demandStatus != null && statuses.contains(demandStatus);
         }
     }
 

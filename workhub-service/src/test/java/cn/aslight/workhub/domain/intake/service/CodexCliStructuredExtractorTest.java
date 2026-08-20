@@ -1,11 +1,13 @@
 package cn.aslight.workhub.service.intake;
 
 import cn.aslight.workhub.config.AiProperties;
+import cn.aslight.workhub.service.ai.AiGatewayClient;
+import cn.aslight.workhub.service.ai.AiGatewayRequest;
+import cn.aslight.workhub.service.ai.AiGatewayResult;
 import cn.aslight.workhub.service.attachment.AttachmentService;
 import cn.aslight.workhub.model.intake.IntakeAttachmentSummary;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
-import cn.aslight.workhub.service.system.SysConfigService;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
@@ -13,7 +15,9 @@ import java.time.LocalDateTime;
 import java.nio.file.Path;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -22,12 +26,9 @@ class CodexCliStructuredExtractorTest {
 
     @Test
     void buildInvocation_shouldAddImageAsInputAndTextSummaryIntoPrompt() {
-        AiProperties properties = new AiProperties();
-        properties.getCodexCli().setEnabled(true);
-        properties.getCodexCli().setCommand("codex");
-
+        RecordingAiGatewayClient aiGatewayClient = new RecordingAiGatewayClient();
         CodexCliStructuredExtractor extractor = new CodexCliStructuredExtractor(
-                new CodexCliClient(properties),
+                aiGatewayClient,
                 new ObjectMapper()
         );
         List<AttachmentService.AttachmentFileContext> attachments = List.of(
@@ -50,18 +51,47 @@ class CodexCliStructuredExtractorTest {
         assertTrue(invocation.prompt().contains("非图片附件文本摘要"));
         assertTrue(invocation.prompt().contains("requirement.docx"));
         assertTrue(invocation.prompt().contains("需求名称：绑卡需求"));
+
+        CodexCliStructuredExtractor.CodexCliExtractionResult result = extractor.extract(
+                "企业微信审批",
+                "审批编号：202603250009",
+                attachments,
+                summaries
+        );
+
+        assertTrue(result.attempted());
+        assertEquals("intake.structured.extract", aiGatewayClient.capturedRequest.useCaseCode());
+    }
+
+    @Test
+    void extract_shouldFailClearlyWhenStructuredExtractionUseCaseIsMissing() {
+        AiGatewayClient aiGatewayClient = mock(AiGatewayClient.class);
+        when(aiGatewayClient.isConfigured("intake.structured.extract")).thenReturn(false);
+        CodexCliStructuredExtractor extractor = new CodexCliStructuredExtractor(
+                aiGatewayClient,
+                new ObjectMapper()
+        );
+
+        CodexCliStructuredExtractor.CodexCliExtractionResult result = extractor.extract(
+                "需求录入",
+                "需求名称：测试需求",
+                List.of(),
+                List.of()
+        );
+
+        assertTrue(result.attempted());
+        assertEquals("AI 场景未配置或已停用: intake.structured.extract", result.failureSummary());
     }
 
     @Test
     void buildCommand_shouldCarryConfiguredReasoningEffort() {
         AiProperties properties = new AiProperties();
         properties.getCodexCli().setEnabled(true);
-        properties.getCodexCli().setCommand("codex");
-        properties.getCodexCli().setReasoningEffort("low");
 
         CodexCliClient client = new CodexCliClient(properties);
         List<String> command = client.buildCommand(
                 new CodexCliClient.CodexCliRequest(
+                        "intake.structured.extract",
                         Path.of("/tmp"),
                         List.of(),
                         List.of(),
@@ -69,7 +99,8 @@ class CodexCliStructuredExtractorTest {
                         "Return JSON"
                 ),
                 Path.of("/tmp/schema.json"),
-                Path.of("/tmp/output.json")
+                Path.of("/tmp/output.json"),
+                new CodexCliClient.CodexCliExecutionOptions("codex", "gpt-5.5", "low", 600, true, true)
         );
 
         assertTrue(command.contains("-c"));
@@ -78,19 +109,12 @@ class CodexCliStructuredExtractorTest {
     }
 
     @Test
-    void buildCommand_shouldPreferSystemConfigModelAndReasoningEffort() {
+    void buildCommand_shouldUseGatewaySceneConfigDirectly() {
         AiProperties properties = new AiProperties();
-        properties.getCodexCli().setEnabled(true);
-        properties.getCodexCli().setCommand("codex");
-        properties.getCodexCli().setModel("gpt-5.3-codex");
-        properties.getCodexCli().setReasoningEffort("low");
-        SysConfigService sysConfigService = mock(SysConfigService.class);
-        when(sysConfigService.findPlainValue("ai.codexCli", "model")).thenReturn("gpt-5.5");
-        when(sysConfigService.findPlainValue("ai.codexCli", "reasoningEffort")).thenReturn("xhigh");
-
-        CodexCliClient client = new CodexCliClient(properties, sysConfigService);
+        CodexCliClient client = new CodexCliClient(properties);
         List<String> command = client.buildCommand(
                 new CodexCliClient.CodexCliRequest(
+                        "intake.structured.extract",
                         Path.of("/tmp"),
                         List.of(),
                         List.of(),
@@ -98,7 +122,8 @@ class CodexCliStructuredExtractorTest {
                         "Return JSON"
                 ),
                 Path.of("/tmp/schema.json"),
-                Path.of("/tmp/output.json")
+                Path.of("/tmp/output.json"),
+                new CodexCliClient.CodexCliExecutionOptions("codex", "gpt-5.5", "xhigh", 600, true, true)
         );
 
         assertTrue(command.contains("gpt-5.5"));
@@ -108,12 +133,35 @@ class CodexCliStructuredExtractorTest {
     }
 
     @Test
-    void buildSqlDraftPrompt_shouldRequireReadonlySqlAndQuestionsForUnknownSchema() {
-        AiProperties properties = new AiProperties();
-        properties.getCodexCli().setEnabled(true);
+    void buildCommand_shouldRejectMissingProviderCommandInsteadOfFallingBack() {
+        CodexCliClient client = new CodexCliClient(new AiProperties());
+        CodexCliClient.CodexCliRequest request = new CodexCliClient.CodexCliRequest(
+                "intake.structured.extract",
+                Path.of("/tmp"),
+                List.of(),
+                List.of(),
+                "/tmp/schema.json",
+                "Return JSON"
+        );
 
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> client.buildCommand(
+                        request,
+                        Path.of("/tmp/schema.json"),
+                        Path.of("/tmp/output.json"),
+                        new CodexCliClient.CodexCliExecutionOptions(null, "gpt-5.5", "xhigh", 600, true, true)
+                )
+        );
+
+        assertTrue(exception.getMessage().contains("CLI 命令"));
+    }
+
+    @Test
+    void buildSqlDraftPrompt_shouldRequireReadonlySqlAndQuestionsForUnknownSchema() {
+        RecordingAiGatewayClient aiGatewayClient = new RecordingAiGatewayClient();
         CodexCliSqlDraftGenerator generator = new CodexCliSqlDraftGenerator(
-                new CodexCliClient(properties),
+                aiGatewayClient,
                 new ObjectMapper()
         );
         IntakeRecordEntity entity = new IntakeRecordEntity();
@@ -166,5 +214,61 @@ class CodexCliStructuredExtractorTest {
         assertTrue(invocation.prompt().contains("筛选条件：支付失败"));
         assertTrue(invocation.imagePaths().contains("/tmp/workhub-sql/demand.png"));
         assertTrue(invocation.addDirs().contains("/tmp/workhub-sql"));
+
+        CodexCliSqlDraftGenerator.SqlDraftGenerationResult result = generator.generate(
+                entity,
+                structuredData,
+                List.of(new AttachmentService.AttachmentFileContext(1L, "截图", "demand.png", "/tmp/workhub-sql/demand.png", "image/png"))
+        );
+
+        assertTrue(result.succeeded());
+        assertEquals("intake.sql-draft.generate", aiGatewayClient.capturedRequest.useCaseCode());
+    }
+
+    private static class RecordingAiGatewayClient implements AiGatewayClient {
+
+        private AiGatewayRequest capturedRequest;
+
+        @Override
+        public boolean isConfigured(String useCaseCode) {
+            return true;
+        }
+
+        @Override
+        public AiGatewayResult execute(AiGatewayRequest request) {
+            return executeStructured(request);
+        }
+
+        @Override
+        public AiGatewayResult executeStructured(AiGatewayRequest request) {
+            this.capturedRequest = request;
+            if ("intake.structured.extract".equals(request.useCaseCode())) {
+                return AiGatewayResult.succeeded("""
+                        {
+                          "category": "需求审批",
+                          "fields": []
+                        }
+                        """, "test-provider", "test-model", 1L);
+            }
+            if ("intake.sql-draft.generate".equals(request.useCaseCode())) {
+                return AiGatewayResult.succeeded("""
+                        {
+                          "dialect": "MySQL",
+                          "sql": "SELECT 1",
+                          "explanation": "查询示例",
+                          "parameters": [],
+                          "assumptions": [],
+                          "questions": [],
+                          "riskWarnings": []
+                        }
+                        """, "test-provider", "test-model", 1L);
+            }
+            return AiGatewayResult.failed("unexpected useCaseCode", null, null, 1L);
+        }
+
+        @Override
+        public AiGatewayResult probe(Long providerId, String model) {
+            return AiGatewayResult.failed("not supported", null, model, 1L);
+        }
     }
 }

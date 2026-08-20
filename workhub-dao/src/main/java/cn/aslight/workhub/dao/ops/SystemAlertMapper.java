@@ -2,6 +2,7 @@ package cn.aslight.workhub.dao.ops;
 
 import cn.aslight.workhub.model.ops.SystemAlertEventResponse;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemEntity;
+import cn.aslight.workhub.model.ops.SystemAlertSubsystemIndexPatternEntity;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemSummaryResponse;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
@@ -88,6 +89,20 @@ public interface SystemAlertMapper {
                                                        @Param("environmentCode") String environmentCode,
                                                        @Param("serviceName") String serviceName);
 
+    @Select({
+            "<script>",
+            "SELECT id, subsystem_id AS subsystemId, index_pattern AS indexPattern, sort_order AS sortOrder",
+            "FROM ops_system_alert_subsystem_index",
+            "WHERE subsystem_id IN",
+            "<foreach collection='subsystemIds' item='subsystemId' open='(' separator=',' close=')'>",
+            "#{subsystemId}",
+            "</foreach>",
+            "ORDER BY subsystem_id ASC, sort_order ASC, id ASC",
+            "</script>"
+    })
+    List<SystemAlertSubsystemIndexPatternEntity> findIndexPatterns(
+            @Param("subsystemIds") List<Long> subsystemIds);
+
     @Insert("""
             INSERT INTO ops_system_alert_subsystem (
                 business_line_code,
@@ -108,6 +123,14 @@ public interface SystemAlertMapper {
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insertSubsystem(SystemAlertSubsystemEntity entity);
 
+    @Insert("""
+            INSERT INTO ops_system_alert_subsystem_index (subsystem_id, index_pattern, sort_order)
+            VALUES (#{subsystemId}, #{indexPattern}, #{sortOrder})
+            """)
+    int insertIndexPattern(@Param("subsystemId") Long subsystemId,
+                           @Param("indexPattern") String indexPattern,
+                           @Param("sortOrder") int sortOrder);
+
     @Update("""
             UPDATE ops_system_alert_subsystem
             SET business_line_code = #{businessLineCode},
@@ -119,6 +142,9 @@ public interface SystemAlertMapper {
             WHERE id = #{id}
             """)
     int updateSubsystem(SystemAlertSubsystemEntity entity);
+
+    @Delete("DELETE FROM ops_system_alert_subsystem_index WHERE subsystem_id = #{subsystemId}")
+    int deleteIndexPatterns(Long subsystemId);
 
     @Delete("DELETE FROM ops_system_alert_subsystem WHERE id = #{id}")
     int deleteSubsystemById(Long id);
@@ -140,6 +166,9 @@ public interface SystemAlertMapper {
             <if test="level != null and level != ''">
               AND e.log_level = #{level}
             </if>
+            <if test="eventCategory != null and eventCategory != ''">
+              AND e.event_category = #{eventCategory}
+            </if>
             <if test="startTime != null">
               AND e.occurred_at &gt;= #{startTime}
             </if>
@@ -152,6 +181,7 @@ public interface SystemAlertMapper {
                     @Param("environmentCode") String environmentCode,
                     @Param("serviceName") String serviceName,
                     @Param("level") String level,
+                    @Param("eventCategory") String eventCategory,
                     @Param("startTime") LocalDateTime startTime,
                     @Param("endTime") LocalDateTime endTime);
 
@@ -181,6 +211,9 @@ public interface SystemAlertMapper {
             <if test="level != null and level != ''">
               AND e.log_level = #{level}
             </if>
+            <if test="eventCategory != null and eventCategory != ''">
+              AND e.event_category = #{eventCategory}
+            </if>
             <if test="startTime != null">
               AND e.occurred_at &gt;= #{startTime}
             </if>
@@ -199,6 +232,7 @@ public interface SystemAlertMapper {
                                                               @Param("environmentCode") String environmentCode,
                                                               @Param("serviceName") String serviceName,
                                                               @Param("level") String level,
+                                                              @Param("eventCategory") String eventCategory,
                                                               @Param("startTime") LocalDateTime startTime,
                                                               @Param("endTime") LocalDateTime endTime);
 
@@ -210,6 +244,7 @@ public interface SystemAlertMapper {
                    COALESCE(s.subsystem_name, e.subsystem_name) AS subsystemName,
                    e.service_name AS serviceName,
                    e.log_level AS level,
+                   e.event_category AS eventCategory,
                    e.title AS title,
                    e.message AS message,
                    e.error_type AS errorType,
@@ -236,6 +271,9 @@ public interface SystemAlertMapper {
             <if test="level != null and level != ''">
               AND e.log_level = #{level}
             </if>
+            <if test="eventCategory != null and eventCategory != ''">
+              AND e.event_category = #{eventCategory}
+            </if>
             <if test="startTime != null">
               AND e.occurred_at &gt;= #{startTime}
             </if>
@@ -250,6 +288,7 @@ public interface SystemAlertMapper {
                                               @Param("environmentCode") String environmentCode,
                                               @Param("serviceName") String serviceName,
                                               @Param("level") String level,
+                                              @Param("eventCategory") String eventCategory,
                                               @Param("startTime") LocalDateTime startTime,
                                               @Param("endTime") LocalDateTime endTime,
                                               @Param("limit") int limit,

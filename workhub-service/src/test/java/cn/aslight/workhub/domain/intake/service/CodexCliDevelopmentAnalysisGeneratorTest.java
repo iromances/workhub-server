@@ -1,6 +1,5 @@
 package cn.aslight.workhub.service.intake;
 
-import cn.aslight.workhub.config.AiProperties;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisDraft;
 import cn.aslight.workhub.model.intake.IntakeAttachmentSummary;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
@@ -8,6 +7,9 @@ import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeStructuredField;
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
 import cn.aslight.workhub.model.system.UserOptionResponse;
+import cn.aslight.workhub.service.ai.AiGatewayClient;
+import cn.aslight.workhub.service.ai.AiGatewayRequest;
+import cn.aslight.workhub.service.ai.AiGatewayResult;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
@@ -23,9 +25,9 @@ class CodexCliDevelopmentAnalysisGeneratorTest {
 
     @Test
     void generate_shouldIncludeStructuredFieldsAndAttachmentSummariesInPrompt() {
-        RecordingCodexCliClient codexCliClient = new RecordingCodexCliClient();
+        RecordingAiGatewayClient aiGatewayClient = new RecordingAiGatewayClient();
         CodexCliDevelopmentAnalysisGenerator generator = new CodexCliDevelopmentAnalysisGenerator(
-                codexCliClient,
+                aiGatewayClient,
                 new ChinaWorkdayCalendar(),
                 new ObjectMapper()
         );
@@ -74,11 +76,7 @@ class CodexCliDevelopmentAnalysisGeneratorTest {
                 LocalDateTime.now(),
                 LocalDateTime.now()
         );
-
-        DevelopmentAnalysisDraft draft = generator.generate(
-                entity,
-                structuredData,
-                project,
+        GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle =
                 new GitlabRepositoryService.GitlabRepositoryBundle(
                         "workhub",
                         Path.of("/tmp/workhub-demo"),
@@ -86,8 +84,15 @@ class CodexCliDevelopmentAnalysisGeneratorTest {
                                 new GitlabRepositoryService.GitlabRepository("https://gitlab.example.com/workhub/demo.git", Path.of("/tmp/workhub-demo/demo")),
                                 new GitlabRepositoryService.GitlabRepository("https://gitlab.example.com/workhub/settlement-service.git", Path.of("/tmp/workhub-demo/settlement-service"))
                         )
-                ),
-                List.of(new UserOptionResponse("dev-a", "研发A", "供应链科技")),
+                );
+        List<UserOptionResponse> developers = List.of(new UserOptionResponse("dev-a", "研发A", "供应链科技"));
+
+        DevelopmentAnalysisDraft draft = generator.generate(
+                entity,
+                structuredData,
+                project,
+                repositoryBundle,
+                developers,
                 "知识库需求迭代文件：供应链科技/供应链项目/需求迭代/2026/202603250009-新增绑卡核验规则.md\n\n# 新增绑卡核验规则\n\n## 附件与截图内容\n\n方案.docx：需要增加绑卡核验接口和异常提示。",
                 "### 供应链/绑卡说明.md\n嘉泰保理绑卡需要遵循商户号路由规则。"
         );
@@ -98,40 +103,47 @@ class CodexCliDevelopmentAnalysisGeneratorTest {
         assertEquals("实现绑卡核验", draft.workItems().getFirst().title());
         assertEquals("2h", draft.workItems().getFirst().estimatedEffort());
         assertEquals("dev-a", draft.workItems().getFirst().ownerUserName());
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("结构化识别字段"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("需求 Markdown 文件"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("知识库需求迭代文件：供应链科技/供应链项目/需求迭代/2026/202603250009-新增绑卡核验规则.md"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("需求所属业务线：供应链科技"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("附件内容摘要"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("方案.docx"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("附件正文摘要：需要增加绑卡核验接口和异常提示。"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("项目知识库参考"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("嘉泰保理绑卡需要遵循商户号路由规则"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("先读需求 Markdown 和补充材料"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("再查业务线 Git 代码"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("title 用 Jira/禅道风格"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("changePoints 表示“改地点”，必须按有序列表顺序列出"));
-        assertTrue(codexCliClient.capturedRequest.prompt().contains("relatedFiles/evidenceRefs 写代码或材料证据"));
-        assertEquals(2, codexCliClient.capturedRequest.addDirs().size());
+        String capturedPrompt = String.valueOf(aiGatewayClient.capturedRequest.variables().get("prompt"));
+        assertTrue(capturedPrompt.contains("结构化识别字段"));
+        assertTrue(capturedPrompt.contains("需求 Markdown 文件"));
+        assertTrue(capturedPrompt.contains("知识库需求迭代文件：供应链科技/供应链项目/需求迭代/2026/202603250009-新增绑卡核验规则.md"));
+        assertTrue(capturedPrompt.contains("需求所属业务线：供应链科技"));
+        assertTrue(capturedPrompt.contains("附件内容摘要"));
+        assertTrue(capturedPrompt.contains("方案.docx"));
+        assertTrue(capturedPrompt.contains("附件正文摘要：需要增加绑卡核验接口和异常提示。"));
+        assertTrue(capturedPrompt.contains("项目知识库参考"));
+        assertTrue(capturedPrompt.contains("嘉泰保理绑卡需要遵循商户号路由规则"));
+        assertTrue(capturedPrompt.contains("先读需求 Markdown 和补充材料"));
+        assertTrue(capturedPrompt.contains("再查业务线 Git 代码"));
+        assertTrue(capturedPrompt.contains("title 用 Jira/禅道风格"));
+        assertTrue(capturedPrompt.contains("changePoints 表示“改地点”，必须按有序列表顺序列出"));
+        assertTrue(capturedPrompt.contains("relatedFiles/evidenceRefs 写代码或材料证据"));
+        assertEquals("intake.development.analyze", aiGatewayClient.capturedRequest.useCaseCode());
+        assertEquals(2, aiGatewayClient.capturedRequest.allowedDirectories().size());
+
+        generator.adjust(draft, "保留现有代码证据并调整任务描述", project, repositoryBundle, developers);
+
+        assertEquals("intake.development.adjust", aiGatewayClient.capturedRequest.useCaseCode());
     }
 
-    private static class RecordingCodexCliClient extends CodexCliClient {
+    private static class RecordingAiGatewayClient implements AiGatewayClient {
 
-        private CodexCliRequest capturedRequest;
-
-        RecordingCodexCliClient() {
-            super(new AiProperties());
-        }
+        private AiGatewayRequest capturedRequest;
 
         @Override
-        public boolean isEnabled() {
+        public boolean isConfigured(String useCaseCode) {
             return true;
         }
 
         @Override
-        public CodexCliResult execute(CodexCliRequest request) {
+        public AiGatewayResult execute(AiGatewayRequest request) {
+            return executeStructured(request);
+        }
+
+        @Override
+        public AiGatewayResult executeStructured(AiGatewayRequest request) {
             this.capturedRequest = request;
-            return CodexCliResult.succeeded("""
+            return AiGatewayResult.succeeded("""
                     {
                       "summary": "新增绑卡核验规则",
                       "requirementChangePoints": ["绑卡需要增加核验规则"],
@@ -147,7 +159,12 @@ class CodexCliDevelopmentAnalysisGeneratorTest {
                         }
                       ]
                     }
-                    """);
+                    """, "test-provider", "test-model", 1L);
+        }
+
+        @Override
+        public AiGatewayResult probe(Long providerId, String model) {
+            return AiGatewayResult.failed("not supported", null, model, 1L);
         }
     }
 }

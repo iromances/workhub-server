@@ -36,5 +36,6 @@
         <jjwt.version>0.13.0</jjwt.version>
         <poi.version>5.4.1</poi.version>
         <pdfbox.version>3.0.5</pdfbox.version>
+        <jsoup.version>1.17.2</jsoup.version>
     </properties>
 </project>

@@ -3,9 +3,12 @@ package cn.aslight.workhub.controller.ops;
 import cn.aslight.workhub.common.api.ApiResponse;
 import cn.aslight.workhub.common.api.PageResponse;
 import cn.aslight.workhub.model.ops.SystemAlertDashboardResponse;
+import cn.aslight.workhub.model.ops.SystemAlertRuleResponse;
+import cn.aslight.workhub.model.ops.SystemAlertRuleSaveRequest;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemResponse;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemSaveRequest;
 import cn.aslight.workhub.service.ops.SystemAlertService;
+import cn.aslight.workhub.service.ops.SystemAlertRuleService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,9 +29,12 @@ import java.util.List;
 public class SystemAlertController {
 
     private final SystemAlertService systemAlertService;
+    private final SystemAlertRuleService systemAlertRuleService;
 
-    public SystemAlertController(SystemAlertService systemAlertService) {
+    public SystemAlertController(SystemAlertService systemAlertService,
+                                 SystemAlertRuleService systemAlertRuleService) {
         this.systemAlertService = systemAlertService;
+        this.systemAlertRuleService = systemAlertRuleService;
     }
 
     @GetMapping
@@ -37,11 +43,14 @@ public class SystemAlertController {
                                                                @RequestParam(required = false) String environmentCode,
                                                                @RequestParam(required = false) String serviceName,
                                                                @RequestParam(required = false) String level,
+                                                               @RequestParam(required = false) String eventCategory,
                                                                @RequestParam(required = false) LocalDateTime startTime,
                                                                @RequestParam(required = false) LocalDateTime endTime,
                                                                @RequestParam(defaultValue = "1") int page,
                                                                @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.success(systemAlertService.dashboard(businessLineCode, environmentCode, serviceName, level, startTime, endTime, page, pageSize));
+        return ApiResponse.success(systemAlertService.dashboard(
+                businessLineCode, environmentCode, serviceName, level, eventCategory,
+                startTime, endTime, page, pageSize));
     }
 
     @GetMapping("/subsystems")
@@ -71,6 +80,37 @@ public class SystemAlertController {
     @PreAuthorize("hasAuthority('ops:system-alert:delete') or hasAuthority('ops:system-alert:manage')")
     public ApiResponse<Void> deleteSubsystem(@PathVariable Long id) {
         systemAlertService.deleteSubsystem(id);
+        return ApiResponse.success(null);
+    }
+
+    @GetMapping("/rules")
+    @PreAuthorize("hasAuthority('ops:system-alert:view') or hasAuthority('ops:system-alert:manage')")
+    public ApiResponse<PageResponse<SystemAlertRuleResponse>> listRules(
+            @RequestParam(defaultValue = "false") boolean enabledOnly,
+            @RequestParam(required = false) String keyword) {
+        List<SystemAlertRuleResponse> items = systemAlertRuleService.list(enabledOnly, keyword);
+        return ApiResponse.success(new PageResponse<>(items.size(), items));
+    }
+
+    @PostMapping("/rules")
+    @PreAuthorize("hasAuthority('ops:system-alert:create') or hasAuthority('ops:system-alert:manage')")
+    public ApiResponse<SystemAlertRuleResponse> createRule(
+            @Valid @RequestBody SystemAlertRuleSaveRequest request) {
+        return ApiResponse.success(systemAlertRuleService.create(request));
+    }
+
+    @PutMapping("/rules/{id}")
+    @PreAuthorize("hasAuthority('ops:system-alert:update') or hasAuthority('ops:system-alert:manage')")
+    public ApiResponse<SystemAlertRuleResponse> updateRule(
+            @PathVariable Long id,
+            @Valid @RequestBody SystemAlertRuleSaveRequest request) {
+        return ApiResponse.success(systemAlertRuleService.update(id, request));
+    }
+
+    @DeleteMapping("/rules/{id}")
+    @PreAuthorize("hasAuthority('ops:system-alert:delete') or hasAuthority('ops:system-alert:manage')")
+    public ApiResponse<Void> deleteRule(@PathVariable Long id) {
+        systemAlertRuleService.delete(id);
         return ApiResponse.success(null);
     }
 }

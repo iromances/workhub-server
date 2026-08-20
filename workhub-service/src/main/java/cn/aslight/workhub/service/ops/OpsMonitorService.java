@@ -1,6 +1,7 @@
 package cn.aslight.workhub.service.ops;
 
 import cn.aslight.workhub.dao.ops.OpsMonitorMapper;
+import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.model.ops.OpsMonitorCheckResponse;
 import cn.aslight.workhub.model.ops.OpsMonitorEntity;
 import cn.aslight.workhub.model.ops.OpsMonitorResponse;
@@ -8,6 +9,7 @@ import cn.aslight.workhub.model.ops.OpsMonitorSaveRequest;
 import cn.aslight.workhub.model.ops.XxlJobDashboardResponse;
 import cn.aslight.workhub.model.ops.XxlJobExecutorResponse;
 import cn.aslight.workhub.model.ops.XxlJobLogPageResponse;
+import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.service.mcp.McpCryptoService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,19 +38,23 @@ import java.util.StringJoiner;
 @Service
 public class OpsMonitorService {
 
+    private static final int DEFAULT_XXL_JOB_LOG_DAYS = 7;
     private static final String XXL_JOB = "XXL_JOB";
 
     private final OpsMonitorMapper opsMonitorMapper;
+    private final BusinessLineMapper businessLineMapper;
     private final OpsMonitorSchemaInitializer schemaInitializer;
     private final McpCryptoService mcpCryptoService;
     private final XxlJobMonitorCollector xxlJobMonitorCollector;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public OpsMonitorService(OpsMonitorMapper opsMonitorMapper,
+                             BusinessLineMapper businessLineMapper,
                              OpsMonitorSchemaInitializer schemaInitializer,
                              McpCryptoService mcpCryptoService,
                              XxlJobMonitorCollector xxlJobMonitorCollector) {
         this.opsMonitorMapper = opsMonitorMapper;
+        this.businessLineMapper = businessLineMapper;
         this.schemaInitializer = schemaInitializer;
         this.mcpCryptoService = mcpCryptoService;
         this.xxlJobMonitorCollector = xxlJobMonitorCollector;
@@ -189,7 +195,9 @@ public class OpsMonitorService {
             throw new IllegalArgumentException("MQ 监测详情下一步接入");
         }
         LocalDate normalizedEndDate = endDate == null ? LocalDate.now() : endDate;
-        LocalDate normalizedStartDate = startDate == null ? normalizedEndDate.minusMonths(1) : startDate;
+        LocalDate normalizedStartDate = startDate == null
+                ? normalizedEndDate.minusDays(DEFAULT_XXL_JOB_LOG_DAYS - 1L)
+                : startDate;
         try {
             return xxlJobMonitorCollector.collect(entity, normalizedStartDate, normalizedEndDate, page, pageSize, author, executorAppName, logStatus);
         } catch (Exception ex) {
@@ -212,7 +220,9 @@ public class OpsMonitorService {
             throw new IllegalArgumentException("MQ 监测详情下一步接入");
         }
         LocalDate normalizedEndDate = endDate == null ? LocalDate.now() : endDate;
-        LocalDate normalizedStartDate = startDate == null ? normalizedEndDate.minusDays(7) : startDate;
+        LocalDate normalizedStartDate = startDate == null
+                ? normalizedEndDate.minusDays(DEFAULT_XXL_JOB_LOG_DAYS - 1L)
+                : startDate;
         try {
             return xxlJobMonitorCollector.collectLogs(entity, normalizedStartDate, normalizedEndDate, page, pageSize, author, executorAppName, logStatus);
         } catch (Exception ex) {
@@ -480,6 +490,7 @@ public class OpsMonitorService {
                 entity.getMonitorType(),
                 entity.getMonitorKey(),
                 entity.getBusinessLineCode(),
+                businessLineName(entity.getBusinessLineCode()),
                 entity.getEnvironmentCode(),
                 entity.getName(),
                 entity.getAdminBaseUrl(),
@@ -494,12 +505,34 @@ public class OpsMonitorService {
                 entity.getMqLagThreshold(),
                 entity.getEnabled(),
                 entity.getLastStatus(),
+                lastStatusName(entity.getLastStatus()),
                 entity.getLastMessage(),
                 entity.getLastCheckedAt(),
                 entity.getRemark(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
+    }
+
+    private String businessLineName(String businessLineCode) {
+        BusinessLineEntity businessLine = businessLineMapper.findByCode(businessLineCode);
+        String businessLineName = businessLine == null ? null : trimToNull(businessLine.getBusinessLineName());
+        return businessLineName == null ? businessLineCode : businessLineName;
+    }
+
+    private String lastStatusName(String status) {
+        String normalized = trimToNull(status);
+        if (normalized == null) {
+            return "未采集";
+        }
+        return switch (normalized.toUpperCase()) {
+            case "UP" -> "正常";
+            case "WARN" -> "警告";
+            case "ERROR" -> "异常";
+            case "DISABLED" -> "已停用";
+            case "CONFIGURED" -> "未采集";
+            default -> "未知";
+        };
     }
 
     private OpsMonitorEntity requireExisting(Long id) {

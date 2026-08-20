@@ -91,7 +91,6 @@ public class PaymentProjectBindingService {
         }
         PaymentProjectBindingEntity entity = toEntity(request);
         entity.setBusinessLineCode(businessLine.code());
-        entity.setBusinessLine(businessLine.name());
         if (Boolean.TRUE.equals(entity.getDefaultBinding())) {
             for (String purposeCode : purposeCodes) {
                 paymentProjectBindingMapper.clearDefaultBindings(entity.getProjectId(), businessLine.identity(), purposeCode, null);
@@ -105,7 +104,7 @@ public class PaymentProjectBindingService {
                 entity.getId(),
                 "CREATE",
                 "新增项目商户绑定",
-                "businessLine=" + entity.getBusinessLine() + ",projectId=" + entity.getProjectId() + ",merchantId=" + entity.getMerchantId() + ",purpose=" + entity.getPurposeCode(),
+                "businessLineCode=" + entity.getBusinessLineCode() + ",projectId=" + entity.getProjectId() + ",merchantId=" + entity.getMerchantId() + ",purpose=" + entity.getPurposeCode(),
                 operatorUserName
         );
         return requireBinding(entity.getId());
@@ -128,7 +127,6 @@ public class PaymentProjectBindingService {
         PaymentProjectBindingEntity entity = toEntity(request);
         entity.setId(id);
         entity.setBusinessLineCode(businessLine.code());
-        entity.setBusinessLine(businessLine.name());
         if (Boolean.TRUE.equals(entity.getDefaultBinding())) {
             for (String purposeCode : purposeCodes) {
                 paymentProjectBindingMapper.clearDefaultBindings(entity.getProjectId(), businessLine.identity(), purposeCode, id);
@@ -142,7 +140,7 @@ public class PaymentProjectBindingService {
                 id,
                 "UPDATE",
                 "更新项目商户绑定",
-                "businessLine=" + entity.getBusinessLine() + ",projectId=" + entity.getProjectId() + ",merchantId=" + entity.getMerchantId() + ",purpose=" + entity.getPurposeCode(),
+                "businessLineCode=" + entity.getBusinessLineCode() + ",projectId=" + entity.getProjectId() + ",merchantId=" + entity.getMerchantId() + ",purpose=" + entity.getPurposeCode(),
                 operatorUserName
         );
         return requireBinding(id);
@@ -244,7 +242,6 @@ public class PaymentProjectBindingService {
         PaymentProjectBindingEntity entity = new PaymentProjectBindingEntity();
         entity.setProjectId(request.getProjectId());
         entity.setBusinessLineCode(PaymentCatalogs.trimToNull(request.getBusinessLineCode()));
-        entity.setBusinessLine(PaymentCatalogs.trimToNull(request.getBusinessLine()));
         entity.setMerchantId(request.getMerchantId());
         entity.setPurposeCode(normalizePurposeCodes(request).getFirst());
         entity.setPriority(PaymentCatalogs.requirePositivePriority(request.getPriority()));

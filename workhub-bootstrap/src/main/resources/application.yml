@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: workhub-server
+  config:
+    import: optional:file:.workhub-secrets.properties
   servlet:
     multipart:
       max-file-size: 20MB
@@ -26,11 +28,20 @@ spring:
       test-on-borrow: false
       test-on-return: false
   flyway:
-    enabled: true
+    enabled: ${FLYWAY_ENABLED:true}
+    url: ${spring.datasource.druid.url}
+    user: ${spring.datasource.druid.username}
+    password: ${spring.datasource.druid.password}
     locations: classpath:db/schema/mysql
-    baseline-on-migrate: true
+    fail-on-missing-locations: true
+    validate-migration-naming: true
+    validate-on-migrate: true
+    baseline-on-migrate: false
     baseline-version: 1
     baseline-description: current schema baseline
+    clean-disabled: true
+    out-of-order: false
+    placeholder-replacement: false
 
 mybatis:
   configuration:
@@ -61,6 +72,24 @@ logging:
     com.alibaba.druid: WARN
 
 workhub:
+  ops:
+    elk-alert:
+      enabled: ${WORKHUB_ELK_ALERT_ENABLED:false}
+      base-url: ${WORKHUB_ELK_BASE_URL:}
+      index-pattern: ${WORKHUB_ELK_INDEX_PATTERN:workhub-logs-*}
+      api-key: ${WORKHUB_ELK_API_KEY:}
+      username: ${WORKHUB_ELK_USERNAME:}
+      password: ${WORKHUB_ELK_PASSWORD:}
+      connect-timeout-seconds: ${WORKHUB_ELK_CONNECT_TIMEOUT_SECONDS:5}
+      request-timeout-seconds: ${WORKHUB_ELK_REQUEST_TIMEOUT_SECONDS:30}
+      page-size: ${WORKHUB_ELK_PAGE_SIZE:200}
+      initial-lookback-minutes: ${WORKHUB_ELK_INITIAL_LOOKBACK_MINUTES:5}
+      pit-keep-alive: ${WORKHUB_ELK_PIT_KEEP_ALIVE:1m}
+      cron: "${WORKHUB_ELK_ALERT_CRON:0 * * * * *}"
+    accounting:
+      enabled: ${WORKHUB_ACCOUNTING_SCHEDULE_ENABLED:false}
+      cron: "${WORKHUB_ACCOUNTING_SCHEDULE_CRON:0 30 6 * * *}"
+      zone: ${WORKHUB_ACCOUNTING_SCHEDULE_ZONE:Asia/Shanghai}
   jwt:
     secret: workhub-dev-secret-workhub-dev-secret
     expiration-minutes: 720
@@ -74,26 +103,9 @@ workhub:
     dedupe-minutes: 60
     cron: "0 */30 * * * *"
   ai:
-    provider: heuristic
-    openrouter:
-      enabled: false
-      api-key:
-      base-url: https://openrouter.ai/api/v1
-      model: openai/gpt-4o-mini
-      referer: http://127.0.0.1:8080
-      title: WorkHub Server
-    minimax:
-      enabled: false
-      api-key:
-      base-url: https://api.minimaxi.com/v1
-      model: M2-her
+    master-key: ${WORKHUB_AI_MASTER_KEY:}
     codex-cli:
       enabled: true
-      command: codex
-      model: gpt-5.5
-      reasoning-effort: xhigh
-      timeout-seconds: 0
-      disable-plugins: true
   storage:
     local-path: data/uploads
   payment:
@@ -101,3 +113,4 @@ workhub:
     mask-visible-suffix: 4
   mcp:
     master-key: ${WORKHUB_MCP_MASTER_KEY:workhub-mcp-dev-master-key}
+    access-token: ${WORKHUB_MCP_ACCESS_TOKEN:}

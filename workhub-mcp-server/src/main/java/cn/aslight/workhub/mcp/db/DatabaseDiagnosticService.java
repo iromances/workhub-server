@@ -5,6 +5,7 @@ import cn.aslight.workhub.mcp.config.McpResourceCatalog;
 import cn.aslight.workhub.mcp.config.McpResourceCatalog.DatabaseTarget;
 import cn.aslight.workhub.mcp.config.McpResourceCatalog.DatabaseTarget.DatabaseProfile;
 import cn.aslight.workhub.mcp.security.SecretResolver;
+import cn.aslight.workhub.mcp.security.SensitiveDataMasker;
 import cn.aslight.workhub.mcp.security.SqlPolicyGuard;
 import cn.aslight.workhub.mcp.ssh.SshTunnel;
 
@@ -30,6 +31,7 @@ public class DatabaseDiagnosticService {
     private final SqlPolicyGuard sqlPolicyGuard;
     private final SecretResolver secretResolver;
     private final McpAuditLogger auditLogger;
+    private final SensitiveDataMasker sensitiveDataMasker;
 
     public DatabaseDiagnosticService(McpResourceCatalog catalog,
                                      SqlPolicyGuard sqlPolicyGuard,
@@ -39,6 +41,7 @@ public class DatabaseDiagnosticService {
         this.sqlPolicyGuard = sqlPolicyGuard;
         this.secretResolver = secretResolver;
         this.auditLogger = auditLogger;
+        this.sensitiveDataMasker = new SensitiveDataMasker();
     }
 
     public Map<String, Object> describeDatabase(String targetKey, String profileKey) {
@@ -98,13 +101,14 @@ public class DatabaseDiagnosticService {
                 return Map.of(
                         "targetKey", targetKey,
                         "profileKey", profileKey,
-                        "sql", truncate(sql, 1000),
+                        "sql", truncate(sensitiveDataMasker.maskSql(sql), 1000),
+                        "dataMasked", true,
                         "result", result
                 );
             }
         } catch (Exception ex) {
             audit(toolName, target, profile, "FAILED", sql, 0, startedAt, ex);
-            throw new IllegalArgumentException("数据库查询失败：" + ex.getMessage(), ex);
+            throw new IllegalArgumentException("数据库查询失败：" + safeErrorMessage(ex), ex);
         }
     }
 
@@ -119,7 +123,8 @@ public class DatabaseDiagnosticService {
     static String jdbcUrl(String host, int port, String schema) {
         String databasePath = schema == null || schema.isBlank() ? "/" : "/" + schema;
         return "jdbc:mysql://" + host + ":" + port + databasePath
-                + "?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false";
+                + "?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai"
+                + "&allowPublicKeyRetrieval=true&useSSL=false";
     }
 
     private List<Map<String, Object>> columns(DatabaseMetaData metaData, String schema, String tableName) throws Exception {
@@ -137,11 +142,13 @@ public class DatabaseDiagnosticService {
         return columns;
     }
 
-    private Map<String, Object> resultSetToRows(ResultSet resultSet, int maxRows, int maxBytes) throws Exception {
+    Map<String, Object> resultSetToRows(ResultSet resultSet, int maxRows, int maxBytes) throws Exception {
         ResultSetMetaData metaData = resultSet.getMetaData();
         List<String> columns = new ArrayList<>();
+        List<String> sourceColumns = new ArrayList<>();
         for (int i = 1; i <= metaData.getColumnCount(); i++) {
             columns.add(metaData.getColumnLabel(i));
+            sourceColumns.add(metaData.getColumnName(i));
         }
         List<Map<String, Object>> rows = new ArrayList<>();
         int byteBudget = maxBytes <= 0 ? 65536 : maxBytes;
@@ -150,7 +157,7 @@ public class DatabaseDiagnosticService {
             Map<String, Object> row = new LinkedHashMap<>();
             for (int i = 1; i <= columns.size(); i++) {
                 Object value = resultSet.getObject(i);
-                row.put(columns.get(i - 1), value);
+                row.put(columns.get(i - 1), sensitiveDataMasker.mask(columns.get(i - 1), sourceColumns.get(i - 1), value));
             }
             currentBytes += row.toString().getBytes(StandardCharsets.UTF_8).length;
             if (currentBytes > byteBudget) {
@@ -158,7 +165,12 @@ public class DatabaseDiagnosticService {
             }
             rows.add(row);
         }
-        return Map.of("columns", columns, "rows", rows, "truncatedByBytes", currentBytes > byteBudget);
+        return Map.of(
+                "columns", columns,
+                "rows", rows,
+                "truncatedByBytes", currentBytes > byteBudget,
+                "dataMasked", true
+        );
     }
 
     private void audit(String toolName,
@@ -178,12 +190,19 @@ public class DatabaseDiagnosticService {
         fields.put("targetKey", target.key());
         fields.put("profileKey", profile.key());
         fields.put("sqlFingerprint", sql == null ? "" : fingerprint(sql));
-        fields.put("sql", sql == null ? "" : truncate(sql, 1000));
+        fields.put("sql", sql == null ? "" : truncate(sensitiveDataMasker.maskSql(sql), 1000));
         fields.put("status", status);
         fields.put("rowCount", rows);
         fields.put("durationMillis", Duration.between(startedAt, Instant.now()).toMillis());
-        fields.put("error", error == null || error.getMessage() == null ? "" : truncate(error.getMessage(), 500));
+        fields.put("error", error == null ? "" : truncate(safeErrorMessage(error), 500));
         auditLogger.record(fields);
+    }
+
+    private String safeErrorMessage(Exception error) {
+        if (error == null || error.getMessage() == null) {
+            return "数据库执行异常";
+        }
+        return sensitiveDataMasker.maskSql(sensitiveDataMasker.maskText(error.getMessage()));
     }
 
     private String fingerprint(String sql) {

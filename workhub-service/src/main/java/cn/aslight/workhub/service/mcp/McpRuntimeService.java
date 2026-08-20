@@ -1,10 +1,12 @@
 package cn.aslight.workhub.service.mcp;
 
+import cn.aslight.workhub.dao.project.BusinessLineAccessConfigMapper;
 import cn.aslight.workhub.mcp.config.McpResourceCatalog;
 import cn.aslight.workhub.mcp.tool.McpToolRegistry;
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
+import cn.aslight.workhub.model.project.BusinessLineAccessConfigEntity;
 import cn.aslight.workhub.service.intake.GitlabRepositoryService;
 import cn.aslight.workhub.service.intake.IntakeService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,6 +16,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -21,6 +24,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * HTTP-hosted MCP runtime backed by the live WorkHub resource catalog.
@@ -28,17 +32,38 @@ import java.util.Map;
 @Service
 public class McpRuntimeService {
 
+    private static final String LATEST_PROTOCOL_VERSION = "2025-11-25";
+    private static final Set<String> SUPPORTED_PROTOCOL_VERSIONS = Set.of(
+            "2026-07-28",
+            LATEST_PROTOCOL_VERSION,
+            "2025-06-18",
+            "2025-03-26"
+    );
+    private static final String SERVER_INSTRUCTIONS = """
+            WorkHub 提供受控的需求、业务线、代码缓存、数据库和服务器只读诊断工具。涉及业务线排查或测试时，必须先确认业务线、环境和分支；数据库只允许只读 SQL，查询结果会在服务端脱敏；不得尝试绕过资源白名单、行数限制、日志路径限制或安全策略。
+            """.strip();
+
     private final McpResourceService mcpResourceService;
     private final IntakeService intakeService;
     private final GitlabRepositoryService gitlabRepositoryService;
+    private final BusinessLineAccessConfigMapper businessLineAccessConfigMapper;
     private final ObjectMapper objectMapper;
 
     public McpRuntimeService(McpResourceService mcpResourceService,
                              IntakeService intakeService,
                              GitlabRepositoryService gitlabRepositoryService) {
+        this(mcpResourceService, intakeService, gitlabRepositoryService, null);
+    }
+
+    @Autowired
+    public McpRuntimeService(McpResourceService mcpResourceService,
+                             IntakeService intakeService,
+                             GitlabRepositoryService gitlabRepositoryService,
+                             BusinessLineAccessConfigMapper businessLineAccessConfigMapper) {
         this.mcpResourceService = mcpResourceService;
         this.intakeService = intakeService;
         this.gitlabRepositoryService = gitlabRepositoryService;
+        this.businessLineAccessConfigMapper = businessLineAccessConfigMapper;
         this.objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -52,21 +77,52 @@ public class McpRuntimeService {
         }
     }
 
+    /**
+     * 处理 Streamable HTTP MCP 消息。请求返回 JSON-RPC 对象，通知或响应返回 202 空响应。
+     */
+    public HttpResponse handleHttp(String rawRequest, String protocolVersionHeader) {
+        JsonNode message;
+        try {
+            message = objectMapper.readTree(rawRequest);
+        } catch (IOException ex) {
+            return jsonErrorResponse(400, null, -32700, "MCP 请求不是合法 JSON");
+        }
+        if (message == null || !message.isObject() || !"2.0".equals(message.path("jsonrpc").asText())) {
+            return jsonErrorResponse(400, message == null ? null : message.get("id"), -32600, "无效的 JSON-RPC 请求");
+        }
+        if (protocolVersionHeader != null
+                && !protocolVersionHeader.isBlank()
+                && !SUPPORTED_PROTOCOL_VERSIONS.contains(protocolVersionHeader.trim())) {
+            return jsonErrorResponse(400, message.get("id"), -32602,
+                    "不支持的 MCP 协议版本：" + protocolVersionHeader.trim());
+        }
+        if (!message.has("id")) {
+            if (message.hasNonNull("method") || message.has("result") || message.has("error")) {
+                return new HttpResponse(202, null);
+            }
+            return jsonErrorResponse(400, null, -32600, "无效的 JSON-RPC 通知或响应");
+        }
+        return new HttpResponse(200, writeJson(handle(message)));
+    }
+
     public JsonNode handle(JsonNode request) {
         ObjectNode response = objectMapper.createObjectNode();
         response.put("jsonrpc", "2.0");
         response.set("id", request == null || !request.has("id") ? NullNode.getInstance() : request.get("id"));
         try {
-            if (request == null || !request.has("id")) {
+            if (request == null || !request.isObject() || !"2.0".equals(request.path("jsonrpc").asText())) {
+                throw new IllegalArgumentException("无效的 JSON-RPC 请求");
+            }
+            if (!request.has("id")) {
                 throw new IllegalArgumentException("MCP 请求缺少 id");
             }
             String method = request.path("method").asText();
             JsonNode params = request.path("params");
             response.set("result", switch (method) {
-                case "initialize" -> initializeResult();
+                case "initialize" -> initializeResult(params);
                 case "tools/list" -> toolsListResult();
                 case "tools/call" -> toolsCallResult(params);
-                default -> throw new IllegalArgumentException("不支持的 MCP 方法：" + method);
+                default -> throw new UnsupportedOperationException("不支持的 MCP 方法：" + method);
             });
         } catch (Exception ex) {
             response.set("error", errorNode(ex));
@@ -74,9 +130,13 @@ public class McpRuntimeService {
         return response;
     }
 
-    private ObjectNode initializeResult() {
+    private ObjectNode initializeResult(JsonNode params) {
+        String requestedVersion = requireText(params, "protocolVersion");
+        if (!SUPPORTED_PROTOCOL_VERSIONS.contains(requestedVersion)) {
+            throw new IllegalArgumentException("不支持的 MCP 协议版本：" + requestedVersion);
+        }
         ObjectNode result = objectMapper.createObjectNode();
-        result.put("protocolVersion", "2024-11-05");
+        result.put("protocolVersion", requestedVersion);
         ObjectNode capabilities = objectMapper.createObjectNode();
         capabilities.set("tools", objectMapper.createObjectNode());
         result.set("capabilities", capabilities);
@@ -84,6 +144,7 @@ public class McpRuntimeService {
         serverInfo.put("name", "workhub-http-mcp-runtime");
         serverInfo.put("version", "0.1.0");
         result.set("serverInfo", serverInfo);
+        result.put("instructions", SERVER_INSTRUCTIONS);
         return result;
     }
 
@@ -94,14 +155,18 @@ public class McpRuntimeService {
     }
 
     private ObjectNode toolsCallResult(JsonNode params) {
-        String name = requireText(params, "name");
-        JsonNode arguments = params.path("arguments");
-        Object toolResult = registry().call(name, arguments);
         ObjectNode result = objectMapper.createObjectNode();
         ArrayNode content = objectMapper.createArrayNode();
         ObjectNode text = objectMapper.createObjectNode();
         text.put("type", "text");
-        text.put("text", renderText(toolResult));
+        try {
+            String name = requireText(params, "name");
+            JsonNode arguments = params.path("arguments");
+            text.put("text", renderText(registry().call(name, arguments)));
+        } catch (Exception ex) {
+            text.put("text", ex.getMessage() == null ? "MCP 工具执行失败" : ex.getMessage());
+            result.put("isError", true);
+        }
         content.add(text);
         result.set("content", content);
         return result;
@@ -110,6 +175,9 @@ public class McpRuntimeService {
     private McpToolRegistry registry() {
         McpResourceCatalog catalog = objectMapper.convertValue(mcpResourceService.catalog(), McpResourceCatalog.class);
         McpToolRegistry registry = McpToolRegistry.firstVersion(catalog, objectMapper);
+        registry.register("get_business_line_context", "Get GitLab, access endpoints, system, knowledge, database and server context for a business line.",
+                objectSchema(List.of("businessLine")),
+                args -> businessLineContext(args, catalog));
         registerIntakeTools(registry, catalog);
         registerGitlabTools(registry);
         return registry;
@@ -122,10 +190,10 @@ public class McpRuntimeService {
         registry.register("search_intakes", "Search requirement-management intakes by approvalCode, requirementName and/or keyword in requirement digest/summary.",
                 objectSchema(List.of(), "approvalCode", "requirementName", "keyword", "limit"),
                 this::searchIntakes);
-        registry.register("get_requirement_test_context", "Resolve a requirement by intakeId, approvalCode, requirementName or summary keyword, then return business-line, branch, SERVER/DB and GitLab/knowledge context for testing.",
+        registry.register("get_requirement_test_context", "Resolve a requirement by intakeId, approvalCode, requirementName or summary keyword, then return business-line, branch, access endpoints, SERVER/DB and GitLab/knowledge context for testing.",
                 objectSchema(List.of(), "intakeId", "approvalCode", "requirementName", "keyword", "businessLine", "environmentCode", "systemName", "limit"),
                 args -> requirementTestContext(args, catalog));
-        registry.register("get_business_line_test_context", "Return SERVER/DB, GitLab, knowledge and involved-system context for testing a business line in one environment.",
+        registry.register("get_business_line_test_context", "Return access endpoints, SERVER/DB, GitLab, knowledge and involved-system context for testing a business line in one environment.",
                 objectSchema(List.of("businessLine"), "environmentCode", "systemName"),
                 args -> businessLineTestContext(args, catalog));
     }
@@ -210,6 +278,27 @@ public class McpRuntimeService {
         return context;
     }
 
+    private Map<String, Object> businessLineContext(JsonNode args, McpResourceCatalog catalog) {
+        McpResourceCatalog.BusinessLine matched = findBusinessLine(catalog, requireText(args, "businessLine"));
+        if (matched == null) {
+            throw new IllegalArgumentException("业务线不存在：" + requireText(args, "businessLine"));
+        }
+        Map<String, Object> context = new LinkedHashMap<>();
+        context.put("businessLine", businessLineSummary(matched));
+        context.put("accessEndpoints", accessEndpointSummaries(matched.code(), null));
+        context.put("gitlab", gitlabContext(catalog, matched));
+        context.put("knowledge", knowledgeContext(catalog, matched));
+        context.put("databaseTargets", catalog.databaseTargets().stream()
+                .filter(target -> target.publicResource() || matchesBusinessLine(target.businessLineCodes(), matched))
+                .map(this::databaseTargetSummary)
+                .toList());
+        context.put("serverTargets", catalog.serverTargets().stream()
+                .filter(target -> target.publicResource() || matchesBusinessLine(target.businessLineCodes(), matched))
+                .map(this::serverTargetSummary)
+                .toList());
+        return context;
+    }
+
     private List<IntakeSummaryResponse> searchIntakeCandidates(String approvalCode,
                                                                String requirementName,
                                                                String keyword,
@@ -273,20 +362,60 @@ public class McpRuntimeService {
 
         context.put("businessLine", businessLineSummary(matched));
         context.put("environment", environmentSummary(catalog, environmentCode));
+        context.put("accessEndpoints", accessEndpointSummaries(matched.code(), environmentCode));
         context.put("gitlab", gitlabContext(catalog, matched));
         context.put("knowledge", knowledgeContext(catalog, matched));
         context.put("databaseTargets", catalog.databaseTargets().stream()
-                .filter(target -> matchesBusinessLine(target.businessLineCodes(), matched))
+                .filter(target -> target.publicResource() || matchesBusinessLine(target.businessLineCodes(), matched))
                 .filter(target -> matchesEnvironment(target.environmentCode(), environmentCode))
+                .filter(target -> matchesSystems(target.systemNames(), requestedSystems))
                 .map(this::databaseTargetSummary)
                 .toList());
         context.put("serverTargets", catalog.serverTargets().stream()
-                .filter(target -> matchesBusinessLine(target.businessLineCodes(), matched))
+                .filter(target -> target.publicResource() || matchesBusinessLine(target.businessLineCodes(), matched))
                 .filter(target -> matchesEnvironment(target.environmentCode(), environmentCode))
                 .filter(target -> matchesSystems(target.systemNames(), requestedSystems))
                 .map(this::serverTargetSummary)
                 .toList());
         return context;
+    }
+
+    private List<Map<String, Object>> accessEndpointSummaries(String businessLineCode, String environmentCode) {
+        if (businessLineAccessConfigMapper == null || businessLineCode == null || businessLineCode.isBlank()) {
+            return List.of();
+        }
+        List<BusinessLineAccessConfigEntity> configs =
+                businessLineAccessConfigMapper.findByBusinessLineCodes(List.of(businessLineCode));
+        if (configs == null || configs.isEmpty()) {
+            return List.of();
+        }
+        return configs.stream()
+                .filter(config -> Boolean.TRUE.equals(config.getEnabled()))
+                .filter(config -> matchesEnvironment(config.getEnvironmentCode(), environmentCode))
+                .map(this::accessEndpointSummary)
+                .toList();
+    }
+
+    private Map<String, Object> accessEndpointSummary(BusinessLineAccessConfigEntity config) {
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("environmentCode", config.getEnvironmentCode());
+        summary.put("endpointType", config.getEndpointType());
+        summary.put("endpointName", config.getEndpointName());
+        summary.put("endpointUrl", config.getEndpointUrl());
+        summary.put("pathPrefix", config.getPathPrefix());
+        summary.put("effectiveUrl", resolveEffectiveUrl(config.getEndpointUrl(), config.getPathPrefix()));
+        return summary;
+    }
+
+    private String resolveEffectiveUrl(String endpointUrl, String pathPrefix) {
+        if (endpointUrl == null || pathPrefix == null || pathPrefix.isBlank()) {
+            return endpointUrl;
+        }
+        String baseUrl = endpointUrl.endsWith("/")
+                ? endpointUrl.substring(0, endpointUrl.length() - 1)
+                : endpointUrl;
+        String normalizedPrefix = pathPrefix.startsWith("/") ? pathPrefix : "/" + pathPrefix;
+        return baseUrl + normalizedPrefix;
     }
 
     private Map<String, Object> businessLineSummary(McpResourceCatalog.BusinessLine businessLine) {
@@ -350,10 +479,14 @@ public class McpRuntimeService {
     private Map<String, Object> databaseTargetSummary(McpResourceCatalog.DatabaseTarget target) {
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("key", target.key());
+        summary.put("publicResource", target.publicResource());
+        summary.put("featureTags", target.featureTags());
         summary.put("businessLineCode", target.businessLineCode());
         summary.put("businessLineCodes", target.businessLineCodes());
         summary.put("environmentCode", target.environmentCode());
         summary.put("name", target.name());
+        summary.put("systemName", target.systemName());
+        summary.put("systemNames", target.systemNames());
         summary.put("schema", target.schema());
         summary.put("profiles", target.profiles().stream().map(McpResourceCatalog.DatabaseTarget.DatabaseProfile::key).toList());
         return summary;
@@ -362,6 +495,8 @@ public class McpRuntimeService {
     private Map<String, Object> serverTargetSummary(McpResourceCatalog.ServerTarget target) {
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("key", target.key());
+        summary.put("publicResource", target.publicResource());
+        summary.put("featureTags", target.featureTags());
         summary.put("businessLineCode", target.businessLineCode());
         summary.put("businessLineCodes", target.businessLineCodes());
         summary.put("environmentCode", target.environmentCode());
@@ -485,10 +620,34 @@ public class McpRuntimeService {
 
     private ObjectNode errorNode(Exception ex) {
         ObjectNode error = objectMapper.createObjectNode();
-        error.put("code", -32603);
-        error.put("message", ex.getMessage());
+        int code = ex instanceof UnsupportedOperationException ? -32601
+                : ex instanceof IllegalArgumentException ? -32602 : -32603;
+        error.put("code", code);
+        error.put("message", ex.getMessage() == null ? "MCP 请求处理失败" : ex.getMessage());
         error.set("data", objectMapper.valueToTree(Map.of("exception", ex.getClass().getName())));
         return error;
+    }
+
+    private HttpResponse jsonErrorResponse(int status, JsonNode id, int code, String message) {
+        ObjectNode response = objectMapper.createObjectNode();
+        response.put("jsonrpc", "2.0");
+        response.set("id", id == null ? NullNode.getInstance() : id);
+        ObjectNode error = objectMapper.createObjectNode();
+        error.put("code", code);
+        error.put("message", message);
+        response.set("error", error);
+        return new HttpResponse(status, writeJson(response));
+    }
+
+    private String writeJson(JsonNode value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (IOException ex) {
+            throw new IllegalStateException("MCP 响应无法序列化", ex);
+        }
+    }
+
+    public record HttpResponse(int status, String body) {
     }
 
     private String requireText(JsonNode node, String field) {

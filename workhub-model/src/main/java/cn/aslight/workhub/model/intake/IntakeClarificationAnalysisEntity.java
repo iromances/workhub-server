@@ -9,6 +9,7 @@ public class IntakeClarificationAnalysisEntity {
 
     private Long id;
     private Long intakeId;
+    private String businessLineCode;
     private String businessLine;
     private String analysisStatus;
     private String analysisMessage;
@@ -36,6 +37,14 @@ public class IntakeClarificationAnalysisEntity {
 
     public String getBusinessLine() {
         return businessLine;
+    }
+
+    public String getBusinessLineCode() {
+        return businessLineCode;
+    }
+
+    public void setBusinessLineCode(String businessLineCode) {
+        this.businessLineCode = businessLineCode;
     }
 
     public void setBusinessLine(String businessLine) {

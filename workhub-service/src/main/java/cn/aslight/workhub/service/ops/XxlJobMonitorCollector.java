@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 @Service
 public class XxlJobMonitorCollector {
 
+    private static final int DEFAULT_LOG_DAYS = 7;
     private static final String LOG_STATUS_ALL = "ALL";
     private static final String LOG_STATUS_FAILED = "FAILED";
 
@@ -31,11 +32,21 @@ public class XxlJobMonitorCollector {
     }
 
     public XxlJobDashboardResponse collectSummary(OpsMonitorEntity monitor) {
+        LocalDate endDate = LocalDate.now();
+        return collectSummary(monitor, defaultStartDate(endDate), endDate);
+    }
+
+    public XxlJobDashboardResponse collectSummary(OpsMonitorEntity monitor, LocalDate startDate, LocalDate endDate) {
+        LocalDate normalizedStartDate = requireDate(startDate, "开始日期不能为空");
+        LocalDate normalizedEndDate = requireDate(endDate, "结束日期不能为空");
+        if (normalizedStartDate.isAfter(normalizedEndDate)) {
+            throw new IllegalArgumentException("开始日期不能晚于结束日期");
+        }
         String databaseName = quoteDatabaseName(monitor.getXxlJobDatabaseName());
         Map<String, Object> statistics = firstRow(queryClient.runRows(
                 monitor.getBusinessLineCode(),
                 monitor.getEnvironmentCode(),
-                summarySql(databaseName, monitor.getExecutorAppName())
+                summarySql(databaseName, monitor.getExecutorAppName(), normalizedStartDate, normalizedEndDate)
         ));
         int triggerRunningCount = intValue(rowValue(statistics, "triggerRunningCount"));
         int triggerSuccessCount = intValue(rowValue(statistics, "triggerSuccessCount"));
@@ -70,7 +81,8 @@ public class XxlJobMonitorCollector {
     }
 
     public XxlJobDashboardResponse collect(OpsMonitorEntity monitor) {
-        return collect(monitor, LocalDate.now().minusMonths(1), LocalDate.now());
+        LocalDate endDate = LocalDate.now();
+        return collect(monitor, defaultStartDate(endDate), endDate);
     }
 
     public XxlJobDashboardResponse collect(OpsMonitorEntity monitor, LocalDate startDate, LocalDate endDate) {
@@ -107,7 +119,7 @@ public class XxlJobMonitorCollector {
         int normalizedPage = normalizePage(page);
         int normalizedPageSize = normalizePageSize(pageSize);
         int offset = (normalizedPage - 1) * normalizedPageSize;
-        XxlJobDashboardResponse summary = collectSummary(monitor);
+        XxlJobDashboardResponse summary = collectSummary(monitor, normalizedStartDate, normalizedEndDate);
         String databaseName = quoteDatabaseName(monitor.getXxlJobDatabaseName());
         String detailFilter = detailFilterSql(author, executorAppName);
         String statusFilter = logStatusFilterSql(logStatus);
@@ -252,25 +264,34 @@ public class XxlJobMonitorCollector {
         return "`" + normalized + "`";
     }
 
-    private String summarySql(String databaseName, String executorAppName) {
+    private String summarySql(String databaseName,
+                              String executorAppName,
+                              LocalDate startDate,
+                              LocalDate endDate) {
         String executorFilter = executorAppNameFilterSql(executorAppName);
         if (!executorFilter.isBlank()) {
-            return focusedSummarySql(databaseName, executorFilter);
+            return focusedSummarySql(databaseName, executorFilter, startDate, endDate);
         }
+        String endExclusiveDate = endDate.plusDays(1).toString();
         return """
                 SELECT
                   (SELECT COUNT(1) FROM %1$s.`xxl_job_info`) AS jobCount,
                   (SELECT COUNT(1) FROM %1$s.`xxl_job_info` WHERE trigger_status = 1) AS enabledJobCount,
                   (SELECT COUNT(1) FROM %1$s.`xxl_job_info` WHERE trigger_status <> 1) AS disabledJobCount,
                   (SELECT GROUP_CONCAT(address_list SEPARATOR ',') FROM %1$s.`xxl_job_group` WHERE address_list IS NOT NULL AND address_list <> '') AS executorRegistryList,
-                  (SELECT COALESCE(SUM(running_count), 0) FROM %1$s.`xxl_job_log_report`) AS triggerRunningCount,
-                  (SELECT COALESCE(SUM(suc_count), 0) FROM %1$s.`xxl_job_log_report`) AS triggerSuccessCount,
-                  (SELECT COALESCE(SUM(fail_count), 0) FROM %1$s.`xxl_job_log_report`) AS triggerFailedCount,
-                  (SELECT MAX(trigger_day) FROM %1$s.`xxl_job_log_report`) AS reportUpdatedAt
-                """.formatted(databaseName);
+                  (SELECT COALESCE(SUM(running_count), 0) FROM %1$s.`xxl_job_log_report` WHERE trigger_day >= '%2$s' AND trigger_day < '%3$s') AS triggerRunningCount,
+                  (SELECT COALESCE(SUM(suc_count), 0) FROM %1$s.`xxl_job_log_report` WHERE trigger_day >= '%2$s' AND trigger_day < '%3$s') AS triggerSuccessCount,
+                  (SELECT COALESCE(SUM(fail_count), 0) FROM %1$s.`xxl_job_log_report` WHERE trigger_day >= '%2$s' AND trigger_day < '%3$s') AS triggerFailedCount,
+                  (SELECT MAX(trigger_day) FROM %1$s.`xxl_job_log_report` WHERE trigger_day >= '%2$s' AND trigger_day < '%3$s') AS reportUpdatedAt
+                """.formatted(databaseName, startDate, endExclusiveDate);
     }
 
-    private String focusedSummarySql(String databaseName, String executorFilter) {
+    private String focusedSummarySql(String databaseName,
+                                     String executorFilter,
+                                     LocalDate startDate,
+                                     LocalDate endDate) {
+        String startDateTime = startDate + " 00:00:00";
+        String endExclusiveDateTime = endDate.plusDays(1) + " 00:00:00";
         return """
                 SELECT
                   job_stats.jobCount AS jobCount,
@@ -306,9 +327,15 @@ public class XxlJobMonitorCollector {
                   FROM %1$s.`xxl_job_log` l
                   JOIN %1$s.`xxl_job_info` i ON i.id = l.job_id
                   JOIN %1$s.`xxl_job_group` g ON g.id = i.job_group
-                  WHERE 1 = 1 %2$s
+                  WHERE l.trigger_time >= '%3$s'
+                    AND l.trigger_time < '%4$s'
+                    %2$s
                 ) log_stats
-                """.formatted(databaseName, executorFilter);
+                """.formatted(databaseName, executorFilter, startDateTime, endExclusiveDateTime);
+    }
+
+    private LocalDate defaultStartDate(LocalDate endDate) {
+        return endDate.minusDays(DEFAULT_LOG_DAYS - 1L);
     }
 
     private String executorsSql(String databaseName) {

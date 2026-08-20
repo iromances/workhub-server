@@ -9,6 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class McpProperties {
 
     private String masterKey = "workhub-mcp-dev-master-key";
+    private String accessToken;
 
     public String getMasterKey() {
         return masterKey;
@@ -16,5 +17,13 @@ public class McpProperties {
 
     public void setMasterKey(String masterKey) {
         this.masterKey = masterKey;
+    }
+
+    public String getAccessToken() {
+        return accessToken;
+    }
+
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
     }
 }

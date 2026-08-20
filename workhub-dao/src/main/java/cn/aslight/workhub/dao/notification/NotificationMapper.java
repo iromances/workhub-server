@@ -26,6 +26,7 @@ public interface NotificationMapper {
                    created_at AS createdAt
             FROM sys_notification
             WHERE recipient_user_name = #{recipientUserName}
+              AND read_flag = 0
             ORDER BY created_at DESC, id DESC
             LIMIT #{limit}
             """)

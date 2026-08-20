@@ -26,7 +26,7 @@ public interface ProjectMapper {
             "p.project_name AS name,",
             "p.project_type AS type,",
             "p.business_line_code AS businessLineCode,",
-            "COALESCE(bl.business_line_name, p.business_line) AS businessLine,",
+            "bl.business_line_name AS businessLine,",
             "p.owner_user_name AS ownerUserName,",
             "p.project_status AS status",
             "FROM pm_project p",
@@ -41,7 +41,6 @@ public interface ProjectMapper {
             "<if test='keyword != null and keyword != \"\"'>",
             "AND (p.project_code LIKE CONCAT('%', #{keyword}, '%')",
             "OR p.project_name LIKE CONCAT('%', #{keyword}, '%')",
-            "OR p.business_line LIKE CONCAT('%', #{keyword}, '%')",
             "OR bl.business_line_name LIKE CONCAT('%', #{keyword}, '%'))",
             "</if>",
             "</where>",
@@ -58,7 +57,7 @@ public interface ProjectMapper {
                    p.project_name AS name,
                    p.project_type AS type,
                    p.business_line_code AS businessLineCode,
-                   COALESCE(bl.business_line_name, p.business_line) AS businessLine,
+                   bl.business_line_name AS businessLine,
                    p.owner_user_name AS ownerUserName,
                    p.project_status AS status,
                    p.description,
@@ -71,32 +70,34 @@ public interface ProjectMapper {
     ProjectDetailResponse findDetailById(Long id);
 
     @Select("""
-            SELECT id,
-                   project_code,
-                   project_name,
-                   project_type,
-                   business_line,
-                   business_line_code,
-                   project_status,
-                   owner_user_name,
-                   description
-            FROM pm_project
-            WHERE id = #{id}
+            SELECT p.id,
+                   p.project_code,
+                   p.project_name,
+                   p.project_type,
+                   bl.business_line_name AS business_line,
+                   p.business_line_code,
+                   p.project_status,
+                   p.owner_user_name,
+                   p.description
+            FROM pm_project p
+            LEFT JOIN pm_business_line bl ON bl.business_line_code = p.business_line_code
+            WHERE p.id = #{id}
             """)
     ProjectEntity findEntityById(Long id);
 
     @Select("""
-            SELECT id,
-                   project_code,
-                   project_name,
-                   project_type,
-                   business_line,
-                   business_line_code,
-                   project_status,
-                   owner_user_name,
-                   description
-            FROM pm_project
-            WHERE project_code = #{projectCode}
+            SELECT p.id,
+                   p.project_code,
+                   p.project_name,
+                   p.project_type,
+                   bl.business_line_name AS business_line,
+                   p.business_line_code,
+                   p.project_status,
+                   p.owner_user_name,
+                   p.description
+            FROM pm_project p
+            LEFT JOIN pm_business_line bl ON bl.business_line_code = p.business_line_code
+            WHERE p.project_code = #{projectCode}
             """)
     ProjectEntity findEntityByCode(String projectCode);
 
@@ -106,7 +107,7 @@ public interface ProjectMapper {
                    p.project_name AS name,
                    p.project_type AS type,
                    p.business_line_code AS businessLineCode,
-                   COALESCE(bl.business_line_name, p.business_line) AS businessLine,
+                   bl.business_line_name AS businessLine,
                    p.owner_user_name AS ownerUserName,
                    p.project_status AS status,
                    p.description,
@@ -115,6 +116,7 @@ public interface ProjectMapper {
             FROM pm_project p
             LEFT JOIN pm_business_line bl ON bl.business_line_code = p.business_line_code
             WHERE p.business_line_code = #{businessLine}
+               OR bl.business_line_name = #{businessLine}
             ORDER BY p.id ASC
             LIMIT 1
             """)
@@ -125,7 +127,6 @@ public interface ProjectMapper {
                 project_code,
                 project_name,
                 project_type,
-                business_line,
                 business_line_code,
                 project_status,
                 owner_user_name,
@@ -134,7 +135,6 @@ public interface ProjectMapper {
                 #{projectCode},
                 #{projectName},
                 #{projectType},
-                #{businessLine},
                 #{businessLineCode},
                 #{projectStatus},
                 #{ownerUserName},
@@ -149,7 +149,6 @@ public interface ProjectMapper {
             SET project_code = #{projectCode},
                 project_name = #{projectName},
                 project_type = #{projectType},
-                business_line = #{businessLine},
                 business_line_code = #{businessLineCode},
                 project_status = #{projectStatus},
                 owner_user_name = #{ownerUserName},

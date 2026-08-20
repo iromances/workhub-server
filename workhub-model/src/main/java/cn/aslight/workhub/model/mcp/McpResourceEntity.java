@@ -7,6 +7,8 @@ public class McpResourceEntity {
     private Long id;
     private String resourceType;
     private String targetKey;
+    private Boolean publicResource;
+    private String featureTagsJson;
     private String businessLineCode;
     private String environmentCode;
     private String name;
@@ -19,6 +21,7 @@ public class McpResourceEntity {
     private String passwordEncrypted;
     private String sshPasswordEncrypted;
     private Boolean sshBastionEnabled;
+    private Long bastionId;
     private String sshBastionHost;
     private Integer sshBastionPort;
     private String sshBastionUser;
@@ -54,6 +57,22 @@ public class McpResourceEntity {
 
     public void setTargetKey(String targetKey) {
         this.targetKey = targetKey;
+    }
+
+    public Boolean getPublicResource() {
+        return publicResource;
+    }
+
+    public void setPublicResource(Boolean publicResource) {
+        this.publicResource = publicResource;
+    }
+
+    public String getFeatureTagsJson() {
+        return featureTagsJson;
+    }
+
+    public void setFeatureTagsJson(String featureTagsJson) {
+        this.featureTagsJson = featureTagsJson;
     }
 
     public String getBusinessLineCode() {
@@ -150,6 +169,14 @@ public class McpResourceEntity {
 
     public void setSshBastionEnabled(Boolean sshBastionEnabled) {
         this.sshBastionEnabled = sshBastionEnabled;
+    }
+
+    public Long getBastionId() {
+        return bastionId;
+    }
+
+    public void setBastionId(Long bastionId) {
+        this.bastionId = bastionId;
     }
 
     public String getSshBastionHost() {

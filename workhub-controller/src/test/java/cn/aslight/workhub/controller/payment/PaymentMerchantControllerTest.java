@@ -113,7 +113,7 @@ class PaymentMerchantControllerTest {
         PaymentMerchantCredentialService credentialService = mock(PaymentMerchantCredentialService.class);
         PaymentSecretService secretService = mock(PaymentSecretService.class);
         when(merchantService.list(eq("ACTIVE"), eq(1L), eq(10L), eq("BL000001"), eq("WITHHOLD"), eq("M0001"))).thenReturn(List.of(
-                new PaymentMerchantSummaryResponse(8L, 1L, "YEEPAY", "易宝支付", "M0001", "易宝主商户", "PROD", List.of("WITHHOLD"), "ACTIVE")
+                new PaymentMerchantSummaryResponse(8L, 1L, "YEEPAY", "易宝支付", "M0001", "易宝主商户", "PROD", List.of("WITHHOLD"), "ACTIVE", "生产主商户")
         ));
 
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
@@ -132,7 +132,8 @@ class PaymentMerchantControllerTest {
                 .andExpect(jsonPath("$.data.total").value(1))
                 .andExpect(jsonPath("$.data.items[0].merchantCode").value("M0001"))
                 .andExpect(jsonPath("$.data.items[0].purposeCodes[0]").value("WITHHOLD"))
-                .andExpect(jsonPath("$.data.items[0].environment").value("PROD"));
+                .andExpect(jsonPath("$.data.items[0].environment").value("PROD"))
+                .andExpect(jsonPath("$.data.items[0].remark").value("生产主商户"));
     }
 
     @Test

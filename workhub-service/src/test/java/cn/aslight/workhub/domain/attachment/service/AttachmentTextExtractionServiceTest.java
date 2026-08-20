@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AttachmentTextExtractionServiceTest {
@@ -70,6 +71,40 @@ class AttachmentTextExtractionServiceTest {
 
         assertTrue(batch.summaries().isEmpty());
         assertTrue(batch.warnings().isEmpty());
+    }
+
+    @Test
+    void extractSummaries_shouldReadHtmlVisibleText() throws IOException {
+        Path html = tempDir.resolve("资金方管理_带注释.html");
+        Files.writeString(html, """
+                <!doctype html>
+                <html lang="zh-CN">
+                <head>
+                  <meta charset="UTF-8">
+                  <style>.hidden { display: none; }</style>
+                  <script>window.secret = '不应提取的脚本';</script>
+                </head>
+                <body>
+                  <h1>资金方管理</h1>
+                  <p>新增资金方时必须填写资金方编码。</p>
+                  <table><tr><th>字段</th><th>说明</th></tr><tr><td>状态</td><td>启用或停用</td></tr></table>
+                </body>
+                </html>
+                """, java.nio.charset.StandardCharsets.UTF_8);
+        AttachmentService.AttachmentFileContext context = new AttachmentService.AttachmentFileContext(
+                10L, "附件", html.getFileName().toString(), html.toString(), "text/html");
+
+        AttachmentTextExtractionService.AttachmentExtractionBatch batch = service.extractSummaries(List.of(context));
+
+        assertEquals(1, batch.summaries().size());
+        assertTrue(batch.warnings().isEmpty());
+        IntakeAttachmentSummary summary = batch.summaries().getFirst();
+        assertEquals("HTML", summary.fileType());
+        assertTrue(summary.summaryText().contains("资金方管理"));
+        assertTrue(summary.summaryText().contains("新增资金方时必须填写资金方编码。"));
+        assertTrue(summary.summaryText().contains("状态 启用或停用"));
+        assertFalse(summary.summaryText().contains("不应提取的脚本"));
+        assertFalse(summary.summaryText().contains(".hidden"));
     }
 
     private Path createPdf(Path path, String text) throws IOException {

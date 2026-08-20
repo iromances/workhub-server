@@ -5,8 +5,10 @@ import cn.aslight.workhub.common.api.PageResponse;
 import cn.aslight.workhub.model.system.SysConfigResponse;
 import cn.aslight.workhub.model.system.SysConfigSaveRequest;
 import cn.aslight.workhub.service.system.SysConfigService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -54,8 +56,14 @@ public class SysConfigController {
      */
     @PostMapping
     @PreAuthorize("hasAuthority('system:config:create') or hasAuthority('system:config:manage')")
-    public ApiResponse<SysConfigResponse> create(@Valid @RequestBody SysConfigSaveRequest request) {
-        return ApiResponse.success(sysConfigService.create(request));
+    public ApiResponse<SysConfigResponse> create(@Valid @RequestBody SysConfigSaveRequest request,
+                                                 Authentication authentication,
+                                                 HttpServletRequest httpRequest) {
+        return ApiResponse.success(sysConfigService.create(
+                request,
+                authentication == null ? null : authentication.getName(),
+                clientIp(httpRequest)
+        ));
     }
 
     /**
@@ -68,7 +76,25 @@ public class SysConfigController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('system:config:update') or hasAuthority('system:config:manage')")
     public ApiResponse<SysConfigResponse> update(@PathVariable Long id,
-                                                 @Valid @RequestBody SysConfigSaveRequest request) {
-        return ApiResponse.success(sysConfigService.update(id, request));
+                                                 @Valid @RequestBody SysConfigSaveRequest request,
+                                                 Authentication authentication,
+                                                 HttpServletRequest httpRequest) {
+        return ApiResponse.success(sysConfigService.update(
+                id,
+                request,
+                authentication == null ? null : authentication.getName(),
+                clientIp(httpRequest)
+        ));
+    }
+
+    private String clientIp(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

@@ -1,6 +1,9 @@
 package cn.aslight.workhub.service.project;
 
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
+import cn.aslight.workhub.model.project.BusinessLineAccessConfigEntity;
+import cn.aslight.workhub.model.project.BusinessLineAccessConfigRequest;
+import cn.aslight.workhub.model.project.BusinessLineAccessConfigResponse;
 import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.model.project.BusinessLineResponse;
 import cn.aslight.workhub.model.project.BusinessLineSaveRequest;
@@ -10,17 +13,27 @@ import cn.aslight.workhub.model.project.ProjectInvolvedSystemSaveRequest;
 import cn.aslight.workhub.model.project.ProjectSaveRequest;
 import cn.aslight.workhub.model.project.ProjectSummaryResponse;
 import cn.aslight.workhub.dao.project.BusinessLineMapper;
+import cn.aslight.workhub.dao.project.BusinessLineAccessConfigMapper;
 import cn.aslight.workhub.dao.project.ProjectInvolvedSystemMapper;
 import cn.aslight.workhub.dao.project.ProjectMapper;
 import cn.aslight.workhub.model.project.ProjectEntity;
 import cn.aslight.workhub.service.intake.GitlabRepositoryService;
 import cn.aslight.workhub.service.intake.GitlabRepositoryService.GitlabProjectSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * 项目业务服务。
@@ -28,22 +41,29 @@ import java.util.Set;
 @Service
 public class ProjectService {
 
+    private static final Logger log = LoggerFactory.getLogger(ProjectService.class);
+
     public static final String SYSTEM_SCOPE_BUSINESS_LINE = "BUSINESS_LINE";
     public static final String SYSTEM_SCOPE_MIDDLE_PLATFORM = "MIDDLE_PLATFORM";
     private static final String BUSINESS_LINE_CODE_PREFIX = "BL";
     private static final int BUSINESS_LINE_CODE_WIDTH = 6;
+    private static final Set<String> ACCESS_ENDPOINT_TYPES = Set.of("OPERATIONS", "CLIENT", "GATEWAY", "OTHER");
+    private static final Pattern ENVIRONMENT_CODE_PATTERN = Pattern.compile("[a-z0-9][a-z0-9_-]{0,63}");
 
     private final ProjectMapper projectMapper;
     private final BusinessLineMapper businessLineMapper;
+    private final BusinessLineAccessConfigMapper businessLineAccessConfigMapper;
     private final ProjectInvolvedSystemMapper involvedSystemMapper;
     private final GitlabRepositoryService gitlabRepositoryService;
 
     public ProjectService(ProjectMapper projectMapper,
                           BusinessLineMapper businessLineMapper,
+                          BusinessLineAccessConfigMapper businessLineAccessConfigMapper,
                           ProjectInvolvedSystemMapper involvedSystemMapper,
                           GitlabRepositoryService gitlabRepositoryService) {
         this.projectMapper = projectMapper;
         this.businessLineMapper = businessLineMapper;
+        this.businessLineAccessConfigMapper = businessLineAccessConfigMapper;
         this.involvedSystemMapper = involvedSystemMapper;
         this.gitlabRepositoryService = gitlabRepositoryService;
     }
@@ -53,8 +73,20 @@ public class ProjectService {
     }
 
     public List<BusinessLineResponse> listBusinessLines(String keyword) {
-        return businessLineMapper.findAll(trimToNull(keyword)).stream()
-                .map(this::toBusinessLineResponse)
+        List<BusinessLineEntity> businessLines = businessLineMapper.findAll(trimToNull(keyword));
+        if (businessLines.isEmpty()) {
+            return List.of();
+        }
+        Map<String, List<BusinessLineAccessConfigResponse>> accessConfigs = businessLineAccessConfigMapper
+                .findByBusinessLineCodes(businessLines.stream().map(BusinessLineEntity::getBusinessLineCode).toList())
+                .stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        BusinessLineAccessConfigEntity::getBusinessLineCode,
+                        LinkedHashMap::new,
+                        java.util.stream.Collectors.mapping(this::toAccessConfigResponse, java.util.stream.Collectors.toList())
+                ));
+        return businessLines.stream()
+                .map(entity -> toBusinessLineResponse(entity, accessConfigs.getOrDefault(entity.getBusinessLineCode(), List.of())))
                 .toList();
     }
 
@@ -106,7 +138,10 @@ public class ProjectService {
         BusinessLineEntity entity = toBusinessLineEntity(new BusinessLineEntity(), request);
         entity.setBusinessLineCode(nextBusinessLineCode());
         businessLineMapper.insert(entity);
-        return toBusinessLineResponse(requireExistingBusinessLine(entity.getId()));
+        replaceAccessConfigs(entity.getBusinessLineCode(), request.getAccessConfigs());
+        log.info("Business line created. businessLineCode={}, accessConfigCount={}",
+                entity.getBusinessLineCode(), accessConfigCount(request.getAccessConfigs()));
+        return businessLineResponse(entity.getId());
     }
 
     @Transactional
@@ -144,7 +179,6 @@ public class ProjectService {
             }
             ProjectInvolvedSystemEntity entity = new ProjectInvolvedSystemEntity();
             entity.setSystemScope(SYSTEM_SCOPE_BUSINESS_LINE);
-            entity.setBusinessLine(businessLine);
             entity.setBusinessLineCode(businessLineCode);
             entity.setSystemName(systemName);
             entity.setDescription(buildGitSystemDescription(system));
@@ -195,7 +229,10 @@ public class ProjectService {
         entity.setId(id);
         entity.setBusinessLineCode(existing.getBusinessLineCode());
         businessLineMapper.update(entity);
-        return toBusinessLineResponse(requireExistingBusinessLine(id));
+        replaceAccessConfigs(existing.getBusinessLineCode(), request.getAccessConfigs());
+        log.info("Business line updated. businessLineCode={}, accessConfigsChanged={}, accessConfigCount={}",
+                existing.getBusinessLineCode(), request.getAccessConfigs() != null, accessConfigCount(request.getAccessConfigs()));
+        return businessLineResponse(id);
     }
 
     @Transactional
@@ -218,12 +255,13 @@ public class ProjectService {
         if (projectMapper.countByBusinessLine(existing.getBusinessLineCode()) > 0) {
             throw new IllegalArgumentException("业务线已有项目，不能删除");
         }
-        if (businessLineMapper.countMembers(existing.getBusinessLineName()) > 0) {
+        if (businessLineMapper.countMembers(existing.getBusinessLineCode()) > 0) {
             throw new IllegalArgumentException("业务线已有成员，不能删除");
         }
         if (involvedSystemMapper.countByBusinessLine(existing.getBusinessLineCode()) > 0) {
             throw new IllegalArgumentException("业务线已有涉及系统，不能删除");
         }
+        businessLineAccessConfigMapper.deleteByBusinessLineCode(existing.getBusinessLineCode());
         businessLineMapper.deleteById(id);
     }
 
@@ -272,7 +310,6 @@ public class ProjectService {
         entity.setProjectCode(request.getCode().trim());
         entity.setProjectName(request.getName().trim());
         entity.setProjectType(request.getType().trim());
-        entity.setBusinessLine(businessLine.getBusinessLineName());
         entity.setBusinessLineCode(businessLine.getBusinessLineCode());
         entity.setProjectStatus(request.getStatus().trim());
         entity.setOwnerUserName(request.getOwnerUserName().trim());
@@ -288,7 +325,18 @@ public class ProjectService {
         return entity;
     }
 
-    private BusinessLineResponse toBusinessLineResponse(BusinessLineEntity entity) {
+    private BusinessLineResponse businessLineResponse(Long id) {
+        BusinessLineEntity entity = requireExistingBusinessLine(id);
+        List<BusinessLineAccessConfigResponse> configs = businessLineAccessConfigMapper
+                .findByBusinessLineCodes(List.of(entity.getBusinessLineCode()))
+                .stream()
+                .map(this::toAccessConfigResponse)
+                .toList();
+        return toBusinessLineResponse(entity, configs);
+    }
+
+    private BusinessLineResponse toBusinessLineResponse(BusinessLineEntity entity,
+                                                         List<BusinessLineAccessConfigResponse> accessConfigs) {
         return new BusinessLineResponse(
                 entity.getId(),
                 entity.getBusinessLineCode(),
@@ -296,9 +344,147 @@ public class ProjectService {
                 entity.getGitlabGroupName(),
                 entity.getDescription(),
                 entity.getEnabled(),
+                accessConfigs,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
+    }
+
+    private void replaceAccessConfigs(String businessLineCode, List<BusinessLineAccessConfigRequest> requests) {
+        if (requests == null) {
+            return;
+        }
+        List<BusinessLineAccessConfigEntity> configs = normalizeAccessConfigs(businessLineCode, requests);
+        businessLineAccessConfigMapper.deleteByBusinessLineCode(businessLineCode);
+        configs.forEach(businessLineAccessConfigMapper::insert);
+    }
+
+    private List<BusinessLineAccessConfigEntity> normalizeAccessConfigs(String businessLineCode,
+                                                                        List<BusinessLineAccessConfigRequest> requests) {
+        List<BusinessLineAccessConfigEntity> configs = new ArrayList<>();
+        Set<String> identities = new LinkedHashSet<>();
+        for (int index = 0; index < requests.size(); index++) {
+            BusinessLineAccessConfigRequest request = requests.get(index);
+            if (request == null) {
+                throw new IllegalArgumentException("访问地址配置不能为空");
+            }
+            String environmentCode = normalizeEnvironmentCode(request.getEnvironmentCode());
+            String endpointType = normalizeEndpointType(request.getEndpointType());
+            String endpointName = normalizeEndpointName(request.getEndpointName(), endpointType);
+            String identity = environmentCode + "\u0000" + endpointType + "\u0000" + endpointName.toLowerCase(Locale.ROOT);
+            if (!identities.add(identity)) {
+                throw new IllegalArgumentException("同一环境下的访问地址类型和名称不能重复");
+            }
+
+            BusinessLineAccessConfigEntity entity = new BusinessLineAccessConfigEntity();
+            entity.setBusinessLineCode(businessLineCode);
+            entity.setEnvironmentCode(environmentCode);
+            entity.setEndpointType(endpointType);
+            entity.setEndpointName(endpointName);
+            entity.setEndpointUrl(normalizeEndpointUrl(request.getEndpointUrl()));
+            entity.setPathPrefix(normalizePathPrefix(request.getPathPrefix(), endpointType));
+            entity.setSortOrder(request.getSortOrder() == null ? index * 10 : request.getSortOrder());
+            entity.setEnabled(request.getEnabled() == null || request.getEnabled());
+            configs.add(entity);
+        }
+        return configs;
+    }
+
+    private String normalizeEnvironmentCode(String environmentCode) {
+        String normalized = trimToNull(environmentCode);
+        if (normalized == null) {
+            throw new IllegalArgumentException("访问地址环境不能为空");
+        }
+        normalized = normalized.toLowerCase(Locale.ROOT);
+        if (!ENVIRONMENT_CODE_PATTERN.matcher(normalized).matches()) {
+            throw new IllegalArgumentException("访问地址环境编码不合法");
+        }
+        return normalized;
+    }
+
+    private String normalizeEndpointType(String endpointType) {
+        String normalized = trimToNull(endpointType);
+        if (normalized == null) {
+            throw new IllegalArgumentException("访问地址类型不能为空");
+        }
+        normalized = normalized.toUpperCase(Locale.ROOT);
+        if (!ACCESS_ENDPOINT_TYPES.contains(normalized)) {
+            throw new IllegalArgumentException("访问地址类型不合法");
+        }
+        return normalized;
+    }
+
+    private String normalizeEndpointName(String endpointName, String endpointType) {
+        String normalized = trimToNull(endpointName);
+        if (normalized == null) {
+            normalized = switch (endpointType) {
+                case "OPERATIONS" -> "运营端";
+                case "CLIENT" -> "客户端";
+                case "GATEWAY" -> "网关";
+                default -> throw new IllegalArgumentException("其他地址必须填写名称");
+            };
+        }
+        if (normalized.length() > 128) {
+            throw new IllegalArgumentException("访问地址名称不能超过 128 个字符");
+        }
+        return normalized;
+    }
+
+    private String normalizeEndpointUrl(String endpointUrl) {
+        String normalized = trimToNull(endpointUrl);
+        if (normalized == null) {
+            throw new IllegalArgumentException("访问地址不能为空");
+        }
+        if (normalized.length() > 1024) {
+            throw new IllegalArgumentException("访问地址不能超过 1024 个字符");
+        }
+        try {
+            URI uri = new URI(normalized);
+            String scheme = uri.getScheme();
+            if (scheme == null
+                    || !("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))
+                    || uri.getHost() == null
+                    || uri.getUserInfo() != null) {
+                throw new IllegalArgumentException("访问地址必须是合法的 HTTP/HTTPS 地址");
+            }
+        } catch (URISyntaxException ex) {
+            throw new IllegalArgumentException("访问地址必须是合法的 HTTP/HTTPS 地址");
+        }
+        return normalized;
+    }
+
+    private String normalizePathPrefix(String pathPrefix, String endpointType) {
+        String normalized = trimToNull(pathPrefix);
+        if (normalized == null) {
+            return null;
+        }
+        if (!"GATEWAY".equals(endpointType)) {
+            throw new IllegalArgumentException("只有网关地址可以配置路径前缀");
+        }
+        if (normalized.length() > 255 || !normalized.startsWith("/")
+                || normalized.contains("?") || normalized.contains("#")) {
+            throw new IllegalArgumentException("网关路径前缀必须以 / 开头，且不能包含查询参数或片段");
+        }
+        return normalized;
+    }
+
+    private BusinessLineAccessConfigResponse toAccessConfigResponse(BusinessLineAccessConfigEntity entity) {
+        return new BusinessLineAccessConfigResponse(
+                entity.getId(),
+                entity.getEnvironmentCode(),
+                entity.getEndpointType(),
+                entity.getEndpointName(),
+                entity.getEndpointUrl(),
+                entity.getPathPrefix(),
+                entity.getSortOrder(),
+                entity.getEnabled(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
+        );
+    }
+
+    private int accessConfigCount(List<BusinessLineAccessConfigRequest> configs) {
+        return configs == null ? -1 : configs.size();
     }
 
     private String nextBusinessLineCode() {
@@ -319,7 +505,6 @@ public class ProjectService {
         String scope = normalizeSystemScope(request.getSystemScope(), true);
         BusinessLineEntity businessLine = normalizeSystemBusinessLine(scope, request.getBusinessLineCode(), request.getBusinessLine());
         entity.setSystemScope(scope);
-        entity.setBusinessLine(businessLine.getBusinessLineName());
         entity.setBusinessLineCode(businessLine.getBusinessLineCode());
         entity.setSystemName(requireSystemName(request.getSystemName()));
         entity.setDescription(trimToNull(request.getDescription()));

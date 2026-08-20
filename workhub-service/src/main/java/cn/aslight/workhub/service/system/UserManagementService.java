@@ -23,6 +23,8 @@ import java.util.List;
 @Service
 public class UserManagementService {
 
+    private static final String PINYIN_USER_NAME_PATTERN = "^[A-Za-z][A-Za-z0-9._-]*$";
+
     private final SysUserMapper userMapper;
     private final SysRoleMapper roleMapper;
     private final SysUserRoleMapper userRoleMapper;
@@ -52,7 +54,7 @@ public class UserManagementService {
 
     @Transactional
     public SysUserCreateResponse create(SysUserSaveRequest request, String operator, String ip) {
-        String userName = trimRequired(request.getUserName(), "用户名不能为空");
+        String userName = normalizeUserName(request.getUserName());
         if (userMapper.findByUserName(userName) != null) {
             throw new IllegalArgumentException("用户名已存在");
         }
@@ -174,6 +176,14 @@ public class UserManagementService {
     private String normalizeStatus(String status) {
         String value = trim(status);
         return value == null ? "ACTIVE" : value;
+    }
+
+    private String normalizeUserName(String userName) {
+        String trimmed = trimRequired(userName, "用户名不能为空");
+        if (!trimmed.matches(PINYIN_USER_NAME_PATTERN)) {
+            throw new IllegalArgumentException("用户名必须使用拼音或英文账号格式");
+        }
+        return trimmed;
     }
 
     private String trimRequired(String value, String message) {

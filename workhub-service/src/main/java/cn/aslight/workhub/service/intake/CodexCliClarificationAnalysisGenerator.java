@@ -6,6 +6,9 @@ import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeStructuredField;
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
+import cn.aslight.workhub.service.ai.AiGatewayClient;
+import cn.aslight.workhub.service.ai.AiGatewayRequest;
+import cn.aslight.workhub.service.ai.AiGatewayResult;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
@@ -19,6 +22,7 @@ import java.util.List;
 @Component
 public class CodexCliClarificationAnalysisGenerator {
 
+    private static final String USE_CASE_CODE = "intake.clarification.analyze";
     private static final String OUTPUT_SCHEMA = """
             {
               "type": "object",
@@ -55,12 +59,12 @@ public class CodexCliClarificationAnalysisGenerator {
             }
             """;
 
-    private final CodexCliClient codexCliClient;
+    private final AiGatewayClient aiGatewayClient;
     private final ObjectMapper objectMapper;
 
-    public CodexCliClarificationAnalysisGenerator(CodexCliClient codexCliClient,
+    public CodexCliClarificationAnalysisGenerator(AiGatewayClient aiGatewayClient,
                                                   ObjectMapper objectMapper) {
-        this.codexCliClient = codexCliClient;
+        this.aiGatewayClient = aiGatewayClient;
         this.objectMapper = objectMapper;
     }
 
@@ -70,21 +74,22 @@ public class CodexCliClarificationAnalysisGenerator {
                                                   GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle,
                                                   String requirementMarkdownContext,
                                                   String knowledgeBaseContext) {
-        if (!codexCliClient.isEnabled()) {
-            throw new IllegalArgumentException("Codex CLI 未启用，不能执行需求澄清分析");
+        if (!aiGatewayClient.isConfigured(USE_CASE_CODE)) {
+            throw new IllegalArgumentException("AI 场景未配置或已停用，不能执行需求澄清分析");
         }
-        CodexCliClient.CodexCliResult result = codexCliClient.execute(new CodexCliClient.CodexCliRequest(
+        AiGatewayResult result = aiGatewayClient.executeStructured(AiGatewayRequest.structured(
+                USE_CASE_CODE,
+                buildPrompt(intake, structuredData, project, requirementMarkdownContext, knowledgeBaseContext),
                 repositoryBundle.localRoot(),
                 repositoryBundle.repositories().stream().map(item -> item.localPath().toString()).toList(),
                 List.of(),
-                OUTPUT_SCHEMA,
-                buildPrompt(intake, structuredData, project, requirementMarkdownContext, knowledgeBaseContext)
+                OUTPUT_SCHEMA
         ));
         if (!result.succeeded()) {
             throw new IllegalArgumentException(result.failureSummary());
         }
         try {
-            RawClarificationAnalysis raw = objectMapper.readValue(result.outputJson(), RawClarificationAnalysis.class);
+            RawClarificationAnalysis raw = objectMapper.readValue(result.output(), RawClarificationAnalysis.class);
             return normalize(raw);
         } catch (Exception ex) {
             throw new IllegalArgumentException("需求澄清分析结果解析失败：" + summarizeException(ex), ex);

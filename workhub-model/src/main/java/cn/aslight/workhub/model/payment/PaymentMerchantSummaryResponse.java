@@ -13,5 +13,6 @@ public record PaymentMerchantSummaryResponse(Long id,
                                              String merchantName,
                                              String environment,
                                              List<String> purposeCodes,
-                                             String status) {
+                                             String status,
+                                             String remark) {
 }

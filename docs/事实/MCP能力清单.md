@@ -6,11 +6,13 @@
 
 见 `docs/规则与约定/研发要求与约定.md` 的“MCP 和生产资源安全要求”。
 
+HTTP runtime 使用 Streamable HTTP MCP，端点为 `/api/mcp/runtime`，支持稳定协议版本 `2025-11-25`、`2025-06-18`、`2025-03-26`，并兼容 Codex 当前包含的 `2026-07-28` 预发布协议标识。访问端点必须携带独立 Bearer Token；服务端配置项为 `workhub.mcp.access-token`，生产和共享环境通过 `WORKHUB_MCP_ACCESS_TOKEN` 注入。
+
 ## 工具
 
 ### `list_mcp_targets`
 
-返回业务线、环境、数据库目标、服务器目标、知识库配置摘要和 GitLab 摘要。
+返回业务线、环境、数据库目标、服务器目标、知识库配置摘要和 GitLab 摘要。数据库目标和服务器目标均包含 `publicResource`、`featureTags` 和 `systemName/systemNames`；公共资源不绑定业务线并可被所有业务线上下文识别，`featureTags` 描述“禅道、合同系统、支付”等用途特征。
 
 业务线摘要包含：
 
@@ -36,10 +38,13 @@ GitLab 摘要只返回：
 返回内容包括：
 
 - 业务线配置
+- 已启用的多环境业务访问入口，位于 `accessEndpoints`
 - GitLab group 和本地代码缓存路径规则
 - 知识库根地址和业务线目录约定
-- 已绑定数据库目标
-- 已绑定服务器目标
+- 已绑定数据库目标（包含系统绑定）
+- 已绑定服务器目标（包含系统绑定）
+
+每个业务访问入口返回 `environmentCode`、`endpointType`、`endpointName`、`endpointUrl`、`pathPrefix` 和 `effectiveUrl`；其中网关 `effectiveUrl` 为地址与路径前缀的规范化组合。
 
 ### `get_knowledge_context`
 
@@ -77,16 +82,17 @@ GitLab 摘要只返回：
 
 ### `search_intakes`
 
-按审批编号和/或需求名称搜索需求管理记录，返回匹配摘要。
+按审批编号、需求名称和/或摘要关键词搜索需求管理记录，返回匹配摘要。
 
 必填规则：
 
-- `approvalCode` 和 `requirementName` 至少填写一个。
+- `approvalCode`、`requirementName` 和 `keyword` 至少填写一个。
 
 可选参数：
 
 - `approvalCode`
 - `requirementName`
+- `keyword`
 - `limit`：返回条数，默认 10，允许范围 1-50。
 
 返回内容包括：
@@ -113,6 +119,14 @@ GitLab 摘要只返回：
 
 该工具不记录“查看需求详情”历史，不读取附件文件正文，不执行任何需求写入动作。
 
+### `get_requirement_test_context`
+
+按 `intakeId`、审批编号、需求名称或摘要关键词定位需求，并聚合返回需求关联业务线、研发分支、涉及系统、指定环境下已启用的业务访问入口、SERVER/DB 资源、GitLab 与知识库上下文。业务访问入口位于 `testContext.accessEndpoints`，返回运营端、客户端、网关或其他入口的 `endpointUrl/pathPrefix/effectiveUrl`；网关 `effectiveUrl` 为地址与路径前缀的规范化组合。未唯一定位需求时返回 `NOT_FOUND` 或 `AMBIGUOUS`，不猜测业务线。
+
+### `get_business_line_test_context`
+
+按业务线和可选的 `environmentCode/systemName` 返回测试所需的已启用业务访问入口、环境、SERVER/DB、GitLab、知识库和涉及系统上下文。指定 `environmentCode` 时，`testContext.accessEndpoints` 只返回该环境入口；调用方仍需在开始测试前确认环境与分支。
+
 ### `run_readonly_query`
 
 执行受控只读 SQL 查询。
@@ -122,6 +136,13 @@ GitLab 摘要只返回：
 - `targetKey`
 - `profileKey`
 - `sql`
+
+结果安全边界：
+
+- 查询结果在 WorkHub 服务端出口统一脱敏，并返回 `dataMasked=true`。
+- 脱敏同时使用结果列标签和数据库真实列名，避免通过 SQL 别名直接绕过字段识别。
+- 对列名不可识别的结果，继续按手机号、身份证号、邮箱等高置信度值格式兜底脱敏。
+- 返回结果中的 SQL 和 MCP 审计日志中的 SQL 同样执行脱敏；数据库实际执行仍使用原始参数，保证查询语义不变。
 
 ### `get_service_status`
 
@@ -135,7 +156,7 @@ GitLab 摘要只返回：
 
 ### `read_service_logs`
 
-读取服务日志或日志路径。配置服务白名单或日志路径白名单时只允许读取白名单范围；对应白名单为空表示不限制该维度。
+读取服务日志或日志文件。服务白名单用于限制 `journalctl` 服务名；日志路径白名单配置一个或多个允许读取的绝对日志目录，`logPath` 可指向任一目录下的具体服务日志文件。路径会先规范化并校验目录边界，不允许通过 `..` 、相似目录前缀或 shell 特殊字符越界。对应白名单为空表示不限制该维度。
 
 必填参数：
 
@@ -147,6 +168,21 @@ GitLab 摘要只返回：
 - `service`
 - `logPath`
 - `lines`
+
+### `search_service_logs`
+
+在单个日志文件中执行固定字符串检索。普通文本日志使用 `grep -F`；`.zip` 历史日志使用受限 `zipgrep`，关键词不得以 `-` 开头或包含正则元字符。文件必须位于 SERVER 资源允许的日志目录内。每次只允许一个明确的绝对文件路径，不支持正则表达式、通配符、目录扫描、解压写盘或任意 shell。命中数默认并最大受 SERVER profile 的 `maxOutputLines` 限制，审计记录中的检索关键词会被替换为 `[REDACTED]`。
+
+必填参数：
+
+- `targetKey`
+- `profileKey`
+- `logPath`
+- `keyword`
+
+可选参数：
+
+- `maxMatches`
 
 ## 资源来源
 

@@ -1,10 +1,8 @@
 package cn.aslight.workhub.service.intake;
 
 import cn.aslight.workhub.config.AiProperties;
-import cn.aslight.workhub.service.system.SysConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedWriter;
@@ -14,8 +12,6 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.Comparator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,33 +24,39 @@ import java.util.concurrent.TimeUnit;
 public class CodexCliClient {
 
     private static final Logger log = LoggerFactory.getLogger(CodexCliClient.class);
-    private static final String CONFIG_GROUP_CODEX_CLI = "ai.codexCli";
-    private static final String CONFIG_KEY_MODEL = "model";
-    private static final String CONFIG_KEY_REASONING_EFFORT = "reasoningEffort";
-
+    private static final List<String> RESTRICTED_SCENE_DISABLED_FEATURES = List.of(
+            "browser_use",
+            "browser_use_external",
+            "computer_use",
+            "plugins",
+            "shell_snapshot",
+            "shell_tool",
+            "unified_exec"
+    );
     private final AiProperties aiProperties;
-    private final SysConfigService sysConfigService;
 
     public CodexCliClient(AiProperties aiProperties) {
-        this(aiProperties, null);
-    }
-
-    @Autowired
-    public CodexCliClient(AiProperties aiProperties, SysConfigService sysConfigService) {
         this.aiProperties = aiProperties;
-        this.sysConfigService = sysConfigService;
     }
 
     public boolean isEnabled() {
         return aiProperties.getCodexCli().isEnabled();
     }
 
-    public CodexCliResult execute(CodexCliRequest request) {
-        AiProperties.CodexCli config = aiProperties.getCodexCli();
-        EffectiveCodexCliConfig effectiveConfig = resolveEffectiveConfig(config);
+    /**
+     * 由统一 AI 网关按数据库场景配置执行本地 CLI 通道。
+     */
+    public CodexCliResult execute(CodexCliRequest request, CodexCliExecutionOptions options) {
+        if (options == null) {
+            throw new IllegalArgumentException("Codex CLI 执行配置不能为空");
+        }
+        return executeInternal(request, resolveEffectiveConfig(request.useCaseCode(), options));
+    }
+
+    private CodexCliResult executeInternal(CodexCliRequest request,
+                                           EffectiveCodexCliConfig effectiveConfig) {
         Path outputSchema = null;
         Path outputFile = null;
-        Path isolatedCodexHome = null;
         StringBuffer processOutput = new StringBuffer();
         Thread outputPump = null;
         long startedAt = System.nanoTime();
@@ -62,10 +64,9 @@ public class CodexCliClient {
             outputSchema = Files.createTempFile("workhub-codex-schema-", ".json");
             outputFile = Files.createTempFile("workhub-codex-output-", ".json");
             Files.writeString(outputSchema, request.outputSchema(), StandardCharsets.UTF_8);
-            isolatedCodexHome = prepareIsolatedCodexHome(effectiveConfig);
-
             List<String> command = buildCommand(request, outputSchema, outputFile, effectiveConfig);
-            log.info("Codex CLI execution started. executable={}, model={}, reasoningEffort={}, workingDirectory={}, addDirCount={}, imageCount={}, promptLength={}",
+            log.info("Codex CLI execution started. useCase={}, executable={}, model={}, reasoningEffort={}, workingDirectory={}, addDirCount={}, imageCount={}, promptLength={}",
+                    request.useCaseCode(),
                     command.isEmpty() ? null : command.getFirst(),
                     effectiveConfig.model(),
                     effectiveConfig.reasoningEffort(),
@@ -84,68 +85,67 @@ public class CodexCliClient {
             env.remove("CODEX_THREAD_ID");
             env.remove("CODEX_CI");
             env.remove("CODEX_INTERNAL_ORIGINATOR_OVERRIDE");
-            if (isolatedCodexHome != null) {
-                env.put("CODEX_HOME", isolatedCodexHome.toString());
-            }
-            log.info("Codex CLI environment prepared. codexHome={}, authSource={}",
-                    env.get("CODEX_HOME"),
-                    locateCodexAuthFile());
+            log.info("Codex CLI environment prepared. useCase={}", request.useCaseCode());
 
             Process process = processBuilder.start();
             writePrompt(process, request.prompt());
             outputPump = startOutputPump(process, processOutput);
-            boolean finished = waitForProcess(process, config.getTimeoutSeconds());
+            boolean finished = waitForProcess(process, effectiveConfig.timeoutSeconds());
             if (!finished) {
                 process.destroyForcibly();
                 awaitOutputPump(outputPump);
-                log.warn("Codex CLI parsing timed out after {} seconds. processOutput={}",
-                        config.getTimeoutSeconds(),
-                        truncate(processOutput.toString(), 4000));
+                log.warn("Codex CLI parsing timed out. useCase={}, timeoutSeconds={}, processOutputLength={}",
+                        request.useCaseCode(),
+                        effectiveConfig.timeoutSeconds(),
+                        processOutput.length());
                 return CodexCliResult.failed("Codex CLI 解析超时");
             }
             awaitOutputPump(outputPump);
             if (process.exitValue() != 0) {
-                log.warn("Codex CLI parsing failed. exitCode={}, durationMs={}, processOutput={}",
+                log.warn("Codex CLI parsing failed. useCase={}, exitCode={}, durationMs={}, processOutputLength={}",
+                        request.useCaseCode(),
                         process.exitValue(),
                         elapsedMillis(startedAt),
-                        truncate(processOutput.toString(), 4000));
+                        processOutput.length());
                 return CodexCliResult.failed("Codex CLI 执行失败");
             }
             if (!Files.exists(outputFile) || Files.size(outputFile) == 0) {
-                log.warn("Codex CLI returned no structured output. durationMs={}, processOutput={}",
-                        elapsedMillis(startedAt),
-                        truncate(processOutput.toString(), 4000));
+                log.warn("Codex CLI returned no structured output. useCase={}, durationMs={}, processOutputLength={}",
+                        request.useCaseCode(),
+                        elapsedMillis(startedAt), processOutput.length());
                 return CodexCliResult.failed("Codex CLI 未返回结构化结果");
             }
             String outputJson = Files.readString(outputFile, StandardCharsets.UTF_8);
-            log.info("Codex CLI execution completed. exitCode=0, durationMs={}, outputPreview={}",
-                    elapsedMillis(startedAt),
-                    truncate(outputJson, 2000));
+            log.info("Codex CLI execution completed. useCase={}, exitCode=0, durationMs={}, outputLength={}",
+                    request.useCaseCode(),
+                    elapsedMillis(startedAt), outputJson.length());
             return CodexCliResult.succeeded(outputJson);
         } catch (Exception ex) {
-            log.warn("Codex CLI execution failed. processOutput={}", truncate(processOutput.toString(), 4000), ex);
+            log.warn("Codex CLI execution failed. useCase={}, processOutputLength={}",
+                    request == null ? null : request.useCaseCode(), processOutput.length(), ex);
             return CodexCliResult.failed("Codex CLI 解析异常: " + summarizeException(ex));
         } finally {
             deleteIfExists(outputFile);
             deleteIfExists(outputSchema);
-            deleteDirectoryIfExists(isolatedCodexHome);
         }
     }
 
-    List<String> buildCommand(CodexCliRequest request, Path outputSchema, Path outputFile) {
-        AiProperties.CodexCli config = aiProperties.getCodexCli();
-        return buildCommand(request, outputSchema, outputFile, resolveEffectiveConfig(config));
+    List<String> buildCommand(CodexCliRequest request,
+                              Path outputSchema,
+                              Path outputFile,
+                              CodexCliExecutionOptions executionOptions) {
+        return buildCommand(request, outputSchema, outputFile,
+                resolveEffectiveConfig(request.useCaseCode(), executionOptions));
     }
 
-    private List<String> buildCommand(CodexCliRequest request,
-                                      Path outputSchema,
-                                      Path outputFile,
-                                      EffectiveCodexCliConfig effectiveConfig) {
-        AiProperties.CodexCli config = aiProperties.getCodexCli();
+    List<String> buildCommand(CodexCliRequest request,
+                              Path outputSchema,
+                              Path outputFile,
+                              EffectiveCodexCliConfig effectiveConfig) {
         List<String> command = new ArrayList<>();
-        command.add(config.getCommand());
+        command.add(effectiveConfig.command());
         command.add("exec");
-        if (config.isDisablePlugins()) {
+        if (effectiveConfig.disablePlugins()) {
             command.add("--disable");
             command.add("plugins");
             command.add("--disable");
@@ -153,12 +153,27 @@ public class CodexCliClient {
         }
         command.add("--skip-git-repo-check");
         command.add("--ephemeral");
-        command.add("--dangerously-bypass-approvals-and-sandbox");
+        if (effectiveConfig.allowLocalTools()) {
+            command.add("--dangerously-bypass-approvals-and-sandbox");
+        } else {
+            command.add("--sandbox");
+            command.add("read-only");
+            command.add("-c");
+            command.add("approval_policy=\"never\"");
+            command.add("-c");
+            command.add("web_search=\"disabled\"");
+            for (String feature : RESTRICTED_SCENE_DISABLED_FEATURES) {
+                command.add("--disable");
+                command.add(feature);
+            }
+        }
         command.add("-C");
         command.add(request.workingDirectory().toString());
-        for (String addDir : request.addDirs()) {
-            command.add("--add-dir");
-            command.add(addDir);
+        if (effectiveConfig.allowLocalTools()) {
+            for (String addDir : request.addDirs()) {
+                command.add("--add-dir");
+                command.add(addDir);
+            }
         }
         command.add("--color");
         command.add("never");
@@ -188,76 +203,31 @@ public class CodexCliClient {
         }
     }
 
-    private Path prepareIsolatedCodexHome(EffectiveCodexCliConfig config) {
-        Path sourceAuthFile = locateCodexAuthFile();
-        if (sourceAuthFile == null || !Files.exists(sourceAuthFile)) {
-            log.warn("Codex auth file not found. Falling back to inherited CODEX_HOME.");
-            return null;
+    private EffectiveCodexCliConfig resolveEffectiveConfig(String useCaseCode,
+                                                           CodexCliExecutionOptions executionOptions) {
+        if (executionOptions == null) {
+            throw new IllegalStateException("AI 场景未配置 CLI 执行参数: " + useCaseCode);
         }
-        try {
-            Path isolatedHome = Files.createTempDirectory("workhub-codex-home-");
-            Files.copy(sourceAuthFile, isolatedHome.resolve("auth.json"), StandardCopyOption.REPLACE_EXISTING);
-            String minimalConfig = """
-                    model = "%s"
-                    model_reasoning_effort = "%s"
-                    personality = "pragmatic"
-                    """.formatted(
-                    safeTomlString(config.model()),
-                    safeTomlString(config.reasoningEffort())
-            );
-            Files.writeString(isolatedHome.resolve("config.toml"), minimalConfig, StandardCharsets.UTF_8);
-            return isolatedHome;
-        } catch (Exception ex) {
-            log.warn("Failed to prepare isolated CODEX_HOME. Falling back to inherited configuration.", ex);
-            return null;
+        String command = trimToNull(executionOptions.command());
+        if (command == null) {
+            throw new IllegalStateException("AI Provider 未配置 CLI 命令: " + useCaseCode);
         }
-    }
-
-    Path locateCodexAuthFile() {
-        String codexHome = System.getenv("CODEX_HOME");
-        if (codexHome != null && !codexHome.isBlank()) {
-            Path candidate = Path.of(codexHome).resolve("auth.json");
-            if (Files.exists(candidate)) {
-                return candidate;
-            }
+        String model = trimToNull(executionOptions.model());
+        if (model == null) {
+            throw new IllegalStateException("AI 场景未配置 CLI 模型: " + useCaseCode);
         }
-        String userHome = System.getProperty("user.home");
-        if (userHome == null || userHome.isBlank()) {
-            return null;
+        Integer timeoutSeconds = executionOptions.timeoutSeconds();
+        if (timeoutSeconds == null || timeoutSeconds <= 0) {
+            throw new IllegalStateException("AI 场景未配置有效的 CLI 超时时间: " + useCaseCode);
         }
-        Path fallback = Path.of(userHome, ".codex", "auth.json");
-        return Files.exists(fallback) ? fallback : null;
-    }
-
-    private String safeTomlString(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
-    }
-
-    private EffectiveCodexCliConfig resolveEffectiveConfig(AiProperties.CodexCli config) {
-        String model = trimToNull(readSystemConfig(CONFIG_KEY_MODEL));
-        String reasoningEffort = trimToNull(readSystemConfig(CONFIG_KEY_REASONING_EFFORT));
         return new EffectiveCodexCliConfig(
-                model == null ? trimToNull(config.getModel()) : model,
-                reasoningEffort == null ? trimToNull(config.getReasoningEffort()) : reasoningEffort
+                command,
+                model,
+                trimToNull(executionOptions.reasoningEffort()),
+                timeoutSeconds,
+                executionOptions.disablePlugins(),
+                executionOptions.allowLocalTools()
         );
-    }
-
-    private String readSystemConfig(String configKey) {
-        if (sysConfigService == null) {
-            return null;
-        }
-        try {
-            return sysConfigService.findPlainValue(CONFIG_GROUP_CODEX_CLI, configKey);
-        } catch (Exception ex) {
-            log.warn("Failed to read system config {}.{}. Falling back to application config.",
-                    CONFIG_GROUP_CODEX_CLI,
-                    configKey,
-                    ex);
-            return null;
-        }
     }
 
     private String trimToNull(String value) {
@@ -273,11 +243,14 @@ public class CodexCliClient {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
+                    if (processOutput.length() >= 65_536) {
+                        continue;
+                    }
                     if (!processOutput.isEmpty()) {
                         processOutput.append('\n');
                     }
-                    processOutput.append(line);
-                    log.info("Codex CLI> {}", line);
+                    int remaining = 65_536 - processOutput.length();
+                    processOutput.append(line, 0, Math.min(line.length(), remaining));
                 }
             } catch (Exception ex) {
                 log.debug("Failed to read Codex CLI output stream", ex);
@@ -312,18 +285,6 @@ public class CodexCliClient {
         return process.waitFor(timeoutSeconds, TimeUnit.SECONDS);
     }
 
-    private String truncate(String value) {
-        return truncate(value, 500);
-    }
-
-    private String truncate(String value, int maxLength) {
-        if (value == null) {
-            return null;
-        }
-        String normalized = value.trim();
-        return normalized.length() <= maxLength ? normalized : normalized.substring(0, maxLength);
-    }
-
     private String summarizeException(Exception ex) {
         String message = ex.getMessage();
         if (message == null || message.isBlank()) {
@@ -343,35 +304,38 @@ public class CodexCliClient {
         }
     }
 
-    private void deleteDirectoryIfExists(Path path) {
-        if (path == null || !Files.exists(path)) {
-            return;
-        }
-        try (var stream = Files.walk(path)) {
-            stream.sorted(Comparator.reverseOrder()).forEach(this::deleteIfExists);
-        } catch (Exception ex) {
-            log.debug("Failed to delete temp directory: {}", path, ex);
-        }
-    }
-
-    record CodexCliRequest(Path workingDirectory,
+    public record CodexCliRequest(String useCaseCode,
+                           Path workingDirectory,
                            List<String> addDirs,
                            List<String> imagePaths,
                            String outputSchema,
                            String prompt) {
     }
 
-    record CodexCliResult(boolean succeeded, String outputJson, String failureSummary) {
+    public record CodexCliResult(boolean succeeded, String outputJson, String failureSummary) {
 
-        static CodexCliResult succeeded(String outputJson) {
+        public static CodexCliResult succeeded(String outputJson) {
             return new CodexCliResult(true, outputJson, null);
         }
 
-        static CodexCliResult failed(String failureSummary) {
+        public static CodexCliResult failed(String failureSummary) {
             return new CodexCliResult(false, null, failureSummary);
         }
     }
 
-    private record EffectiveCodexCliConfig(String model, String reasoningEffort) {
+    public record CodexCliExecutionOptions(String command,
+                                           String model,
+                                           String reasoningEffort,
+                                           Integer timeoutSeconds,
+                                           boolean disablePlugins,
+                                           boolean allowLocalTools) {
+    }
+
+    record EffectiveCodexCliConfig(String command,
+                                   String model,
+                                   String reasoningEffort,
+                                   int timeoutSeconds,
+                                   boolean disablePlugins,
+                                   boolean allowLocalTools) {
     }
 }

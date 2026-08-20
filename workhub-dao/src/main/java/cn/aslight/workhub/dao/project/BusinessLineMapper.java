@@ -146,7 +146,7 @@ public interface BusinessLineMapper {
     @Select("""
             SELECT COUNT(1)
             FROM pm_business_line_member
-            WHERE business_line = #{businessLineName}
+            WHERE business_line_code = #{businessLineCode}
             """)
-    int countMembers(String businessLineName);
+    int countMembers(String businessLineCode);
 }

@@ -1,6 +1,10 @@
 package cn.aslight.workhub.model.ops;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
+
+import java.util.List;
 
 public class SystemAlertSubsystemSaveRequest {
 
@@ -15,6 +19,11 @@ public class SystemAlertSubsystemSaveRequest {
 
     @NotBlank(message = "服务名不能为空")
     private String serviceName;
+
+    @NotEmpty(message = "至少配置一个日志索引模式")
+    @Size(max = 20, message = "日志索引模式最多配置20个")
+    private List<@NotBlank(message = "日志索引模式不能为空")
+                 @Size(max = 255, message = "日志索引模式长度不能超过255") String> indexPatterns;
 
     private Boolean enabled;
     private String remark;
@@ -49,6 +58,14 @@ public class SystemAlertSubsystemSaveRequest {
 
     public void setServiceName(String serviceName) {
         this.serviceName = serviceName;
+    }
+
+    public List<String> getIndexPatterns() {
+        return indexPatterns;
+    }
+
+    public void setIndexPatterns(List<String> indexPatterns) {
+        this.indexPatterns = indexPatterns;
     }
 
     public Boolean getEnabled() {

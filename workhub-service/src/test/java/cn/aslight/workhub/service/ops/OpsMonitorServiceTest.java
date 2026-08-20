@@ -1,12 +1,14 @@
 package cn.aslight.workhub.service.ops;
 
 import cn.aslight.workhub.dao.ops.OpsMonitorMapper;
+import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.model.ops.OpsMonitorEntity;
 import cn.aslight.workhub.model.ops.OpsMonitorResponse;
 import cn.aslight.workhub.model.ops.OpsMonitorSaveRequest;
 import cn.aslight.workhub.model.ops.XxlJobDashboardResponse;
 import cn.aslight.workhub.model.ops.XxlJobExecutorResponse;
 import cn.aslight.workhub.model.ops.XxlJobLogPageResponse;
+import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.service.mcp.McpCryptoService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -26,12 +28,37 @@ import static org.mockito.Mockito.when;
 class OpsMonitorServiceTest {
 
     @Test
+    void list_shouldReturnBusinessLineNameAndLocalizedLastStatus() {
+        OpsMonitorMapper mapper = mock(OpsMonitorMapper.class);
+        BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
+        OpsMonitorSchemaInitializer schemaInitializer = mock(OpsMonitorSchemaInitializer.class);
+        McpCryptoService cryptoService = mock(McpCryptoService.class);
+        XxlJobMonitorCollector collector = mock(XxlJobMonitorCollector.class);
+        OpsMonitorService service = new OpsMonitorService(mapper, businessLineMapper, schemaInitializer, cryptoService, collector);
+        OpsMonitorEntity monitor = monitor(9L, "amp_xxl_job");
+        monitor.setBusinessLineCode("BL000001");
+        monitor.setLastStatus("ERROR");
+        BusinessLineEntity businessLine = new BusinessLineEntity();
+        businessLine.setBusinessLineCode("BL000001");
+        businessLine.setBusinessLineName("保费分期");
+        when(mapper.findAll("XXL_JOB", null, null, null, false)).thenReturn(List.of(monitor));
+        when(businessLineMapper.findByCode("BL000001")).thenReturn(businessLine);
+
+        OpsMonitorResponse response = service.list("XXL_JOB", null, null, null, false).getFirst();
+
+        assertEquals("BL000001", response.businessLineCode());
+        assertEquals("保费分期", response.businessLineName());
+        assertEquals("ERROR", response.lastStatus());
+        assertEquals("异常", response.lastStatusName());
+    }
+
+    @Test
     void create_shouldUpdateExistingDefaultXxlJobMonitorWhenKeyAlreadyExists() {
         OpsMonitorMapper mapper = mock(OpsMonitorMapper.class);
         OpsMonitorSchemaInitializer schemaInitializer = mock(OpsMonitorSchemaInitializer.class);
         McpCryptoService cryptoService = mock(McpCryptoService.class);
         XxlJobMonitorCollector collector = mock(XxlJobMonitorCollector.class);
-        OpsMonitorService service = new OpsMonitorService(mapper, schemaInitializer, cryptoService, collector);
+        OpsMonitorService service = new OpsMonitorService(mapper, mock(BusinessLineMapper.class), schemaInitializer, cryptoService, collector);
         OpsMonitorEntity existing = monitor(9L, "old_xxl_job");
         OpsMonitorEntity updated = monitor(9L, "amp_xxl_job");
         when(mapper.findByMonitorKey("支付:prod:XXL_JOB")).thenReturn(existing, updated);
@@ -51,7 +78,7 @@ class OpsMonitorServiceTest {
         OpsMonitorSchemaInitializer schemaInitializer = mock(OpsMonitorSchemaInitializer.class);
         McpCryptoService cryptoService = mock(McpCryptoService.class);
         XxlJobMonitorCollector collector = mock(XxlJobMonitorCollector.class);
-        OpsMonitorService service = new OpsMonitorService(mapper, schemaInitializer, cryptoService, collector);
+        OpsMonitorService service = new OpsMonitorService(mapper, mock(BusinessLineMapper.class), schemaInitializer, cryptoService, collector);
         OpsMonitorEntity saved = monitor(10L, "amp_xxl_job");
         saved.setExecutorAppName("premium-job,premium-settle");
         when(mapper.findByMonitorKey("支付:prod:XXL_JOB")).thenReturn(null, saved);
@@ -72,7 +99,7 @@ class OpsMonitorServiceTest {
         OpsMonitorSchemaInitializer schemaInitializer = mock(OpsMonitorSchemaInitializer.class);
         McpCryptoService cryptoService = mock(McpCryptoService.class);
         XxlJobMonitorCollector collector = mock(XxlJobMonitorCollector.class);
-        OpsMonitorService service = new OpsMonitorService(mapper, schemaInitializer, cryptoService, collector);
+        OpsMonitorService service = new OpsMonitorService(mapper, mock(BusinessLineMapper.class), schemaInitializer, cryptoService, collector);
         OpsMonitorEntity monitor = monitor(9L, "amp_xxl_job");
         LocalDate startDate = LocalDate.of(2026, 5, 1);
         LocalDate endDate = LocalDate.of(2026, 6, 2);
@@ -92,7 +119,7 @@ class OpsMonitorServiceTest {
         OpsMonitorSchemaInitializer schemaInitializer = mock(OpsMonitorSchemaInitializer.class);
         McpCryptoService cryptoService = mock(McpCryptoService.class);
         XxlJobMonitorCollector collector = mock(XxlJobMonitorCollector.class);
-        OpsMonitorService service = new OpsMonitorService(mapper, schemaInitializer, cryptoService, collector);
+        OpsMonitorService service = new OpsMonitorService(mapper, mock(BusinessLineMapper.class), schemaInitializer, cryptoService, collector);
         OpsMonitorEntity monitor = monitor(9L, "amp_xxl_job");
         LocalDate startDate = LocalDate.of(2026, 6, 1);
         LocalDate endDate = LocalDate.of(2026, 6, 9);
@@ -126,7 +153,7 @@ class OpsMonitorServiceTest {
         OpsMonitorSchemaInitializer schemaInitializer = mock(OpsMonitorSchemaInitializer.class);
         McpCryptoService cryptoService = mock(McpCryptoService.class);
         XxlJobMonitorCollector collector = mock(XxlJobMonitorCollector.class);
-        OpsMonitorService service = new OpsMonitorService(mapper, schemaInitializer, cryptoService, collector);
+        OpsMonitorService service = new OpsMonitorService(mapper, mock(BusinessLineMapper.class), schemaInitializer, cryptoService, collector);
         OpsMonitorEntity monitor = monitor(9L, "amp_xxl_job");
         monitor.setExecutorAppName("premium-job,premium-settle");
         monitor.setLastStatus("ERROR");
@@ -160,7 +187,7 @@ class OpsMonitorServiceTest {
         OpsMonitorSchemaInitializer schemaInitializer = mock(OpsMonitorSchemaInitializer.class);
         McpCryptoService cryptoService = mock(McpCryptoService.class);
         XxlJobMonitorCollector collector = mock(XxlJobMonitorCollector.class);
-        OpsMonitorService service = new OpsMonitorService(mapper, schemaInitializer, cryptoService, collector);
+        OpsMonitorService service = new OpsMonitorService(mapper, mock(BusinessLineMapper.class), schemaInitializer, cryptoService, collector);
         when(collector.listExecutors("保费分期", "prod", "amp_xxl_job"))
                 .thenReturn(List.of(new XxlJobExecutorResponse("premium-job", "保费分期任务")));
 

@@ -12,6 +12,10 @@ public class McpResourceSaveRequest {
 
     private String targetKey;
 
+    private Boolean publicResource;
+
+    private List<String> featureTags;
+
     private String businessLineCode;
 
     private List<String> businessLineCodes;
@@ -37,6 +41,7 @@ public class McpResourceSaveRequest {
     private String password;
     private String sshPassword;
     private Boolean sshBastionEnabled;
+    private Long bastionId;
     private String sshBastionHost;
     private Integer sshBastionPort;
     private String sshBastionUser;
@@ -62,6 +67,22 @@ public class McpResourceSaveRequest {
 
     public void setTargetKey(String targetKey) {
         this.targetKey = targetKey;
+    }
+
+    public Boolean getPublicResource() {
+        return publicResource;
+    }
+
+    public void setPublicResource(Boolean publicResource) {
+        this.publicResource = publicResource;
+    }
+
+    public List<String> getFeatureTags() {
+        return featureTags;
+    }
+
+    public void setFeatureTags(List<String> featureTags) {
+        this.featureTags = featureTags;
     }
 
     public String getBusinessLineCode() {
@@ -174,6 +195,14 @@ public class McpResourceSaveRequest {
 
     public void setSshBastionEnabled(Boolean sshBastionEnabled) {
         this.sshBastionEnabled = sshBastionEnabled;
+    }
+
+    public Long getBastionId() {
+        return bastionId;
+    }
+
+    public void setBastionId(Long bastionId) {
+        this.bastionId = bastionId;
     }
 
     public String getSshBastionHost() {

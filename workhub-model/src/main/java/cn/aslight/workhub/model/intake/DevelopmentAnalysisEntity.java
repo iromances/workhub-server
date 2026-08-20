@@ -10,6 +10,7 @@ public class DevelopmentAnalysisEntity {
     private Long id;
     private Long intakeId;
     private Long projectId;
+    private String businessLineCode;
     private String businessLine;
     private String repositoryUrl;
     private String analysisStatus;
@@ -48,6 +49,14 @@ public class DevelopmentAnalysisEntity {
 
     public String getBusinessLine() {
         return businessLine;
+    }
+
+    public String getBusinessLineCode() {
+        return businessLineCode;
+    }
+
+    public void setBusinessLineCode(String businessLineCode) {
+        this.businessLineCode = businessLineCode;
     }
 
     public void setBusinessLine(String businessLine) {

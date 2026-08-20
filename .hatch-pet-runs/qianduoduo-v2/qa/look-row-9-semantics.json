@@ -1,0 +1,23 @@
+{
+  "row": "look-row-9",
+  "reviewer": "parent-preliminary",
+  "registration": {
+    "ok": true,
+    "scale": 0.7177174454036851,
+    "edge_failures": []
+  },
+  "continuity": {
+    "verdict": "pass",
+    "reason": "The reclining body, belly, rear paws, tail root, scale, and baseline progress continuously with no conspicuous snap, crop, overlap, or identity change across the eight registered cells."
+  },
+  "directions": [
+    {"direction": "000", "expected": "up", "verdict": "pass", "reason": "Eyes lead upward while the face stays broadly frontal."},
+    {"direction": "022.5", "expected": "up-right", "verdict": "pass", "reason": "Upward gaze gains a small screen-right head and eye component."},
+    {"direction": "045", "expected": "up-right", "verdict": "pass", "reason": "Eyes and muzzle continue evenly into the upper-right quadrant."},
+    {"direction": "067.5", "expected": "up-right", "verdict": "pass", "reason": "Screen-right head turn becomes dominant while retaining an upward component."},
+    {"direction": "090", "expected": "right", "verdict": "pass", "reason": "Nose, eyes, and face clearly orient toward the screen-right edge."},
+    {"direction": "112.5", "expected": "down-right", "verdict": "pass", "reason": "The rightward pose begins an even downward eye and chin progression."},
+    {"direction": "135", "expected": "down-right", "verdict": "pass", "reason": "Eyes and muzzle occupy the lower-right quadrant without reversing."},
+    {"direction": "157.5", "expected": "down-right", "verdict": "pass", "reason": "The pose is mostly downward with a remaining screen-right component, one step before 180."}
+  ]
+}

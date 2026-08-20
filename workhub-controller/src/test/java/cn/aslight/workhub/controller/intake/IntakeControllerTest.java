@@ -1,6 +1,7 @@
 package cn.aslight.workhub.controller.intake;
 
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
+import cn.aslight.workhub.model.intake.IntakeDashboardResponse;
 import cn.aslight.workhub.model.intake.IntakeHistoryResponse;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisResponse;
 import cn.aslight.workhub.model.intake.IntakeBusinessLineUpdateRequest;
@@ -37,6 +38,61 @@ class IntakeControllerTest {
 
     private IntakeController controller(IntakeService intakeService) {
         return new IntakeController(intakeService, mock(DevelopmentAnalysisService.class));
+    }
+
+    @Test
+    void dashboard_shouldExposeProgressReportContract() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        when(intakeService.dashboard("ALL")).thenReturn(new IntakeDashboardResponse(
+                "ALL",
+                "所有",
+                2,
+                List.of(),
+                List.of(),
+                List.of(),
+                new IntakeDashboardResponse.ProgressReport(
+                        "项目进度",
+                        "2026-07-10 12:00:00",
+                        "待上线包含待验收和待上线",
+                        List.of(),
+                        List.of(new IntakeDashboardResponse.ProgressReportReleasedDemand(
+                                1L,
+                                "已上线研发需求",
+                                "保费分期",
+                                "已完成",
+                                "研发需求",
+                                "REQ-001",
+                                "测试用户",
+                                "2026-07-01 10:00:00",
+                                "2026-07-10"
+                        )),
+                        List.of(new IntakeDashboardResponse.ProgressReportDemand(
+                                2L,
+                                "未上线研发需求",
+                                "账单管理",
+                                "开发中",
+                                "REQ-002",
+                                "测试用户",
+                                "2026-07-02 10:00:00",
+                                List.of(
+                                        new IntakeDashboardResponse.ProgressReportDateItem("开发日期", "2026-07-03"),
+                                        new IntakeDashboardResponse.ProgressReportDateItem("预计提测日期", "2026-07-08"),
+                                        new IntakeDashboardResponse.ProgressReportDateItem("预计上线日期", "2026-07-15")
+                                )
+                        ))
+                )
+        ));
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
+
+        mockMvc.perform(get("/api/intake/dashboard").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.progressReport.title").value("项目进度"))
+                .andExpect(jsonPath("$.data.progressReport.weeklyReleasedDemands[0].requirementType").value("研发需求"))
+                .andExpect(jsonPath("$.data.progressReport.pendingReleaseDemands[0].dateItems[0].label").value("开发日期"))
+                .andExpect(jsonPath("$.data.progressReport.pendingReleaseDemands[0].dateItems[0].value").value("2026-07-03"));
+
+        verify(intakeService).dashboard("ALL");
     }
 
     @Test

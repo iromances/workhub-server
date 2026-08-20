@@ -40,8 +40,8 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
@@ -59,6 +59,25 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>${flyway.version}</version>
+                <configuration>
+                    <locations>
+                        <location>filesystem:${maven.multiModuleProjectDirectory}/workhub-bootstrap/src/main/resources/db/schema/mysql</location>
+                    </locations>
+                    <baselineVersion>1</baselineVersion>
+                    <baselineDescription>current schema baseline</baselineDescription>
+                    <baselineOnMigrate>false</baselineOnMigrate>
+                    <validateOnMigrate>true</validateOnMigrate>
+                    <validateMigrationNaming>true</validateMigrationNaming>
+                    <failOnMissingLocations>true</failOnMissingLocations>
+                    <cleanDisabled>true</cleanDisabled>
+                    <outOfOrder>false</outOfOrder>
+                    <placeholderReplacement>false</placeholderReplacement>
+                </configuration>
             </plugin>
         </plugins>
     </build>

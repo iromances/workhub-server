@@ -68,7 +68,8 @@ class IntakeClarificationAnalysisServiceTest {
 
         service.analyze(119L, "admin");
 
-        assertEquals("BL000003", existing.getBusinessLine());
+        assertEquals("BL000003", existing.getBusinessLineCode());
+        assertEquals(null, existing.getBusinessLine());
         verify(analysisMapper).update(existing);
         verify(executor).execute(any(Runnable.class));
     }

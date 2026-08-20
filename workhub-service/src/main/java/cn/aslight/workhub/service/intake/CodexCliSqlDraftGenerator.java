@@ -5,6 +5,9 @@ import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeSqlDraft;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.service.attachment.AttachmentService;
+import cn.aslight.workhub.service.ai.AiGatewayClient;
+import cn.aslight.workhub.service.ai.AiGatewayRequest;
+import cn.aslight.workhub.service.ai.AiGatewayResult;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
@@ -21,6 +24,7 @@ import java.util.Set;
 @Component
 public class CodexCliSqlDraftGenerator {
 
+    private static final String USE_CASE_CODE = "intake.sql-draft.generate";
     private static final String OUTPUT_SCHEMA = """
             {
               "type": "object",
@@ -58,16 +62,16 @@ public class CodexCliSqlDraftGenerator {
             }
             """;
 
-    private final CodexCliClient codexCliClient;
+    private final AiGatewayClient aiGatewayClient;
     private final ObjectMapper objectMapper;
 
-    public CodexCliSqlDraftGenerator(CodexCliClient codexCliClient, ObjectMapper objectMapper) {
-        this.codexCliClient = codexCliClient;
+    public CodexCliSqlDraftGenerator(AiGatewayClient aiGatewayClient, ObjectMapper objectMapper) {
+        this.aiGatewayClient = aiGatewayClient;
         this.objectMapper = objectMapper;
     }
 
     public boolean isEnabled() {
-        return codexCliClient.isEnabled();
+        return aiGatewayClient.isConfigured(USE_CASE_CODE);
     }
 
     /**
@@ -81,22 +85,23 @@ public class CodexCliSqlDraftGenerator {
     public SqlDraftGenerationResult generate(IntakeRecordEntity entity,
                                              IntakeStructuredData structuredData,
                                              List<AttachmentService.AttachmentFileContext> attachments) {
-        if (!codexCliClient.isEnabled()) {
-            return SqlDraftGenerationResult.failed("Codex CLI 未启用");
+        if (!aiGatewayClient.isConfigured(USE_CASE_CODE)) {
+            return SqlDraftGenerationResult.failed("AI 场景未配置或已停用");
         }
         SqlDraftInvocation invocation = buildInvocation(entity, structuredData, attachments);
-        CodexCliClient.CodexCliResult result = codexCliClient.execute(new CodexCliClient.CodexCliRequest(
+        AiGatewayResult result = aiGatewayClient.executeStructured(AiGatewayRequest.structured(
+                USE_CASE_CODE,
+                invocation.prompt(),
                 invocation.workingDirectory(),
                 invocation.addDirs(),
                 invocation.imagePaths(),
-                OUTPUT_SCHEMA,
-                invocation.prompt()
+                OUTPUT_SCHEMA
         ));
         if (!result.succeeded()) {
             return SqlDraftGenerationResult.failed(result.failureSummary());
         }
         try {
-            IntakeSqlDraft draft = objectMapper.readValue(result.outputJson(), IntakeSqlDraft.class);
+            IntakeSqlDraft draft = objectMapper.readValue(result.output(), IntakeSqlDraft.class);
             draft = new IntakeSqlDraft(
                     defaultValue(draft.dialect(), "MySQL"),
                     trimToNull(draft.sql()),
@@ -106,7 +111,7 @@ public class CodexCliSqlDraftGenerator {
                     safeList(draft.questions()),
                     safeList(draft.riskWarnings()),
                     LocalDateTime.now().toString(),
-                    "Codex CLI"
+                    result.providerCode() == null ? "AI Gateway" : result.providerCode()
             );
             return SqlDraftGenerationResult.succeeded(draft);
         } catch (Exception ex) {

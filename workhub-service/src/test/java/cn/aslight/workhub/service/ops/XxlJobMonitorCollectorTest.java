@@ -50,6 +50,8 @@ class XxlJobMonitorCollectorTest {
         assertTrue(queryClient.sqls.getFirst().contains("`amp_xxl_job`.`xxl_job_log_report`"));
         assertTrue(queryClient.sqls.getFirst().contains("address_list"));
         assertTrue(queryClient.sqls.getFirst().contains("MAX(trigger_day)"));
+        assertTrue(queryClient.sqls.getFirst().contains("trigger_day >= '"));
+        assertTrue(queryClient.sqls.getFirst().contains("trigger_day < '"));
         assertTrue(!queryClient.sqls.getFirst().contains("registry_list"));
         assertTrue(!queryClient.sqls.getFirst().contains("update_time"));
         assertTrue(!queryClient.sqls.getFirst().contains("`amp_xxl_job`.`xxl_job_log`"));
@@ -109,6 +111,8 @@ class XxlJobMonitorCollectorTest {
         assertEquals(1, countOccurrences(queryClient.sqls.getFirst(), "FROM `amp_xxl_job`.`xxl_job_log` l"));
         assertTrue(queryClient.sqls.getFirst().contains("SUM(CASE WHEN l.handle_code = 200 THEN 1 ELSE 0 END)"));
         assertTrue(queryClient.sqls.getFirst().contains("MAX(l.trigger_time) AS reportUpdatedAt"));
+        assertTrue(queryClient.sqls.getFirst().contains("l.trigger_time >= '"));
+        assertTrue(queryClient.sqls.getFirst().contains("l.trigger_time < '"));
     }
 
     @Test
@@ -169,6 +173,8 @@ class XxlJobMonitorCollectorTest {
         assertEquals("settleJobHandler", dashboard.failedJobs().getFirst().executorHandler());
         assertTrue(queryClient.sqls.get(0).contains("`amp_xxl_job`.`xxl_job_info`"));
         assertTrue(queryClient.sqls.get(0).contains("`amp_xxl_job`.`xxl_job_log_report`"));
+        assertTrue(queryClient.sqls.get(0).contains("trigger_day >= '2026-05-01'"));
+        assertTrue(queryClient.sqls.get(0).contains("trigger_day < '2026-06-03'"));
         assertTrue(queryClient.sqls.get(1).contains("COUNT(1) AS failedJobTotal"));
         assertTrue(queryClient.sqls.get(2).contains("`amp_xxl_job`.`xxl_job_log`"));
         assertTrue(queryClient.sqls.get(2).contains("i.author AS author"));
@@ -271,6 +277,35 @@ class XxlJobMonitorCollectorTest {
 
         assertEquals("SCHEDULE_FAILED", dashboard.failedJobs().getFirst().failureType());
         assertEquals("调度失败", dashboard.failedJobs().getFirst().failureTypeName());
+    }
+
+    @Test
+    void collect_shouldUseLatestSevenCalendarDaysByDefault() {
+        FakeXxlJobDatabaseQueryClient queryClient = new FakeXxlJobDatabaseQueryClient();
+        queryClient.nextRows(List.of(Map.of(
+                "executorRegistryList", "10.0.0.1:9999",
+                "jobCount", 1,
+                "enabledJobCount", 1,
+                "disabledJobCount", 0,
+                "triggerRunningCount", 0,
+                "triggerSuccessCount", 1,
+                "triggerFailedCount", 0
+        )));
+        queryClient.nextRows(List.of(Map.of("failedJobTotal", 0)));
+        queryClient.nextRows(List.of());
+        XxlJobMonitorCollector collector = new XxlJobMonitorCollector(queryClient);
+        LocalDate today = LocalDate.now();
+
+        collector.collect(monitor());
+
+        String startDate = today.minusDays(6).toString();
+        String endExclusiveDate = today.plusDays(1).toString();
+        assertTrue(queryClient.sqls.get(0).contains("trigger_day >= '" + startDate + "'"));
+        assertTrue(queryClient.sqls.get(0).contains("trigger_day < '" + endExclusiveDate + "'"));
+        assertTrue(queryClient.sqls.get(1).contains("l.trigger_time >= '" + startDate + " 00:00:00'"));
+        assertTrue(queryClient.sqls.get(1).contains("l.trigger_time < '" + endExclusiveDate + " 00:00:00'"));
+        assertTrue(queryClient.sqls.get(2).contains("l.trigger_time >= '" + startDate + " 00:00:00'"));
+        assertTrue(queryClient.sqls.get(2).contains("l.trigger_time < '" + endExclusiveDate + " 00:00:00'"));
     }
 
     @Test

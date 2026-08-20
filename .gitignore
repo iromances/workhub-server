@@ -6,4 +6,4 @@ logs/
 data/
 *.iml
 config
-.superpowers/
+.workhub-secrets.properties

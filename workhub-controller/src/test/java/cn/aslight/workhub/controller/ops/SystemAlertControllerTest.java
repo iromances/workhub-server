@@ -27,21 +27,23 @@ class SystemAlertControllerTest {
                         2,
                         1,
                         20,
-                        List.of(new SystemAlertSubsystemResponse(1L, "保费分期", "prod", "资产支付", "asset-payment", true, null,
+                        List.of(new SystemAlertSubsystemResponse(1L, "保费分期", "prod", "资产支付", "asset-payment",
+                                List.of("asset-payment-*", "asset-payment-history-*"), true, null,
                                 LocalDateTime.of(2026, 6, 4, 8, 0), LocalDateTime.of(2026, 6, 4, 8, 0))),
                         List.of(new SystemAlertSubsystemSummaryResponse("保费分期", "prod", "资产支付", "asset-payment", 2,
                                 LocalDateTime.of(2026, 6, 4, 9, 50))),
                         List.of(new SystemAlertEventResponse(11L, "保费分期", "prod", "资产支付", "asset-payment", "ERROR",
-                                "NullPointerException", "支付回调失败", "java.lang.NullPointerException", "空指针",
+                                "SYSTEM_ERROR", "NullPointerException", "支付回调失败", "java.lang.NullPointerException", "空指针",
                                 "trace-1", "req-1", LocalDateTime.of(2026, 6, 4, 9, 50), "LOCAL"))
                 ));
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new SystemAlertController(systemAlertService)).build();
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new SystemAlertController(systemAlertService, null)).build();
 
         mockMvc.perform(get("/api/ops/system-alerts")
                         .param("businessLineCode", "保费分期")
                         .param("environmentCode", "prod")
                         .param("serviceName", "asset-payment")
                         .param("level", "ERROR")
+                        .param("eventCategory", "SYSTEM_ERROR")
                         .param("startTime", "2026-06-04T09:00:00")
                         .param("endTime", "2026-06-04T10:00:00")
                         .accept(MediaType.APPLICATION_JSON))
@@ -49,6 +51,7 @@ class SystemAlertControllerTest {
                 .andExpect(jsonPath("$.data.totalCount").value(2))
                 .andExpect(jsonPath("$.data.subsystems[0].subsystemName").value("资产支付"))
                 .andExpect(jsonPath("$.data.summaries[0].errorCount").value(2))
+                .andExpect(jsonPath("$.data.events[0].eventCategory").value("SYSTEM_ERROR"))
                 .andExpect(jsonPath("$.data.events[0].message").value("支付回调失败"));
     }
 
@@ -56,7 +59,7 @@ class SystemAlertControllerTest {
         private final SystemAlertDashboardResponse response;
 
         private StubSystemAlertService(SystemAlertDashboardResponse response) {
-            super(null, null);
+            super(null);
             this.response = response;
         }
 
@@ -65,6 +68,7 @@ class SystemAlertControllerTest {
                                                       String environmentCode,
                                                       String serviceName,
                                                       String level,
+                                                      String eventCategory,
                                                       LocalDateTime startTime,
                                                       LocalDateTime endTime,
                                                       int page,

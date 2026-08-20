@@ -7,5 +7,6 @@ public record PaymentChannelSummaryResponse(Long id,
                                             String code,
                                             String name,
                                             String vendorName,
-                                            String status) {
+                                            String status,
+                                            String description) {
 }

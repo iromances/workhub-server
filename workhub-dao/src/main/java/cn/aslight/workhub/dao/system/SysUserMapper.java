@@ -81,6 +81,22 @@ public interface SysUserMapper {
 
     @Update("""
             UPDATE sys_user
+            SET display_name = #{displayName},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+            """)
+    int updateProfile(@Param("id") Long id, @Param("displayName") String displayName);
+
+    @Update("""
+            UPDATE sys_user
+            SET avatar_url = #{avatarUrl},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+            """)
+    int updateAvatar(@Param("id") Long id, @Param("avatarUrl") String avatarUrl);
+
+    @Update("""
+            UPDATE sys_user
             SET status = #{status},
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = #{id}

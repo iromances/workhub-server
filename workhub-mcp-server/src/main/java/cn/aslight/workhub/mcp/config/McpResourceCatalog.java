@@ -86,10 +86,14 @@ public record McpResourceCatalog(List<BusinessLine> businessLines,
     }
 
     public record DatabaseTarget(String key,
+                                 boolean publicResource,
+                                 List<String> featureTags,
                                  String businessLineCode,
                                  List<String> businessLineCodes,
                                  String environmentCode,
                                  String name,
+                                 String systemName,
+                                 List<String> systemNames,
                                  String host,
                                  int port,
                                  String schema,
@@ -97,12 +101,44 @@ public record McpResourceCatalog(List<BusinessLine> businessLines,
                                  String password,
                                  SshTunnel sshTunnel,
                                  List<DatabaseProfile> profiles) {
+        public DatabaseTarget(String key,
+                              String businessLineCode,
+                              List<String> businessLineCodes,
+                              String environmentCode,
+                              String name,
+                              String systemName,
+                              List<String> systemNames,
+                              String host,
+                              int port,
+                              String schema,
+                              String username,
+                              String password,
+                              SshTunnel sshTunnel,
+                              List<DatabaseProfile> profiles) {
+            this(key, false, List.of(), businessLineCode, businessLineCodes, environmentCode, name,
+                    systemName, systemNames, host, port, schema, username, password, sshTunnel, profiles);
+        }
+
         public List<DatabaseProfile> profiles() {
             return profiles == null ? List.of() : profiles;
         }
 
         public List<String> businessLineCodes() {
-            return businessLineCodes == null || businessLineCodes.isEmpty() ? List.of(businessLineCode) : businessLineCodes;
+            if (businessLineCodes != null && !businessLineCodes.isEmpty()) {
+                return businessLineCodes;
+            }
+            return businessLineCode == null || businessLineCode.isBlank() ? List.of() : List.of(businessLineCode);
+        }
+
+        public List<String> featureTags() {
+            return featureTags == null ? List.of() : featureTags;
+        }
+
+        public List<String> systemNames() {
+            if (systemNames != null && !systemNames.isEmpty()) {
+                return systemNames;
+            }
+            return systemName == null || systemName.isBlank() ? List.of() : List.of(systemName);
         }
 
         public record SshTunnel(String bastionHost,
@@ -120,6 +156,8 @@ public record McpResourceCatalog(List<BusinessLine> businessLines,
     }
 
     public record ServerTarget(String key,
+                               boolean publicResource,
+                               List<String> featureTags,
                                String businessLineCode,
                                List<String> businessLineCodes,
                                String environmentCode,
@@ -135,12 +173,40 @@ public record McpResourceCatalog(List<BusinessLine> businessLines,
                                List<String> allowedServices,
                                List<String> allowedLogPaths,
                                List<ServerProfile> profiles) {
+        public ServerTarget(String key,
+                            String businessLineCode,
+                            List<String> businessLineCodes,
+                            String environmentCode,
+                            String name,
+                            String systemName,
+                            List<String> systemNames,
+                            String host,
+                            int port,
+                            String username,
+                            String password,
+                            String identityFile,
+                            DatabaseTarget.SshTunnel sshTunnel,
+                            List<String> allowedServices,
+                            List<String> allowedLogPaths,
+                            List<ServerProfile> profiles) {
+            this(key, false, List.of(), businessLineCode, businessLineCodes, environmentCode, name,
+                    systemName, systemNames, host, port, username, password, identityFile, sshTunnel,
+                    allowedServices, allowedLogPaths, profiles);
+        }
+
         public List<String> allowedServices() {
             return allowedServices == null ? List.of() : allowedServices;
         }
 
         public List<String> businessLineCodes() {
-            return businessLineCodes == null || businessLineCodes.isEmpty() ? List.of(businessLineCode) : businessLineCodes;
+            if (businessLineCodes != null && !businessLineCodes.isEmpty()) {
+                return businessLineCodes;
+            }
+            return businessLineCode == null || businessLineCode.isBlank() ? List.of() : List.of(businessLineCode);
+        }
+
+        public List<String> featureTags() {
+            return featureTags == null ? List.of() : featureTags;
         }
 
         public List<String> systemNames() {
