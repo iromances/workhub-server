@@ -71,7 +71,7 @@ class ElasticsearchSystemAlertClientTest {
         ElasticsearchSystemAlertClient client = new ElasticsearchSystemAlertClient(properties);
         List<ElkSystemAlertLog> events = new ArrayList<>();
 
-        SystemAlertLogSource.SyncResult result = client.readErrors(null, "asset-payment", "prod",
+        SystemAlertLogSource.SyncResult result = client.readErrors(null, List.of("asset-payment"), "prod",
                 Instant.parse("2026-07-21T02:00:00Z"), events::add);
 
         assertEquals(1, result.fetchedCount());
@@ -95,7 +95,7 @@ class ElasticsearchSystemAlertClientTest {
 
         IllegalStateException error = assertThrows(IllegalStateException.class, () ->
                 new ElasticsearchSystemAlertClient(properties()).readErrors(
-                        null, "asset-payment", "prod", Instant.now(), ignored -> { }));
+                        null, List.of("asset-payment"), "prod", Instant.now(), ignored -> { }));
 
         assertEquals("ELK认证或授权失败", error.getMessage());
         assertFalse(error.getMessage().contains("secret-token"));
@@ -115,10 +115,31 @@ class ElasticsearchSystemAlertClientTest {
 
         IllegalStateException error = assertThrows(IllegalStateException.class, () ->
                 new ElasticsearchSystemAlertClient(properties()).readErrors(
-                        null, "asset-payment", "prod", Instant.now(), ignored -> { }));
+                        null, List.of("asset-payment"), "prod", Instant.now(), ignored -> { }));
 
         assertEquals("ELK响应不是有效JSON", error.getMessage());
         assertTrue(closed.get());
+    }
+
+    @Test
+    void shouldOmitServiceFilterForAllModeAndUseTermsForSelectedServices() throws Exception {
+        List<String> bodies = new ArrayList<>();
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/workhub-logs-*/_pit", exchange ->
+                respond(exchange, 200, "{\"id\":\"pit-1\"}"));
+        server.createContext("/_search", exchange -> {
+            bodies.add(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            respond(exchange, 200, "{\"pit_id\":\"pit-2\",\"hits\":{\"hits\":[]}}");
+        });
+        server.createContext("/_pit", exchange -> respond(exchange, 200, "{\"succeeded\":true}"));
+        server.start();
+        ElasticsearchSystemAlertClient client = new ElasticsearchSystemAlertClient(properties());
+
+        client.readErrors(null, List.of(), "prod", Instant.now(), ignored -> { });
+        client.readErrors(null, List.of("asset-payment", "amp-saps"), "prod", Instant.now(), ignored -> { });
+
+        assertFalse(bodies.getFirst().contains("service.name"));
+        assertTrue(bodies.get(1).contains("\"terms\":{\"service.name\":[\"asset-payment\",\"amp-saps\"]}"));
     }
 
     @Test
@@ -160,7 +181,7 @@ class ElasticsearchSystemAlertClientTest {
                 java.net.http.HttpClient.newHttpClient());
         List<ElkSystemAlertLog> events = new ArrayList<>();
 
-        client.readErrors("amp-saps-*", "amp-saps", "prod",
+        client.readErrors("amp-saps-*", List.of("amp-saps"), "prod",
                 Instant.parse("2026-07-23T02:00:00Z"), events::add);
 
         assertTrue(queried.get());
@@ -209,12 +230,52 @@ class ElasticsearchSystemAlertClientTest {
         List<ElkSystemAlertLog> events = new ArrayList<>();
 
         SystemAlertLogSource.SyncResult result = client.readErrors(
-                "amp-saps-*", "amp-saps", "local", Instant.parse("2026-07-23T02:00:00Z"), events::add);
+                "amp-saps-*", List.of("amp-saps"), "local", Instant.parse("2026-07-23T02:00:00Z"), events::add);
 
         assertEquals(1, searchCount.get());
         assertEquals(1, result.fetchedCount());
         assertEquals(List.of("new"), events.stream().map(ElkSystemAlertLog::message).toList());
         assertEquals(Instant.parse("2026-07-23T02:04:04.123Z"), result.latestOccurredAt());
+    }
+
+    @Test
+    void shouldSearchControlledLevelsTimePhraseAndIdentifiers() throws Exception {
+        List<String> bodies = new ArrayList<>();
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/scf-payment-*,scf-saps-*/_pit", exchange ->
+                respond(exchange, 200, "{\"id\":\"pit-1\"}"));
+        server.createContext("/_search", exchange -> {
+            bodies.add(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            respond(exchange, 200, """
+                    {"pit_id":"pit-2","hits":{"hits":[{
+                      "_index":"scf-payment-2026.08.23","_id":"event-1",
+                      "_source":{"@timestamp":"2026-08-22T23:59:00Z",
+                        "service":{"name":"scf-payment","environment":"prod"},
+                        "log":{"level":"INFO","logger":"BcmEventServer"},
+                        "message":"查询当日交易明细返回条数为空！",
+                        "trace":{"id":"trace-1"},"request":{"id":"req-1"}},
+                      "sort":["2026-08-22T23:59:00Z",42]
+                    }]}}
+                    """);
+        });
+        server.createContext("/_pit", exchange -> respond(exchange, 200, "{\"succeeded\":true}"));
+        server.start();
+
+        ElasticsearchSystemAlertClient.LogSearchResult result =
+                new ElasticsearchSystemAlertClient(properties()).searchLogs(
+                        "scf-payment-*,scf-saps-*", List.of("scf-payment"), "prod",
+                        List.of("INFO", "ERROR"),
+                        Instant.parse("2026-08-22T23:50:00Z"), Instant.parse("2026-08-23T00:00:00Z"),
+                        "查询当日交易明细", "trace-1", "req-1", 10);
+
+        assertEquals(1, result.items().size());
+        assertFalse(result.truncated());
+        String body = bodies.getFirst();
+        assertTrue(body.contains("\"terms\":{\"log.level\":[\"INFO\",\"ERROR\"]}"));
+        assertTrue(body.contains("\"lte\":\"2026-08-23T00:00:00Z\""));
+        assertTrue(body.contains("\"match_phrase\":{\"error.message\":\"查询当日交易明细\"}"));
+        assertTrue(body.contains("\"trace.id\":\"trace-1\""));
+        assertTrue(body.contains("\"http.request.id\":\"req-1\""));
     }
 
     private ElkAlertProperties properties() {

@@ -49,8 +49,29 @@ public interface SystemAlertRuleMapper {
             """)
     SystemAlertRuleEntity findById(Long id);
 
-    @Select("SELECT id, rule_name AS ruleName FROM ops_system_alert_rule WHERE rule_name = #{ruleName}")
+    @Select("""
+            SELECT id, rule_name AS ruleName, action, match_scope AS matchScope,
+                   match_mode AS matchMode, priority, enabled, remark,
+                   created_at AS createdAt, updated_at AS updatedAt
+            FROM ops_system_alert_rule
+            WHERE rule_name = #{ruleName}
+            """)
     SystemAlertRuleEntity findByName(String ruleName);
+
+    @Select("""
+            SELECT r.id, r.rule_name AS ruleName, r.action, r.match_scope AS matchScope,
+                   r.match_mode AS matchMode, r.priority, r.enabled, r.remark,
+                   r.created_at AS createdAt, r.updated_at AS updatedAt
+            FROM ops_system_alert_rule r
+            INNER JOIN ops_system_alert_rule_keyword k ON k.rule_id = r.id
+            WHERE r.action = 'IGNORE'
+              AND r.match_scope = 'MESSAGE'
+              AND r.match_mode = 'ANY'
+              AND k.keyword = #{keyword}
+            ORDER BY r.enabled DESC, r.priority ASC, r.id ASC
+            LIMIT 1
+            """)
+    SystemAlertRuleEntity findCompatibleIgnoreRuleByKeyword(String keyword);
 
     @Select({
             "<script>",
@@ -75,6 +96,19 @@ public interface SystemAlertRuleMapper {
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insertRule(SystemAlertRuleEntity entity);
 
+    @Insert("""
+            INSERT IGNORE INTO ops_system_alert_rule (
+              rule_name, action, match_scope, match_mode, priority, enabled, remark
+            ) VALUES (
+              #{ruleName}, #{action}, #{matchScope}, #{matchMode}, #{priority}, #{enabled}, #{remark}
+            )
+            """)
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    int insertRuleIgnore(SystemAlertRuleEntity entity);
+
+    @Update("UPDATE ops_system_alert_rule SET enabled = 1 WHERE id = #{id} AND enabled = 0")
+    int enableRule(Long id);
+
     @Update("""
             UPDATE ops_system_alert_rule
             SET rule_name = #{ruleName}, action = #{action}, match_scope = #{matchScope},
@@ -90,6 +124,14 @@ public interface SystemAlertRuleMapper {
     int insertKeyword(@Param("ruleId") Long ruleId,
                       @Param("keyword") String keyword,
                       @Param("sortOrder") int sortOrder);
+
+    @Insert("""
+            INSERT IGNORE INTO ops_system_alert_rule_keyword (rule_id, keyword, sort_order)
+            VALUES (#{ruleId}, #{keyword}, #{sortOrder})
+            """)
+    int insertKeywordIgnore(@Param("ruleId") Long ruleId,
+                            @Param("keyword") String keyword,
+                            @Param("sortOrder") int sortOrder);
 
     @Delete("DELETE FROM ops_system_alert_rule_keyword WHERE rule_id = #{ruleId}")
     int deleteKeywords(Long ruleId);

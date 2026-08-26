@@ -23,7 +23,7 @@ class McpAccessTokenAuthenticationFilterTest {
     void doFilter_shouldAuthenticateMatchingMcpToken() throws Exception {
         McpProperties properties = new McpProperties();
         properties.setAccessToken("test-mcp-token");
-        McpAccessTokenAuthenticationFilter filter = new McpAccessTokenAuthenticationFilter(properties);
+        McpAccessTokenAuthenticationFilter filter = new McpAccessTokenAuthenticationFilter(properties, "");
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/mcp/runtime");
         request.addHeader("Authorization", "Bearer test-mcp-token");
 
@@ -35,10 +35,24 @@ class McpAccessTokenAuthenticationFilterTest {
     }
 
     @Test
+    void doFilter_shouldPreferEnvironmentTokenOverPropertyToken() throws Exception {
+        McpProperties properties = new McpProperties();
+        properties.setAccessToken("property-token");
+        McpAccessTokenAuthenticationFilter filter =
+                new McpAccessTokenAuthenticationFilter(properties, "environment-token");
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/mcp/runtime");
+        request.addHeader("Authorization", "Bearer environment-token");
+
+        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+
+        assertEquals("workhub-mcp", SecurityContextHolder.getContext().getAuthentication().getName());
+    }
+
+    @Test
     void doFilter_shouldNotAuthenticateWrongToken() throws Exception {
         McpProperties properties = new McpProperties();
         properties.setAccessToken("test-mcp-token");
-        McpAccessTokenAuthenticationFilter filter = new McpAccessTokenAuthenticationFilter(properties);
+        McpAccessTokenAuthenticationFilter filter = new McpAccessTokenAuthenticationFilter(properties, "");
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/mcp/runtime");
         request.addHeader("Authorization", "Bearer wrong-token");
 

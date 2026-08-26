@@ -9,6 +9,7 @@
 - 数据库能力只允许受控只读查询，禁止写入、DDL、多语句、导出、高风险函数和无边界全表扫描。
 - 数据库查询结果必须在 MCP 服务端出口统一脱敏，不依赖 AI 提示词或调用方自行处理；至少覆盖手机号、姓名、证件号、银行卡号、邮箱、地址、生日、IP、车牌、密码、密钥和 Token。脱敏识别同时使用查询结果列标签、数据库真实列名和高置信度值格式，返回结果、回显 SQL 和审计日志均不得包含已识别的敏感原文。
 - 服务器能力只允许服务状态、服务日志和日志文件读取；日志路径白名单必须使用绝对日志目录，可配置多个目录并读取各目录下不同服务的具体日志文件；路径必须规范化并防止目录越界与 shell 注入，白名单为空表示对应维度不限制。
+- 生产日志排查首选受控 Elasticsearch 查询，服务器 SSH 日志作为补充。Elasticsearch 工具不接受索引名、Query DSL、正则表达式或任意字段，只能使用已启用的“业务线 + 环境”日志范围。
 - MCP runtime 使用独立 Bearer Token 鉴权，令牌通过 `WORKHUB_MCP_ACCESS_TOKEN` 或本机忽略提交的配置提供，不复用普通用户 JWT 或 MCP 凭据加密主密钥。
 - MCP runtime 不暴露任意 SSH 命令。
 - 需求管理 MCP 能力只允许读取和搜索，不提供写入、阶段推进、状态变更或附件文件正文读取。
@@ -155,6 +156,31 @@ GitLab 摘要只返回：
 - 对列名不可识别的结果，继续按手机号、身份证号、邮箱等高置信度值格式兜底脱敏。
 - 返回结果中的 SQL 和 MCP 审计日志中的 SQL 同样执行脱敏；数据库实际执行仍使用原始参数，保证查询语义不变。
 
+### `search_business_logs`
+
+实时查询已配置的业务线 Elasticsearch 日志，是生产日志排查的首选工具；生产服务器必须经过堡垒机时，`read_service_logs` 和 `search_service_logs` 作为补充证据来源。
+
+必填参数：
+
+- `businessLine`：业务线编码、名称或 GitLab group 名称，由 WorkHub 解析为标准业务线编码。
+- `environmentCode`：环境编码。
+
+可选参数：
+
+- `serviceNames`：逗号分隔服务名；`SELECTED` 关注模式只能选择已启用服务，不传时查询该范围全部启用服务。
+- `levels`：逗号分隔的 `DEBUG/INFO/WARN/ERROR`；默认 `ERROR,WARN`。
+- `from/to`：带时区 ISO-8601 时间；默认最近 15 分钟。包含 `INFO/DEBUG` 时跨度最多 24 小时，仅 `WARN/ERROR` 时最多 7 天。
+- `phrase`：消息字段固定短语，最多 500 字符。
+- `traceId/requestId`：按系统配置中的固定字段精确过滤；未配置字段时拒绝查询。
+- `limit`：默认 50，允许范围 1-100。
+
+安全边界：
+
+- 索引来自启用的 `ops_system_alert_scope_index`，调用方不能提交索引或 DSL。
+- 使用 PIT 与 `search_after` 查询，超出条数或总响应边界时返回 `truncated=true`。
+- 日志正文、标题、堆栈、Trace ID 和请求 ID 在 MCP 出口统一截断并脱敏，覆盖手机号、身份证、邮箱、账号、密码、Token、Secret 和 IP 等高置信度内容；返回 `dataMasked=true`。
+- 审计只记录业务线、环境、服务、级别、时间范围、数量、耗时和是否使用检索条件，不记录短语、ID 原文、日志正文、凭据或 ES 原始响应。
+
 ### `get_service_status`
 
 读取服务状态。配置服务白名单时只允许读取白名单服务；服务白名单为空表示不限制服务名。
@@ -205,3 +231,4 @@ GitLab 摘要只返回：
 - 知识库路径：系统配置 `knowledge.project.vaultPath`
 - GitLab 摘要：系统配置 `gitlab.global.webApiUrl`、`gitlab.global.sshHost`、`gitlab.global.accessToken`；`accessToken` 只用于服务端内部加载，MCP 只返回 `accessTokenConfigured`
 - GitLab 代码缓存：业务线 `gitlabGroupName`、系统配置 `gitlab.global.webApiUrl` 和 `gitlab.global.accessToken`
+- Elasticsearch 连接与字段：系统配置分组 `elk.alert`；业务线索引和服务范围：`ops_system_alert_scope`、`ops_system_alert_scope_service`、`ops_system_alert_scope_index`

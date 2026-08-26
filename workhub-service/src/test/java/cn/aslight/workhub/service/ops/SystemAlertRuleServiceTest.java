@@ -89,6 +89,11 @@ class SystemAlertRuleServiceTest {
         }
 
         @Override
+        public SystemAlertRuleEntity findCompatibleIgnoreRuleByKeyword(String keyword) {
+            return null;
+        }
+
+        @Override
         public List<SystemAlertRuleKeywordEntity> findKeywords(List<Long> ruleIds) {
             return keywords.stream().filter(row -> ruleIds.contains(row.ruleId())).toList();
         }
@@ -98,6 +103,16 @@ class SystemAlertRuleServiceTest {
             entity.setId(7L);
             stored = entity;
             return 1;
+        }
+
+        @Override
+        public int insertRuleIgnore(SystemAlertRuleEntity entity) {
+            return insertRule(entity);
+        }
+
+        @Override
+        public int enableRule(Long id) {
+            return 0;
         }
 
         @Override
@@ -111,6 +126,11 @@ class SystemAlertRuleServiceTest {
             keywords.add(new SystemAlertRuleKeywordEntity(
                     (long) keywords.size() + 1, ruleId, keyword, sortOrder));
             return 1;
+        }
+
+        @Override
+        public int insertKeywordIgnore(Long ruleId, String keyword, int sortOrder) {
+            return insertKeyword(ruleId, keyword, sortOrder);
         }
 
         @Override

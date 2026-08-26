@@ -2,6 +2,7 @@ package cn.aslight.workhub.config;
 
 import cn.aslight.workhub.security.JwtAuthenticationFilter;
 import cn.aslight.workhub.security.McpAccessTokenAuthenticationFilter;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -43,6 +44,24 @@ public class SecurityConfig {
                 .addFilterAfter(mcpAccessTokenAuthenticationFilter, JwtAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public FilterRegistrationBean<JwtAuthenticationFilter> jwtAuthenticationFilterRegistration(
+            JwtAuthenticationFilter filter) {
+        FilterRegistrationBean<JwtAuthenticationFilter> registration =
+                new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
+    public FilterRegistrationBean<McpAccessTokenAuthenticationFilter> mcpAccessTokenAuthenticationFilterRegistration(
+            McpAccessTokenAuthenticationFilter filter) {
+        FilterRegistrationBean<McpAccessTokenAuthenticationFilter> registration =
+                new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean

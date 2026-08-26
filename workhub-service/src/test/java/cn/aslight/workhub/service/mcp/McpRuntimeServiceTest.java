@@ -6,6 +6,8 @@ import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
 import cn.aslight.workhub.model.project.BusinessLineAccessConfigEntity;
+import cn.aslight.workhub.model.ops.BusinessLogSearchResponse;
+import cn.aslight.workhub.service.ops.BusinessLogSearchService;
 import cn.aslight.workhub.service.intake.GitlabRepositoryService;
 import cn.aslight.workhub.service.intake.IntakeService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -13,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +23,10 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class McpRuntimeServiceTest {
 
@@ -203,6 +210,47 @@ class McpRuntimeServiceTest {
         assertTrue(text.contains("get_requirement_test_context"));
         assertTrue(text.contains("get_business_line_test_context"));
         assertTrue(text.contains("sync_gitlab_group_repositories"));
+    }
+
+    @Test
+    void handle_shouldExposeAndCallPreferredControlledBusinessLogSearch() throws Exception {
+        McpResourceService resourceService = resourceService(new McpCatalogResponse(
+                List.of(Map.of(
+                        "code", "BL000001",
+                        "name", "保费分期",
+                        "gitlabGroupName", "scf",
+                        "involvedSystems", List.of("scf-payment"),
+                        "globalSystems", List.of(),
+                        "enabled", true
+                )),
+                List.of(Map.of("code", "prod", "name", "生产环境", "production", true, "enabled", true)),
+                List.of(), List.of(), Map.of(), Map.of()));
+        BusinessLogSearchService logSearchService = mock(BusinessLogSearchService.class);
+        when(logSearchService.search(org.mockito.ArgumentMatchers.any())).thenReturn(new BusinessLogSearchResponse(
+                "BL000001", "prod", List.of("scf-payment-*"), List.of("scf-payment"), List.of("INFO"),
+                Instant.parse("2026-08-22T23:50:00Z"), Instant.parse("2026-08-23T00:00:00Z"),
+                20, 0, false, true, List.of()));
+        McpRuntimeService runtimeService = new McpRuntimeService(
+                resourceService, new FakeIntakeService(), new FakeGitlabRepositoryService(), null, logSearchService);
+
+        JsonNode listResponse = runtimeService.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}
+                """));
+        JsonNode callResponse = runtimeService.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_business_logs","arguments":{
+                  "businessLine":"保费分期","environmentCode":"prod","serviceNames":"scf-payment,scf-saps",
+                  "levels":"INFO,ERROR","from":"2026-08-22T23:50:00Z","to":"2026-08-23T00:00:00Z",
+                  "phrase":"查询当日交易明细","limit":"20"
+                }}}
+                """));
+
+        assertTrue(listResponse.at("/result/tools").toString().contains("search_business_logs"));
+        assertTrue(callResponse.at("/result/content/0/text").asText().contains("BL000001"));
+        verify(logSearchService).search(argThat(request ->
+                "BL000001".equals(request.businessLineCode())
+                        && request.serviceNames().equals(List.of("scf-payment", "scf-saps"))
+                        && request.levels().equals(List.of("INFO", "ERROR"))
+                        && request.limit() == 20));
     }
 
     @Test

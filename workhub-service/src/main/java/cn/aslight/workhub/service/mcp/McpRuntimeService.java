@@ -7,8 +7,10 @@ import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
 import cn.aslight.workhub.model.project.BusinessLineAccessConfigEntity;
+import cn.aslight.workhub.model.ops.BusinessLogSearchRequest;
 import cn.aslight.workhub.service.intake.GitlabRepositoryService;
 import cn.aslight.workhub.service.intake.IntakeService;
+import cn.aslight.workhub.service.ops.BusinessLogSearchService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -40,30 +42,41 @@ public class McpRuntimeService {
             "2025-03-26"
     );
     private static final String SERVER_INSTRUCTIONS = """
-            WorkHub 提供受控的需求、业务线、代码缓存、数据库和服务器只读诊断工具。涉及业务线排查或测试时，必须先确认业务线、环境和分支；数据库只允许只读 SQL，查询结果会在服务端脱敏；不得尝试绕过资源白名单、行数限制、日志路径限制或安全策略。
+            WorkHub 提供受控的需求、业务线、代码缓存、数据库和服务器只读诊断工具。涉及业务线排查或测试时，必须先确认业务线、环境和分支；生产日志排查首选 search_business_logs 实时查询受控 ELK 范围，服务器日志作为补充，尤其在生产服务器需要堡垒机时；数据库只允许只读 SQL，查询结果和日志结果会在服务端脱敏；不得尝试绕过资源白名单、时间与行数限制、日志路径限制或安全策略。
             """.strip();
 
     private final McpResourceService mcpResourceService;
     private final IntakeService intakeService;
     private final GitlabRepositoryService gitlabRepositoryService;
     private final BusinessLineAccessConfigMapper businessLineAccessConfigMapper;
+    private final BusinessLogSearchService businessLogSearchService;
     private final ObjectMapper objectMapper;
 
     public McpRuntimeService(McpResourceService mcpResourceService,
                              IntakeService intakeService,
                              GitlabRepositoryService gitlabRepositoryService) {
-        this(mcpResourceService, intakeService, gitlabRepositoryService, null);
+        this(mcpResourceService, intakeService, gitlabRepositoryService, null, null);
+    }
+
+    public McpRuntimeService(McpResourceService mcpResourceService,
+                             IntakeService intakeService,
+                             GitlabRepositoryService gitlabRepositoryService,
+                             BusinessLineAccessConfigMapper businessLineAccessConfigMapper) {
+        this(mcpResourceService, intakeService, gitlabRepositoryService,
+                businessLineAccessConfigMapper, null);
     }
 
     @Autowired
     public McpRuntimeService(McpResourceService mcpResourceService,
                              IntakeService intakeService,
                              GitlabRepositoryService gitlabRepositoryService,
-                             BusinessLineAccessConfigMapper businessLineAccessConfigMapper) {
+                             BusinessLineAccessConfigMapper businessLineAccessConfigMapper,
+                             BusinessLogSearchService businessLogSearchService) {
         this.mcpResourceService = mcpResourceService;
         this.intakeService = intakeService;
         this.gitlabRepositoryService = gitlabRepositoryService;
         this.businessLineAccessConfigMapper = businessLineAccessConfigMapper;
+        this.businessLogSearchService = businessLogSearchService;
         this.objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -180,7 +193,38 @@ public class McpRuntimeService {
                 args -> businessLineContext(args, catalog));
         registerIntakeTools(registry, catalog);
         registerGitlabTools(registry);
+        registerBusinessLogTools(registry, catalog);
         return registry;
+    }
+
+    private void registerBusinessLogTools(McpToolRegistry registry, McpResourceCatalog catalog) {
+        if (businessLogSearchService == null) {
+            return;
+        }
+        registry.register("search_business_logs", "Preferred production log query. Search the controlled live ELK scope for one business line and environment. serviceNames and levels are comma-separated; no raw index or DSL is accepted.",
+                objectSchema(List.of("businessLine", "environmentCode"),
+                        "serviceNames", "levels", "from", "to", "phrase", "traceId", "requestId", "limit"),
+                args -> searchBusinessLogs(args, catalog));
+    }
+
+    private Object searchBusinessLogs(JsonNode args, McpResourceCatalog catalog) {
+        String businessLine = requireText(args, "businessLine");
+        McpResourceCatalog.BusinessLine matched = findBusinessLine(catalog, businessLine);
+        if (matched == null) {
+            throw new IllegalArgumentException("业务线不存在：" + businessLine);
+        }
+        return businessLogSearchService.search(new BusinessLogSearchRequest(
+                matched.code(),
+                requireText(args, "environmentCode"),
+                optionalCsv(args, "serviceNames"),
+                optionalCsv(args, "levels"),
+                optionalText(args, "from"),
+                optionalText(args, "to"),
+                optionalText(args, "phrase"),
+                optionalText(args, "traceId"),
+                optionalText(args, "requestId"),
+                optionalInt(args, "limit", 50, 1, 100)
+        ));
     }
 
     private void registerIntakeTools(McpToolRegistry registry, McpResourceCatalog catalog) {
@@ -685,6 +729,18 @@ public class McpRuntimeService {
             }
         }
         return null;
+    }
+
+    private List<String> optionalCsv(JsonNode node, String field) {
+        String value = optionalText(node, field);
+        if (value == null) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(value.split(","))
+                .map(String::trim)
+                .filter(item -> !item.isEmpty())
+                .distinct()
+                .toList();
     }
 
     private void addUnique(List<String> values, String value) {

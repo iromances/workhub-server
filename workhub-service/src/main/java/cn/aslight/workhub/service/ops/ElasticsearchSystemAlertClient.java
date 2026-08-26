@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Locale;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -64,10 +65,10 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
     }
 
     @Override
-    public SyncResult readErrors(String indexPattern, String serviceName, String environmentCode,
+    public SyncResult readErrors(String indexPattern, List<String> serviceNames, String environmentCode,
                                  Instant fromInclusive,
                                  Consumer<ElkSystemAlertLog> consumer) {
-        ElkAlertRuntimeConfig config = configService.current(serviceName, indexPattern);
+        ElkAlertRuntimeConfig config = configService.current(null, indexPattern);
         validateConfiguration(config);
         HttpClient httpClient = clientFor(config);
         String pitId = null;
@@ -77,7 +78,7 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
         try {
             pitId = openPit(config, httpClient);
             while (true) {
-                SearchPage page = search(config, httpClient, pitId, serviceName, environmentCode,
+                SearchPage page = search(config, httpClient, pitId, serviceNames, environmentCode,
                         fromInclusive, searchAfter);
                 pitId = page.pitId();
                 for (ElkSystemAlertLog event : page.events()) {
@@ -114,6 +115,60 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
         }
     }
 
+    public LogSearchResult searchLogs(String indexPattern,
+                                      List<String> serviceNames,
+                                      String environmentCode,
+                                      List<String> levels,
+                                      Instant fromInclusive,
+                                      Instant toInclusive,
+                                      String phrase,
+                                      String traceId,
+                                      String requestId,
+                                      int limit) {
+        ElkAlertRuntimeConfig config = configService.current(null, indexPattern);
+        validateConfiguration(config);
+        if (traceId != null && config.traceIdSourceField() == null) {
+            throw new IllegalArgumentException("当前ELK配置未提供Trace ID字段");
+        }
+        if (requestId != null && config.requestIdSourceField() == null) {
+            throw new IllegalArgumentException("当前ELK配置未提供请求ID字段");
+        }
+        HttpClient httpClient = clientFor(config);
+        String pitId = null;
+        JsonNode searchAfter = null;
+        java.util.List<ElkSystemAlertLog> events = new java.util.ArrayList<>();
+        boolean truncated = false;
+        int fetchLimit = limit + 1;
+        try {
+            pitId = openPit(config, httpClient);
+            while (events.size() < fetchLimit) {
+                int pageSize = Math.min(config.pageSize(), fetchLimit - events.size());
+                SearchPage page = searchLogsPage(config, httpClient, pitId, serviceNames, environmentCode,
+                        levels, fromInclusive, toInclusive, phrase, traceId, requestId, pageSize, searchAfter);
+                pitId = page.pitId();
+                events.addAll(page.events());
+                if (page.hitCount() < pageSize || page.searchAfter() == null) {
+                    break;
+                }
+                searchAfter = page.searchAfter();
+            }
+            if (events.size() > limit) {
+                truncated = true;
+                events = new java.util.ArrayList<>(events.subList(0, limit));
+            }
+            return new LogSearchResult(List.copyOf(events), truncated);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("ELK查询被中断", ex);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new IllegalStateException("ELK连接或响应异常", ex);
+        } finally {
+            closePit(config, httpClient, pitId);
+        }
+    }
+
     private String openPit(ElkAlertRuntimeConfig config, HttpClient httpClient) throws Exception {
         HttpRequest request = request(config, endpoint(config,
                         "/" + config.indexPattern() + "/_pit?keep_alive=" + config.pitKeepAlive()))
@@ -127,7 +182,7 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
     }
 
     private SearchPage search(ElkAlertRuntimeConfig config, HttpClient httpClient,
-                              String pitId, String serviceName, String environmentCode,
+                              String pitId, List<String> serviceNames, String environmentCode,
                               Instant fromInclusive, JsonNode searchAfter) throws Exception {
         ObjectNode body = objectMapper.createObjectNode();
         body.put("size", config.pageSize());
@@ -137,7 +192,11 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
         pit.put("keep_alive", config.pitKeepAlive());
 
         ArrayNode filters = body.putObject("query").putObject("bool").putArray("filter");
-        filters.add(term(config.serviceQueryField(), serviceName));
+        if (serviceNames != null && serviceNames.size() == 1) {
+            filters.add(term(config.serviceQueryField(), serviceNames.getFirst()));
+        } else if (serviceNames != null && !serviceNames.isEmpty()) {
+            filters.add(terms(config.serviceQueryField(), serviceNames));
+        }
         if (config.environmentQueryField() != null && trim(environmentCode) != null) {
             filters.add(term(config.environmentQueryField(), environmentCode));
         }
@@ -171,7 +230,88 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
         JsonNode lastSort = null;
         for (JsonNode hit : hits) {
             lastSort = hit.get("sort");
-            ElkSystemAlertLog event = toEvent(config, hit, serviceName);
+            ElkSystemAlertLog event = toEvent(config, hit);
+            if (event != null) {
+                events.add(event);
+            }
+        }
+        return new SearchPage(nextPitId, hits.size(), events,
+                lastSort == null ? null : lastSort.deepCopy());
+    }
+
+    private SearchPage searchLogsPage(ElkAlertRuntimeConfig config,
+                                      HttpClient httpClient,
+                                      String pitId,
+                                      List<String> serviceNames,
+                                      String environmentCode,
+                                      List<String> levels,
+                                      Instant fromInclusive,
+                                      Instant toInclusive,
+                                      String phrase,
+                                      String traceId,
+                                      String requestId,
+                                      int pageSize,
+                                      JsonNode searchAfter) throws Exception {
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("size", pageSize);
+        body.put("track_total_hits", false);
+        ObjectNode pit = body.putObject("pit");
+        pit.put("id", pitId);
+        pit.put("keep_alive", config.pitKeepAlive());
+
+        ObjectNode bool = body.putObject("query").putObject("bool");
+        ArrayNode filters = bool.putArray("filter");
+        if (serviceNames != null && serviceNames.size() == 1) {
+            filters.add(term(config.serviceQueryField(), serviceNames.getFirst()));
+        } else if (serviceNames != null && !serviceNames.isEmpty()) {
+            filters.add(terms(config.serviceQueryField(), serviceNames));
+        }
+        if (config.environmentQueryField() != null && trim(environmentCode) != null) {
+            filters.add(term(config.environmentQueryField(), environmentCode));
+        }
+        if (levels.size() == 1) {
+            filters.add(term(config.levelQueryField(), levels.getFirst()));
+        } else {
+            filters.add(terms(config.levelQueryField(), levels));
+        }
+        ObjectNode range = filters.addObject().putObject("range").putObject(config.timestampField());
+        range.put("gte", fromInclusive.toString());
+        range.put("lte", toInclusive.toString());
+        if (traceId != null) {
+            filters.add(term(config.traceIdSourceField(), traceId));
+        }
+        if (requestId != null) {
+            filters.add(term(config.requestIdSourceField(), requestId));
+        }
+        if (phrase != null) {
+            bool.putArray("must").addObject().putObject("match_phrase")
+                    .put(config.messageSourceField(), phrase);
+        }
+
+        ArrayNode sort = body.putArray("sort");
+        ObjectNode timestampSort = sort.addObject().putObject(config.timestampField());
+        timestampSort.put("order", "desc");
+        timestampSort.put("format", "strict_date_optional_time_nanos");
+        timestampSort.put("numeric_type", "date_nanos");
+        sort.addObject().put("_shard_doc", "asc");
+        if (searchAfter != null) {
+            body.set("search_after", searchAfter);
+        }
+
+        HttpRequest request = request(config, endpoint(config, "/_search"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body))).build();
+        JsonNode response = send(httpClient, request, "查询日志");
+        String nextPitId = defaultText(text(response, "pit_id"), pitId);
+        JsonNode hits = response.path("hits").path("hits");
+        if (!hits.isArray()) {
+            throw new IllegalStateException("ELK查询响应结构异常");
+        }
+        java.util.List<ElkSystemAlertLog> events = new java.util.ArrayList<>();
+        JsonNode lastSort = null;
+        for (JsonNode hit : hits) {
+            lastSort = hit.get("sort");
+            ElkSystemAlertLog event = toEvent(config, hit);
             if (event != null) {
                 events.add(event);
             }
@@ -186,8 +326,14 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
         return node;
     }
 
-    private ElkSystemAlertLog toEvent(ElkAlertRuntimeConfig config, JsonNode hit,
-                                      String configuredServiceName) {
+    private ObjectNode terms(String field, List<String> values) {
+        ObjectNode node = objectMapper.createObjectNode();
+        ArrayNode array = node.putObject("terms").putArray(field);
+        values.forEach(array::add);
+        return node;
+    }
+
+    private ElkSystemAlertLog toEvent(ElkAlertRuntimeConfig config, JsonNode hit) {
         String index = text(hit, "_index");
         String id = text(hit, "_id");
         JsonNode source = hit.path("_source");
@@ -201,10 +347,11 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
         } catch (RuntimeException ex) {
             return null;
         }
+        String serviceName = trim(textAt(source, config.serviceSourceField()));
         String message = firstText(source, config.messageSourceField(), "message");
         return new ElkSystemAlertLog(
                 sha256(index + ":" + id),
-                defaultText(textAt(source, config.serviceSourceField()), configuredServiceName),
+                serviceName,
                 defaultText(textAt(source, config.levelSourceField()), config.errorLevel()).toUpperCase(),
                 truncate(textAt(source, config.loggerSourceField()), 255),
                 truncate(message, MAX_MESSAGE_LENGTH),
@@ -387,5 +534,8 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
 
     private record SearchPage(String pitId, int hitCount, java.util.List<ElkSystemAlertLog> events,
                               JsonNode searchAfter) {
+    }
+
+    public record LogSearchResult(List<ElkSystemAlertLog> items, boolean truncated) {
     }
 }

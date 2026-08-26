@@ -1,16 +1,18 @@
 package cn.aslight.workhub.service.ops;
 
 import cn.aslight.workhub.observability.ElkAlertProperties;
-import cn.aslight.workhub.dao.ops.SystemAlertIngestionMapper;
+import cn.aslight.workhub.dao.ops.SystemAlertScopeIngestionMapper;
 import cn.aslight.workhub.dao.system.UserMapper;
 import cn.aslight.workhub.model.ops.ElkSystemAlertLog;
 import cn.aslight.workhub.model.ops.SystemAlertEventCategory;
 import cn.aslight.workhub.model.ops.SystemAlertRuleAction;
 import cn.aslight.workhub.model.ops.SystemAlertRuleEntity;
 import cn.aslight.workhub.model.ops.SystemAlertRuleKeywordEntity;
-import cn.aslight.workhub.model.ops.SystemAlertSubsystemEntity;
-import cn.aslight.workhub.model.ops.SystemAlertSubsystemIndexPatternEntity;
-import cn.aslight.workhub.model.ops.SystemAlertSyncStateEntity;
+import cn.aslight.workhub.model.ops.SystemAlertScopeEntity;
+import cn.aslight.workhub.model.ops.SystemAlertScopeIndexEntity;
+import cn.aslight.workhub.model.ops.SystemAlertScopeServiceEntity;
+import cn.aslight.workhub.model.ops.SystemAlertScopeSyncStateEntity;
+import cn.aslight.workhub.model.ops.SystemAlertWatchMode;
 import cn.aslight.workhub.model.system.UserOptionResponse;
 import cn.aslight.workhub.service.notification.NotificationService;
 import org.slf4j.Logger;
@@ -23,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -34,7 +37,7 @@ public class ElkSystemAlertCollector {
     private final AtomicBoolean running = new AtomicBoolean();
     private final ElkAlertRuntimeConfigService configService;
     private final SystemAlertLogSource logSource;
-    private final SystemAlertIngestionMapper ingestionMapper;
+    private final SystemAlertScopeIngestionMapper ingestionMapper;
     private final UserMapper userMapper;
     private final NotificationService notificationService;
     private final ZoneId zoneId;
@@ -42,7 +45,7 @@ public class ElkSystemAlertCollector {
     @Autowired
     public ElkSystemAlertCollector(ElkAlertRuntimeConfigService configService,
                                    SystemAlertLogSource logSource,
-                                   SystemAlertIngestionMapper ingestionMapper,
+                                   SystemAlertScopeIngestionMapper ingestionMapper,
                                    UserMapper userMapper,
                                    NotificationService notificationService) {
         this(configService, logSource, ingestionMapper, userMapper, notificationService, ZoneId.systemDefault());
@@ -50,7 +53,7 @@ public class ElkSystemAlertCollector {
 
     ElkSystemAlertCollector(ElkAlertProperties properties,
                             SystemAlertLogSource logSource,
-                            SystemAlertIngestionMapper ingestionMapper,
+                            SystemAlertScopeIngestionMapper ingestionMapper,
                             UserMapper userMapper,
                             NotificationService notificationService,
                             ZoneId zoneId) {
@@ -60,7 +63,7 @@ public class ElkSystemAlertCollector {
 
     ElkSystemAlertCollector(ElkAlertRuntimeConfigService configService,
                             SystemAlertLogSource logSource,
-                            SystemAlertIngestionMapper ingestionMapper,
+                            SystemAlertScopeIngestionMapper ingestionMapper,
                             UserMapper userMapper,
                             NotificationService notificationService,
                             ZoneId zoneId) {
@@ -90,85 +93,122 @@ public class ElkSystemAlertCollector {
         try {
             List<SystemAlertRuleEntity> rules = ingestionMapper.findEnabledRules();
             attachRuleKeywords(rules);
-            List<SystemAlertSubsystemEntity> subsystems = ingestionMapper.findEnabledSubsystems();
-            attachIndexPatterns(subsystems);
+            List<SystemAlertScopeEntity> scopes = ingestionMapper.findEnabledScopes();
+            attachScopeChildren(scopes);
             int succeeded = 0;
-            for (SystemAlertSubsystemEntity subsystem : subsystems) {
-                if (collectSubsystem(subsystem, config.initialLookbackMinutes(), rules)) {
+            for (SystemAlertScopeEntity scope : scopes) {
+                if (collectScope(scope, config.initialLookbackMinutes(), rules)) {
                     succeeded++;
                 }
             }
-            log.info("ELK系统预警采集完成，子系统数={}，成功数={}，失败数={}",
-                    subsystems.size(), succeeded, subsystems.size() - succeeded);
+            log.info("ELK系统预警采集完成，业务线范围数={}，成功数={}，失败数={}",
+                    scopes.size(), succeeded, scopes.size() - succeeded);
         } finally {
             running.set(false);
         }
     }
 
-    private boolean collectSubsystem(SystemAlertSubsystemEntity subsystem,
-                                     int initialLookbackMinutes,
-                                     List<SystemAlertRuleEntity> rules) {
+    private boolean collectScope(SystemAlertScopeEntity scope,
+                                 int initialLookbackMinutes,
+                                 List<SystemAlertRuleEntity> rules) {
         try {
-            SystemAlertSyncStateEntity state = ingestionMapper.findSyncState(subsystem.getId());
+            SystemAlertScopeSyncStateEntity state = ingestionMapper.findSyncState(scope.getId());
             Instant from = resolveFrom(state, initialLookbackMinutes);
-            NotificationBatch notificationBatch = new NotificationBatch();
+            Map<String, SystemAlertScopeServiceEntity> servicesByName = scope.getServices().stream()
+                    .collect(Collectors.toMap(SystemAlertScopeServiceEntity::serviceName, item -> item,
+                            (left, right) -> left, LinkedHashMap::new));
+            List<String> selectedServices = SystemAlertWatchMode.SELECTED.name().equals(scope.getWatchMode())
+                    ? scope.getServices().stream()
+                    .filter(item -> Boolean.TRUE.equals(item.enabled()))
+                    .map(SystemAlertScopeServiceEntity::serviceName)
+                    .toList()
+                    : List.of();
+            if (SystemAlertWatchMode.SELECTED.name().equals(scope.getWatchMode()) && selectedServices.isEmpty()) {
+                throw new IllegalStateException("指定子系统模式下没有启用的子系统");
+            }
+            Map<String, NotificationBatch> batches = new LinkedHashMap<>();
+            int[] filteredCount = {0};
+            int[] missingServiceCount = {0};
             SystemAlertLogSource.SyncResult result = logSource.readErrors(
-                    subsystem.getIndexPatternExpression(), subsystem.getServiceName(),
-                    subsystem.getEnvironmentCode(), from,
+                    scope.getIndexPatternExpression(), selectedServices,
+                    scope.getEnvironmentCode(), from,
                     event -> {
+                        if (event.serviceName() == null || event.serviceName().isBlank()) {
+                            missingServiceCount[0]++;
+                            return;
+                        }
                         SystemAlertRuleAction action = SystemAlertEventClassifier.classify(event, rules);
                         if (action == SystemAlertRuleAction.IGNORE) {
-                            notificationBatch.recordFiltered();
+                            filteredCount[0]++;
                             return;
                         }
                         SystemAlertEventCategory eventCategory = action == SystemAlertRuleAction.SLOW_SQL
                                 ? SystemAlertEventCategory.SLOW_SQL
                                 : SystemAlertEventCategory.SYSTEM_ERROR;
                         LocalDateTime occurredAt = LocalDateTime.ofInstant(event.occurredAt(), zoneId);
-                        if (ingestionMapper.insertElkEvent(
-                                subsystem, event, occurredAt, eventCategory.name()) > 0) {
-                            notificationBatch.record(event, eventCategory);
+                        SystemAlertScopeServiceEntity configuredService = servicesByName.get(event.serviceName());
+                        String subsystemName = configuredService == null
+                                ? event.serviceName() : configuredService.subsystemName();
+                        if (ingestionMapper.insertElkEvent(scope, subsystemName, event, occurredAt,
+                                eventCategory.name()) > 0) {
+                            batches.computeIfAbsent(event.serviceName(), ignored -> new NotificationBatch())
+                                    .record(event, eventCategory);
                         }
                     });
-            if (notificationBatch.count() > 0) {
-                notifyRecipients(subsystem, notificationBatch, recipients(subsystem.getBusinessLineCode()));
+            List<String> recipients = null;
+            for (Map.Entry<String, NotificationBatch> entry : batches.entrySet()) {
+                if (entry.getValue().count() > 0) {
+                    if (recipients == null) {
+                        recipients = recipients(scope.getBusinessLineCode());
+                    }
+                    SystemAlertScopeServiceEntity configuredService = servicesByName.get(entry.getKey());
+                    String subsystemName = configuredService == null
+                            ? entry.getKey() : configuredService.subsystemName();
+                    notifyRecipients(scope, subsystemName, entry.getValue(), recipients);
+                }
             }
             LocalDateTime cursor = result.latestOccurredAt() == null
-                    ? state == null ? null : state.getLastOccurredAt()
+                    ? state == null ? null : state.lastOccurredAt()
                     : LocalDateTime.ofInstant(result.latestOccurredAt(), zoneId);
-            ingestionMapper.saveSuccess(subsystem.getId(), cursor,
-                    abbreviate("处理" + result.fetchedCount() + "条，过滤" + notificationBatch.filteredCount()
-                            + "条，新增普通异常" + notificationBatch.count()
-                            + "条，新增慢SQL" + notificationBatch.slowSqlCount() + "条", 1_000));
+            int systemErrorCount = batches.values().stream().mapToInt(NotificationBatch::count).sum();
+            int slowSqlCount = batches.values().stream().mapToInt(NotificationBatch::slowSqlCount).sum();
+            ingestionMapper.saveSuccess(scope.getId(), cursor,
+                    abbreviate("处理" + result.fetchedCount() + "条，过滤" + filteredCount[0]
+                            + "条，缺少服务名" + missingServiceCount[0]
+                            + "条，新增普通异常" + systemErrorCount
+                            + "条，新增慢SQL" + slowSqlCount + "条", 1_000));
             return true;
         } catch (Exception ex) {
             String message = safeError(ex);
             try {
-                ingestionMapper.saveFailure(subsystem.getId(), message);
+                ingestionMapper.saveFailure(scope.getId(), message);
             } catch (Exception stateEx) {
-                log.warn("保存ELK系统预警失败状态失败，subsystemId={}，原因={}",
-                        subsystem.getId(), stateEx.getClass().getSimpleName());
+                log.warn("保存ELK系统预警失败状态失败，scopeId={}，原因={}",
+                        scope.getId(), stateEx.getClass().getSimpleName());
             }
-            log.warn("ELK系统预警采集失败，subsystemId={}，serviceName={}，原因={}",
-                    subsystem.getId(), subsystem.getServiceName(), message);
+            log.warn("ELK系统预警采集失败，scopeId={}，businessLineCode={}，原因={}",
+                    scope.getId(), scope.getBusinessLineCode(), message);
             return false;
         }
     }
 
-    private void attachIndexPatterns(List<SystemAlertSubsystemEntity> subsystems) {
-        if (subsystems.isEmpty()) {
+    private void attachScopeChildren(List<SystemAlertScopeEntity> scopes) {
+        if (scopes.isEmpty()) {
             return;
         }
-        List<Long> ids = subsystems.stream().map(SystemAlertSubsystemEntity::getId).toList();
-        Map<Long, List<String>> patternsBySubsystem = ingestionMapper.findIndexPatterns(ids).stream()
+        List<Long> ids = scopes.stream().map(SystemAlertScopeEntity::getId).toList();
+        Map<Long, List<SystemAlertScopeServiceEntity>> servicesByScope = ingestionMapper.findServices(ids).stream()
+                .collect(Collectors.groupingBy(SystemAlertScopeServiceEntity::scopeId));
+        Map<Long, List<String>> patternsByScope = ingestionMapper.findIndexPatterns(ids).stream()
                 .collect(Collectors.groupingBy(
-                        SystemAlertSubsystemIndexPatternEntity::subsystemId,
-                        Collectors.mapping(SystemAlertSubsystemIndexPatternEntity::indexPattern, Collectors.toList())
+                        SystemAlertScopeIndexEntity::scopeId,
+                        Collectors.mapping(SystemAlertScopeIndexEntity::indexPattern, Collectors.toList())
                 ));
-        for (SystemAlertSubsystemEntity subsystem : subsystems) {
-            List<String> patterns = patternsBySubsystem.getOrDefault(subsystem.getId(), List.of());
-            subsystem.setIndexPatterns(patterns);
-            subsystem.setIndexPatternExpression(patterns.isEmpty() ? null : String.join(",", patterns));
+        for (SystemAlertScopeEntity scope : scopes) {
+            scope.setServices(servicesByScope.getOrDefault(scope.getId(), List.of()));
+            List<String> patterns = patternsByScope.getOrDefault(scope.getId(), List.of());
+            scope.setIndexPatterns(patterns);
+            scope.setIndexPatternExpression(patterns.isEmpty() ? null : String.join(",", patterns));
         }
     }
 
@@ -187,11 +227,11 @@ public class ElkSystemAlertCollector {
         }
     }
 
-    private Instant resolveFrom(SystemAlertSyncStateEntity state, int initialLookbackMinutes) {
-        if (state == null || state.getLastOccurredAt() == null) {
+    private Instant resolveFrom(SystemAlertScopeSyncStateEntity state, int initialLookbackMinutes) {
+        if (state == null || state.lastOccurredAt() == null) {
             return Instant.now().minus(Math.max(1, initialLookbackMinutes), ChronoUnit.MINUTES);
         }
-        return state.getLastOccurredAt().atZone(zoneId).toInstant();
+        return state.lastOccurredAt().atZone(zoneId).toInstant();
     }
 
     private List<String> recipients(String businessLineCode) {
@@ -203,13 +243,13 @@ public class ElkSystemAlertCollector {
         return users.isEmpty() ? List.of("admin") : users;
     }
 
-    private void notifyRecipients(SystemAlertSubsystemEntity subsystem, NotificationBatch batch,
+    private void notifyRecipients(SystemAlertScopeEntity scope, String subsystemName, NotificationBatch batch,
                                   List<String> recipients) {
         if (batch.count() == 0 || batch.latest() == null) {
             return;
         }
         ElkSystemAlertLog latest = batch.latest();
-        String title = subsystem.getSubsystemName() + " 出现 " + batch.count() + " 条错误";
+        String title = subsystemName + " 出现 " + batch.count() + " 条错误";
         String content = """
                 业务线：%s
                 环境：%s
@@ -221,23 +261,23 @@ public class ElkSystemAlertCollector {
                 Trace ID：%s
                 最近错误摘要：%s
                 """.formatted(
-                subsystem.getBusinessLineCode(), subsystem.getEnvironmentCode(),
-                subsystem.getSubsystemName(), latest.serviceName(), batch.count(),
+                scope.getBusinessLineCode(), scope.getEnvironmentCode(),
+                subsystemName, latest.serviceName(), batch.count(),
                 LocalDateTime.ofInstant(batch.firstOccurredAt(), zoneId),
                 LocalDateTime.ofInstant(batch.lastOccurredAt(), zoneId),
                 display(latest.errorType()), display(latest.traceId()),
                 display(abbreviate(latest.message(), 2_000)));
-        String dedupeKey = "ELK:BATCH:" + subsystem.getId() + ":" + latest.sourceEventId();
+        String dedupeKey = "ELK:SCOPE:BATCH:" + scope.getId() + ":" + latest.serviceName()
+                + ":" + latest.sourceEventId();
         for (String recipient : recipients) {
             notificationService.createSystemNotification(recipient, "ELK_ERROR", title, content,
-                    subsystem.getBusinessLineCode(), subsystem.getEnvironmentCode(), dedupeKey);
+                    scope.getBusinessLineCode(), scope.getEnvironmentCode(), dedupeKey);
         }
     }
 
     private static final class NotificationBatch {
         private int count;
         private int slowSqlCount;
-        private int filteredCount;
         private Instant firstOccurredAt;
         private Instant lastOccurredAt;
         private ElkSystemAlertLog latest;
@@ -257,16 +297,8 @@ public class ElkSystemAlertCollector {
             }
         }
 
-        void recordFiltered() {
-            filteredCount++;
-        }
-
         int count() {
             return count;
-        }
-
-        int filteredCount() {
-            return filteredCount;
         }
 
         int slowSqlCount() {

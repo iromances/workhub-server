@@ -1,6 +1,9 @@
 package cn.aslight.workhub.dao.ops;
 
 import cn.aslight.workhub.model.ops.SystemAlertEventResponse;
+import cn.aslight.workhub.model.ops.SystemAlertEventNotificationReference;
+import cn.aslight.workhub.model.ops.SystemAlertCleanupEventReference;
+import cn.aslight.workhub.model.ops.SystemAlertNotificationCandidate;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemEntity;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemIndexPatternEntity;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemSummaryResponse;
@@ -169,6 +172,10 @@ public interface SystemAlertMapper {
             <if test="eventCategory != null and eventCategory != ''">
               AND e.event_category = #{eventCategory}
             </if>
+            <if test="messageKeyword != null and messageKeyword != ''">
+              AND COALESCE(NULLIF(e.message, ''), NULLIF(e.title, ''), e.error_type, '')
+                  LIKE CONCAT('%', #{messageKeyword}, '%')
+            </if>
             <if test="startTime != null">
               AND e.occurred_at &gt;= #{startTime}
             </if>
@@ -182,6 +189,7 @@ public interface SystemAlertMapper {
                     @Param("serviceName") String serviceName,
                     @Param("level") String level,
                     @Param("eventCategory") String eventCategory,
+                    @Param("messageKeyword") String messageKeyword,
                     @Param("startTime") LocalDateTime startTime,
                     @Param("endTime") LocalDateTime endTime);
 
@@ -214,6 +222,10 @@ public interface SystemAlertMapper {
             <if test="eventCategory != null and eventCategory != ''">
               AND e.event_category = #{eventCategory}
             </if>
+            <if test="messageKeyword != null and messageKeyword != ''">
+              AND COALESCE(NULLIF(e.message, ''), NULLIF(e.title, ''), e.error_type, '')
+                  LIKE CONCAT('%', #{messageKeyword}, '%')
+            </if>
             <if test="startTime != null">
               AND e.occurred_at &gt;= #{startTime}
             </if>
@@ -233,6 +245,7 @@ public interface SystemAlertMapper {
                                                               @Param("serviceName") String serviceName,
                                                               @Param("level") String level,
                                                               @Param("eventCategory") String eventCategory,
+                                                              @Param("messageKeyword") String messageKeyword,
                                                               @Param("startTime") LocalDateTime startTime,
                                                               @Param("endTime") LocalDateTime endTime);
 
@@ -274,6 +287,10 @@ public interface SystemAlertMapper {
             <if test="eventCategory != null and eventCategory != ''">
               AND e.event_category = #{eventCategory}
             </if>
+            <if test="messageKeyword != null and messageKeyword != ''">
+              AND COALESCE(NULLIF(e.message, ''), NULLIF(e.title, ''), e.error_type, '')
+                  LIKE CONCAT('%', #{messageKeyword}, '%')
+            </if>
             <if test="startTime != null">
               AND e.occurred_at &gt;= #{startTime}
             </if>
@@ -289,8 +306,126 @@ public interface SystemAlertMapper {
                                               @Param("serviceName") String serviceName,
                                               @Param("level") String level,
                                               @Param("eventCategory") String eventCategory,
+                                              @Param("messageKeyword") String messageKeyword,
                                               @Param("startTime") LocalDateTime startTime,
                                               @Param("endTime") LocalDateTime endTime,
                                               @Param("limit") int limit,
                                               @Param("offset") int offset);
+
+    @Select("SELECT COALESCE(MAX(id), 0) FROM ops_system_alert_event")
+    long findMaxEventId();
+
+    @Select("""
+            <script>
+            SELECT e.id,
+                   e.business_line_code AS businessLineCode,
+                   e.environment_code AS environmentCode,
+                   e.source_event_id AS sourceEventId
+            FROM ops_system_alert_event e
+            WHERE e.id &gt; #{processedEventId}
+              AND e.id &lt;= #{maxEventId}
+            <if test="businessLineCode != null and businessLineCode != ''">
+              AND e.business_line_code = #{businessLineCode}
+            </if>
+            <if test="environmentCode != null and environmentCode != ''">
+              AND e.environment_code = #{environmentCode}
+            </if>
+            <if test="serviceName != null and serviceName != ''">
+              AND e.service_name = #{serviceName}
+            </if>
+            <if test="level != null and level != ''">
+              AND e.log_level = #{level}
+            </if>
+            <if test="eventCategory != null and eventCategory != ''">
+              AND e.event_category = #{eventCategory}
+            </if>
+              AND COALESCE(NULLIF(e.message, ''), NULLIF(e.title, ''), e.error_type, '')
+                  LIKE CONCAT('%', #{messageKeyword}, '%')
+            <if test="startTime != null">
+              AND e.occurred_at &gt;= #{startTime}
+            </if>
+            <if test="endTime != null">
+              AND e.occurred_at &lt;= #{endTime}
+            </if>
+            ORDER BY e.id ASC
+            LIMIT #{limit}
+            </script>
+            """)
+    @Options(timeout = 600)
+    List<SystemAlertCleanupEventReference> findCleanupEventBatch(
+            @Param("businessLineCode") String businessLineCode,
+            @Param("environmentCode") String environmentCode,
+            @Param("serviceName") String serviceName,
+            @Param("level") String level,
+            @Param("eventCategory") String eventCategory,
+            @Param("messageKeyword") String messageKeyword,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            @Param("processedEventId") long processedEventId,
+            @Param("maxEventId") long maxEventId,
+            @Param("limit") int limit);
+
+    @Delete({
+            "<script>",
+            "DELETE FROM ops_system_alert_event",
+            "WHERE id IN",
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>",
+            "#{id}",
+            "</foreach>",
+            "</script>"
+    })
+    int deleteEventsByIds(@Param("ids") List<Long> ids);
+
+    @Select({
+            "<script>",
+            "SELECT business_line_code AS businessLineCode,",
+            "environment_code AS environmentCode,",
+            "source_event_id AS sourceEventId",
+            "FROM ops_system_alert_event",
+            "WHERE id IN",
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>",
+            "#{id}",
+            "</foreach>",
+            "AND source_event_id IS NOT NULL",
+            "AND source_event_id != ''",
+            "</script>"
+    })
+    List<SystemAlertEventNotificationReference> findEventNotificationReferences(
+            @Param("ids") List<Long> ids);
+
+    @Select({
+            "<script>",
+            "SELECT n.id,",
+            "n.business_line_code AS businessLineCode,",
+            "n.environment_code AS environmentCode,",
+            "n.dedupe_key AS dedupeKey",
+            "FROM sys_notification n",
+            "INNER JOIN (",
+            "SELECT DISTINCT business_line_code, environment_code",
+            "FROM ops_system_alert_event",
+            "WHERE id IN",
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>",
+            "#{id}",
+            "</foreach>",
+            "AND source_event_id IS NOT NULL",
+            "AND source_event_id != ''",
+            ") e ON e.business_line_code = n.business_line_code",
+            "AND e.environment_code = n.environment_code",
+            "WHERE n.notification_type = 'ELK_ERROR'",
+            "</script>"
+    })
+    @Options(timeout = 600)
+    List<SystemAlertNotificationCandidate> findNotificationCandidatesByEventIds(
+            @Param("ids") List<Long> ids);
+
+    @Delete({
+            "<script>",
+            "DELETE FROM sys_notification",
+            "WHERE id IN",
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>",
+            "#{id}",
+            "</foreach>",
+            "</script>"
+    })
+    int deleteNotificationsByIds(@Param("ids") List<Long> ids);
 }

@@ -5,6 +5,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -26,10 +27,14 @@ public class McpAccessTokenAuthenticationFilter extends OncePerRequestFilter {
 
     static final String MCP_RUNTIME_PATH = "/api/mcp/runtime";
 
-    private final McpProperties mcpProperties;
+    private final String configuredAccessToken;
 
-    public McpAccessTokenAuthenticationFilter(McpProperties mcpProperties) {
-        this.mcpProperties = mcpProperties;
+    public McpAccessTokenAuthenticationFilter(
+            McpProperties mcpProperties,
+            @Value("${WORKHUB_MCP_ACCESS_TOKEN:}") String environmentAccessToken) {
+        this.configuredAccessToken = StringUtils.hasText(environmentAccessToken)
+                ? environmentAccessToken
+                : mcpProperties.getAccessToken();
     }
 
     @Override
@@ -41,12 +46,11 @@ public class McpAccessTokenAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        String configuredToken = mcpProperties.getAccessToken();
         String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (StringUtils.hasText(configuredToken)
+        if (StringUtils.hasText(configuredAccessToken)
                 && StringUtils.hasText(authorization)
                 && authorization.startsWith("Bearer ")
-                && tokenMatches(configuredToken, authorization.substring(7))) {
+                && tokenMatches(configuredAccessToken, authorization.substring(7))) {
             UsernamePasswordAuthenticationToken authentication =
                     UsernamePasswordAuthenticationToken.authenticated(
                             "workhub-mcp",

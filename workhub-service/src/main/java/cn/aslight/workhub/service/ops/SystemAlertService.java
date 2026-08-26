@@ -3,19 +3,25 @@ package cn.aslight.workhub.service.ops;
 import cn.aslight.workhub.dao.ops.SystemAlertMapper;
 import cn.aslight.workhub.model.ops.SystemAlertDashboardResponse;
 import cn.aslight.workhub.model.ops.SystemAlertEventCategory;
+import cn.aslight.workhub.model.ops.SystemAlertEventBatchDeleteResponse;
+import cn.aslight.workhub.model.ops.SystemAlertEventNotificationReference;
 import cn.aslight.workhub.model.ops.SystemAlertEventResponse;
+import cn.aslight.workhub.model.ops.SystemAlertNotificationCandidate;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemEntity;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemIndexPatternEntity;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemResponse;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemSaveRequest;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemSummaryResponse;
+import cn.aslight.workhub.service.system.SystemAuditService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -23,10 +29,14 @@ import java.util.stream.Collectors;
 public class SystemAlertService {
 
     private static final Pattern INDEX_PATTERN = Pattern.compile("[A-Za-z0-9*._-]+");
+    private static final int DELETE_BATCH_SIZE = 500;
     private final SystemAlertMapper systemAlertMapper;
+    private final SystemAuditService auditService;
 
-    public SystemAlertService(SystemAlertMapper systemAlertMapper) {
+    public SystemAlertService(SystemAlertMapper systemAlertMapper,
+                              SystemAuditService auditService) {
         this.systemAlertMapper = systemAlertMapper;
+        this.auditService = auditService;
     }
 
     public List<SystemAlertSubsystemResponse> listSubsystems(String businessLineCode,
@@ -89,6 +99,7 @@ public class SystemAlertService {
                                                   String serviceName,
                                                   String level,
                                                   String eventCategory,
+                                                  String messageKeyword,
                                                   LocalDateTime startTime,
                                                   LocalDateTime endTime,
                                                   int page,
@@ -97,12 +108,16 @@ public class SystemAlertService {
             throw new IllegalArgumentException("开始时间不能晚于结束时间");
         }
         int normalizedPage = Math.max(page, 1);
-        int normalizedPageSize = Math.min(Math.max(pageSize, 1), 100);
+        int normalizedPageSize = Math.min(Math.max(pageSize, 1), 1_000);
         int offset = (normalizedPage - 1) * normalizedPageSize;
         String normalizedBusinessLineCode = trimToNull(businessLineCode);
         String normalizedEnvironmentCode = trimToNull(environmentCode);
         String normalizedServiceName = trimToNull(serviceName);
         String normalizedLevel = normalizeLevel(level);
+        String normalizedMessageKeyword = trimToNull(messageKeyword);
+        if (normalizedMessageKeyword != null && normalizedMessageKeyword.length() > 200) {
+            throw new IllegalArgumentException("错误消息关键词不能超过200个字符");
+        }
         SystemAlertEventCategory normalizedEventCategory = SystemAlertEventCategory.parseNullable(eventCategory);
         String normalizedEventCategoryValue = normalizedEventCategory == null ? null : normalizedEventCategory.name();
         List<SystemAlertSubsystemResponse> subsystems = attachIndexPatterns(systemAlertMapper.findSubsystems(
@@ -119,6 +134,7 @@ public class SystemAlertService {
                 normalizedServiceName,
                 normalizedLevel,
                 normalizedEventCategoryValue,
+                normalizedMessageKeyword,
                 startTime,
                 endTime);
         List<SystemAlertSubsystemSummaryResponse> summaries = systemAlertMapper.summarizeEvents(
@@ -127,6 +143,7 @@ public class SystemAlertService {
                 normalizedServiceName,
                 normalizedLevel,
                 normalizedEventCategoryValue,
+                normalizedMessageKeyword,
                 startTime,
                 endTime);
         List<SystemAlertEventResponse> events = systemAlertMapper.findEvents(
@@ -135,11 +152,119 @@ public class SystemAlertService {
                 normalizedServiceName,
                 normalizedLevel,
                 normalizedEventCategoryValue,
+                normalizedMessageKeyword,
                 startTime,
                 endTime,
                 normalizedPageSize,
                 offset);
         return new SystemAlertDashboardResponse(totalCount, normalizedPage, normalizedPageSize, subsystems, summaries, events);
+    }
+
+    @Transactional
+    public SystemAlertEventBatchDeleteResponse deleteEvents(List<Long> ids, String operator, String ip) {
+        if (ids == null || ids.isEmpty()) {
+            throw new IllegalArgumentException("请选择需要删除的系统预警事件");
+        }
+        if (ids.stream().anyMatch(id -> id == null || id <= 0)) {
+            throw new IllegalArgumentException("事件ID必须大于0");
+        }
+        List<Long> normalizedIds = ids.stream().distinct().toList();
+        List<SystemAlertEventNotificationReference> references =
+                findEventNotificationReferences(normalizedIds);
+        List<Long> notificationIds = findRelatedNotificationIds(normalizedIds, references);
+        int deletedNotificationCount = deleteNotificationsByIds(notificationIds);
+        int deletedCount = deleteEventsByIds(normalizedIds);
+        auditService.operation(
+                operator,
+                "ops:system-alert:delete",
+                "BATCH_DELETE",
+                "OPS_SYSTEM_ALERT_EVENT",
+                normalizedIds.size() == 1 ? String.valueOf(normalizedIds.getFirst()) : "batch:" + normalizedIds.size(),
+                deleteAuditSnapshot(normalizedIds),
+                "物理删除系统预警事件" + deletedCount + "条，关联站内通知" + deletedNotificationCount + "条",
+                "SUCCESS",
+                null,
+                ip
+        );
+        return new SystemAlertEventBatchDeleteResponse(deletedCount, deletedNotificationCount);
+    }
+
+    private List<SystemAlertEventNotificationReference> findEventNotificationReferences(
+            List<Long> eventIds) {
+        ArrayList<SystemAlertEventNotificationReference> references = new ArrayList<>();
+        for (int start = 0; start < eventIds.size(); start += DELETE_BATCH_SIZE) {
+            int end = Math.min(start + DELETE_BATCH_SIZE, eventIds.size());
+            references.addAll(systemAlertMapper.findEventNotificationReferences(
+                    eventIds.subList(start, end)));
+        }
+        return references;
+    }
+
+    private List<Long> findRelatedNotificationIds(
+            List<Long> eventIds,
+            List<SystemAlertEventNotificationReference> references) {
+        if (references.isEmpty()) {
+            return List.of();
+        }
+        Map<NotificationScope, Set<String>> sourceEventIdsByScope = references.stream()
+                .collect(Collectors.groupingBy(
+                        reference -> new NotificationScope(
+                                reference.businessLineCode(), reference.environmentCode()),
+                        Collectors.mapping(
+                                SystemAlertEventNotificationReference::sourceEventId,
+                                Collectors.toSet())));
+        ArrayList<SystemAlertNotificationCandidate> candidates = new ArrayList<>();
+        for (int start = 0; start < eventIds.size(); start += DELETE_BATCH_SIZE) {
+            int end = Math.min(start + DELETE_BATCH_SIZE, eventIds.size());
+            candidates.addAll(systemAlertMapper.findNotificationCandidatesByEventIds(
+                    eventIds.subList(start, end)));
+        }
+        return candidates.stream()
+                .filter(candidate -> isRelatedNotification(candidate, sourceEventIdsByScope))
+                .map(SystemAlertNotificationCandidate::id)
+                .distinct()
+                .toList();
+    }
+
+    private boolean isRelatedNotification(
+            SystemAlertNotificationCandidate candidate,
+            Map<NotificationScope, Set<String>> sourceEventIdsByScope) {
+        Set<String> sourceEventIds = sourceEventIdsByScope.get(
+                new NotificationScope(candidate.businessLineCode(), candidate.environmentCode()));
+        if (sourceEventIds == null || candidate.dedupeKey() == null) {
+            return false;
+        }
+        int separatorIndex = candidate.dedupeKey().lastIndexOf(':');
+        return separatorIndex >= 0
+                && sourceEventIds.contains(candidate.dedupeKey().substring(separatorIndex + 1));
+    }
+
+    private int deleteNotificationsByIds(List<Long> notificationIds) {
+        int deletedCount = 0;
+        for (int start = 0; start < notificationIds.size(); start += DELETE_BATCH_SIZE) {
+            int end = Math.min(start + DELETE_BATCH_SIZE, notificationIds.size());
+            deletedCount += systemAlertMapper.deleteNotificationsByIds(
+                    notificationIds.subList(start, end));
+        }
+        return deletedCount;
+    }
+
+    private int deleteEventsByIds(List<Long> eventIds) {
+        int deletedCount = 0;
+        for (int start = 0; start < eventIds.size(); start += DELETE_BATCH_SIZE) {
+            int end = Math.min(start + DELETE_BATCH_SIZE, eventIds.size());
+            deletedCount += systemAlertMapper.deleteEventsByIds(eventIds.subList(start, end));
+        }
+        return deletedCount;
+    }
+
+    private record NotificationScope(String businessLineCode, String environmentCode) {
+    }
+
+    private String deleteAuditSnapshot(List<Long> ids) {
+        int sampleSize = Math.min(ids.size(), 20);
+        String suffix = ids.size() > sampleSize ? "，其余ID省略" : "";
+        return "选中事件数：" + ids.size() + "，事件ID样例：" + ids.subList(0, sampleSize) + suffix;
     }
 
     private SystemAlertSubsystemEntity requireSubsystem(Long id) {

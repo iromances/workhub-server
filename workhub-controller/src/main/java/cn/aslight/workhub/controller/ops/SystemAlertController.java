@@ -3,14 +3,24 @@ package cn.aslight.workhub.controller.ops;
 import cn.aslight.workhub.common.api.ApiResponse;
 import cn.aslight.workhub.common.api.PageResponse;
 import cn.aslight.workhub.model.ops.SystemAlertDashboardResponse;
+import cn.aslight.workhub.model.ops.SystemAlertCleanupTaskResponse;
+import cn.aslight.workhub.model.ops.SystemAlertDeleteAndFilterRequest;
+import cn.aslight.workhub.model.ops.SystemAlertEventBatchDeleteRequest;
+import cn.aslight.workhub.model.ops.SystemAlertEventBatchDeleteResponse;
 import cn.aslight.workhub.model.ops.SystemAlertRuleResponse;
 import cn.aslight.workhub.model.ops.SystemAlertRuleSaveRequest;
+import cn.aslight.workhub.model.ops.SystemAlertScopeResponse;
+import cn.aslight.workhub.model.ops.SystemAlertScopeSaveRequest;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemResponse;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemSaveRequest;
 import cn.aslight.workhub.service.ops.SystemAlertService;
+import cn.aslight.workhub.service.ops.SystemAlertCleanupTaskService;
 import cn.aslight.workhub.service.ops.SystemAlertRuleService;
+import cn.aslight.workhub.service.ops.SystemAlertScopeService;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,12 +39,18 @@ import java.util.List;
 public class SystemAlertController {
 
     private final SystemAlertService systemAlertService;
+    private final SystemAlertCleanupTaskService systemAlertCleanupTaskService;
     private final SystemAlertRuleService systemAlertRuleService;
+    private final SystemAlertScopeService systemAlertScopeService;
 
     public SystemAlertController(SystemAlertService systemAlertService,
-                                 SystemAlertRuleService systemAlertRuleService) {
+                                 SystemAlertCleanupTaskService systemAlertCleanupTaskService,
+                                 SystemAlertRuleService systemAlertRuleService,
+                                 SystemAlertScopeService systemAlertScopeService) {
         this.systemAlertService = systemAlertService;
+        this.systemAlertCleanupTaskService = systemAlertCleanupTaskService;
         this.systemAlertRuleService = systemAlertRuleService;
+        this.systemAlertScopeService = systemAlertScopeService;
     }
 
     @GetMapping
@@ -44,13 +60,51 @@ public class SystemAlertController {
                                                                @RequestParam(required = false) String serviceName,
                                                                @RequestParam(required = false) String level,
                                                                @RequestParam(required = false) String eventCategory,
+                                                               @RequestParam(required = false) String messageKeyword,
                                                                @RequestParam(required = false) LocalDateTime startTime,
                                                                @RequestParam(required = false) LocalDateTime endTime,
                                                                @RequestParam(defaultValue = "1") int page,
                                                                @RequestParam(defaultValue = "20") int pageSize) {
         return ApiResponse.success(systemAlertService.dashboard(
                 businessLineCode, environmentCode, serviceName, level, eventCategory,
-                startTime, endTime, page, pageSize));
+                messageKeyword, startTime, endTime, page, pageSize));
+    }
+
+    @PostMapping("/events/batch-delete")
+    @PreAuthorize("hasAuthority('ops:system-alert:delete') or hasAuthority('ops:system-alert:manage')")
+    public ApiResponse<SystemAlertEventBatchDeleteResponse> batchDeleteEvents(
+            @Valid @RequestBody SystemAlertEventBatchDeleteRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        SystemAlertEventBatchDeleteResponse result = systemAlertService.deleteEvents(
+                request.getIds(),
+                authentication.getName(),
+                clientIp(httpRequest));
+        return ApiResponse.success(result);
+    }
+
+    @PostMapping("/events/delete-and-filter-tasks")
+    @PreAuthorize("hasAuthority('ops:system-alert:manage') or "
+            + "(hasAuthority('ops:system-alert:delete') and "
+            + "hasAuthority('ops:system-alert:create') and "
+            + "hasAuthority('ops:system-alert:update'))")
+    public ApiResponse<SystemAlertCleanupTaskResponse> submitDeleteAndFilterTask(
+            @Valid @RequestBody SystemAlertDeleteAndFilterRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        return ApiResponse.success(systemAlertCleanupTaskService.submit(
+                request, authentication.getName(), clientIp(httpRequest)));
+    }
+
+    @GetMapping("/events/delete-and-filter-tasks/{id}")
+    @PreAuthorize("hasAuthority('ops:system-alert:view') or hasAuthority('ops:system-alert:manage')")
+    public ApiResponse<SystemAlertCleanupTaskResponse> deleteAndFilterTaskDetail(
+            @PathVariable Long id,
+            Authentication authentication) {
+        boolean canManage = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ops:system-alert:manage".equals(authority.getAuthority()));
+        return ApiResponse.success(systemAlertCleanupTaskService.detail(
+                id, authentication.getName(), canManage));
     }
 
     @GetMapping("/subsystems")
@@ -83,6 +137,39 @@ public class SystemAlertController {
         return ApiResponse.success(null);
     }
 
+    @GetMapping("/scopes")
+    @PreAuthorize("hasAuthority('ops:system-alert:view') or hasAuthority('ops:system-alert:manage')")
+    public ApiResponse<PageResponse<SystemAlertScopeResponse>> listScopes(
+            @RequestParam(required = false) String businessLineCode,
+            @RequestParam(required = false) String environmentCode,
+            @RequestParam(defaultValue = "false") boolean enabledOnly) {
+        List<SystemAlertScopeResponse> items = systemAlertScopeService.list(
+                businessLineCode, environmentCode, enabledOnly);
+        return ApiResponse.success(new PageResponse<>(items.size(), items));
+    }
+
+    @PostMapping("/scopes")
+    @PreAuthorize("hasAuthority('ops:system-alert:create') or hasAuthority('ops:system-alert:manage')")
+    public ApiResponse<SystemAlertScopeResponse> createScope(
+            @Valid @RequestBody SystemAlertScopeSaveRequest request) {
+        return ApiResponse.success(systemAlertScopeService.create(request));
+    }
+
+    @PutMapping("/scopes/{id}")
+    @PreAuthorize("hasAuthority('ops:system-alert:update') or hasAuthority('ops:system-alert:manage')")
+    public ApiResponse<SystemAlertScopeResponse> updateScope(
+            @PathVariable Long id,
+            @Valid @RequestBody SystemAlertScopeSaveRequest request) {
+        return ApiResponse.success(systemAlertScopeService.update(id, request));
+    }
+
+    @DeleteMapping("/scopes/{id}")
+    @PreAuthorize("hasAuthority('ops:system-alert:delete') or hasAuthority('ops:system-alert:manage')")
+    public ApiResponse<Void> deleteScope(@PathVariable Long id) {
+        systemAlertScopeService.delete(id);
+        return ApiResponse.success(null);
+    }
+
     @GetMapping("/rules")
     @PreAuthorize("hasAuthority('ops:system-alert:view') or hasAuthority('ops:system-alert:manage')")
     public ApiResponse<PageResponse<SystemAlertRuleResponse>> listRules(
@@ -112,5 +199,13 @@ public class SystemAlertController {
     public ApiResponse<Void> deleteRule(@PathVariable Long id) {
         systemAlertRuleService.delete(id);
         return ApiResponse.success(null);
+    }
+
+    private String clientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }
