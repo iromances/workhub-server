@@ -6,6 +6,7 @@ import cn.aslight.workhub.service.system.SysConfigService;
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
@@ -17,12 +18,10 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,18 +37,31 @@ public class GitlabRepositoryService {
     private static final Duration GIT_TIMEOUT = Duration.ofMinutes(3);
     private static final Duration GITLAB_API_TIMEOUT = Duration.ofSeconds(20);
     private static final String GLOBAL_CONFIG_GROUP = "gitlab.global";
+    private static final Path DEFAULT_CODE_WORKSPACE_ROOT = Path.of("/Users/aslight/IDEAWorkspace").normalize();
 
     private final SysConfigService sysConfigService;
     private final BusinessLineMapper businessLineMapper;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
+    private final Path codeWorkspaceRoot;
 
+    @Autowired
     public GitlabRepositoryService(SysConfigService sysConfigService,
                                    BusinessLineMapper businessLineMapper,
                                    ObjectMapper objectMapper) {
+        this(sysConfigService, businessLineMapper, objectMapper, DEFAULT_CODE_WORKSPACE_ROOT);
+    }
+
+    GitlabRepositoryService(SysConfigService sysConfigService,
+                            BusinessLineMapper businessLineMapper,
+                            ObjectMapper objectMapper,
+                            Path codeWorkspaceRoot) {
         this.sysConfigService = sysConfigService;
         this.businessLineMapper = businessLineMapper;
         this.objectMapper = objectMapper;
+        this.codeWorkspaceRoot = Objects.requireNonNull(codeWorkspaceRoot, "代码工作区根目录不能为空")
+                .toAbsolutePath()
+                .normalize();
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(GITLAB_API_TIMEOUT)
                 .build();
@@ -61,7 +73,14 @@ public class GitlabRepositoryService {
         if (repository == null) {
             throw new IllegalArgumentException("系统配置不存在或未启用：gitlab." + group + ".repoUrl");
         }
-        Path repoPath = Path.of("data", "git-cache", safeHash(group + "|" + repository.repositoryUrl())).toAbsolutePath().normalize();
+        String gitlabGroupName = findGitlabGroupName(group);
+        if (gitlabGroupName == null) {
+            throw new IllegalArgumentException("业务线未维护 GitLab 组名，请在项目管理中维护业务线对应的 gitlabGroupName：" + group);
+        }
+        Path repoPath = repositoryPath(
+                groupWorkspaceRoot(gitlabGroupName),
+                inferRepositoryName(repository.repositoryUrl())
+        );
         fetchRepository(repository.repositoryUrl(), repository.accessToken(), repoPath);
         return new GitlabRepository(repository.repositoryUrl(), repoPath);
     }
@@ -75,7 +94,14 @@ public class GitlabRepositoryService {
         if (repository == null) {
             repository = discoverRepository(project);
         }
-        Path repoPath = Path.of("data", "git-cache", safeHash(project.id() + "|" + repository.repositoryUrl())).toAbsolutePath().normalize();
+        String gitlabGroupName = findGitlabGroupName(group);
+        if (gitlabGroupName == null) {
+            throw new IllegalArgumentException("业务线未维护 GitLab 组名，请在项目管理中维护业务线对应的 gitlabGroupName：" + group);
+        }
+        Path repoPath = repositoryPath(
+                groupWorkspaceRoot(gitlabGroupName),
+                inferRepositoryName(repository.repositoryUrl())
+        );
         fetchRepository(repository.repositoryUrl(), repository.accessToken(), repoPath);
         return new GitlabRepository(repository.repositoryUrl(), repoPath);
     }
@@ -114,7 +140,7 @@ public class GitlabRepositoryService {
             throw new IllegalArgumentException("GitLab 业务线下未找到可访问仓库：" + gitlabGroupName);
         }
 
-        Path groupRoot = groupCacheRoot(gitlabGroupName);
+        Path groupRoot = groupWorkspaceRoot(gitlabGroupName);
         List<GitlabRepository> repositories = new ArrayList<>();
         for (GitlabProject gitlabProject : projects) {
             String repositoryUrl = firstNonBlank(
@@ -122,7 +148,7 @@ public class GitlabRepositoryService {
                     gitlabProject.webUrl() == null ? null : gitlabProject.webUrl() + ".git"
             );
             String repositoryName = repositoryDirectoryName(gitlabProject, repositoryUrl);
-            Path repoPath = groupRoot.resolve(repositoryName).normalize();
+            Path repoPath = repositoryPath(groupRoot, repositoryName);
             fetchRepository(repositoryUrl, accessToken, repoPath);
             repositories.add(new GitlabRepository(repositoryUrl, repoPath));
         }
@@ -346,20 +372,109 @@ public class GitlabRepositoryService {
         try {
             Files.createDirectories(repoPath.getParent());
             if (Files.exists(repoPath.resolve(".git"))) {
-                runGit(List.of("git", "-C", repoPath.toString(), "-c", "http.extraHeader=PRIVATE-TOKEN: " + accessToken, "remote", "set-url", "origin", repoUrl), repoPath.getParent());
-                runGit(List.of("git", "-C", repoPath.toString(), "-c", "http.extraHeader=PRIVATE-TOKEN: " + accessToken, "fetch", "--depth", "1", "origin"), repoPath.getParent());
-                runGit(List.of("git", "-C", repoPath.toString(), "-c", "http.extraHeader=PRIVATE-TOKEN: " + accessToken, "remote", "set-head", "origin", "-a"), repoPath.getParent());
-                runGit(List.of("git", "-C", repoPath.toString(), "reset", "--hard", "origin/HEAD"), repoPath.getParent());
-                runGit(List.of("git", "-C", repoPath.toString(), "clean", "-fdx"), repoPath.getParent());
+                boolean shallowRepository = isShallowRepository(repoPath);
+                runGit(fetchCommand(repoPath, accessToken, shallowRepository), repoPath.getParent());
+                updateCurrentBranch(repoPath);
                 return;
             }
-            runGit(List.of("git", "-c", "http.extraHeader=PRIVATE-TOKEN: " + accessToken, "clone", "--depth", "1", repoUrl, repoPath.toString()), repoPath.getParent());
+            if (Files.exists(repoPath)) {
+                throw new IllegalStateException("目标路径已存在但不是 Git 仓库：" + repoPath);
+            }
+            runGit(cloneCommand(repoUrl, accessToken, repoPath), repoPath.getParent());
         } catch (Exception ex) {
-            throw new IllegalStateException("GitLab 仓库拉取失败：" + summarizeException(ex), ex);
+            throw new IllegalStateException("GitLab 工作区仓库更新失败：" + summarizeException(ex), ex);
         }
     }
 
-    private void runGit(List<String> command, Path workingDirectory) throws Exception {
+    private boolean isShallowRepository(Path repoPath) throws Exception {
+        String output = runGit(
+                List.of("git", "-C", repoPath.toString(), "rev-parse", "--is-shallow-repository"),
+                repoPath.getParent()
+        );
+        return Boolean.parseBoolean(output.trim());
+    }
+
+    List<String> fetchCommand(Path repoPath, String accessToken, boolean shallowRepository) {
+        List<String> command = new ArrayList<>(List.of(
+                "git",
+                "-C",
+                repoPath.toString(),
+                "-c",
+                "http.extraHeader=PRIVATE-TOKEN: " + accessToken,
+                "fetch"
+        ));
+        if (shallowRepository) {
+            command.add("--unshallow");
+        }
+        command.add("origin");
+        return List.copyOf(command);
+    }
+
+    List<String> cloneCommand(String repoUrl, String accessToken, Path repoPath) {
+        return List.of(
+                "git",
+                "-c",
+                "http.extraHeader=PRIVATE-TOKEN: " + accessToken,
+                "clone",
+                repoUrl,
+                repoPath.toString()
+        );
+    }
+
+    void updateCurrentBranch(Path repoPath) throws Exception {
+        String currentBranch = runGit(
+                List.of("git", "-C", repoPath.toString(), "branch", "--show-current"),
+                repoPath.getParent()
+        ).trim();
+        if (currentBranch.isEmpty()) {
+            log.warn("GitLab repository local update skipped: detached HEAD. repository={}", repoPath);
+            return;
+        }
+
+        String remoteBranch = "origin/" + currentBranch;
+        String remoteRef = runGit(
+                List.of(
+                        "git",
+                        "-C",
+                        repoPath.toString(),
+                        "for-each-ref",
+                        "--format=%(refname)",
+                        "refs/remotes/" + remoteBranch
+                ),
+                repoPath.getParent()
+        ).trim();
+        if (remoteRef.isEmpty()) {
+            log.warn(
+                    "GitLab repository local update skipped: matching remote branch does not exist. repository={}, remoteBranch={}",
+                    repoPath,
+                    remoteBranch
+            );
+            return;
+        }
+
+        try {
+            runGit(mergeCommand(repoPath, remoteBranch), repoPath.getParent());
+        } catch (Exception ex) {
+            throw new IllegalStateException(
+                    "远端代码未更新到本地，当前分支无法安全快进，可能存在本地改动冲突或分支分叉："
+                            + repoPath + " [" + currentBranch + "]",
+                    ex
+            );
+        }
+    }
+
+    List<String> mergeCommand(Path repoPath, String remoteBranch) {
+        return List.of(
+                "git",
+                "-C",
+                repoPath.toString(),
+                "merge",
+                "--ff-only",
+                remoteBranch
+        );
+    }
+
+    private String runGit(List<String> command, Path workingDirectory) throws Exception {
         log.info("GitLab repository sync started. command={}, workingDirectory={}", sanitizeCommand(command), workingDirectory);
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.directory(workingDirectory.toFile());
@@ -375,21 +490,13 @@ public class GitlabRepositoryService {
             throw new IllegalStateException("git 命令失败: " + truncate(output, 1000));
         }
         log.info("GitLab repository sync completed. outputPreview={}", truncate(output, 300));
+        return output;
     }
 
     private List<String> sanitizeCommand(List<String> command) {
         return command.stream()
                 .map(item -> item.startsWith("http.extraHeader=PRIVATE-TOKEN: ") ? "http.extraHeader=PRIVATE-TOKEN: ***" : item)
                 .toList();
-    }
-
-    private String safeHash(String value) {
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes());
-            return HexFormat.of().formatHex(digest).substring(0, 24);
-        } catch (Exception ex) {
-            throw new IllegalStateException("仓库缓存路径生成失败", ex);
-        }
     }
 
     private String trimTrailingSlash(String value) {
@@ -447,8 +554,22 @@ public class GitlabRepositoryService {
         return requireText(repositoryName, "仓库名称不能为空");
     }
 
-    Path groupCacheRoot(String gitlabGroupName) {
-        return Path.of("data", "git-cache", requireText(gitlabGroupName, "GitLab 组名不能为空")).toAbsolutePath().normalize();
+    Path groupWorkspaceRoot(String gitlabGroupName) {
+        String directoryName = requireText(gitlabGroupName, "GitLab 组名不能为空");
+        Path groupRoot = codeWorkspaceRoot.resolve(directoryName).normalize();
+        if (!codeWorkspaceRoot.equals(groupRoot.getParent())) {
+            throw new IllegalArgumentException("GitLab 组名不能越过代码工作区根目录：" + directoryName);
+        }
+        return groupRoot;
+    }
+
+    Path repositoryPath(Path groupRoot, String repositoryName) {
+        String directoryName = requireText(repositoryName, "仓库名称不能为空");
+        Path repositoryPath = groupRoot.resolve(directoryName).normalize();
+        if (!groupRoot.equals(repositoryPath.getParent())) {
+            throw new IllegalArgumentException("仓库名称不能越过业务线工作区：" + directoryName);
+        }
+        return repositoryPath;
     }
 
     private String requireText(String value, String message) {

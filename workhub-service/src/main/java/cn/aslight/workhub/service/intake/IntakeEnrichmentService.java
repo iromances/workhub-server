@@ -43,6 +43,7 @@ public class IntakeEnrichmentService {
     private final CodexCliStructuredExtractor codexCliStructuredExtractor;
     private final Executor workhubTaskExecutor;
     private final ObjectMapper objectMapper;
+    private final RequirementFolderService requirementFolderService;
 
     public IntakeEnrichmentService(IntakeMapper intakeMapper,
                                    AttachmentService attachmentService,
@@ -64,7 +65,6 @@ public class IntakeEnrichmentService {
         );
     }
 
-    @Autowired
     public IntakeEnrichmentService(IntakeMapper intakeMapper,
                                    IntakeStructuredFieldMapper intakeStructuredFieldMapper,
                                    AttachmentService attachmentService,
@@ -74,6 +74,22 @@ public class IntakeEnrichmentService {
                                    CodexCliStructuredExtractor codexCliStructuredExtractor,
                                    @Qualifier("workhubTaskExecutor") Executor workhubTaskExecutor,
                                    ObjectMapper objectMapper) {
+        this(intakeMapper, intakeStructuredFieldMapper, attachmentService, attachmentTextExtractionService,
+                intakeStructuredDataExtractor, intakeStructuredFieldNormalizer, codexCliStructuredExtractor,
+                workhubTaskExecutor, objectMapper, null);
+    }
+
+    @Autowired
+    public IntakeEnrichmentService(IntakeMapper intakeMapper,
+                                   IntakeStructuredFieldMapper intakeStructuredFieldMapper,
+                                   AttachmentService attachmentService,
+                                   AttachmentTextExtractionService attachmentTextExtractionService,
+                                   IntakeStructuredDataExtractor intakeStructuredDataExtractor,
+                                   IntakeStructuredFieldNormalizer intakeStructuredFieldNormalizer,
+                                   CodexCliStructuredExtractor codexCliStructuredExtractor,
+                                   @Qualifier("workhubTaskExecutor") Executor workhubTaskExecutor,
+                                   ObjectMapper objectMapper,
+                                   RequirementFolderService requirementFolderService) {
         this.intakeMapper = intakeMapper;
         this.intakeStructuredFieldMapper = intakeStructuredFieldMapper;
         this.attachmentService = attachmentService;
@@ -83,6 +99,7 @@ public class IntakeEnrichmentService {
         this.codexCliStructuredExtractor = codexCliStructuredExtractor;
         this.workhubTaskExecutor = workhubTaskExecutor;
         this.objectMapper = objectMapper;
+        this.requirementFolderService = requirementFolderService;
     }
 
     private static class NoopIntakeStructuredFieldMapper implements IntakeStructuredFieldMapper {
@@ -196,6 +213,14 @@ public class IntakeEnrichmentService {
                     LocalDateTime.now()
             );
             log.info("Intake enrichment completed. intakeId={}, nextStatus={}, warnings={}", intakeId, nextStatus, warnings);
+            if (IntakeEnrichmentStatus.SUCCEEDED.equals(nextStatus) && requirementFolderService != null) {
+                try {
+                    requirementFolderService.scheduleMaterialExport(intakeId);
+                } catch (RuntimeException exportFailure) {
+                    // 识别结果已经保存，目录故障不能把识别成功改成失败。
+                    log.warn("识别完成后同步需求目录失败，可通过打开需求文件夹重试。intakeId={}", intakeId, exportFailure);
+                }
+            }
         } catch (Exception ex) {
             log.warn("Intake enrichment failed. intakeId={}", intakeId, ex);
             IntakeRecordEntity failedEntity = requireExisting(intakeId);

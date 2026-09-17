@@ -1,0 +1,13 @@
+{
+  "amp-admin": "b69dc1e6544f8f8ba081ce25a0029f0bc7be8b11",
+  "amp-gateway": "218a0a5643b54755ee9a7df64c7c7025c592764a",
+  "amp-op-gateway": "cff6a6fd09d991d3d2e43715f07e14ecae881e17",
+  "amp-order": "f696b160af8081f9a2090aca35ced64c2d5005af",
+  "amp-risk": "545bdaee66216dbc3f024573d9b098316f669209",
+  "amp-capital": "742871aefc308d23d1ecc9aa757fa518632441d3",
+  "amp-payment": "f90bbadcc278c2881eeb0cb9845c43022ec4c31d",
+  "amp-saps": "47c88d6eb1fbde8eec379a04b6a11a67232fc134",
+  "amp-auth": "72721bb795280e9abbd2f8849c0020efbf93ebab",
+  "amp-intf-common": "ec1e4df4867b6a8c26f6fb2a6665cd03a6ef0779",
+  "amp-doc": "d0fc1793a9607835ba241a8ad351b20144b14d05"
+}

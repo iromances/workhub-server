@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,6 +67,9 @@ public class AttachmentTextExtractionService {
                         attachment.storagePath());
                 String extractedText = extractText(attachment);
                 String normalized = normalizeText(extractedText);
+                if ("rp".equals(fileExtension(attachment.fileName()))) {
+                    warnings.add(attachment.fileName() + " 仅提取可编辑文字和文档条目名称，图片、交互及部分备注未识别，请结合其他附件核对");
+                }
                 if (normalized == null) {
                     warnings.add(attachment.fileName() + " 未提取到可读正文");
                     log.debug("Attachment text extraction produced empty text. fileName={}", attachment.fileName());
@@ -91,49 +95,68 @@ public class AttachmentTextExtractionService {
 
     String extractText(AttachmentService.AttachmentFileContext attachment) throws IOException, InvalidFormatException {
         String extension = fileExtension(attachment.fileName());
-        Path path = Path.of(attachment.storagePath());
+        byte[] content = resolveContent(attachment);
         return switch (extension) {
-            case "pdf" -> extractPdf(path);
-            case "docx" -> extractDocx(path);
-            case "doc" -> extractDoc(path);
-            case "xlsx", "xls" -> extractWorkbook(path);
-            case "html", "htm" -> extractHtml(path);
-            case "txt", "csv", "md", "json", "xml", "yaml", "yml", "log" -> Files.readString(path, StandardCharsets.UTF_8);
+            case "rp" -> new AxureRpTextExtractor().extract(content);
+            case "pdf" -> extractPdf(content);
+            case "docx" -> extractDocx(content);
+            case "doc" -> extractDoc(content);
+            case "xlsx", "xls" -> extractWorkbook(content);
+            case "html", "htm" -> extractHtml(content);
+            case "txt", "csv", "md", "json", "xml", "yaml", "yml", "log" -> new String(content, StandardCharsets.UTF_8);
             default -> throw new IllegalArgumentException("暂不支持的附件类型");
         };
     }
 
-    private String extractHtml(Path path) throws IOException {
-        Document document = Jsoup.parse(path.toFile(), null);
+    private byte[] resolveContent(AttachmentService.AttachmentFileContext attachment) throws IOException {
+        if (attachment.fileContent() != null) {
+            return attachment.fileContent();
+        }
+        if (attachment.storagePath() == null || attachment.storagePath().isBlank()) {
+            throw new IOException("附件文件不存在");
+        }
+        if ("rp".equals(fileExtension(attachment.fileName()))) {
+            try (InputStream input = Files.newInputStream(Path.of(attachment.storagePath()))) {
+                return input.readNBytes(AxureRpTextExtractor.MAX_INPUT_BYTES + 1);
+            }
+        }
+        return Files.readAllBytes(Path.of(attachment.storagePath()));
+    }
+
+    private String extractHtml(byte[] content) throws IOException {
+        Document document;
+        try (InputStream inputStream = new ByteArrayInputStream(content)) {
+            document = Jsoup.parse(inputStream, null, "");
+        }
         document.select("script, style, noscript, template").remove();
         return document.body() == null ? document.text() : document.body().text();
     }
 
-    private String extractPdf(Path path) throws IOException {
-        try (PDDocument document = Loader.loadPDF(path.toFile())) {
+    private String extractPdf(byte[] content) throws IOException {
+        try (PDDocument document = Loader.loadPDF(content)) {
             PDFTextStripper stripper = new PDFTextStripper();
             return stripper.getText(document);
         }
     }
 
-    private String extractDocx(Path path) throws IOException {
-        try (InputStream inputStream = Files.newInputStream(path);
+    private String extractDocx(byte[] content) throws IOException {
+        try (InputStream inputStream = new ByteArrayInputStream(content);
              XWPFDocument document = new XWPFDocument(inputStream);
              XWPFWordExtractor extractor = new XWPFWordExtractor(document)) {
             return extractor.getText();
         }
     }
 
-    private String extractDoc(Path path) throws IOException {
-        try (InputStream inputStream = Files.newInputStream(path);
+    private String extractDoc(byte[] content) throws IOException {
+        try (InputStream inputStream = new ByteArrayInputStream(content);
              HWPFDocument document = new HWPFDocument(inputStream);
              WordExtractor extractor = new WordExtractor(document)) {
             return extractor.getText();
         }
     }
 
-    private String extractWorkbook(Path path) throws IOException, InvalidFormatException {
-        try (InputStream inputStream = Files.newInputStream(path);
+    private String extractWorkbook(byte[] content) throws IOException, InvalidFormatException {
+        try (InputStream inputStream = new ByteArrayInputStream(content);
              Workbook workbook = WorkbookFactory.create(inputStream)) {
             DataFormatter formatter = new DataFormatter(Locale.CHINA);
             StringBuilder builder = new StringBuilder();

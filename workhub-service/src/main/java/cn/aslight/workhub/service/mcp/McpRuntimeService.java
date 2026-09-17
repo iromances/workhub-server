@@ -42,7 +42,7 @@ public class McpRuntimeService {
             "2025-03-26"
     );
     private static final String SERVER_INSTRUCTIONS = """
-            WorkHub 提供受控的需求、业务线、代码缓存、数据库和服务器只读诊断工具。涉及业务线排查或测试时，必须先确认业务线、环境和分支；生产日志排查首选 search_business_logs 实时查询受控 ELK 范围，服务器日志作为补充，尤其在生产服务器需要堡垒机时；数据库只允许只读 SQL，查询结果和日志结果会在服务端脱敏；不得尝试绕过资源白名单、时间与行数限制、日志路径限制或安全策略。
+            WorkHub 提供受控的需求、业务线、本地代码工作区、数据库和服务器只读诊断工具。业务代码统一位于 /Users/aslight/IDEAWorkspace/{gitlabGroupName}；涉及业务线排查或测试时，必须先确认业务线、环境和分支；生产日志排查首选 search_business_logs 实时查询受控 ELK 范围，服务器日志作为补充，尤其在生产服务器需要堡垒机时；数据库只允许只读 SQL，查询结果和日志结果会在服务端脱敏；不得尝试绕过资源白名单、时间与行数限制、日志路径限制或安全策略。
             """.strip();
 
     private final McpResourceService mcpResourceService;
@@ -243,7 +243,7 @@ public class McpRuntimeService {
     }
 
     private void registerGitlabTools(McpToolRegistry registry) {
-        registry.register("sync_gitlab_group_repositories", "Clone or refresh all accessible repositories for a business line GitLab group into the local controlled cache.",
+        registry.register("sync_gitlab_group_repositories", "Locate all accessible repositories in /Users/aslight/IDEAWorkspace/{gitlabGroupName}; clone missing repositories and safely fetch existing repositories without resetting local work.",
                 objectSchema(List.of("businessLine")),
                 this::syncGitlabGroupRepositories);
     }
@@ -347,11 +347,7 @@ public class McpRuntimeService {
                                                                String requirementName,
                                                                String keyword,
                                                                int limit) {
-        return intakeService.list(null, requirementName, approvalCode, null, null, null, null, null, null)
-                .stream()
-                .filter(item -> keyword == null || containsKeyword(item, keyword))
-                .limit(limit)
-                .toList();
+        return intakeService.search(approvalCode, requirementName, keyword, limit);
     }
 
     private IntakeSummaryResponse selectSingleRequirement(List<IntakeSummaryResponse> matches, String approvalCode) {
@@ -505,7 +501,7 @@ public class McpRuntimeService {
         Map<String, Object> context = new LinkedHashMap<>(catalog.gitlab());
         context.put("gitlabGroupName", businessLine.gitlabGroupName());
         if (businessLine.gitlabGroupName() != null && !businessLine.gitlabGroupName().isBlank()) {
-            context.put("codeCacheRoot", "data/git-cache/" + businessLine.gitlabGroupName().trim());
+            context.put("codeWorkspaceRoot", "/Users/aslight/IDEAWorkspace/" + businessLine.gitlabGroupName().trim());
         }
         return context;
     }
@@ -577,15 +573,6 @@ public class McpRuntimeService {
                 "不通过网关时，先用 serverTargets 的 targetKey/profile/allowedServices/allowedLogPaths 确认服务状态和日志入口，再直接请求对应服务。",
                 "分支为空或部署版本不明时，先结合需求 developmentBranchName、服务日志和部署信息确认测试环境是否已发对应分支。"
         );
-    }
-
-    private boolean containsKeyword(IntakeSummaryResponse item, String keyword) {
-        String normalized = normalizeText(keyword);
-        return normalizeText(item.approvalCode()).contains(normalized)
-                || normalizeText(item.requirementName()).contains(normalized)
-                || normalizeText(item.requirementDigest()).contains(normalized)
-                || normalizeText(item.requirementSummary()).contains(normalized)
-                || normalizeText(item.remark()).contains(normalized);
     }
 
     private McpResourceCatalog.BusinessLine findBusinessLine(McpResourceCatalog catalog, String businessLine) {

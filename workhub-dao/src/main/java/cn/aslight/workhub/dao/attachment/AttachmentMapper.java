@@ -23,13 +23,19 @@ public interface AttachmentMapper {
                 biz_id,
                 file_name,
                 storage_path,
-                content_type
+                content_type,
+                file_content,
+                file_size,
+                file_sha256
             ) VALUES (
                 #{bizType},
                 #{bizId},
                 #{fileName},
                 #{storagePath},
-                #{contentType}
+                #{contentType},
+                #{fileContent},
+                #{fileSize},
+                #{fileSha256}
             )
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
@@ -55,6 +61,30 @@ public interface AttachmentMapper {
     })
     List<AttachmentEntity> findByBiz(@Param("bizId") Long bizId, @Param("bizTypes") List<String> bizTypes);
 
+    @Select({
+            "<script>",
+            "SELECT id,",
+            "biz_type,",
+            "biz_id,",
+            "file_name,",
+            "storage_path,",
+            "content_type,",
+            "file_content,",
+            "file_size,",
+            "file_sha256,",
+            "created_at",
+            "FROM pm_attachment",
+            "WHERE biz_id = #{bizId}",
+            "AND biz_type IN",
+            "<foreach collection='bizTypes' item='bizType' open='(' separator=',' close=')'>",
+            "#{bizType}",
+            "</foreach>",
+            "ORDER BY created_at ASC, id ASC",
+            "</script>"
+    })
+    List<AttachmentEntity> findByBizWithContent(@Param("bizId") Long bizId,
+                                                @Param("bizTypes") List<String> bizTypes);
+
     @Select("""
             SELECT id,
                    biz_type,
@@ -67,6 +97,22 @@ public interface AttachmentMapper {
             WHERE id = #{id}
             """)
     AttachmentEntity findById(Long id);
+
+    @Select("""
+            SELECT id,
+                   biz_type,
+                   biz_id,
+                   file_name,
+                   storage_path,
+                   content_type,
+                   file_content,
+                   file_size,
+                   file_sha256,
+                   created_at
+            FROM pm_attachment
+            WHERE id = #{id}
+            """)
+    AttachmentEntity findByIdWithContent(Long id);
 
     /**
      * 按 ID 删除附件记录。
@@ -85,19 +131,26 @@ public interface AttachmentMapper {
      *
      * @param id 附件 ID
      * @param fileName 新原始文件名
-     * @param storagePath 新存储路径
      * @param contentType 新内容类型
+     * @param fileContent 新文件内容
+     * @param fileSize 新文件大小
+     * @param fileSha256 新文件 SHA-256
      * @return 影响行数
      */
     @Update("""
             UPDATE pm_attachment
             SET file_name = #{fileName},
-                storage_path = #{storagePath},
-                content_type = #{contentType}
+                storage_path = NULL,
+                content_type = #{contentType},
+                file_content = #{fileContent},
+                file_size = #{fileSize},
+                file_sha256 = #{fileSha256}
             WHERE id = #{id}
             """)
     int updateFile(@Param("id") Long id,
                    @Param("fileName") String fileName,
-                   @Param("storagePath") String storagePath,
-                   @Param("contentType") String contentType);
+                   @Param("contentType") String contentType,
+                   @Param("fileContent") byte[] fileContent,
+                   @Param("fileSize") Long fileSize,
+                   @Param("fileSha256") String fileSha256);
 }

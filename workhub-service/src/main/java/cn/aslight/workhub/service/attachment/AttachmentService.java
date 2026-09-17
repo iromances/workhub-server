@@ -1,10 +1,9 @@
 package cn.aslight.workhub.service.attachment;
 
-import cn.aslight.workhub.config.StorageProperties;
 import cn.aslight.workhub.model.attachment.AttachmentResponse;
 import cn.aslight.workhub.dao.attachment.AttachmentMapper;
 import cn.aslight.workhub.model.attachment.AttachmentEntity;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,11 +12,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 附件存储与关联服务。
@@ -29,14 +28,10 @@ public class AttachmentService {
     public static final String INTAKE_ATTACHMENT = "INTAKE_ATTACHMENT";
     public static final String INTAKE_DELIVERY_FILE = "INTAKE_DELIVERY_FILE";
 
-    private static final DateTimeFormatter PATH_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-
     private final AttachmentMapper attachmentMapper;
-    private final StorageProperties storageProperties;
 
-    public AttachmentService(AttachmentMapper attachmentMapper, StorageProperties storageProperties) {
+    public AttachmentService(AttachmentMapper attachmentMapper) {
         this.attachmentMapper = attachmentMapper;
-        this.storageProperties = storageProperties;
     }
 
     @Transactional
@@ -81,27 +76,28 @@ public class AttachmentService {
     }
 
     public List<AttachmentFileContext> listIntakeFileContexts(Long intakeId) {
-        return attachmentMapper.findByBiz(intakeId, List.of(INTAKE_SCREENSHOT, INTAKE_ATTACHMENT)).stream()
+        return attachmentMapper.findByBizWithContent(intakeId, List.of(INTAKE_SCREENSHOT, INTAKE_ATTACHMENT)).stream()
                 .map(entity -> new AttachmentFileContext(
                         entity.getId(),
                         INTAKE_SCREENSHOT.equals(entity.getBizType()) ? "截图" : "附件",
                         entity.getFileName(),
                         entity.getStoragePath(),
-                        entity.getContentType()
+                        entity.getContentType(),
+                        entity.getFileContent(),
+                        entity.getFileSize(),
+                        entity.getFileSha256()
                 ))
                 .toList();
     }
 
     public AttachmentResource loadAsResource(Long attachmentId) {
-        AttachmentEntity entity = attachmentMapper.findById(attachmentId);
+        AttachmentEntity entity = attachmentMapper.findByIdWithContent(attachmentId);
         if (entity == null) {
             throw new IllegalArgumentException("附件不存在");
         }
-        Path path = Path.of(entity.getStoragePath());
-        if (!Files.exists(path)) {
-            throw new IllegalArgumentException("附件文件不存在");
-        }
-        return new AttachmentResource(entity, new FileSystemResource(path));
+        byte[] content = resolveFileContent(entity);
+        validateIntegrity(entity, content);
+        return new AttachmentResource(entity, new ByteArrayResource(content));
     }
 
     /**
@@ -151,12 +147,14 @@ public class AttachmentService {
 
         AttachmentResponse before = toResponse(entity);
         String oldStoragePath = entity.getStoragePath();
-        StoredFile storedFile = storeFileToDisk(intakeId, file);
+        StoredFile storedFile = readFile(file);
         attachmentMapper.updateFile(
                 attachmentId,
                 storedFile.fileName(),
-                storedFile.storagePath(),
-                storedFile.contentType()
+                storedFile.contentType(),
+                storedFile.fileContent(),
+                storedFile.fileSize(),
+                storedFile.fileSha256()
         );
         deletePhysicalFile(oldStoragePath);
         AttachmentEntity updated = attachmentMapper.findById(attachmentId);
@@ -176,36 +174,78 @@ public class AttachmentService {
     }
 
     private void storeSingleFile(Long intakeId, MultipartFile file, String bizType) {
-        StoredFile storedFile = storeFileToDisk(intakeId, file);
+        StoredFile storedFile = readFile(file);
 
         AttachmentEntity entity = new AttachmentEntity();
         entity.setBizType(bizType);
         entity.setBizId(intakeId);
         entity.setFileName(storedFile.fileName());
-        entity.setStoragePath(storedFile.storagePath());
+        entity.setStoragePath(null);
         entity.setContentType(storedFile.contentType());
+        entity.setFileContent(storedFile.fileContent());
+        entity.setFileSize(storedFile.fileSize());
+        entity.setFileSha256(storedFile.fileSha256());
         attachmentMapper.insert(entity);
     }
 
-    private StoredFile storeFileToDisk(Long intakeId, MultipartFile file) {
+    private StoredFile readFile(MultipartFile file) {
         String originalFilename = sanitizeFileName(file.getOriginalFilename());
         if (originalFilename == null || originalFilename.isBlank()) {
             throw new IllegalArgumentException("附件文件名不能为空");
         }
-        String storedName = PATH_TIME_FORMATTER.format(LocalDateTime.now())
-                + "-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12)
-                + "-" + originalFilename;
-        Path baseDir = Path.of(storageProperties.getLocalPath()).toAbsolutePath().normalize()
-                .resolve("intake")
-                .resolve(String.valueOf(intakeId));
-        Path target = baseDir.resolve(storedName).normalize();
         try {
-            Files.createDirectories(baseDir);
-            file.transferTo(target);
+            byte[] content = file.getBytes();
+            if (content.length == 0) {
+                throw new IllegalArgumentException("附件文件不能为空");
+            }
+            return new StoredFile(
+                    originalFilename,
+                    trimToNull(file.getContentType()),
+                    content,
+                    (long) content.length,
+                    sha256(content)
+            );
         } catch (IOException ex) {
-            throw new IllegalStateException("附件保存失败: " + originalFilename, ex);
+            throw new IllegalStateException("附件读取失败: " + originalFilename, ex);
         }
-        return new StoredFile(originalFilename, target.toString(), trimToNull(file.getContentType()));
+    }
+
+    private byte[] resolveFileContent(AttachmentEntity entity) {
+        byte[] databaseContent = entity.getFileContent();
+        if (databaseContent != null) {
+            return databaseContent;
+        }
+        String storagePath = trimToNull(entity.getStoragePath());
+        if (storagePath == null) {
+            throw new IllegalArgumentException("附件文件不存在");
+        }
+        Path path = Path.of(storagePath);
+        if (!Files.isRegularFile(path)) {
+            throw new IllegalArgumentException("附件文件不存在");
+        }
+        try {
+            return Files.readAllBytes(path);
+        } catch (IOException ex) {
+            throw new IllegalStateException("附件文件读取失败", ex);
+        }
+    }
+
+    private void validateIntegrity(AttachmentEntity entity, byte[] content) {
+        if (entity.getFileSize() != null && entity.getFileSize() != content.length) {
+            throw new IllegalStateException("附件内容完整性校验失败");
+        }
+        String expectedSha256 = trimToNull(entity.getFileSha256());
+        if (expectedSha256 != null && !expectedSha256.equalsIgnoreCase(sha256(content))) {
+            throw new IllegalStateException("附件内容完整性校验失败");
+        }
+    }
+
+    private String sha256(byte[] content) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("当前运行环境不支持 SHA-256", ex);
+        }
     }
 
     private void deletePhysicalFile(String storagePath) {
@@ -278,9 +318,24 @@ public class AttachmentService {
                                         String category,
                                         String fileName,
                                         String storagePath,
-                                        String contentType) {
+                                        String contentType,
+                                        byte[] fileContent,
+                                        Long fileSize,
+                                        String fileSha256) {
+
+        public AttachmentFileContext(Long id,
+                                     String category,
+                                     String fileName,
+                                     String storagePath,
+                                     String contentType) {
+            this(id, category, fileName, storagePath, contentType, null, null, null);
+        }
     }
 
-    private record StoredFile(String fileName, String storagePath, String contentType) {
+    private record StoredFile(String fileName,
+                              String contentType,
+                              byte[] fileContent,
+                              Long fileSize,
+                              String fileSha256) {
     }
 }

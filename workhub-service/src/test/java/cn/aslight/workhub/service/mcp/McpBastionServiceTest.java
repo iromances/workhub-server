@@ -2,6 +2,7 @@ package cn.aslight.workhub.service.mcp;
 
 import cn.aslight.workhub.config.McpProperties;
 import cn.aslight.workhub.dao.mcp.McpBastionMapper;
+import cn.aslight.workhub.mcp.ssh.SshConnectionManager;
 import cn.aslight.workhub.model.mcp.McpBastionConnectionTestRequest;
 import cn.aslight.workhub.model.mcp.McpBastionConnectionTestResponse;
 import cn.aslight.workhub.model.mcp.McpBastionEntity;
@@ -9,6 +10,8 @@ import cn.aslight.workhub.model.mcp.McpBastionResponse;
 import cn.aslight.workhub.model.mcp.McpBastionSaveRequest;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -18,10 +21,79 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class McpBastionServiceTest {
+
+    @Test
+    void update_invalidatesOriginalEndpointOnlyAfterCommit() {
+        McpBastionMapper mapper = mock(McpBastionMapper.class);
+        McpBastionEntity existing = entity();
+        when(mapper.findById(1L)).thenReturn(existing);
+        when(mapper.findByName("生产堡垒机")).thenReturn(existing);
+        when(mapper.update(any())).thenReturn(1);
+        McpBastionSaveRequest changed = request();
+        changed.setHost("changed-host");
+        try (var connections = mockStatic(SshConnectionManager.class)) {
+            TransactionSynchronizationManager.initSynchronization();
+            try {
+                new McpBastionService(mapper, cryptoService()).update(1L, changed, "admin", "127.0.0.1");
+                connections.verifyNoInteractions();
+                var callbacks = TransactionSynchronizationManager.getSynchronizations();
+                assertEquals(1, callbacks.size());
+                callbacks.forEach(TransactionSynchronization::afterCommit);
+                connections.verify(() -> SshConnectionManager.invalidateShared("10.10.0.8", 22, "workhub"));
+            } finally {
+                TransactionSynchronizationManager.clearSynchronization();
+            }
+        }
+    }
+
+    @Test
+    void rollbackDoesNotInvalidateConnection() {
+        McpBastionMapper mapper = mock(McpBastionMapper.class);
+        McpBastionEntity existing = entity();
+        when(mapper.findById(1L)).thenReturn(existing);
+        when(mapper.findByName("生产堡垒机")).thenReturn(existing);
+        when(mapper.update(any())).thenReturn(1);
+        try (var connections = mockStatic(SshConnectionManager.class)) {
+            TransactionSynchronizationManager.initSynchronization();
+            try {
+                new McpBastionService(mapper, cryptoService()).update(1L, request(), "admin", "127.0.0.1");
+                TransactionSynchronizationManager.getSynchronizations().forEach(callback ->
+                        callback.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
+                connections.verifyNoInteractions();
+            } finally {
+                TransactionSynchronizationManager.clearSynchronization();
+            }
+        }
+    }
+
+    @Test
+    void changingOnlyRemarkDoesNotDisconnect() {
+        McpBastionMapper mapper = mock(McpBastionMapper.class);
+        McpBastionEntity existing = entity();
+        when(mapper.findById(1L)).thenReturn(existing);
+        when(mapper.findByName("生产堡垒机")).thenReturn(existing);
+        when(mapper.update(any())).thenReturn(1);
+        McpBastionSaveRequest changed = request();
+        changed.setPassword(null);
+        changed.setRemark("new remark");
+        try (var connections = mockStatic(SshConnectionManager.class)) {
+            new McpBastionService(mapper, cryptoService()).update(1L, changed, "admin", "127.0.0.1");
+            connections.verifyNoInteractions();
+        }
+    }
+
+    @Test
+    void applicationShutdownClosesSharedConnections() {
+        try (var connections = mockStatic(SshConnectionManager.class)) {
+            new McpSshConnectionLifecycle().destroy();
+            connections.verify(SshConnectionManager::closeShared);
+        }
+    }
 
     @Test
     void create_shouldEncryptPasswordAndOnlyExposeConfiguredFlag() {

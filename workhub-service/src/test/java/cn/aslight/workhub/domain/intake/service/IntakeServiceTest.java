@@ -42,6 +42,59 @@ import static org.mockito.Mockito.when;
 class IntakeServiceTest {
 
     @Test
+    void initialUploadDefersExportWhileAppendedAndReplacedMaterialsScheduleExport() {
+        IntakeMapper mapper = mock(IntakeMapper.class);
+        AttachmentService attachments = mock(AttachmentService.class);
+        RequirementFolderService folders = mock(RequirementFolderService.class);
+        IntakeEnrichmentService enrichment = mock(IntakeEnrichmentService.class);
+        IntakeService service = new IntakeService(
+                mapper,
+                mock(IntakeHistoryMapper.class),
+                mock(IntakeWorkItemRelationMapper.class),
+                mock(cn.aslight.workhub.dao.intake.IntakeTodoMapper.class),
+                mock(cn.aslight.workhub.dao.intake.IntakeStructuredFieldMapper.class),
+                null,
+                attachments,
+                new IntakeStructuredDataExtractor(),
+                new IntakeStructuredFieldNormalizer(),
+                enrichment,
+                mock(CodexCliSqlDraftGenerator.class),
+                null,
+                new ObjectMapper(),
+                folders
+        );
+        doAnswer(invocation -> {
+            IntakeRecordEntity entity = invocation.getArgument(0);
+            entity.setId(1001L);
+            when(mapper.findById(1001L)).thenReturn(entity);
+            return 1;
+        }).when(mapper).insert(any(IntakeRecordEntity.class));
+        IntakeUploadRequest request = new IntakeUploadRequest();
+        request.setSenderName("张三");
+        request.setDevelopmentOwnerUserName("lisi");
+        request.setRawContent("需求名称：材料导出测试");
+        var file = new MockMultipartFile("attachments", "需求.txt", "text/plain", new byte[]{1, 2});
+        var material = new cn.aslight.workhub.model.attachment.AttachmentResponse(
+                11L, "附件", "需求.txt", "text/plain", "/download", false, LocalDateTime.now());
+        when(attachments.replaceIntakeMaterial(1001L, 11L, file))
+                .thenReturn(new AttachmentService.AttachmentReplaceResult(material, material));
+
+        service.createUploaded(request, List.of(), List.of(file));
+        verify(folders, never()).scheduleMaterialExport(any());
+        service.appendAttachments(1001L, List.of(), List.of(file), "admin");
+        service.replaceAttachment(1001L, 11L, file, "admin");
+
+        var order = org.mockito.Mockito.inOrder(attachments, folders, enrichment);
+        order.verify(attachments).saveIntakeFiles(1001L, List.of(), List.of(file));
+        order.verify(enrichment).scheduleUploadedEnrichment(eq(1001L), any(), any());
+        order.verify(attachments).appendIntakeFiles(1001L, List.of(), List.of(file));
+        order.verify(folders).scheduleMaterialExport(1001L);
+        order.verify(attachments).replaceIntakeMaterial(1001L, 11L, file);
+        order.verify(folders).scheduleMaterialExport(1001L);
+        verify(folders, org.mockito.Mockito.times(2)).scheduleMaterialExport(1001L);
+    }
+
+    @Test
     void createUploaded_shouldDefaultPriorityToMedium() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
@@ -151,7 +204,7 @@ class IntakeServiceTest {
     }
 
     @Test
-    void list_shouldFlattenStructuredDataFromJsonInsteadOfDatabaseJsonFunctions() {
+    void page_shouldUseFormalQueryFieldsAndKeepOtherPresentationFallbacks() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
         AttachmentService attachmentService = mock(AttachmentService.class);
@@ -181,6 +234,11 @@ class IntakeServiceTest {
         populated.setEnrichmentStatus("SUCCEEDED");
         populated.setIntakeStatus("待整理");
         populated.setActiveTodoCount(2L);
+        populated.setApprovalCode("202603250009");
+        populated.setProposerName("周拓");
+        populated.setRequirementType("研发需求");
+        populated.setRequirementName("沃橙项目增加客户绑卡至嘉泰保理的需求0325");
+        populated.setRequirementDigest("沃橙绑卡至嘉泰保理");
 
         IntakeRecordEntity blank = new IntakeRecordEntity();
         blank.setId(102L);
@@ -201,9 +259,10 @@ class IntakeServiceTest {
         blank.setEnrichmentStatus("PENDING");
         blank.setIntakeStatus("待整理");
 
-        when(intakeMapper.findAll(eq(null))).thenReturn(List.of(populated, blank));
+        when(intakeMapper.count(any())).thenReturn(2L);
+        when(intakeMapper.findPage(any())).thenReturn(List.of(populated, blank));
 
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null, null, null);
+        List<IntakeSummaryResponse> result = service.page(null, null, null, null, null, null, null, null, null, 1, 10).items();
 
         assertEquals(2, result.size());
         assertEquals("202603250009", result.get(0).approvalCode());
@@ -218,17 +277,17 @@ class IntakeServiceTest {
         assertEquals(2L, result.get(0).activeTodoCount());
         assertEquals("SUCCEEDED", result.get(0).enrichmentStatus());
 
-        assertEquals("LEGACY-001", result.get(1).approvalCode());
-        assertEquals("历史数据补解析", result.get(1).requirementName());
-        assertEquals("张三", result.get(1).proposerName());
+        assertNull(result.get(1).approvalCode());
+        assertNull(result.get(1).requirementName());
+        assertNull(result.get(1).proposerName());
         assertEquals("2026/3/31 11:00", result.get(1).submittedTime());
-        assertEquals("研发需求", result.get(1).requirementType());
+        assertNull(result.get(1).requirementType());
         assertNull(result.get(1).demandStatus());
         assertEquals("PENDING", result.get(1).enrichmentStatus());
     }
 
     @Test
-    void list_shouldFallbackOperationsEffortAndDatesFromStructuredData() {
+    void page_shouldKeepOperationsPresentationFields() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
         AttachmentService attachmentService = mock(AttachmentService.class);
@@ -255,12 +314,16 @@ class IntakeServiceTest {
                 {"category":"需求审批","approvalTitle":"数据修复申请","proposerName":"运维同学","approvalCode":"OPS-004","submittedTime":"2026/4/2 10:00","requirementType":"数据提取/运维","requirementDigest":"批量修复历史还款数据","requirementName":"批量修复历史还款数据","requirementSummary":"描述","department":"运营支持部","businessLine":"资产业务","remark":"紧急处理","estimatedEffort":"4h","plannedDueDate":"2026/04/02","developmentStartedDate":"2026/04/02","actualEffort":"5h","testingStartedDate":null,"actualCompletedTime":"2026/04/03","acceptanceTime":"2026/04/03","releasedTime":"2026/04/03","projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
                 """);
         operations.setDemandStatus("已完成");
+        operations.setRequirementType("数据提取/运维");
+        operations.setEstimatedEffort("4h");
+        operations.setDevelopmentEstimatedEffort("4h");
         operations.setEnrichmentStatus("SUCCEEDED");
         operations.setIntakeStatus("待整理");
 
-        when(intakeMapper.findAll(eq(null))).thenReturn(List.of(operations));
+        when(intakeMapper.count(any())).thenReturn(1L);
+        when(intakeMapper.findPage(any())).thenReturn(List.of(operations));
 
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null, null, null);
+        List<IntakeSummaryResponse> result = service.page(null, null, null, null, null, null, null, null, null, 1, 10).items();
 
         assertEquals(1, result.size());
         IntakeSummaryResponse item = result.getFirst();
@@ -270,11 +333,11 @@ class IntakeServiceTest {
         assertNull(item.testingEstimatedEffort());
         assertEquals("2026/04/02", item.developmentStartedDate());
         assertEquals("5h", item.actualEffort());
-        assertEquals("2026/04/03", item.testingStartedDate());
+        assertNull(item.testingStartedDate());
     }
 
     @Test
-    void list_shouldNormalizeLegacySucceededCodexFailureAsFailedAndNotRecorded() {
+    void page_shouldUseStoredDemandStatusAndPreserveEnrichmentFailureDisplay() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
         AttachmentService attachmentService = mock(AttachmentService.class);
@@ -301,161 +364,14 @@ class IntakeServiceTest {
         entity.setEnrichmentStatus("SUCCEEDED");
         entity.setEnrichmentErrorSummary("Codex CLI 执行失败");
         entity.setIntakeStatus("待整理");
-        when(intakeMapper.findAll(eq(null))).thenReturn(List.of(entity));
+        when(intakeMapper.count(any())).thenReturn(1L);
+        when(intakeMapper.findPage(any())).thenReturn(List.of(entity));
 
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null, null, null);
+        List<IntakeSummaryResponse> result = service.page(null, null, null, null, null, null, null, null, null, 1, 10).items();
 
         assertEquals(1, result.size());
-        assertNull(result.get(0).demandStatus());
+        assertEquals("已收录", result.get(0).demandStatus());
         assertEquals("FAILED", result.get(0).enrichmentStatus());
-    }
-
-    @Test
-    void list_shouldFilterByReleasedDateRange() {
-        IntakeMapper intakeMapper = mock(IntakeMapper.class);
-        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
-        AttachmentService attachmentService = mock(AttachmentService.class);
-        IntakeService service = new IntakeService(
-                intakeMapper,
-                intakeHistoryMapper,
-                attachmentService,
-                new IntakeStructuredDataExtractor(),
-                mock(IntakeEnrichmentService.class),
-                mock(CodexCliSqlDraftGenerator.class),
-                new ObjectMapper()
-        );
-
-        IntakeRecordEntity matched = new IntakeRecordEntity();
-        matched.setId(201L);
-        matched.setSourceType("需求截图附件录入");
-        matched.setSourceChannel("需求录入");
-        matched.setSenderName("admin");
-        matched.setReceivedAt(LocalDateTime.of(2026, 4, 2, 10, 0));
-        matched.setRawContent("上线时间筛选测试");
-        matched.setStructuredDataJson("""
-                {"category":"需求审批","approvalCode":"REL-001","submittedTime":"2026/4/1 10:00","requirementType":"研发需求","requirementName":"上线筛选命中","requirementDigest":"上线筛选命中","releasedTime":"2026/04/03","fields":[],"attachmentSummaries":[]}
-                """);
-        matched.setDemandStatus("已完成");
-        matched.setEnrichmentStatus("SUCCEEDED");
-        matched.setIntakeStatus("待整理");
-
-        IntakeRecordEntity missed = new IntakeRecordEntity();
-        missed.setId(202L);
-        missed.setSourceType("需求截图附件录入");
-        missed.setSourceChannel("需求录入");
-        missed.setSenderName("admin");
-        missed.setReceivedAt(LocalDateTime.of(2026, 4, 5, 10, 0));
-        missed.setRawContent("上线时间筛选测试");
-        missed.setStructuredDataJson("""
-                {"category":"需求审批","approvalCode":"REL-002","submittedTime":"2026/4/1 10:00","requirementType":"研发需求","requirementName":"上线筛选未命中","requirementDigest":"上线筛选未命中","releasedTime":"2026/04/10 12:00","fields":[],"attachmentSummaries":[]}
-                """);
-        missed.setDemandStatus("已完成");
-        missed.setEnrichmentStatus("SUCCEEDED");
-        missed.setIntakeStatus("待整理");
-
-        when(intakeMapper.findAll(eq(null))).thenReturn(List.of(matched, missed));
-
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null, "2026/04/01", "2026/04/05");
-
-        assertEquals(1, result.size());
-        assertEquals("REL-001", result.getFirst().approvalCode());
-    }
-
-    @Test
-    void list_shouldFilterByRequirementNameOnly() {
-        IntakeMapper intakeMapper = mock(IntakeMapper.class);
-        IntakeService service = new IntakeService(
-                intakeMapper,
-                mock(IntakeHistoryMapper.class),
-                mock(AttachmentService.class),
-                new IntakeStructuredDataExtractor(),
-                mock(IntakeEnrichmentService.class),
-                mock(CodexCliSqlDraftGenerator.class),
-                new ObjectMapper()
-        );
-
-        IntakeRecordEntity matched = new IntakeRecordEntity();
-        matched.setId(301L);
-        matched.setSourceType("需求截图附件录入");
-        matched.setSourceChannel("需求录入");
-        matched.setSenderName("admin");
-        matched.setReceivedAt(LocalDateTime.of(2026, 4, 5, 10, 0));
-        matched.setRawContent("需求名称筛选测试");
-        matched.setStructuredDataJson("""
-                {"category":"需求审批","approvalCode":"NAME-001","submittedTime":"2026/4/5 10:00","requirementType":"研发需求","requirementName":"沃橙绑卡核验规则","requirementDigest":"绑卡核验","fields":[],"attachmentSummaries":[]}
-                """);
-        matched.setDemandStatus("已收录");
-        matched.setEnrichmentStatus("SUCCEEDED");
-        matched.setIntakeStatus("待整理");
-
-        IntakeRecordEntity missed = new IntakeRecordEntity();
-        missed.setId(302L);
-        missed.setSourceType("需求截图附件录入");
-        missed.setSourceChannel("需求录入");
-        missed.setSenderName("admin");
-        missed.setReceivedAt(LocalDateTime.of(2026, 4, 5, 11, 0));
-        missed.setRawContent("审批编号：沃橙；需求类型：研发需求");
-        missed.setStructuredDataJson("""
-                {"category":"需求审批","approvalCode":"沃橙-002","submittedTime":"2026/4/5 11:00","requirementType":"沃橙研发需求","requirementName":"还款接口调整","requirementDigest":"还款调整","fields":[],"attachmentSummaries":[]}
-                """);
-        missed.setDemandStatus("已收录");
-        missed.setEnrichmentStatus("SUCCEEDED");
-        missed.setIntakeStatus("待整理");
-
-        when(intakeMapper.findAll(eq(null))).thenReturn(List.of(matched, missed));
-
-        List<IntakeSummaryResponse> result = service.list(null, "绑卡", null, null, null, null, null, null, null);
-
-        assertEquals(1, result.size());
-        assertEquals("NAME-001", result.getFirst().approvalCode());
-    }
-
-    @Test
-    void list_shouldFilterByApprovalCodeAndProposerName() {
-        IntakeMapper intakeMapper = mock(IntakeMapper.class);
-        IntakeService service = new IntakeService(
-                intakeMapper,
-                mock(IntakeHistoryMapper.class),
-                mock(AttachmentService.class),
-                new IntakeStructuredDataExtractor(),
-                mock(IntakeEnrichmentService.class),
-                mock(CodexCliSqlDraftGenerator.class),
-                new ObjectMapper()
-        );
-
-        IntakeRecordEntity matched = new IntakeRecordEntity();
-        matched.setId(401L);
-        matched.setSourceType("需求截图附件录入");
-        matched.setSourceChannel("需求录入");
-        matched.setSenderName("admin");
-        matched.setReceivedAt(LocalDateTime.of(2026, 4, 6, 10, 0));
-        matched.setStructuredDataJson("""
-                {"category":"需求审批","approvalCode":"202604060001","proposerName":"周拓","submittedTime":"2026/4/6 10:00","requirementType":"研发需求","requirementName":"匹配需求","requirementDigest":"匹配需求","fields":[],"attachmentSummaries":[]}
-                """);
-        matched.setDemandStatus("已收录");
-        matched.setEnrichmentStatus("SUCCEEDED");
-        matched.setIntakeStatus("待整理");
-
-        IntakeRecordEntity missed = new IntakeRecordEntity();
-        missed.setId(402L);
-        missed.setSourceType("需求截图附件录入");
-        missed.setSourceChannel("需求录入");
-        missed.setSenderName("admin");
-        missed.setReceivedAt(LocalDateTime.of(2026, 4, 6, 11, 0));
-        missed.setStructuredDataJson("""
-                {"category":"需求审批","approvalCode":"202604060002","proposerName":"顾佳青","submittedTime":"2026/4/6 11:00","requirementType":"研发需求","requirementName":"未匹配需求","requirementDigest":"未匹配需求","fields":[],"attachmentSummaries":[]}
-                """);
-        missed.setDemandStatus("已收录");
-        missed.setEnrichmentStatus("SUCCEEDED");
-        missed.setIntakeStatus("待整理");
-
-        when(intakeMapper.findAll(eq(null))).thenReturn(List.of(matched, missed));
-
-        List<IntakeSummaryResponse> result = service.list(null, null, "060001", "周", null, null, null, null, null);
-
-        assertEquals(1, result.size());
-        assertEquals("202604060001", result.getFirst().approvalCode());
-        assertEquals("周拓", result.getFirst().proposerName());
     }
 
     @Test

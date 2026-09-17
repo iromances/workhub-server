@@ -8,6 +8,7 @@ import cn.aslight.workhub.model.intake.IntakeBusinessLineUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakePriorityUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
+import cn.aslight.workhub.model.intake.IntakePageResponse;
 import cn.aslight.workhub.model.intake.IntakeTodoResponse;
 import cn.aslight.workhub.service.intake.DevelopmentAnalysisService;
 import cn.aslight.workhub.service.intake.IntakeService;
@@ -216,7 +217,7 @@ class IntakeControllerTest {
     @Test
     void list_shouldExposeStructuredColumnsInApiResponse() throws Exception {
         IntakeService intakeService = mock(IntakeService.class);
-        when(intakeService.list(eq(null), eq(null), eq(null), eq(null), eq(null), eq(null), eq(null), eq(null), eq(null))).thenReturn(List.of(
+        when(intakeService.page(eq(null), eq(null), eq(null), eq(null), eq(null), eq(null), eq(null), eq(null), eq(null), eq(2), eq(10))).thenReturn(new IntakePageResponse(21L, List.of(
                 new IntakeSummaryResponse(
                         1L,
                         "需求截图附件录入",
@@ -262,12 +263,14 @@ class IntakeControllerTest {
                         null,
                         2L
                 )
-        ));
+        )));
 
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
 
-        mockMvc.perform(get("/api/intake").accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/intake").param("page", "2").param("pageSize", "10").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(21))
+                .andExpect(jsonPath("$.data.items.length()").value(1))
                 .andExpect(jsonPath("$.data.items[0].demandStatus").value("已收录"))
                 .andExpect(jsonPath("$.data.items[0].proposerName").value("周拓"))
                 .andExpect(jsonPath("$.data.items[0].approvalCode").value("202603250009"))
@@ -293,8 +296,8 @@ class IntakeControllerTest {
     @Test
     void list_shouldPassBusinessLineFilterToService() throws Exception {
         IntakeService intakeService = mock(IntakeService.class);
-        when(intakeService.list(eq(null), eq(null), eq(null), eq(null), eq("资产业务"), eq(null), eq(null), eq(null), eq(null)))
-                .thenReturn(List.of());
+        when(intakeService.page(eq(null), eq(null), eq(null), eq(null), eq("资产业务"), eq(null), eq(null), eq(null), eq(null), eq(1), eq(10)))
+                .thenReturn(new IntakePageResponse(0, List.of()));
 
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
 
@@ -304,14 +307,14 @@ class IntakeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(0));
 
-        verify(intakeService).list(eq(null), eq(null), eq(null), eq(null), eq("资产业务"), eq(null), eq(null), eq(null), eq(null));
+        verify(intakeService).page(eq(null), eq(null), eq(null), eq(null), eq("资产业务"), eq(null), eq(null), eq(null), eq(null), eq(1), eq(10));
     }
 
     @Test
     void list_shouldPassRequirementTypeFilterToService() throws Exception {
         IntakeService intakeService = mock(IntakeService.class);
-        when(intakeService.list(eq(null), eq(null), eq(null), eq(null), eq(null), eq("研发需求"), eq(null), eq(null), eq(null)))
-                .thenReturn(List.of());
+        when(intakeService.page(eq(null), eq(null), eq(null), eq(null), eq(null), eq("研发需求"), eq(null), eq(null), eq(null), eq(1), eq(10)))
+                .thenReturn(new IntakePageResponse(0, List.of()));
 
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
 
@@ -321,7 +324,7 @@ class IntakeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(0));
 
-        verify(intakeService).list(eq(null), eq(null), eq(null), eq(null), eq(null), eq("研发需求"), eq(null), eq(null), eq(null));
+        verify(intakeService).page(eq(null), eq(null), eq(null), eq(null), eq(null), eq("研发需求"), eq(null), eq(null), eq(null), eq(1), eq(10));
     }
 
     @Test

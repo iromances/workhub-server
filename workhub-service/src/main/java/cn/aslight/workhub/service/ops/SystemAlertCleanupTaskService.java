@@ -1,9 +1,13 @@
 package cn.aslight.workhub.service.ops;
 
 import cn.aslight.workhub.dao.ops.SystemAlertCleanupTaskMapper;
+import cn.aslight.workhub.dao.ops.SystemAlertMapper;
 import cn.aslight.workhub.model.ops.SystemAlertCleanupTaskEntity;
 import cn.aslight.workhub.model.ops.SystemAlertCleanupTaskResponse;
+import cn.aslight.workhub.model.ops.SystemAlertCleanupTaskType;
 import cn.aslight.workhub.model.ops.SystemAlertDeleteAndFilterRequest;
+import cn.aslight.workhub.model.ops.SystemAlertDeleteByMessageRequest;
+import cn.aslight.workhub.model.ops.SystemAlertDeleteByEventRequest;
 import cn.aslight.workhub.model.ops.SystemAlertEventCategory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
@@ -18,14 +22,17 @@ import java.util.UUID;
 public class SystemAlertCleanupTaskService {
 
     private final SystemAlertCleanupTaskMapper taskMapper;
+    private final SystemAlertMapper systemAlertMapper;
     private final SystemAlertCleanupTaskRunner taskRunner;
     private final TaskExecutor taskExecutor;
 
     public SystemAlertCleanupTaskService(
             SystemAlertCleanupTaskMapper taskMapper,
+            SystemAlertMapper systemAlertMapper,
             SystemAlertCleanupTaskRunner taskRunner,
             @Qualifier("systemAlertCleanupTaskExecutor") TaskExecutor taskExecutor) {
         this.taskMapper = taskMapper;
+        this.systemAlertMapper = systemAlertMapper;
         this.taskRunner = taskRunner;
         this.taskExecutor = taskExecutor;
     }
@@ -34,6 +41,32 @@ public class SystemAlertCleanupTaskService {
                                                  String operator,
                                                  String ip) {
         SystemAlertCleanupTaskEntity task = toEntity(request, operator, ip);
+        return submitTask(task);
+    }
+
+    public SystemAlertCleanupTaskResponse submitDeleteByMessage(
+            SystemAlertDeleteByMessageRequest request,
+            String operator,
+            String ip) {
+        SystemAlertCleanupTaskEntity task = newTask(
+                request.getMessageKeyword(), SystemAlertCleanupTaskType.DELETE, operator, ip);
+        return submitTask(task);
+    }
+
+    public SystemAlertCleanupTaskResponse submitDeleteExactMessage(
+            SystemAlertDeleteByEventRequest request,
+            String operator,
+            String ip) {
+        String message = trimToNull(systemAlertMapper.findDisplayMessageByEventId(request.getEventId()));
+        if (message == null) {
+            throw new IllegalArgumentException("预警事件不存在或错误消息为空");
+        }
+        SystemAlertCleanupTaskEntity task = newTask(
+                message, SystemAlertCleanupTaskType.DELETE_EXACT_MESSAGE, operator, ip);
+        return submitTask(task);
+    }
+
+    private SystemAlertCleanupTaskResponse submitTask(SystemAlertCleanupTaskEntity task) {
         taskMapper.insert(task);
         try {
             taskExecutor.execute(() -> taskRunner.execute(task.getId()));
@@ -54,22 +87,14 @@ public class SystemAlertCleanupTaskService {
     private SystemAlertCleanupTaskEntity toEntity(SystemAlertDeleteAndFilterRequest request,
                                                    String operator,
                                                    String ip) {
-        String messageKeyword = trimToNull(request.getMessageKeyword());
-        if (messageKeyword == null) {
-            throw new IllegalArgumentException("错误消息关键词不能为空");
-        }
-        if (messageKeyword.length() > 200) {
-            throw new IllegalArgumentException("错误消息关键词不能超过200个字符");
-        }
         if (request.getStartTime() != null && request.getEndTime() != null
                 && request.getStartTime().isAfter(request.getEndTime())) {
             throw new IllegalArgumentException("开始时间不能晚于结束时间");
         }
         SystemAlertEventCategory eventCategory = SystemAlertEventCategory.parseNullable(
                 request.getEventCategory());
-        SystemAlertCleanupTaskEntity task = new SystemAlertCleanupTaskEntity();
-        task.setTaskNo("SACT-" + UUID.randomUUID().toString().replace("-", ""));
-        task.setMessageKeyword(messageKeyword);
+        SystemAlertCleanupTaskEntity task = newTask(
+                request.getMessageKeyword(), SystemAlertCleanupTaskType.DELETE_AND_FILTER, operator, ip);
         task.setBusinessLineCode(trimToNull(request.getBusinessLineCode()));
         task.setEnvironmentCode(trimToNull(request.getEnvironmentCode()));
         task.setServiceName(trimToNull(request.getServiceName()));
@@ -77,6 +102,24 @@ public class SystemAlertCleanupTaskService {
         task.setEventCategory(eventCategory == null ? null : eventCategory.name());
         task.setStartTime(request.getStartTime());
         task.setEndTime(request.getEndTime());
+        return task;
+    }
+
+    private SystemAlertCleanupTaskEntity newTask(String rawMessageKeyword,
+                                                   SystemAlertCleanupTaskType taskType,
+                                                   String operator,
+                                                   String ip) {
+        String messageKeyword = trimToNull(rawMessageKeyword);
+        if (messageKeyword == null) {
+            throw new IllegalArgumentException("错误消息关键词不能为空");
+        }
+        if (!taskType.exactMessageMatch() && messageKeyword.length() > 200) {
+            throw new IllegalArgumentException("错误消息关键词不能超过200个字符");
+        }
+        SystemAlertCleanupTaskEntity task = new SystemAlertCleanupTaskEntity();
+        task.setTaskNo("SACT-" + UUID.randomUUID().toString().replace("-", ""));
+        task.setTaskType(taskType.name());
+        task.setMessageKeyword(messageKeyword);
         task.setStatus("PENDING");
         task.setOperatorUserName(operator == null || operator.isBlank() ? "unknown" : operator.trim());
         task.setRequestIp(trimToNull(ip));
@@ -93,7 +136,7 @@ public class SystemAlertCleanupTaskService {
 
     private SystemAlertCleanupTaskResponse toResponse(SystemAlertCleanupTaskEntity task) {
         return new SystemAlertCleanupTaskResponse(
-                task.getId(), task.getTaskNo(), task.getMessageKeyword(),
+                task.getId(), task.getTaskNo(), task.getTaskType(), task.getMessageKeyword(),
                 task.getBusinessLineCode(), task.getEnvironmentCode(), task.getServiceName(),
                 task.getLogLevel(), task.getEventCategory(), task.getStartTime(), task.getEndTime(),
                 task.getStatus(), task.getRuleId(), task.getMaxEventId(), task.getProcessedEventId(),

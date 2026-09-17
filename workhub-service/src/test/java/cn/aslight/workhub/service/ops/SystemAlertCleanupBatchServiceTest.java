@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SystemAlertCleanupBatchServiceTest {
 
@@ -33,6 +34,28 @@ class SystemAlertCleanupBatchServiceTest {
         assertEquals(12L, tasks.processedEventId);
         assertEquals(2L, tasks.deletedEvents);
         assertEquals(2L, tasks.deletedNotifications);
+    }
+
+    @Test
+    void complete_shouldAuditDeleteTaskWithoutFilterRule() {
+        RecordingTaskMapper tasks = new RecordingTaskMapper();
+        RecordingAuditService audit = new RecordingAuditService();
+        SystemAlertCleanupBatchService service = new SystemAlertCleanupBatchService(null, tasks, audit);
+        SystemAlertCleanupTaskEntity task = new SystemAlertCleanupTaskEntity();
+        task.setId(28L);
+        task.setTaskNo("SACT-28");
+        task.setTaskType("DELETE");
+        task.setMessageKeyword("NullPointerException");
+        task.setDeletedEventCount(12L);
+        task.setDeletedNotificationCount(8L);
+        task.setOperatorUserName("admin");
+
+        service.complete(task);
+
+        assertEquals(28L, tasks.completedTaskId);
+        assertEquals("DELETE", audit.actionType);
+        assertTrue(audit.afterSnapshot.contains("未创建过滤规则"));
+        assertTrue(audit.afterSnapshot.contains("事件12条"));
     }
 
     private static class RecordingEventMapper {
@@ -68,6 +91,7 @@ class SystemAlertCleanupBatchServiceTest {
         private Long processedEventId;
         private long deletedEvents;
         private long deletedNotifications;
+        private Long completedTaskId;
 
         @Override public int insert(SystemAlertCleanupTaskEntity entity) { return 0; }
         @Override public SystemAlertCleanupTaskEntity findById(Long id) { return null; }
@@ -80,8 +104,35 @@ class SystemAlertCleanupBatchServiceTest {
             this.deletedNotifications = notifications;
             return 1;
         }
-        @Override public int markSuccess(Long id) { return 0; }
+        @Override public int markSuccess(Long id) {
+            completedTaskId = id;
+            return 1;
+        }
         @Override public int markFailed(Long id, String errorMessage) { return 0; }
+    }
+
+    private static class RecordingAuditService extends SystemAuditService {
+        private String actionType;
+        private String afterSnapshot;
+
+        private RecordingAuditService() {
+            super(null);
+        }
+
+        @Override
+        public void operation(String operator,
+                              String permissionCode,
+                              String actionType,
+                              String targetType,
+                              String targetId,
+                              String beforeSnapshot,
+                              String afterSnapshot,
+                              String result,
+                              String errorMessage,
+                              String ip) {
+            this.actionType = actionType;
+            this.afterSnapshot = afterSnapshot;
+        }
     }
 
     private static Object defaultValue(Class<?> type) {

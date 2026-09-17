@@ -93,11 +93,11 @@ class DevelopmentAnalysisServiceTest {
 
         GitlabRepositoryService.GitlabRepository repository = new GitlabRepositoryService.GitlabRepository(
                 "http://10.10.116.21:10000/xxt-plateform/thctay-saps.git",
-                Path.of("/tmp/git-cache/thctay-saps")
+                Path.of("/tmp/code-workspace/thctay-saps")
         );
         GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle = new GitlabRepositoryService.GitlabRepositoryBundle(
                 "xxt-plateform",
-                Path.of("/tmp/git-cache/xxt-plateform"),
+                Path.of("/tmp/code-workspace/xxt-plateform"),
                 List.of(repository)
         );
         when(gitlabRepositoryService.resolveAndFetchGroup(project)).thenReturn(repositoryBundle);

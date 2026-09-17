@@ -1,6 +1,7 @@
 package cn.aslight.workhub.dao.intake;
 
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
+import cn.aslight.workhub.model.intake.IntakeListQuery;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
@@ -17,102 +18,159 @@ import java.util.List;
 @Mapper
 public interface IntakeMapper {
 
-    @Select({
-            "<script>",
-            "SELECT id,",
-            "source_type,",
-            "source_channel,",
-            "external_message_id,",
-            "sender_name,",
-            "received_at,",
-            "raw_content,",
-            "development_owner_user_name,",
-            "CASE WHEN JSON_VALID(structured_data_json) THEN JSON_SET(JSON_REMOVE(structured_data_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE structured_data_json END AS structured_data_json,",
-            "CASE WHEN JSON_VALID(ai_draft_json) THEN JSON_SET(JSON_REMOVE(ai_draft_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE ai_draft_json END AS ai_draft_json,",
-            "intake_status,",
-            "demand_status,",
-            "pause_previous_demand_status,",
-            "pause_reason,",
-            "pause_date,",
-            "enrichment_status,",
-            "enrichment_error_summary,",
-            "enrichment_updated_at,",
-            "converted_work_item_id,",
-            "approval_code,",
-            "approval_title,",
-            "approval_status,",
-            "proposer_name,",
-            "submitted_at,",
-            "requirement_type,",
-            "requirement_name,",
-            "requirement_summary,",
-            "requirement_digest,",
-            "department,",
-            "(SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1) AS business_line,",
-            "business_line_code,",
-            "project_hint,",
-            "development_branch_name,",
-            "zentao_url,",
-            "remark,",
-            "planned_due_date,",
-            "planned_development_start_date,",
-            "planned_testing_start_date,",
-            "planned_release_date,",
-            "development_started_date,",
-            "testing_started_date,",
-            "actual_completed_date,",
-            "scheduled_acceptance_date,",
-            "actual_testing_completed_date,",
-            "acceptance_date,",
-            "released_date,",
-            "closed_date,",
-            "close_reason,",
-            "estimated_effort,",
-            "actual_effort,",
-            "actual_testing_effort,",
-            "priority,",
-            "urgency,",
-            "(SELECT JSON_UNQUOTE(JSON_EXTRACT(da.draft_json, '$.totalEstimatedEffort'))",
-            " FROM pm_intake_development_analysis da",
-            " WHERE da.intake_id = pm_intake_record.id",
-            " ORDER BY da.id DESC LIMIT 1) AS total_estimated_effort,",
-            "(SELECT JSON_UNQUOTE(JSON_EXTRACT(da.draft_json, '$.developmentEstimatedEffort'))",
-            " FROM pm_intake_development_analysis da",
-            " WHERE da.intake_id = pm_intake_record.id",
-            " ORDER BY da.id DESC LIMIT 1) AS development_estimated_effort,",
-            "(SELECT JSON_UNQUOTE(JSON_EXTRACT(da.draft_json, '$.testingEstimatedEffort'))",
-            " FROM pm_intake_development_analysis da",
-            " WHERE da.intake_id = pm_intake_record.id",
-            " ORDER BY da.id DESC LIMIT 1) AS testing_estimated_effort,",
-            "(SELECT CASE WHEN JSON_VALID(da.draft_json) THEN JSON_SET(JSON_REMOVE(da.draft_json, '$.businessLine'), '$.businessLineCode', da.business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(da.business_line_code AS BINARY) LIMIT 1)) ELSE da.draft_json END",
-            " FROM pm_intake_development_analysis da",
-            " WHERE da.intake_id = pm_intake_record.id",
-            " ORDER BY da.id DESC LIMIT 1) AS latest_development_draft_json,",
-            "(SELECT COUNT(1)",
-            " FROM pm_intake_todo todo",
-            " WHERE todo.intake_id = pm_intake_record.id",
-            "   AND todo.todo_status IN ('待处理', '处理中')) AS active_todo_count,",
-            "deleted,",
-            "deleted_at,",
-            "deleted_by,",
-            "created_at,",
-            "updated_at",
-            "FROM pm_intake_record",
-            "<where>",
-            "deleted = 0",
-            "<if test='status != null and status != \"\"'>",
-            "AND intake_status = #{status}",
-            "</if>",
-            "</where>",
-            "ORDER BY CASE demand_status",
-            "WHEN '待澄清' THEN 0 WHEN '待处理' THEN 1 WHEN '处理中' THEN 2 WHEN '待评估' THEN 3",
-            "WHEN '待排期' THEN 4 WHEN '待设计' THEN 5 WHEN '开发中' THEN 6 WHEN '测试中' THEN 7",
-            "WHEN '待验收' THEN 8 WHEN '待上线' THEN 9 WHEN '已收录' THEN 10 WHEN '已暂停' THEN 11",
-            "WHEN '已完成' THEN 12 WHEN '终止关闭' THEN 13 ELSE 14 END,",
-            "CASE priority WHEN '高' THEN 0 WHEN '中' THEN 1 WHEN '低' THEN 2 ELSE 3 END,",
-            "received_at DESC, id DESC",
-            "</script>"
-    })
+    String SUMMARY_COLUMNS = """
+            id,
+            source_type,
+            source_channel,
+            external_message_id,
+            sender_name,
+            received_at,
+            raw_content,
+            development_owner_user_name,
+            CASE WHEN JSON_VALID(structured_data_json) THEN JSON_SET(JSON_REMOVE(structured_data_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE structured_data_json END AS structured_data_json,
+            CASE WHEN JSON_VALID(ai_draft_json) THEN JSON_SET(JSON_REMOVE(ai_draft_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE ai_draft_json END AS ai_draft_json,
+            intake_status,
+            demand_status,
+            pause_previous_demand_status,
+            pause_reason,
+            pause_date,
+            enrichment_status,
+            enrichment_error_summary,
+            enrichment_updated_at,
+            converted_work_item_id,
+            approval_code,
+            approval_title,
+            approval_status,
+            proposer_name,
+            submitted_at,
+            requirement_type,
+            requirement_name,
+            requirement_summary,
+            requirement_digest,
+            department,
+            (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1) AS business_line,
+            business_line_code,
+            project_hint,
+            development_branch_name,
+            zentao_url,
+            remark,
+            planned_due_date,
+            planned_development_start_date,
+            planned_testing_start_date,
+            planned_release_date,
+            development_started_date,
+            testing_started_date,
+            actual_completed_date,
+            scheduled_acceptance_date,
+            actual_testing_completed_date,
+            acceptance_date,
+            released_date,
+            closed_date,
+            close_reason,
+            estimated_effort,
+            actual_effort,
+            actual_testing_effort,
+            priority,
+            urgency,
+            (SELECT JSON_UNQUOTE(JSON_EXTRACT(da.draft_json, '$.totalEstimatedEffort'))
+             FROM pm_intake_development_analysis da
+             WHERE da.intake_id = pm_intake_record.id
+             ORDER BY da.id DESC LIMIT 1) AS total_estimated_effort,
+            (SELECT JSON_UNQUOTE(JSON_EXTRACT(da.draft_json, '$.developmentEstimatedEffort'))
+             FROM pm_intake_development_analysis da
+             WHERE da.intake_id = pm_intake_record.id
+             ORDER BY da.id DESC LIMIT 1) AS development_estimated_effort,
+            (SELECT JSON_UNQUOTE(JSON_EXTRACT(da.draft_json, '$.testingEstimatedEffort'))
+             FROM pm_intake_development_analysis da
+             WHERE da.intake_id = pm_intake_record.id
+             ORDER BY da.id DESC LIMIT 1) AS testing_estimated_effort,
+            (SELECT CASE WHEN JSON_VALID(da.draft_json) THEN JSON_SET(JSON_REMOVE(da.draft_json, '$.businessLine'), '$.businessLineCode', da.business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(da.business_line_code AS BINARY) LIMIT 1)) ELSE da.draft_json END
+             FROM pm_intake_development_analysis da
+             WHERE da.intake_id = pm_intake_record.id
+             ORDER BY da.id DESC LIMIT 1) AS latest_development_draft_json,
+            (SELECT COUNT(1)
+             FROM pm_intake_todo todo
+             WHERE todo.intake_id = pm_intake_record.id
+               AND todo.todo_status IN ('待处理', '处理中')) AS active_todo_count,
+            deleted,
+            deleted_at,
+            deleted_by,
+            created_at,
+            updated_at
+            """;
+
+    String LIST_ORDER_BY = """
+            ORDER BY CASE TRIM(demand_status)
+            WHEN '待澄清' THEN 0 WHEN '待处理' THEN 1 WHEN '处理中' THEN 2 WHEN '待评估' THEN 3
+            WHEN '待排期' THEN 4 WHEN '待设计' THEN 5 WHEN '开发中' THEN 6 WHEN '测试中' THEN 7
+            WHEN '待验收' THEN 8 WHEN '待上线' THEN 9 WHEN '已收录' THEN 10 WHEN '已暂停' THEN 11
+            WHEN '已完成' THEN 12 WHEN '终止关闭' THEN 13 ELSE 14 END,
+            CASE TRIM(priority) WHEN '高' THEN 0 WHEN '中' THEN 1 WHEN '低' THEN 2 ELSE 3 END,
+            received_at DESC, id DESC
+            """;
+
+    // 总数与分页共用条件；所有输入都使用参数绑定，关键词按字面子串匹配。
+    String LIST_WHERE = """
+            <where>
+                deleted = 0
+                <if test="query.status != null">
+                    AND CAST(intake_status AS BINARY) = CAST(#{query.status} AS BINARY)
+                </if>
+                <if test="query.requirementName != null">
+                    AND (LOCATE(CAST(#{query.requirementName} AS BINARY), CAST(requirement_name AS BINARY)) &gt; 0
+                         OR LOCATE(CAST(#{query.requirementName} AS BINARY), CAST(requirement_digest AS BINARY)) &gt; 0)
+                </if>
+                <if test="query.approvalCode != null">
+                    AND LOCATE(CAST(#{query.approvalCode} AS BINARY), CAST(approval_code AS BINARY)) &gt; 0
+                </if>
+                <if test="query.proposerName != null">
+                    AND LOCATE(CAST(#{query.proposerName} AS BINARY), CAST(proposer_name AS BINARY)) &gt; 0
+                </if>
+                <if test="query.keyword != null">
+                    AND (LOCATE(CAST(LOWER(#{query.keyword}) AS BINARY), CAST(LOWER(approval_code) AS BINARY)) &gt; 0
+                         OR LOCATE(CAST(LOWER(#{query.keyword}) AS BINARY), CAST(LOWER(requirement_name) AS BINARY)) &gt; 0
+                         OR LOCATE(CAST(LOWER(#{query.keyword}) AS BINARY), CAST(LOWER(requirement_digest) AS BINARY)) &gt; 0
+                         OR LOCATE(CAST(LOWER(#{query.keyword}) AS BINARY), CAST(LOWER(requirement_summary) AS BINARY)) &gt; 0
+                         OR LOCATE(CAST(LOWER(#{query.keyword}) AS BINARY), CAST(LOWER(remark) AS BINARY)) &gt; 0)
+                </if>
+                <if test="query.businessLine != null">
+                    AND (CAST(business_line_code AS BINARY) = CAST(#{query.businessLine} AS BINARY)
+                         OR EXISTS (SELECT 1 FROM pm_business_line bl
+                                    WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY)
+                                      AND CAST(bl.business_line_name AS BINARY) = CAST(#{query.businessLine} AS BINARY)))
+                </if>
+                <if test="query.requirementType != null">
+                    AND CAST(requirement_type AS BINARY) = CAST(#{query.requirementType} AS BINARY)
+                </if>
+                <if test="query.demandStatus != null">
+                    AND CAST(demand_status AS BINARY) = CAST(#{query.demandStatus} AS BINARY)
+                </if>
+                <if test="query.releasedStartDate != null">
+                    AND released_date &gt;= #{query.releasedStartDate}
+                </if>
+                <if test="query.releasedEndDate != null">
+                    AND released_date &lt;= #{query.releasedEndDate}
+                </if>
+            </where>
+            """;
+
+    String PAGE_RECORDS_SQL = "SELECT * FROM pm_intake_record " + LIST_WHERE + LIST_ORDER_BY
+            + " LIMIT #{query.pageSize} OFFSET #{query.offset} ";
+
+    @Select({"<script>", "SELECT COUNT(*) FROM pm_intake_record", LIST_WHERE, "</script>"})
+    long count(@Param("query") IntakeListQuery query);
+
+    // 先在主表分页，再读取本页关联的待办、评估和展示字段。
+    @Select({"<script>", "SELECT", SUMMARY_COLUMNS,
+            "FROM (", PAGE_RECORDS_SQL, ") pm_intake_record", LIST_ORDER_BY, "</script>"})
+    List<IntakeRecordEntity> findPage(@Param("query") IntakeListQuery query);
+
+    /**
+     * 工作台聚合所需的完整记录；分页列表使用 findPage。
+     */
+    @Select({"<script>", "SELECT", SUMMARY_COLUMNS, "FROM pm_intake_record",
+            "<where>deleted = 0 <if test='status != null and status != \"\"'>AND intake_status = #{status}</if></where>",
+            LIST_ORDER_BY, "</script>"})
     List<IntakeRecordEntity> findAll(@Param("status") String status);
 
     @Select("""

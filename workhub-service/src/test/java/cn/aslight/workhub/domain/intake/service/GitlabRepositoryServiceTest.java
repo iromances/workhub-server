@@ -5,18 +5,27 @@ import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.service.system.SysConfigService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.ObjectMapper;
 
 import java.lang.reflect.Method;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class GitlabRepositoryServiceTest {
+
+    @TempDir
+    Path tempDir;
 
     @Test
     void chooseBestProject_shouldPreferProjectCodeAndNameMatch() {
@@ -88,17 +97,147 @@ class GitlabRepositoryServiceTest {
     }
 
     @Test
-    void groupCacheRoot_shouldUseGitlabGroupNameAsDirectoryName() {
+    void groupWorkspaceRoot_shouldUseGitlabGroupNameAsDirectoryName() {
         GitlabRepositoryService service = new GitlabRepositoryService(
                 mock(SysConfigService.class),
                 mock(BusinessLineMapper.class),
-                new ObjectMapper()
+                new ObjectMapper(),
+                Path.of("/Users/aslight/IDEAWorkspace")
         );
 
         assertEquals(
-                Path.of("data", "git-cache", "ca-assets").toAbsolutePath().normalize(),
-                service.groupCacheRoot("ca-assets")
+                Path.of("/Users/aslight/IDEAWorkspace/ca-assets"),
+                service.groupWorkspaceRoot("ca-assets")
         );
+    }
+
+    @Test
+    void groupWorkspaceRoot_shouldRejectPathTraversal() {
+        GitlabRepositoryService service = new GitlabRepositoryService(
+                mock(SysConfigService.class),
+                mock(BusinessLineMapper.class),
+                new ObjectMapper(),
+                Path.of("/Users/aslight/IDEAWorkspace")
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> service.groupWorkspaceRoot("../outside"));
+    }
+
+    @Test
+    void repositoryPath_shouldRejectNestedOrParentPath() {
+        GitlabRepositoryService service = new GitlabRepositoryService(
+                mock(SysConfigService.class),
+                mock(BusinessLineMapper.class),
+                new ObjectMapper(),
+                Path.of("/Users/aslight/IDEAWorkspace")
+        );
+        Path groupRoot = service.groupWorkspaceRoot("ca-assets");
+
+        assertThrows(IllegalArgumentException.class, () -> service.repositoryPath(groupRoot, "../outside"));
+        assertThrows(IllegalArgumentException.class, () -> service.repositoryPath(groupRoot, "subgroup/repository"));
+    }
+
+    @Test
+    void fetchCommand_shouldUnshallowExistingShallowRepository() {
+        GitlabRepositoryService service = new GitlabRepositoryService(
+                mock(SysConfigService.class),
+                mock(BusinessLineMapper.class),
+                new ObjectMapper(),
+                Path.of("/Users/aslight/IDEAWorkspace")
+        );
+
+        List<String> command = service.fetchCommand(
+                Path.of("/Users/aslight/IDEAWorkspace/ca-assets/assets-payment"),
+                "token",
+                true
+        );
+
+        assertTrue(command.contains("--unshallow"));
+        assertFalse(command.contains("--depth"));
+        assertEquals("origin", command.get(command.size() - 1));
+    }
+
+    @Test
+    void fetchCommand_shouldUseNormalFetchForCompleteRepository() {
+        GitlabRepositoryService service = new GitlabRepositoryService(
+                mock(SysConfigService.class),
+                mock(BusinessLineMapper.class),
+                new ObjectMapper(),
+                Path.of("/Users/aslight/IDEAWorkspace")
+        );
+
+        List<String> command = service.fetchCommand(
+                Path.of("/Users/aslight/IDEAWorkspace/ca-assets/assets-payment"),
+                "token",
+                false
+        );
+
+        assertFalse(command.contains("--unshallow"));
+        assertFalse(command.contains("--depth"));
+        assertEquals("origin", command.get(command.size() - 1));
+    }
+
+    @Test
+    void cloneCommand_shouldCloneCompleteRepository() {
+        GitlabRepositoryService service = new GitlabRepositoryService(
+                mock(SysConfigService.class),
+                mock(BusinessLineMapper.class),
+                new ObjectMapper(),
+                Path.of("/Users/aslight/IDEAWorkspace")
+        );
+
+        List<String> command = service.cloneCommand(
+                "http://gitlab/ca-assets/assets-payment.git",
+                "token",
+                Path.of("/Users/aslight/IDEAWorkspace/ca-assets/assets-payment")
+        );
+
+        assertFalse(command.contains("--depth"));
+        assertEquals("clone", command.get(3));
+        assertEquals("http://gitlab/ca-assets/assets-payment.git", command.get(4));
+    }
+
+    @Test
+    void updateCurrentBranch_shouldKeepNonConflictingChangesAndRejectConflictingChanges() throws Exception {
+        Path origin = tempDir.resolve("origin.git");
+        Path source = tempDir.resolve("source");
+        Path local = tempDir.resolve("local");
+        git(tempDir, "init", "--bare", origin.toString());
+        git(tempDir, "clone", origin.toString(), source.toString());
+        git(source, "config", "user.name", "WorkHub Test");
+        git(source, "config", "user.email", "workhub-test@example.com");
+        Files.writeString(source.resolve("shared.txt"), "base\n");
+        git(source, "add", "shared.txt");
+        git(source, "commit", "-m", "base");
+        git(source, "push", "-u", "origin", "HEAD");
+        git(tempDir, "clone", origin.toString(), local.toString());
+
+        Files.writeString(local.resolve("local-only.txt"), "local change\n");
+        Files.writeString(source.resolve("remote-only.txt"), "remote change\n");
+        git(source, "add", "remote-only.txt");
+        git(source, "commit", "-m", "remote non-conflicting change");
+        git(source, "push");
+        git(local, "fetch", "origin");
+
+        GitlabRepositoryService service = new GitlabRepositoryService(null, null, null, tempDir);
+        service.updateCurrentBranch(local);
+
+        assertEquals(git(source, "rev-parse", "HEAD"), git(local, "rev-parse", "HEAD"));
+        assertEquals("local change\n", Files.readString(local.resolve("local-only.txt")));
+        assertFalse(Files.exists(local.resolve(".git/MERGE_HEAD")));
+
+        Files.writeString(local.resolve("shared.txt"), "local conflicting change\n");
+        Files.writeString(source.resolve("shared.txt"), "remote conflicting change\n");
+        git(source, "add", "shared.txt");
+        git(source, "commit", "-m", "remote conflicting change");
+        git(source, "push");
+        git(local, "fetch", "origin");
+        String headBeforeConflict = git(local, "rev-parse", "HEAD");
+
+        assertThrows(IllegalStateException.class, () -> service.updateCurrentBranch(local));
+        assertEquals(headBeforeConflict, git(local, "rev-parse", "HEAD"));
+        assertEquals("local conflicting change\n", Files.readString(local.resolve("shared.txt")));
+        assertFalse(Files.exists(local.resolve(".git/MERGE_HEAD")));
     }
 
     @Test
@@ -121,5 +260,18 @@ class GitlabRepositoryServiceTest {
         method.setAccessible(true);
 
         assertEquals("th-jiatai-amp", method.invoke(service, "BL000003"));
+    }
+
+    private String git(Path workingDirectory, String... arguments) throws Exception {
+        List<String> command = new ArrayList<>();
+        command.add("git");
+        command.addAll(List.of(arguments));
+        Process process = new ProcessBuilder(command)
+                .directory(workingDirectory.toFile())
+                .redirectErrorStream(true)
+                .start();
+        String output = new String(process.getInputStream().readAllBytes()).trim();
+        assertEquals(0, process.waitFor(), output);
+        return output;
     }
 }

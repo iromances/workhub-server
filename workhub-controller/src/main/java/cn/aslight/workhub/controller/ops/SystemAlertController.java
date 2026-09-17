@@ -5,6 +5,8 @@ import cn.aslight.workhub.common.api.PageResponse;
 import cn.aslight.workhub.model.ops.SystemAlertDashboardResponse;
 import cn.aslight.workhub.model.ops.SystemAlertCleanupTaskResponse;
 import cn.aslight.workhub.model.ops.SystemAlertDeleteAndFilterRequest;
+import cn.aslight.workhub.model.ops.SystemAlertDeleteByMessageRequest;
+import cn.aslight.workhub.model.ops.SystemAlertDeleteByEventRequest;
 import cn.aslight.workhub.model.ops.SystemAlertEventBatchDeleteRequest;
 import cn.aslight.workhub.model.ops.SystemAlertEventBatchDeleteResponse;
 import cn.aslight.workhub.model.ops.SystemAlertRuleResponse;
@@ -83,6 +85,26 @@ public class SystemAlertController {
         return ApiResponse.success(result);
     }
 
+    @PostMapping("/events/delete-tasks")
+    @PreAuthorize("hasAuthority('ops:system-alert:delete') or hasAuthority('ops:system-alert:manage')")
+    public ApiResponse<SystemAlertCleanupTaskResponse> submitDeleteTask(
+            @Valid @RequestBody SystemAlertDeleteByMessageRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        return ApiResponse.success(systemAlertCleanupTaskService.submitDeleteByMessage(
+                request, authentication.getName(), clientIp(httpRequest)));
+    }
+
+    @PostMapping("/events/exact-message-delete-tasks")
+    @PreAuthorize("hasAuthority('ops:system-alert:delete') or hasAuthority('ops:system-alert:manage')")
+    public ApiResponse<SystemAlertCleanupTaskResponse> submitExactMessageDeleteTask(
+            @Valid @RequestBody SystemAlertDeleteByEventRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        return ApiResponse.success(systemAlertCleanupTaskService.submitDeleteExactMessage(
+                request, authentication.getName(), clientIp(httpRequest)));
+    }
+
     @PostMapping("/events/delete-and-filter-tasks")
     @PreAuthorize("hasAuthority('ops:system-alert:manage') or "
             + "(hasAuthority('ops:system-alert:delete') and "
@@ -99,6 +121,14 @@ public class SystemAlertController {
     @GetMapping("/events/delete-and-filter-tasks/{id}")
     @PreAuthorize("hasAuthority('ops:system-alert:view') or hasAuthority('ops:system-alert:manage')")
     public ApiResponse<SystemAlertCleanupTaskResponse> deleteAndFilterTaskDetail(
+            @PathVariable Long id,
+            Authentication authentication) {
+        return cleanupTaskDetail(id, authentication);
+    }
+
+    @GetMapping("/events/cleanup-tasks/{id}")
+    @PreAuthorize("hasAuthority('ops:system-alert:view') or hasAuthority('ops:system-alert:manage')")
+    public ApiResponse<SystemAlertCleanupTaskResponse> cleanupTaskDetail(
             @PathVariable Long id,
             Authentication authentication) {
         boolean canManage = authentication.getAuthorities().stream()

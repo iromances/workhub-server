@@ -4,6 +4,7 @@ import cn.aslight.workhub.dao.ops.SystemAlertCleanupTaskMapper;
 import cn.aslight.workhub.dao.ops.SystemAlertMapper;
 import cn.aslight.workhub.model.ops.SystemAlertCleanupEventReference;
 import cn.aslight.workhub.model.ops.SystemAlertCleanupTaskEntity;
+import cn.aslight.workhub.model.ops.SystemAlertCleanupTaskType;
 import cn.aslight.workhub.model.ops.SystemAlertNotificationCandidate;
 import cn.aslight.workhub.service.system.SystemAuditService;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 public class SystemAlertCleanupBatchService {
 
     private static final int DELETE_BATCH_SIZE = 500;
+    private static final int AUDIT_MESSAGE_MAX_LENGTH = 2_000;
     private final SystemAlertMapper systemAlertMapper;
     private final SystemAlertCleanupTaskMapper taskMapper;
     private final SystemAuditService auditService;
@@ -50,20 +52,29 @@ public class SystemAlertCleanupBatchService {
         if (taskMapper.markSuccess(task.getId()) != 1) {
             throw new IllegalStateException("系统预警清理任务无法完成");
         }
+        SystemAlertCleanupTaskType taskType = SystemAlertCleanupTaskType.parse(task.getTaskType());
         auditService.operation(
                 task.getOperatorUserName(),
                 "ops:system-alert:delete",
-                "DELETE_AND_FILTER",
+                taskType.name(),
                 "OPS_SYSTEM_ALERT_CLEANUP_TASK",
                 task.getTaskNo(),
                 filterSnapshot(task),
-                "新增或复用过滤规则" + task.getRuleId()
-                        + "，物理删除系统预警事件" + task.getDeletedEventCount()
-                        + "条，关联站内通知" + task.getDeletedNotificationCount() + "条",
+                operationResult(task, taskType),
                 "SUCCESS",
                 null,
                 task.getRequestIp()
         );
+    }
+
+    private String operationResult(SystemAlertCleanupTaskEntity task,
+                                   SystemAlertCleanupTaskType taskType) {
+        String ruleResult = taskType.createsFilterRule()
+                ? "新增或复用过滤规则" + task.getRuleId() + "，"
+                : "未创建过滤规则，";
+        return ruleResult
+                + "物理删除系统预警事件" + task.getDeletedEventCount()
+                + "条，关联站内通知" + task.getDeletedNotificationCount() + "条";
     }
 
     private List<Long> findRelatedNotificationIds(
@@ -117,7 +128,9 @@ public class SystemAlertCleanupBatchService {
     }
 
     private String filterSnapshot(SystemAlertCleanupTaskEntity task) {
-        return "消息关键词=" + task.getMessageKeyword()
+        SystemAlertCleanupTaskType taskType = SystemAlertCleanupTaskType.parse(task.getTaskType());
+        return "消息匹配方式=" + (taskType.exactMessageMatch() ? "精确" : "模糊")
+                + "，消息关键词=" + auditMessage(task.getMessageKeyword())
                 + "，业务线=" + value(task.getBusinessLineCode())
                 + "，环境=" + value(task.getEnvironmentCode())
                 + "，服务=" + value(task.getServiceName())
@@ -125,6 +138,14 @@ public class SystemAlertCleanupBatchService {
                 + "，事件分类=" + value(task.getEventCategory())
                 + "，开始时间=" + value(task.getStartTime())
                 + "，结束时间=" + value(task.getEndTime());
+    }
+
+    private String auditMessage(String message) {
+        if (message == null || message.length() <= AUDIT_MESSAGE_MAX_LENGTH) {
+            return message;
+        }
+        return message.substring(0, AUDIT_MESSAGE_MAX_LENGTH)
+                + "…（完整长度" + message.length() + "字符）";
     }
 
     private String value(Object value) {

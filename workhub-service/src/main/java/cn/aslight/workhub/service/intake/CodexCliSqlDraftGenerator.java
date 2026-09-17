@@ -5,6 +5,7 @@ import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeSqlDraft;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.service.attachment.AttachmentService;
+import cn.aslight.workhub.service.attachment.AttachmentTemporaryFileSet;
 import cn.aslight.workhub.service.ai.AiGatewayClient;
 import cn.aslight.workhub.service.ai.AiGatewayRequest;
 import cn.aslight.workhub.service.ai.AiGatewayResult;
@@ -88,19 +89,19 @@ public class CodexCliSqlDraftGenerator {
         if (!aiGatewayClient.isConfigured(USE_CASE_CODE)) {
             return SqlDraftGenerationResult.failed("AI 场景未配置或已停用");
         }
-        SqlDraftInvocation invocation = buildInvocation(entity, structuredData, attachments);
-        AiGatewayResult result = aiGatewayClient.executeStructured(AiGatewayRequest.structured(
-                USE_CASE_CODE,
-                invocation.prompt(),
-                invocation.workingDirectory(),
-                invocation.addDirs(),
-                invocation.imagePaths(),
-                OUTPUT_SCHEMA
-        ));
-        if (!result.succeeded()) {
-            return SqlDraftGenerationResult.failed(result.failureSummary());
-        }
-        try {
+        try (AttachmentTemporaryFileSet temporaryFiles = AttachmentTemporaryFileSet.materialize(attachments)) {
+            SqlDraftInvocation invocation = buildInvocation(entity, structuredData, temporaryFiles.contexts());
+            AiGatewayResult result = aiGatewayClient.executeStructured(AiGatewayRequest.structured(
+                    USE_CASE_CODE,
+                    invocation.prompt(),
+                    invocation.workingDirectory(),
+                    invocation.addDirs(),
+                    invocation.imagePaths(),
+                    OUTPUT_SCHEMA
+            ));
+            if (!result.succeeded()) {
+                return SqlDraftGenerationResult.failed(result.failureSummary());
+            }
             IntakeSqlDraft draft = objectMapper.readValue(result.output(), IntakeSqlDraft.class);
             draft = new IntakeSqlDraft(
                     defaultValue(draft.dialect(), "MySQL"),

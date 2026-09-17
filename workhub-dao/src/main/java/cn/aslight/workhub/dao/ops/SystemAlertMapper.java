@@ -316,6 +316,17 @@ public interface SystemAlertMapper {
     long findMaxEventId();
 
     @Select("""
+            SELECT TRIM(COALESCE(
+                       NULLIF(TRIM(e.message), ''),
+                       NULLIF(TRIM(e.title), ''),
+                       NULLIF(TRIM(e.error_type), ''),
+                       ''))
+            FROM ops_system_alert_event e
+            WHERE e.id = #{eventId}
+            """)
+    String findDisplayMessageByEventId(Long eventId);
+
+    @Select("""
             <script>
             SELECT e.id,
                    e.business_line_code AS businessLineCode,
@@ -361,6 +372,29 @@ public interface SystemAlertMapper {
             @Param("messageKeyword") String messageKeyword,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime,
+            @Param("processedEventId") long processedEventId,
+            @Param("maxEventId") long maxEventId,
+            @Param("limit") int limit);
+
+    @Select("""
+            SELECT e.id,
+                   e.business_line_code AS businessLineCode,
+                   e.environment_code AS environmentCode,
+                   e.source_event_id AS sourceEventId
+            FROM ops_system_alert_event e
+            WHERE e.id > #{processedEventId}
+              AND e.id <= #{maxEventId}
+              AND CAST(TRIM(COALESCE(
+                      NULLIF(TRIM(e.message), ''),
+                      NULLIF(TRIM(e.title), ''),
+                      NULLIF(TRIM(e.error_type), ''),
+                      '')) AS BINARY) = CAST(#{messageKeyword} AS BINARY)
+            ORDER BY e.id ASC
+            LIMIT #{limit}
+            """)
+    @Options(timeout = 600)
+    List<SystemAlertCleanupEventReference> findExactMessageCleanupEventBatch(
+            @Param("messageKeyword") String messageKeyword,
             @Param("processedEventId") long processedEventId,
             @Param("maxEventId") long maxEventId,
             @Param("limit") int limit);

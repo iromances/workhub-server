@@ -27,6 +27,37 @@ import static org.mockito.Mockito.when;
 class IntakeEnrichmentServiceTest {
 
     @Test
+    void directoryFailureMustNotChangeSuccessfulRecognitionToFailed() {
+        IntakeMapper mapper = mock(IntakeMapper.class);
+        var attachments = mock(AttachmentService.class);
+        var extraction = mock(AttachmentTextExtractionService.class);
+        var codex = mock(CodexCliStructuredExtractor.class);
+        var folders = mock(RequirementFolderService.class);
+        var entity = new IntakeRecordEntity();
+        entity.setId(7L);
+        entity.setRequirementName("已识别需求");
+        when(mapper.findById(7L)).thenReturn(entity);
+        when(extraction.extractSummaries(any())).thenReturn(
+                new AttachmentTextExtractionService.AttachmentExtractionBatch(List.of(), List.of()));
+        when(codex.extract(any(), any(), any(), any())).thenReturn(
+                new CodexCliStructuredExtractor.CodexCliExtractionResult(false, null, null));
+        org.mockito.Mockito.doThrow(new IllegalStateException("模拟磁盘故障"))
+                .when(folders).scheduleMaterialExport(7L);
+        var service = new IntakeEnrichmentService(mapper,
+                mock(cn.aslight.workhub.dao.intake.IntakeStructuredFieldMapper.class),
+                attachments, extraction, new IntakeStructuredDataExtractor(),
+                new IntakeStructuredFieldNormalizer(), codex, Runnable::run, new ObjectMapper(), folders);
+
+        service.enrichUploadedIntake(7L, "上传", "需求名称：已识别需求");
+
+        verify(folders).scheduleMaterialExport(7L);
+        verify(mapper).updateStructuredDataAndEnrichment(eq(7L), any(), any(),
+                eq(IntakeEnrichmentStatus.SUCCEEDED), any(), any());
+        verify(mapper, org.mockito.Mockito.never()).updateEnrichmentState(eq(7L),
+                eq(IntakeEnrichmentStatus.FAILED), any(), any(), any());
+    }
+
+    @Test
     void scheduleUploadedEnrichment_shouldTransitPendingRunningAndSucceeded() throws Exception {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         AttachmentService attachmentService = mock(AttachmentService.class);
@@ -35,14 +66,18 @@ class IntakeEnrichmentServiceTest {
         CodexCliStructuredExtractor codexCliStructuredExtractor = mock(CodexCliStructuredExtractor.class);
         Executor executor = Runnable::run;
 
+        RequirementFolderService folders = mock(RequirementFolderService.class);
         IntakeEnrichmentService service = new IntakeEnrichmentService(
                 intakeMapper,
+                mock(cn.aslight.workhub.dao.intake.IntakeStructuredFieldMapper.class),
                 attachmentService,
                 attachmentTextExtractionService,
                 structuredDataExtractor,
+                new IntakeStructuredFieldNormalizer(),
                 codexCliStructuredExtractor,
                 executor,
-                new ObjectMapper()
+                new ObjectMapper(),
+                folders
         );
 
         IntakeRecordEntity entity = new IntakeRecordEntity();
@@ -103,7 +138,7 @@ class IntakeEnrichmentServiceTest {
 
         service.scheduleUploadedEnrichment(7L, "企业微信审批", "审批编号：A-001");
 
-        InOrder inOrder = inOrder(intakeMapper);
+        InOrder inOrder = inOrder(intakeMapper, folders);
         inOrder.verify(intakeMapper).updateEnrichmentState(eq(7L), eq(IntakeEnrichmentStatus.PENDING), eq(null), eq(null), any(LocalDateTime.class));
         inOrder.verify(intakeMapper).updateEnrichmentState(eq(7L), eq(IntakeEnrichmentStatus.RUNNING), eq(null), eq(null), any(LocalDateTime.class));
         ArgumentCaptor<IntakeRecordEntity> entityCaptor = ArgumentCaptor.forClass(IntakeRecordEntity.class);
@@ -116,6 +151,7 @@ class IntakeEnrichmentServiceTest {
                 eq(null),
                 any(LocalDateTime.class)
         );
+        inOrder.verify(folders).scheduleMaterialExport(7L);
         assertEquals("feature/liyi_ebike_split_202603240005", entityCaptor.getValue().getDevelopmentBranchName());
         verify(codexCliStructuredExtractor).extract("企业微信审批", "审批编号：A-001", attachments, extractionBatch.summaries());
     }

@@ -13,11 +13,11 @@ public interface SystemAlertCleanupTaskMapper {
 
     @Insert("""
             INSERT INTO ops_system_alert_cleanup_task (
-              task_no, message_keyword, business_line_code, environment_code, service_name,
+              task_no, task_type, message_keyword, business_line_code, environment_code, service_name,
               log_level, event_category, start_time, end_time, status,
               operator_user_name, request_ip
             ) VALUES (
-              #{taskNo}, #{messageKeyword}, #{businessLineCode}, #{environmentCode}, #{serviceName},
+              #{taskNo}, #{taskType}, #{messageKeyword}, #{businessLineCode}, #{environmentCode}, #{serviceName},
               #{logLevel}, #{eventCategory}, #{startTime}, #{endTime}, #{status},
               #{operatorUserName}, #{requestIp}
             )
@@ -26,7 +26,7 @@ public interface SystemAlertCleanupTaskMapper {
     int insert(SystemAlertCleanupTaskEntity entity);
 
     @Select("""
-            SELECT id, task_no AS taskNo, message_keyword AS messageKeyword,
+            SELECT id, task_no AS taskNo, task_type AS taskType, message_keyword AS messageKeyword,
                    business_line_code AS businessLineCode, environment_code AS environmentCode,
                    service_name AS serviceName, log_level AS logLevel, event_category AS eventCategory,
                    start_time AS startTime, end_time AS endTime, status, rule_id AS ruleId,

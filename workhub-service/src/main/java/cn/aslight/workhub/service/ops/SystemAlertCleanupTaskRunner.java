@@ -4,6 +4,7 @@ import cn.aslight.workhub.dao.ops.SystemAlertCleanupTaskMapper;
 import cn.aslight.workhub.dao.ops.SystemAlertMapper;
 import cn.aslight.workhub.model.ops.SystemAlertCleanupEventReference;
 import cn.aslight.workhub.model.ops.SystemAlertCleanupTaskEntity;
+import cn.aslight.workhub.model.ops.SystemAlertCleanupTaskType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -36,7 +37,10 @@ public class SystemAlertCleanupTaskRunner {
         }
         try {
             SystemAlertCleanupTaskEntity task = requireTask(taskId);
-            Long ruleId = ruleService.ensureIgnoreRule(task.getMessageKeyword());
+            SystemAlertCleanupTaskType taskType = SystemAlertCleanupTaskType.parse(task.getTaskType());
+            Long ruleId = taskType.createsFilterRule()
+                    ? ruleService.ensureIgnoreRule(task.getMessageKeyword())
+                    : null;
             long maxEventId = systemAlertMapper.findMaxEventId();
             if (taskMapper.setExecutionPlan(taskId, ruleId, maxEventId) != 1) {
                 throw new IllegalStateException("系统预警清理任务状态已变化");
@@ -44,18 +48,21 @@ public class SystemAlertCleanupTaskRunner {
 
             long processedEventId = 0;
             while (processedEventId < maxEventId) {
-                List<SystemAlertCleanupEventReference> batch = systemAlertMapper.findCleanupEventBatch(
-                        task.getBusinessLineCode(),
-                        task.getEnvironmentCode(),
-                        task.getServiceName(),
-                        task.getLogLevel(),
-                        task.getEventCategory(),
-                        task.getMessageKeyword(),
-                        task.getStartTime(),
-                        task.getEndTime(),
-                        processedEventId,
-                        maxEventId,
-                        EVENT_BATCH_SIZE);
+                List<SystemAlertCleanupEventReference> batch = taskType.exactMessageMatch()
+                        ? systemAlertMapper.findExactMessageCleanupEventBatch(
+                                task.getMessageKeyword(), processedEventId, maxEventId, EVENT_BATCH_SIZE)
+                        : systemAlertMapper.findCleanupEventBatch(
+                                task.getBusinessLineCode(),
+                                task.getEnvironmentCode(),
+                                task.getServiceName(),
+                                task.getLogLevel(),
+                                task.getEventCategory(),
+                                task.getMessageKeyword(),
+                                task.getStartTime(),
+                                task.getEndTime(),
+                                processedEventId,
+                                maxEventId,
+                                EVENT_BATCH_SIZE);
                 if (batch.isEmpty()) {
                     break;
                 }
@@ -66,8 +73,7 @@ public class SystemAlertCleanupTaskRunner {
         } catch (Exception ex) {
             String errorMessage = errorMessage(ex);
             taskMapper.markFailed(taskId, errorMessage);
-            log.error("System alert delete-and-filter task failed. taskId={}, message={}",
-                    taskId, errorMessage, ex);
+            log.error("System alert cleanup task failed. taskId={}, message={}", taskId, errorMessage, ex);
         }
     }
 

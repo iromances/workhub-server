@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 public record SystemAlertCleanupTaskResponse(
         Long id,
         String taskNo,
+        String taskType,
         String messageKeyword,
         String businessLineCode,
         String environmentCode,

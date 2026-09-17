@@ -345,10 +345,21 @@ class SystemAlertServiceTest {
         }
 
         @Override
+        public String findDisplayMessageByEventId(Long eventId) {
+            return null;
+        }
+
+        @Override
         public List<SystemAlertCleanupEventReference> findCleanupEventBatch(
                 String businessLineCode, String environmentCode, String serviceName, String level,
                 String eventCategory, String messageKeyword, LocalDateTime startTime, LocalDateTime endTime,
                 long processedEventId, long maxEventId, int limit) {
+            return List.of();
+        }
+
+        @Override
+        public List<SystemAlertCleanupEventReference> findExactMessageCleanupEventBatch(
+                String messageKeyword, long processedEventId, long maxEventId, int limit) {
             return List.of();
         }
 

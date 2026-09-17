@@ -188,7 +188,7 @@ public class McpToolRegistry {
         Map<String, Object> context = new LinkedHashMap<>(catalog.gitlab());
         context.put("gitlabGroupName", businessLine.gitlabGroupName());
         if (businessLine.gitlabGroupName() != null && !businessLine.gitlabGroupName().isBlank()) {
-            context.put("codeCacheRoot", "data/git-cache/" + businessLine.gitlabGroupName().trim());
+            context.put("codeWorkspaceRoot", "/Users/aslight/IDEAWorkspace/" + businessLine.gitlabGroupName().trim());
         }
         return context;
     }

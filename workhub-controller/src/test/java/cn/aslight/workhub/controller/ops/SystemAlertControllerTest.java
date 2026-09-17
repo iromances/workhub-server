@@ -3,6 +3,8 @@ package cn.aslight.workhub.controller.ops;
 import cn.aslight.workhub.model.ops.SystemAlertDashboardResponse;
 import cn.aslight.workhub.model.ops.SystemAlertCleanupTaskResponse;
 import cn.aslight.workhub.model.ops.SystemAlertDeleteAndFilterRequest;
+import cn.aslight.workhub.model.ops.SystemAlertDeleteByEventRequest;
+import cn.aslight.workhub.model.ops.SystemAlertDeleteByMessageRequest;
 import cn.aslight.workhub.model.ops.SystemAlertEventBatchDeleteResponse;
 import cn.aslight.workhub.model.ops.SystemAlertEventResponse;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemResponse;
@@ -104,11 +106,56 @@ class SystemAlertControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(27))
+                .andExpect(jsonPath("$.data.taskType").value("DELETE_AND_FILTER"))
                 .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.messageKeyword").value("Insert Person Time"));
 
         org.junit.jupiter.api.Assertions.assertEquals("Insert Person Time",
                 cleanupService.request.getMessageKeyword());
+        org.junit.jupiter.api.Assertions.assertEquals("admin", cleanupService.operator);
+    }
+
+    @Test
+    void submitDeleteTask_shouldOnlyUseMessageKeyword() throws Exception {
+        StubCleanupTaskService cleanupService = new StubCleanupTaskService();
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+                new SystemAlertController(null, cleanupService, null, null)).build();
+        UsernamePasswordAuthenticationToken authentication =
+                UsernamePasswordAuthenticationToken.authenticated("admin", "N/A", List.of());
+
+        mockMvc.perform(post("/api/ops/system-alerts/events/delete-tasks")
+                        .principal(authentication)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"messageKeyword\":\"NullPointerException\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(28))
+                .andExpect(jsonPath("$.data.taskType").value("DELETE"))
+                .andExpect(jsonPath("$.data.messageKeyword").value("NullPointerException"));
+
+        org.junit.jupiter.api.Assertions.assertEquals("NullPointerException",
+                cleanupService.deleteRequest.getMessageKeyword());
+        org.junit.jupiter.api.Assertions.assertEquals("admin", cleanupService.operator);
+    }
+
+    @Test
+    void submitExactMessageDeleteTask_shouldOnlyUseEventId() throws Exception {
+        StubCleanupTaskService cleanupService = new StubCleanupTaskService();
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+                new SystemAlertController(null, cleanupService, null, null)).build();
+        UsernamePasswordAuthenticationToken authentication =
+                UsernamePasswordAuthenticationToken.authenticated("admin", "N/A", List.of());
+
+        mockMvc.perform(post("/api/ops/system-alerts/events/exact-message-delete-tasks")
+                        .principal(authentication)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"eventId\":11}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(29))
+                .andExpect(jsonPath("$.data.taskType").value("DELETE_EXACT_MESSAGE"))
+                .andExpect(jsonPath("$.data.messageKeyword").value("支付回调失败"));
+
+        org.junit.jupiter.api.Assertions.assertEquals(11L,
+                cleanupService.exactRequest.getEventId());
         org.junit.jupiter.api.Assertions.assertEquals("admin", cleanupService.operator);
     }
 
@@ -148,10 +195,12 @@ class SystemAlertControllerTest {
 
     private static class StubCleanupTaskService extends SystemAlertCleanupTaskService {
         private SystemAlertDeleteAndFilterRequest request;
+        private SystemAlertDeleteByMessageRequest deleteRequest;
+        private SystemAlertDeleteByEventRequest exactRequest;
         private String operator;
 
         private StubCleanupTaskService() {
-            super(null, null, new SyncTaskExecutor());
+            super(null, null, null, new SyncTaskExecutor());
         }
 
         @Override
@@ -161,12 +210,42 @@ class SystemAlertControllerTest {
             this.request = request;
             this.operator = operator;
             return new SystemAlertCleanupTaskResponse(
-                    27L, "SACT-27", request.getMessageKeyword(), request.getBusinessLineCode(),
+                    27L, "SACT-27", "DELETE_AND_FILTER", request.getMessageKeyword(), request.getBusinessLineCode(),
                     request.getEnvironmentCode(), request.getServiceName(), request.getLevel(),
                     request.getEventCategory(), request.getStartTime(), request.getEndTime(),
                     "PENDING", null, 0L, 0L, 0L, 0L, null,
                     LocalDateTime.of(2026, 8, 25, 0, 0), null, null,
                     LocalDateTime.of(2026, 8, 25, 0, 0));
+        }
+
+        @Override
+        public SystemAlertCleanupTaskResponse submitDeleteByMessage(
+                SystemAlertDeleteByMessageRequest request,
+                String operator,
+                String ip) {
+            this.deleteRequest = request;
+            this.operator = operator;
+            return new SystemAlertCleanupTaskResponse(
+                    28L, "SACT-28", "DELETE", request.getMessageKeyword(),
+                    null, null, null, null, null, null, null,
+                    "PENDING", null, 0L, 0L, 0L, 0L, null,
+                    LocalDateTime.of(2026, 8, 27, 0, 0), null, null,
+                    LocalDateTime.of(2026, 8, 27, 0, 0));
+        }
+
+        @Override
+        public SystemAlertCleanupTaskResponse submitDeleteExactMessage(
+                SystemAlertDeleteByEventRequest request,
+                String operator,
+                String ip) {
+            this.exactRequest = request;
+            this.operator = operator;
+            return new SystemAlertCleanupTaskResponse(
+                    29L, "SACT-29", "DELETE_EXACT_MESSAGE", "支付回调失败",
+                    null, null, null, null, null, null, null,
+                    "PENDING", null, 0L, 0L, 0L, 0L, null,
+                    LocalDateTime.of(2026, 8, 27, 0, 0), null, null,
+                    LocalDateTime.of(2026, 8, 27, 0, 0));
         }
     }
 }

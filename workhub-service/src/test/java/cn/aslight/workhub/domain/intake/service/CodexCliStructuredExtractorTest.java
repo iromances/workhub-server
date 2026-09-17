@@ -25,6 +25,30 @@ import static org.mockito.Mockito.when;
 class CodexCliStructuredExtractorTest {
 
     @Test
+    @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "workhub.rp.sample", matches = ".+")
+    void realRpAndDocxSummariesShouldReachAiPrompt() throws Exception {
+        byte[] rp = java.nio.file.Files.readAllBytes(Path.of(System.getProperty("workhub.rp.sample")));
+        byte[] docx;
+        try (var document = new org.apache.poi.xwpf.usermodel.XWPFDocument();
+             var output = new java.io.ByteArrayOutputStream()) {
+            document.createParagraph().createRun().setText("需求名称：提前买断与回购优化");
+            document.write(output);
+            docx = output.toByteArray();
+        }
+        var attachments = List.of(
+                new AttachmentService.AttachmentFileContext(1L, "附件", "原型.rp", null, "application/octet-stream", rp, (long) rp.length, null),
+                new AttachmentService.AttachmentFileContext(2L, "附件", "需求.docx", null, "application/octet-stream", docx, (long) docx.length, null));
+        var batch = new cn.aslight.workhub.service.attachment.AttachmentTextExtractionService().extractSummaries(attachments);
+        assertEquals(2, batch.summaries().size());
+        var extractor = new CodexCliStructuredExtractor(new RecordingAiGatewayClient(), new ObjectMapper());
+        var invocation = extractor.buildInvocation("需求录入", "", attachments, batch.summaries());
+        assertTrue(invocation.prompt().contains("回购限制"));
+        assertTrue(invocation.prompt().contains("逾期账单未还总额"));
+        assertTrue(invocation.prompt().contains("需求名称：提前买断与回购优化"));
+        assertTrue(batch.warnings().getFirst().contains("图片、交互及部分备注未识别"));
+    }
+
+    @Test
     void buildInvocation_shouldAddImageAsInputAndTextSummaryIntoPrompt() {
         RecordingAiGatewayClient aiGatewayClient = new RecordingAiGatewayClient();
         CodexCliStructuredExtractor extractor = new CodexCliStructuredExtractor(

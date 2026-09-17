@@ -1,10 +1,12 @@
 package cn.aslight.workhub.controller.attachment;
 
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
+import cn.aslight.workhub.model.attachment.AttachmentEntity;
 import cn.aslight.workhub.service.attachment.AttachmentService;
 import cn.aslight.workhub.service.intake.IntakeService;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -18,11 +20,36 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class AttachmentControllerTest {
+
+    @Test
+    void downloadShouldReturnDatabaseResourceWithOriginalMetadata() throws Exception {
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        byte[] fileContent = "database-file".getBytes();
+        AttachmentEntity entity = new AttachmentEntity();
+        entity.setId(63L);
+        entity.setFileName("需求说明.txt");
+        entity.setContentType("text/plain");
+        when(attachmentService.loadAsResource(63L)).thenReturn(
+                new AttachmentService.AttachmentResource(entity, new ByteArrayResource(fileContent))
+        );
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(
+                new AttachmentController(attachmentService, mock(IntakeService.class))
+        ).build();
+
+        mockMvc.perform(get("/api/attachments/63/download"))
+                .andExpect(status().isOk())
+                .andExpect(content().bytes(fileContent))
+                .andExpect(content().contentType("text/plain"))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment")));
+    }
 
     @Test
     void delete_shouldUseAttachmentResourcePath() throws Exception {

@@ -157,7 +157,8 @@ class McpRuntimeServiceTest {
         assertTrue(text.contains("ca-assets"));
         assertTrue(text.contains("assets-saps"));
         assertTrue(text.contains("jiatai-hp-db-prod"));
-        assertTrue(text.contains("data/git-cache/ca-assets"));
+        assertTrue(text.contains("/Users/aslight/IDEAWorkspace/ca-assets"));
+        assertTrue(text.contains("codeWorkspaceRoot"));
         assertTrue(text.contains("projectVaultPath"));
         assertTrue(text.contains("accessTokenConfigured"));
         assertTrue(!text.contains("plain-gitlab-token"));
@@ -401,7 +402,7 @@ class McpRuntimeServiceTest {
         assertTrue(text.contains("\"jiatai-hp-server-test\""));
         assertTrue(text.contains("\"profiles\" : [ \"readonly\" ]"));
         assertTrue(text.contains("\"profiles\" : [ \"diagnostic\" ]"));
-        assertTrue(text.contains("\"codeCacheRoot\" : \"data/git-cache/ca-assets\""));
+        assertTrue(text.contains("\"codeWorkspaceRoot\" : \"/Users/aslight/IDEAWorkspace/ca-assets\""));
         assertTrue(text.contains("\"accessEndpoints\""));
         assertTrue(text.contains("\"effectiveUrl\" : \"https://ops.example.test\""));
         assertTrue(!text.contains("plain-gitlab-token"));
@@ -479,7 +480,7 @@ class McpRuntimeServiceTest {
         assertEquals("汇浦", gitlabRepositoryService.syncedBusinessLine);
         assertTrue(text.contains("\"gitlabGroupName\" : \"ca-assets\""));
         assertTrue(text.contains("\"repositoryCount\" : 1"));
-        assertTrue(text.contains("/tmp/workhub-git-cache/ca-assets/assets-saps"));
+        assertTrue(text.contains("/Users/aslight/IDEAWorkspace/ca-assets/assets-saps"));
         assertTrue(!text.contains("plain-gitlab-token"));
     }
 
@@ -730,15 +731,7 @@ class McpRuntimeServiceTest {
         }
 
         @Override
-        public List<IntakeSummaryResponse> list(String status,
-                                                String requirementName,
-                                                String approvalCode,
-                                                String proposerName,
-                                                String businessLine,
-                                                String requirementType,
-                                                String demandStatus,
-                                                String releasedStartDate,
-                                                String releasedEndDate) {
+        public List<IntakeSummaryResponse> search(String approvalCode, String requirementName, String keyword, int limit) {
             this.searchRequirementName = requirementName;
             this.searchApprovalCode = approvalCode;
             return summaryResponses;
@@ -757,10 +750,10 @@ class McpRuntimeServiceTest {
             this.syncedBusinessLine = businessLine;
             return new GitlabRepositoryBundle(
                     "ca-assets",
-                    Path.of("/tmp/workhub-git-cache/ca-assets"),
+                    Path.of("/Users/aslight/IDEAWorkspace/ca-assets"),
                     List.of(new GitlabRepository(
                             "https://gitlab.example.com/ca-assets/assets-saps.git",
-                            Path.of("/tmp/workhub-git-cache/ca-assets/assets-saps")
+                            Path.of("/Users/aslight/IDEAWorkspace/ca-assets/assets-saps")
                     ))
             );
         }

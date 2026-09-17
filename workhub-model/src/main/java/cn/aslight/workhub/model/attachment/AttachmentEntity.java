@@ -24,13 +24,25 @@ public class AttachmentEntity {
      */
     private String fileName;
     /**
-     * 本地存储路径。
+     * 历史本地存储路径。数据库型附件为空。
      */
     private String storagePath;
     /**
      * 文件内容类型。
      */
     private String contentType;
+    /**
+     * 数据库存储的文件原始内容。历史附件可能为空并回退本地路径。
+     */
+    private byte[] fileContent;
+    /**
+     * 文件原始字节数。
+     */
+    private Long fileSize;
+    /**
+     * 文件内容 SHA-256 摘要。
+     */
+    private String fileSha256;
     /**
      * 创建时间。
      */
@@ -82,6 +94,30 @@ public class AttachmentEntity {
 
     public void setContentType(String contentType) {
         this.contentType = contentType;
+    }
+
+    public byte[] getFileContent() {
+        return fileContent;
+    }
+
+    public void setFileContent(byte[] fileContent) {
+        this.fileContent = fileContent;
+    }
+
+    public Long getFileSize() {
+        return fileSize;
+    }
+
+    public void setFileSize(Long fileSize) {
+        this.fileSize = fileSize;
+    }
+
+    public String getFileSha256() {
+        return fileSha256;
+    }
+
+    public void setFileSha256(String fileSha256) {
+        this.fileSha256 = fileSha256;
     }
 
     public LocalDateTime getCreatedAt() {

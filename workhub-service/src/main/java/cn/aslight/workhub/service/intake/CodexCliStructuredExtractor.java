@@ -3,6 +3,7 @@ package cn.aslight.workhub.service.intake;
 import cn.aslight.workhub.model.intake.IntakeAttachmentSummary;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.service.attachment.AttachmentService;
+import cn.aslight.workhub.service.attachment.AttachmentTemporaryFileSet;
 import cn.aslight.workhub.service.ai.AiGatewayClient;
 import cn.aslight.workhub.service.ai.AiGatewayRequest;
 import cn.aslight.workhub.service.ai.AiGatewayResult;
@@ -104,12 +105,18 @@ public class CodexCliStructuredExtractor {
             return CodexCliExtractionResult.failed("AI 场景未配置或已停用: " + USE_CASE_CODE);
         }
 
-        CodexCliInvocation invocation = buildInvocation(sourceChannel, rawContent, attachments, attachmentSummaries);
-        if (invocation.imagePaths().isEmpty() && invocation.attachmentSummaries().isEmpty() && isBlank(rawContent)) {
-            return CodexCliExtractionResult.skipped();
-        }
-
-        try {
+        try (AttachmentTemporaryFileSet temporaryFiles = AttachmentTemporaryFileSet.materialize(attachments)) {
+            CodexCliInvocation invocation = buildInvocation(
+                    sourceChannel,
+                    rawContent,
+                    temporaryFiles.contexts(),
+                    attachmentSummaries
+            );
+            if (invocation.imagePaths().isEmpty()
+                    && invocation.attachmentSummaries().isEmpty()
+                    && isBlank(rawContent)) {
+                return CodexCliExtractionResult.skipped();
+            }
             AiGatewayResult result = aiGatewayClient.executeStructured(AiGatewayRequest.structured(
                     USE_CASE_CODE,
                     invocation.prompt(),

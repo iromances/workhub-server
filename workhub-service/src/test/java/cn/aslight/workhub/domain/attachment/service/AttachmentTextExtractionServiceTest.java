@@ -107,6 +107,27 @@ class AttachmentTextExtractionServiceTest {
         assertFalse(summary.summaryText().contains(".hidden"));
     }
 
+    @Test
+    void extractSummaries_shouldReadDatabaseContentWithoutLocalPath() {
+        byte[] content = "需求名称：数据库附件\n审批编号：REQ-001".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        AttachmentService.AttachmentFileContext context = new AttachmentService.AttachmentFileContext(
+                11L,
+                "附件",
+                "requirement.txt",
+                null,
+                "text/plain",
+                content,
+                (long) content.length,
+                null
+        );
+
+        AttachmentTextExtractionService.AttachmentExtractionBatch batch = service.extractSummaries(List.of(context));
+
+        assertEquals(1, batch.summaries().size());
+        assertTrue(batch.warnings().isEmpty());
+        assertTrue(batch.summaries().getFirst().summaryText().contains("审批编号：REQ-001"));
+    }
+
     private Path createPdf(Path path, String text) throws IOException {
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage();

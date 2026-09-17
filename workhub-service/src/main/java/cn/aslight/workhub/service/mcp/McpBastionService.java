@@ -1,6 +1,7 @@
 package cn.aslight.workhub.service.mcp;
 
 import cn.aslight.workhub.dao.mcp.McpBastionMapper;
+import cn.aslight.workhub.mcp.ssh.SshConnectionManager;
 import cn.aslight.workhub.model.mcp.McpBastionConnectionTestRequest;
 import cn.aslight.workhub.model.mcp.McpBastionConnectionTestResponse;
 import cn.aslight.workhub.model.mcp.McpBastionEntity;
@@ -10,11 +11,14 @@ import cn.aslight.workhub.service.system.SystemAuditService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class McpBastionService {
@@ -65,6 +69,12 @@ public class McpBastionService {
                                      String ip) {
         McpBastionEntity existing = requireExisting(id);
         String beforeSnapshot = snapshot(existing);
+        String previousHost = existing.getHost();
+        int previousPort = existing.getPort() == null ? 22 : existing.getPort();
+        String previousUser = existing.getUsername();
+        String previousPassword = existing.getPasswordEncrypted();
+        String previousIdentity = existing.getIdentityFile();
+        Boolean previousEnabled = existing.getEnabled();
         ensureNameAvailable(request.getName(), id);
         if (Boolean.TRUE.equals(existing.getEnabled())
                 && Boolean.FALSE.equals(request.getEnabled())
@@ -79,7 +89,28 @@ public class McpBastionService {
         }
         McpBastionEntity saved = requireExisting(id);
         audit("UPDATE", beforeSnapshot, snapshot(saved), saved.getId(), operator, ip);
+        if (!Objects.equals(previousHost, saved.getHost())
+                || previousPort != (saved.getPort() == null ? 22 : saved.getPort())
+                || !Objects.equals(previousUser, saved.getUsername())
+                || !Objects.equals(previousPassword, saved.getPasswordEncrypted())
+                || !Objects.equals(previousIdentity, saved.getIdentityFile())
+                || !Objects.equals(previousEnabled, saved.getEnabled())) {
+            invalidateAfterCommit(previousHost, previousPort, previousUser);
+        }
         return toResponse(saved);
+    }
+
+    private void invalidateAfterCommit(String host, int port, String username) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    SshConnectionManager.invalidateShared(host, port, username);
+                }
+            });
+        } else {
+            SshConnectionManager.invalidateShared(host, port, username);
+        }
     }
 
     public McpBastionConnectionTestResponse testConnection(McpBastionConnectionTestRequest request,

@@ -9,9 +9,11 @@ import cn.aslight.workhub.model.intake.IntakeDashboardResponse;
 import cn.aslight.workhub.model.intake.IntakeHistoryEntity;
 import cn.aslight.workhub.model.intake.IntakePriorityUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
+import cn.aslight.workhub.model.intake.IntakeListQuery;
 import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.service.attachment.AttachmentService;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
@@ -22,161 +24,104 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class IntakeServiceListFilterTest {
 
     @Test
-    void list_shouldFilterByBusinessLineCode() {
-        IntakeMapper intakeMapper = mock(IntakeMapper.class);
-        when(intakeMapper.findAll(null)).thenReturn(List.of(
-                intakeRecord(1L, "BL000001", "资产业务", "资产需求"),
-                intakeRecord(2L, "BL000002", "供应链科技", "供应链需求")
-        ));
-        IntakeService service = service(intakeMapper);
+    void page_shouldPassNormalizedFiltersAndKeepDatabasePageOrderAndTotal() {
+        IntakeMapper mapper = mock(IntakeMapper.class);
+        IntakeRecordEntity first = intakeRecord(1L, "BL000001", "资产业务", "正式名称", "开发中", "研发需求", "低");
+        first.setApprovalCode("REQ-001");
+        first.setProposerName("周拓");
+        first.setRequirementSummary("正式说明");
+        first.setRemark("正式备注");
+        first.setReleasedDate(LocalDate.of(2026, 9, 1));
+        first.setStructuredDataJson("""
+                {"requirementName":"旧名称","approvalCode":"旧编号","proposerName":"旧提出人","releasedTime":"2026/01/01"}
+                """);
+        IntakeRecordEntity second = intakeRecord(2L, "BL000001", "资产业务", "第二条", "待澄清", "研发需求", "高");
+        when(mapper.count(any())).thenReturn(31L);
+        when(mapper.findPage(any())).thenReturn(List.of(first, second));
 
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, "BL000001", null, null, null, null);
+        var result = service(mapper).page(" 待整理 ", " 名称 ", " REQ ", " 周 ", " BL000001 ",
+                " 研发需求 ", " 开发中 ", "2026/9/1", "2026-09-08", 2, 10);
 
-        assertEquals(1, result.size());
-        assertEquals(1L, result.getFirst().id());
-        assertEquals("资产业务", result.getFirst().businessLine());
-        assertEquals("BL000001", result.getFirst().businessLineCode());
+        assertEquals(31, result.total());
+        assertEquals(List.of(1L, 2L), result.items().stream().map(IntakeSummaryResponse::id).toList());
+        assertEquals("正式名称", result.items().getFirst().requirementName());
+        assertEquals("REQ-001", result.items().getFirst().approvalCode());
+        assertEquals("周拓", result.items().getFirst().proposerName());
+        assertEquals("正式说明", result.items().getFirst().requirementSummary());
+        assertEquals("正式备注", result.items().getFirst().remark());
+        assertEquals("2026/09/01", result.items().getFirst().releasedTime());
+        var captor = ArgumentCaptor.forClass(IntakeListQuery.class);
+        verify(mapper).count(captor.capture());
+        IntakeListQuery query = captor.getValue();
+        assertEquals(new IntakeListQuery("待整理", "名称", "REQ", "周", "BL000001", "研发需求", "开发中",
+                LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 8), 10, 10), query);
+        verify(mapper).findPage(query);
+        verify(mapper, never()).findAll(any());
     }
 
     @Test
-    void list_shouldFilterByBusinessLineCodeAfterNameChanged() {
-        IntakeMapper intakeMapper = mock(IntakeMapper.class);
-        when(intakeMapper.findAll(null)).thenReturn(List.of(
-                intakeRecord(1L, "BL000001", "资产业务", "资产需求"),
-                intakeRecord(2L, "BL000001", "资产业务新名称", "资产改名后需求")
-        ));
-        IntakeService service = service(intakeMapper);
+    void page_shouldSkipPageQueryForEmptyOrOutOfRangeResults() {
+        IntakeMapper mapper = mock(IntakeMapper.class);
+        when(mapper.count(any())).thenReturn(0L, 11L);
+        IntakeService service = service(mapper);
 
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, "BL000001", null, null, null, null);
-
-        assertEquals(2, result.size());
+        assertTrue(service.page(null, null, null, null, null, null, null, null, null, 1, 10).items().isEmpty());
+        var beyondEnd = service.page(null, null, null, null, null, null, null, null, null, 3, 10);
+        assertEquals(11, beyondEnd.total());
+        assertTrue(beyondEnd.items().isEmpty());
+        verify(mapper, never()).findPage(any());
     }
 
     @Test
-    void list_shouldKeepOldBehaviorWhenBusinessLineIsBlank() {
-        IntakeMapper intakeMapper = mock(IntakeMapper.class);
-        when(intakeMapper.findAll(null)).thenReturn(List.of(
-                intakeRecord(1L, "BL000001", "资产业务", "资产需求"),
-                intakeRecord(2L, "BL000002", "供应链科技", "供应链需求")
-        ));
-        IntakeService service = service(intakeMapper);
+    void page_shouldNormalizeNonPositivePaginationAndAvoidIntegerOverflow() {
+        IntakeMapper mapper = mock(IntakeMapper.class);
+        when(mapper.count(any())).thenReturn(0L);
+        IntakeService service = service(mapper);
+        service.page(" ", " ", " ", " ", " ", " ", " ", " ", " ", 0, -1);
+        verify(mapper).count(new IntakeListQuery(null, null, null, null, null, null, null, null, null, 0, 1));
 
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, "  ", null, null, null, null);
-
-        assertEquals(2, result.size());
+        service.page(null, null, null, null, null, null, null, null, null, Integer.MAX_VALUE, Integer.MAX_VALUE);
+        verify(mapper).count(new IntakeListQuery(null, null, null, null, null, null, null, null, null,
+                (long) (Integer.MAX_VALUE - 1) * Integer.MAX_VALUE, Integer.MAX_VALUE));
     }
 
     @Test
-    void list_shouldReturnEmptyWhenBusinessLineDoesNotMatch() {
-        IntakeMapper intakeMapper = mock(IntakeMapper.class);
-        when(intakeMapper.findAll(null)).thenReturn(List.of(
-                intakeRecord(1L, "BL000001", "资产业务", "资产需求"),
-                intakeRecord(2L, "BL000002", "供应链科技", "供应链需求")
-        ));
-        IntakeService service = service(intakeMapper);
-
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, "不存在业务线", null, null, null, null);
-
-        assertEquals(0, result.size());
+    void page_shouldRejectInvalidDatesBeforeQueryingDatabase() {
+        IntakeMapper mapper = mock(IntakeMapper.class);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service(mapper).page(null, null, null, null, null, null, null, "2026/02/30", null, 1, 10));
+        assertEquals("上线开始日期格式不正确，请使用 yyyy/MM/dd", exception.getMessage());
+        verifyNoInteractions(mapper);
     }
 
     @Test
-    void list_shouldFilterByRequirementType() {
-        IntakeMapper intakeMapper = mock(IntakeMapper.class);
-        when(intakeMapper.findAll(null)).thenReturn(List.of(
-                intakeRecord(1L, "BL000001", "资产业务", "研发需求", "已收录", "研发需求"),
-                intakeRecord(2L, "BL000001", "资产业务", "运维需求", "已收录", "数据提取/运维")
-        ));
-        IntakeService service = service(intakeMapper);
+    void search_shouldPassKeywordAndLimitToDatabase() {
+        IntakeMapper mapper = mock(IntakeMapper.class);
+        when(mapper.findPage(any())).thenReturn(List.of());
 
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, "研发需求", null, null, null);
+        service(mapper).search(" REQ ", " 名称 ", " MCP ", 10);
 
-        assertEquals(1, result.size());
-        assertEquals("研发需求", result.getFirst().requirementType());
-        assertEquals("研发需求", result.getFirst().requirementName());
-    }
-
-    @Test
-    void list_shouldSortByDemandStatusBeforePriority() {
-        IntakeMapper intakeMapper = mock(IntakeMapper.class);
-        when(intakeMapper.findAll(null)).thenReturn(List.of(
-                intakeRecord(1L, "BL000001", "资产业务", "低优先级", "待澄清", "研发需求", "低"),
-                intakeRecord(2L, "BL000001", "资产业务", "高优先级", "终止关闭", "研发需求", "高"),
-                intakeRecord(3L, "BL000001", "资产业务", "中优先级", "已收录", "研发需求", "中"),
-                intakeRecord(4L, "BL000001", "资产业务", "空优先级", "待澄清", "研发需求", null)
-        ));
-        IntakeService service = service(intakeMapper);
-
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null, null, null);
-
-        assertEquals(List.of(1L, 4L, 3L, 2L), result.stream().map(IntakeSummaryResponse::id).toList());
-    }
-
-    @Test
-    void list_shouldSortByPriorityAfterDemandStatus() {
-        IntakeMapper intakeMapper = mock(IntakeMapper.class);
-        when(intakeMapper.findAll(null)).thenReturn(List.of(
-                intakeRecord(1L, "BL000001", "资产业务", "开发中高优先级", "开发中", "研发需求", "高"),
-                intakeRecord(2L, "BL000001", "资产业务", "开发中低优先级", "开发中", "研发需求", "低")
-        ));
-        IntakeService service = service(intakeMapper);
-
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null, null, null);
-
-        assertEquals(List.of(1L, 2L), result.stream().map(IntakeSummaryResponse::id).toList());
-    }
-
-    @Test
-    void list_shouldUseConfiguredDemandStatusOrder() {
-        List<String> expectedStatuses = List.of(
-                "待澄清", "待处理", "处理中", "待评估", "待排期", "待设计", "开发中",
-                "测试中", "待验收", "待上线", "已收录", "已暂停", "已完成", "终止关闭");
-        List<IntakeRecordEntity> records = new java.util.ArrayList<>();
-        for (int index = expectedStatuses.size() - 1; index >= 0; index--) {
-            long id = index + 1L;
-            String demandStatus = expectedStatuses.get(index);
-            records.add(intakeRecord(
-                    id, "BL000001", "资产业务", demandStatus + "需求", demandStatus, "研发需求", "中"));
-        }
-        IntakeMapper intakeMapper = mock(IntakeMapper.class);
-        when(intakeMapper.findAll(null)).thenReturn(records);
-        IntakeService service = service(intakeMapper);
-
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null, null, null);
-
-        assertEquals(expectedStatuses, result.stream().map(IntakeSummaryResponse::demandStatus).toList());
-    }
-
-    @Test
-    void list_shouldSortByReceivedAtWhenStatusAndPriorityAreSame() {
-        IntakeMapper intakeMapper = mock(IntakeMapper.class);
-        IntakeRecordEntity newer = intakeRecord(
-                1L, "BL000001", "资产业务", "较新需求", "开发中", "研发需求", "高");
-        newer.setReceivedAt(LocalDateTime.of(2026, 6, 16, 10, 0));
-        IntakeRecordEntity older = intakeRecord(
-                2L, "BL000001", "资产业务", "较早需求", "开发中", "研发需求", "高");
-        older.setReceivedAt(LocalDateTime.of(2026, 6, 15, 10, 0));
-        when(intakeMapper.findAll(null)).thenReturn(List.of(older, newer));
-        IntakeService service = service(intakeMapper);
-
-        List<IntakeSummaryResponse> result = service.list(null, null, null, null, null, null, null, null, null);
-
-        assertEquals(List.of(1L, 2L), result.stream().map(IntakeSummaryResponse::id).toList());
+        verify(mapper).findPage(new IntakeListQuery(null, "名称", "REQ", null, null, null, null,
+                null, null, 0, 10, "MCP"));
+        verify(mapper, never()).findAll(any());
+        verify(mapper, never()).count(any());
     }
 
     @Test
     void dashboard_shouldSortPendingReleaseDemandsLikeDemandManagement() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         when(intakeMapper.findAll(null)).thenReturn(List.of(
-                intakeRecord(1L, "BL000001", "资产业务", "开发中高优先级", "开发中", "研发需求", "高"),
+                intakeRecord(1L, "BL000001", "资产业务", "开发中低优先级", "开发中", "研发需求", "低"),
                 intakeRecord(2L, "BL000001", "资产业务", "已收录低优先级", "已收录", "研发需求", "低"),
                 intakeRecord(3L, "BL000001", "资产业务", "已收录高优先级", "已收录", "研发需求", "高"),
                 intakeRecord(4L, "BL000001", "资产业务", "已收录中优先级", "已收录", "研发需求", "中")

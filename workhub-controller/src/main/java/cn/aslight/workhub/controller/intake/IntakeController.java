@@ -106,12 +106,9 @@ public class IntakeController {
                                                                  @RequestParam(required = false) String releasedEndDate,
                                                                  @RequestParam(defaultValue = "1") int page,
                                                                  @RequestParam(defaultValue = "10") int pageSize) {
-        List<IntakeSummaryResponse> items = intakeService.list(status, requirementName, approvalCode, proposerName, businessLine, requirementType, demandStatus, releasedStartDate, releasedEndDate);
-        int normalizedPage = Math.max(page, 1);
-        int normalizedPageSize = Math.max(pageSize, 1);
-        int fromIndex = Math.min((normalizedPage - 1) * normalizedPageSize, items.size());
-        int toIndex = Math.min(fromIndex + normalizedPageSize, items.size());
-        return ApiResponse.success(new PageResponse<>(items.size(), items.subList(fromIndex, toIndex)));
+        var result = intakeService.page(status, requirementName, approvalCode, proposerName, businessLine,
+                requirementType, demandStatus, releasedStartDate, releasedEndDate, page, pageSize);
+        return ApiResponse.success(new PageResponse<>(result.total(), result.items()));
     }
 
     /**

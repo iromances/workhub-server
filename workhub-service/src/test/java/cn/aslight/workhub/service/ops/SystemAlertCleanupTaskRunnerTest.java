@@ -8,9 +8,11 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.LongStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class SystemAlertCleanupTaskRunnerTest {
 
@@ -32,6 +34,46 @@ class SystemAlertCleanupTaskRunnerTest {
     }
 
     @Test
+    void execute_shouldSkipFilterRuleForDeleteTask() {
+        SystemAlertCleanupTaskEntity task = task();
+        task.setTaskType("DELETE");
+        FakeTaskMapper tasks = new FakeTaskMapper(task);
+        FakeRuleService rules = new FakeRuleService();
+        FakeBatchService batches = new FakeBatchService(tasks.task);
+        SystemAlertCleanupTaskRunner runner = new SystemAlertCleanupTaskRunner(
+                tasks, eventMapper(), rules, batches);
+
+        runner.execute(1L);
+
+        assertEquals(0, rules.callCount);
+        assertEquals(2, batches.batchCount);
+        assertEquals(700L, batches.completedTask.getDeletedEventCount());
+        assertNull(batches.completedTask.getRuleId());
+    }
+
+    @Test
+    void execute_shouldUseGlobalExactMessageQueryForExactDeleteTask() {
+        SystemAlertCleanupTaskEntity task = task();
+        task.setTaskType("DELETE_EXACT_MESSAGE");
+        FakeTaskMapper tasks = new FakeTaskMapper(task);
+        FakeRuleService rules = new FakeRuleService();
+        FakeBatchService batches = new FakeBatchService(tasks.task);
+        AtomicInteger fuzzyQueryCount = new AtomicInteger();
+        AtomicInteger exactQueryCount = new AtomicInteger();
+        SystemAlertCleanupTaskRunner runner = new SystemAlertCleanupTaskRunner(
+                tasks, eventMapper(fuzzyQueryCount, exactQueryCount), rules, batches);
+
+        runner.execute(1L);
+
+        assertEquals(0, rules.callCount);
+        assertEquals(0, fuzzyQueryCount.get());
+        assertEquals(3, exactQueryCount.get());
+        assertEquals(2, batches.batchCount);
+        assertEquals(700L, batches.completedTask.getDeletedEventCount());
+        assertNull(batches.completedTask.getRuleId());
+    }
+
+    @Test
     void execute_shouldIgnoreDuplicateDeliveryWhenTaskWasAlreadyClaimed() {
         FakeTaskMapper tasks = new FakeTaskMapper(task());
         tasks.task.setStatus("RUNNING");
@@ -47,12 +89,24 @@ class SystemAlertCleanupTaskRunnerTest {
     }
 
     private SystemAlertMapper eventMapper() {
+        return eventMapper(new AtomicInteger(), new AtomicInteger());
+    }
+
+    private SystemAlertMapper eventMapper(AtomicInteger fuzzyQueryCount,
+                                          AtomicInteger exactQueryCount) {
         return (SystemAlertMapper) Proxy.newProxyInstance(
                 SystemAlertMapper.class.getClassLoader(),
                 new Class<?>[]{SystemAlertMapper.class},
                 (proxy, method, args) -> switch (method.getName()) {
                     case "findMaxEventId" -> 1_000L;
-                    case "findCleanupEventBatch" -> cleanupBatch((Long) args[8]);
+                    case "findCleanupEventBatch" -> {
+                        fuzzyQueryCount.incrementAndGet();
+                        yield cleanupBatch((Long) args[8]);
+                    }
+                    case "findExactMessageCleanupEventBatch" -> {
+                        exactQueryCount.incrementAndGet();
+                        yield cleanupBatch((Long) args[1]);
+                    }
                     default -> defaultValue(method.getReturnType());
                 });
     }
@@ -67,6 +121,7 @@ class SystemAlertCleanupTaskRunnerTest {
         SystemAlertCleanupTaskEntity task = new SystemAlertCleanupTaskEntity();
         task.setId(1L);
         task.setTaskNo("SACT-1");
+        task.setTaskType("DELETE_AND_FILTER");
         task.setMessageKeyword("Insert Person Time");
         task.setStatus("PENDING");
         task.setDeletedEventCount(0L);

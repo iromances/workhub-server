@@ -15,6 +15,8 @@ import cn.aslight.workhub.model.intake.IntakeHistoryEntity;
 import cn.aslight.workhub.model.intake.IntakeHistoryResponse;
 import cn.aslight.workhub.model.intake.IntakePauseRequest;
 import cn.aslight.workhub.model.intake.IntakePriorityUpdateRequest;
+import cn.aslight.workhub.model.intake.IntakeListQuery;
+import cn.aslight.workhub.model.intake.IntakePageResponse;
 import cn.aslight.workhub.model.intake.IntakeRelatedWorkItemResponse;
 import cn.aslight.workhub.model.intake.IntakeTodoEntity;
 import cn.aslight.workhub.model.intake.IntakeTodoResponse;
@@ -182,6 +184,26 @@ public class IntakeService {
     private final CodexCliSqlDraftGenerator codexCliSqlDraftGenerator;
     private final IntakeClarificationAnalysisService intakeClarificationAnalysisService;
     private final ObjectMapper objectMapper;
+    private final RequirementFolderService requirementFolderService;
+
+    public IntakeService(IntakeMapper intakeMapper,
+                         IntakeHistoryMapper intakeHistoryMapper,
+                         IntakeWorkItemRelationMapper intakeWorkItemRelationMapper,
+                         IntakeTodoMapper intakeTodoMapper,
+                         IntakeStructuredFieldMapper intakeStructuredFieldMapper,
+                         BusinessLineMapper businessLineMapper,
+                         AttachmentService attachmentService,
+                         IntakeStructuredDataExtractor intakeStructuredDataExtractor,
+                         IntakeStructuredFieldNormalizer intakeStructuredFieldNormalizer,
+                         IntakeEnrichmentService intakeEnrichmentService,
+                         CodexCliSqlDraftGenerator codexCliSqlDraftGenerator,
+                         IntakeClarificationAnalysisService intakeClarificationAnalysisService,
+                         ObjectMapper objectMapper) {
+        this(intakeMapper, intakeHistoryMapper, intakeWorkItemRelationMapper, intakeTodoMapper,
+                intakeStructuredFieldMapper, businessLineMapper, attachmentService, intakeStructuredDataExtractor,
+                intakeStructuredFieldNormalizer, intakeEnrichmentService, codexCliSqlDraftGenerator,
+                intakeClarificationAnalysisService, objectMapper, null);
+    }
 
     @Autowired
     public IntakeService(IntakeMapper intakeMapper,
@@ -196,7 +218,8 @@ public class IntakeService {
                          IntakeEnrichmentService intakeEnrichmentService,
                          CodexCliSqlDraftGenerator codexCliSqlDraftGenerator,
                          IntakeClarificationAnalysisService intakeClarificationAnalysisService,
-                         ObjectMapper objectMapper) {
+                         ObjectMapper objectMapper,
+                         RequirementFolderService requirementFolderService) {
         this.intakeMapper = intakeMapper;
         this.intakeHistoryMapper = intakeHistoryMapper;
         this.intakeWorkItemRelationMapper = intakeWorkItemRelationMapper;
@@ -210,6 +233,7 @@ public class IntakeService {
         this.codexCliSqlDraftGenerator = codexCliSqlDraftGenerator;
         this.intakeClarificationAnalysisService = intakeClarificationAnalysisService;
         this.objectMapper = objectMapper;
+        this.requirementFolderService = requirementFolderService;
     }
 
     IntakeService(IntakeMapper intakeMapper,
@@ -355,39 +379,51 @@ public class IntakeService {
         }
     }
 
-    public List<IntakeSummaryResponse> list(String status,
-                                            String requirementName,
-                                            String approvalCode,
-                                            String proposerName,
-                                            String businessLine,
-                                            String requirementType,
-                                            String demandStatus,
-                                            String releasedStartDate,
-                                            String releasedEndDate) {
-        String normalizedRequirementName = trimToNull(requirementName);
-        String normalizedApprovalCode = trimToNull(approvalCode);
-        String normalizedProposerName = trimToNull(proposerName);
-        String normalizedBusinessLine = trimToNull(businessLine);
-        String normalizedRequirementType = trimToNull(requirementType);
-        String normalizedDemandStatus = trimToNull(demandStatus);
-        LocalDate normalizedReleasedStartDate = parseFilterDate(releasedStartDate, "上线开始日期");
-        LocalDate normalizedReleasedEndDate = parseFilterDate(releasedEndDate, "上线结束日期");
-        return intakeMapper.findAll(trimToNull(status)).stream()
-                .map(this::toSummaryResponse)
-                .filter(item -> matchesRequirementName(item, normalizedRequirementName))
-                .filter(item -> matchesApprovalCode(item, normalizedApprovalCode))
-                .filter(item -> matchesProposerName(item, normalizedProposerName))
-                .filter(item -> matchesBusinessLine(item, normalizedBusinessLine))
-                .filter(item -> normalizedRequirementType == null || normalizedRequirementType.equals(item.requirementType()))
-                .filter(item -> normalizedDemandStatus == null || normalizedDemandStatus.equals(item.demandStatus()))
-                .filter(item -> matchesReleasedDate(item, normalizedReleasedStartDate, normalizedReleasedEndDate))
-                .sorted(demandManagementComparator())
+    @Transactional(readOnly = true)
+    public IntakePageResponse page(String status,
+                                   String requirementName,
+                                   String approvalCode,
+                                   String proposerName,
+                                   String businessLine,
+                                   String requirementType,
+                                   String demandStatus,
+                                   String releasedStartDate,
+                                   String releasedEndDate,
+                                   int page,
+                                   int pageSize) {
+        int normalizedPage = Math.max(page, 1);
+        int normalizedPageSize = Math.max(pageSize, 1);
+        IntakeListQuery query = new IntakeListQuery(
+                trimToNull(status), trimToNull(requirementName), trimToNull(approvalCode),
+                trimToNull(proposerName), trimToNull(businessLine), trimToNull(requirementType),
+                trimToNull(demandStatus),
+                parseFilterDate(releasedStartDate, "上线开始日期"),
+                parseFilterDate(releasedEndDate, "上线结束日期"),
+                (long) (normalizedPage - 1) * normalizedPageSize, normalizedPageSize);
+        long total = intakeMapper.count(query);
+        if (query.offset() >= total) {
+            return new IntakePageResponse(total, List.of());
+        }
+        List<IntakeSummaryResponse> items = intakeMapper.findPage(query).stream()
+                .map(entity -> toSummaryResponse(entity, true))
+                .toList();
+        return new IntakePageResponse(total, items);
+    }
+
+    public List<IntakeSummaryResponse> search(String approvalCode, String requirementName, String keyword, int limit) {
+        IntakeListQuery query = new IntakeListQuery(null, trimToNull(requirementName), trimToNull(approvalCode),
+                null, null, null, null, null, null, 0, Math.max(1, Math.min(limit, 50)), trimToNull(keyword));
+        return intakeMapper.findPage(query).stream()
+                .map(entity -> toSummaryResponse(entity, true))
                 .toList();
     }
 
     public IntakeDashboardResponse dashboard(String demandType) {
         DashboardDemandType normalizedDemandType = DashboardDemandType.from(demandType);
-        List<IntakeSummaryResponse> records = list(null, null, null, null, null, null, null, null, null);
+        List<IntakeSummaryResponse> records = intakeMapper.findAll(null).stream()
+                .map(this::toSummaryResponse)
+                .sorted(demandManagementComparator())
+                .toList();
         List<IntakeSummaryResponse> businessLineRecords = records.stream()
                 .filter(item -> normalizedDemandType.matches(item.requirementType()))
                 .toList();
@@ -612,6 +648,7 @@ public class IntakeService {
         }
         List<String> uploadedNames = uploadedMaterialNames(screenshots, attachments);
         attachmentService.appendIntakeFiles(id, screenshots, attachments);
+        scheduleMaterialExport(id);
         recordHistory(id,
                 "UPDATE",
                 "更新需求附件",
@@ -658,6 +695,7 @@ public class IntakeService {
     public IntakeDetailResponse replaceAttachment(Long id, Long attachmentId, MultipartFile file, String operatorUserName) {
         IntakeRecordEntity entity = requireExisting(id);
         AttachmentService.AttachmentReplaceResult replaced = attachmentService.replaceIntakeMaterial(id, attachmentId, file);
+        scheduleMaterialExport(id);
         IntakeStructuredData currentStructuredData = toStructuredData(entity, intakeStructuredFieldMapper.findByIntakeId(id));
         IntakeStructuredData nextStructuredData = removeAttachmentSummary(currentStructuredData, replaced.before().fileName());
         if (nextStructuredData != currentStructuredData) {
@@ -725,6 +763,13 @@ public class IntakeService {
                 intakeCreateRequest.getSourceChannel(),
                 intakeCreateRequest.getRawContent());
         return detail(detail.id(), null, false);
+    }
+
+    private void scheduleMaterialExport(Long intakeId) {
+        // 旧构造器仅用于现有独立测试，Spring 使用注入目录服务的完整构造器。
+        if (requirementFolderService != null) {
+            requirementFolderService.scheduleMaterialExport(intakeId);
+        }
     }
 
     @Transactional
@@ -1186,6 +1231,11 @@ public class IntakeService {
     }
 
     private IntakeSummaryResponse toSummaryResponse(IntakeRecordEntity entity) {
+        return toSummaryResponse(entity, false);
+    }
+
+    private IntakeSummaryResponse toSummaryResponse(IntakeRecordEntity entity, boolean formalQueryFields) {
+        // 列表与搜索的查询字段直接展示主表值，避免 JSON 回退值与 SQL 筛选口径不一致。
         IntakeStructuredData structuredData = toStructuredData(entity);
         String totalEstimatedEffort = firstNonBlank(
                 normalizeJsonText(entity.getTotalEstimatedEffort()),
@@ -1201,21 +1251,21 @@ public class IntakeService {
                 entity.getSenderName(),
                 entity.getDevelopmentOwnerUserName(),
                 entity.getReceivedAt(),
-                IntakeDemandStatusRules.resolve(entity, structuredData),
-                structuredData == null ? null : structuredData.proposerName(),
-                structuredData == null ? null : structuredData.approvalCode(),
+                formalQueryFields ? entity.getDemandStatus() : IntakeDemandStatusRules.resolve(entity, structuredData),
+                formalQueryFields ? entity.getProposerName() : structuredData == null ? null : structuredData.proposerName(),
+                formalQueryFields ? entity.getApprovalCode() : structuredData == null ? null : structuredData.approvalCode(),
                 structuredData == null ? null : structuredData.submittedTime(),
-                structuredData == null ? null : structuredData.requirementType(),
+                formalQueryFields ? entity.getRequirementType() : structuredData == null ? null : structuredData.requirementType(),
                 entity.getPriority(),
                 structuredData == null ? null : structuredData.developmentBranchName(),
                 structuredData == null ? null : structuredData.zentaoUrl(),
-                structuredData == null ? null : structuredData.requirementDigest(),
+                formalQueryFields ? entity.getRequirementDigest() : structuredData == null ? null : structuredData.requirementDigest(),
                 structuredData == null ? null : structuredData.department(),
-                structuredData == null ? null : structuredData.requirementName(),
-                structuredData == null ? null : structuredData.requirementSummary(),
-                structuredData == null ? null : structuredData.businessLine(),
-                structuredData == null ? null : structuredData.businessLineCode(),
-                structuredData == null ? null : structuredData.remark(),
+                formalQueryFields ? entity.getRequirementName() : structuredData == null ? null : structuredData.requirementName(),
+                formalQueryFields ? entity.getRequirementSummary() : structuredData == null ? null : structuredData.requirementSummary(),
+                formalQueryFields ? entity.getBusinessLine() : structuredData == null ? null : structuredData.businessLine(),
+                formalQueryFields ? entity.getBusinessLineCode() : structuredData == null ? null : structuredData.businessLineCode(),
+                formalQueryFields ? entity.getRemark() : structuredData == null ? null : structuredData.remark(),
                 totalEstimatedEffort,
                 developmentEstimatedEffort,
                 testingEstimatedEffort,
@@ -1231,7 +1281,7 @@ public class IntakeService {
                 structuredData == null ? null : structuredData.actualTestingEffort(),
                 structuredData == null ? null : structuredData.actualTestingCompletedDate(),
                 structuredData == null ? null : structuredData.acceptanceTime(),
-                structuredData == null ? null : structuredData.releasedTime(),
+                formalQueryFields ? formatDate(entity.getReleasedDate()) : structuredData == null ? null : structuredData.releasedTime(),
                 structuredData == null ? null : structuredData.projectHint(),
                 summarizeInvolvedSystems(entity.getLatestDevelopmentDraftJson()),
                 IntakeDemandStatusRules.resolveEnrichmentStatus(entity),
@@ -1951,6 +2001,9 @@ public class IntakeService {
                 }
             }
             case IntakeDemandStatusRules.ACTION_PASS_TESTING -> {
+                if (trimToNull(request.getActualEffort()) != null) {
+                    actualEffort = requireEffortValue(request.getActualEffort(), "实际开发工时不能为空");
+                }
                 scheduledAcceptanceDate = requireBusinessDate(request.getScheduledAcceptanceDate(), "预约验收日期不能为空", "预约验收日期");
                 actualTestingEffort = requireEffortValue(request.getActualTestingEffort(), "实际测试工时不能为空");
                 actualTestingCompletedDate = requireBusinessDate(request.getActualTestingCompletedDate(), "实际测试完成日期不能为空", "实际测试完成日期");
@@ -2665,14 +2718,6 @@ public class IntakeService {
         return normalized;
     }
 
-    private boolean matchesRequirementName(IntakeSummaryResponse item, String requirementName) {
-        if (requirementName == null) {
-            return true;
-        }
-        return contains(item.requirementName(), requirementName)
-                || contains(item.requirementDigest(), requirementName);
-    }
-
     private int demandPrioritySortOrder(IntakeSummaryResponse item) {
         String priority = item == null ? null : trimToNull(item.priority());
         if (priority == null) {
@@ -2696,38 +2741,6 @@ public class IntakeService {
                 .thenComparingInt(this::demandPrioritySortOrder)
                 .thenComparing(IntakeSummaryResponse::receivedAt, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(IntakeSummaryResponse::id, Comparator.nullsLast(Comparator.reverseOrder()));
-    }
-
-    private boolean matchesApprovalCode(IntakeSummaryResponse item, String approvalCode) {
-        return approvalCode == null || contains(item.approvalCode(), approvalCode);
-    }
-
-    private boolean matchesProposerName(IntakeSummaryResponse item, String proposerName) {
-        return proposerName == null || contains(item.proposerName(), proposerName);
-    }
-
-    private boolean matchesBusinessLine(IntakeSummaryResponse item, String businessLine) {
-        return businessLine == null
-                || businessLine.equals(item.businessLineCode())
-                || businessLine.equals(item.businessLine());
-    }
-
-    private boolean contains(String value, String keyword) {
-        return value != null && value.contains(keyword);
-    }
-
-    private boolean matchesReleasedDate(IntakeSummaryResponse item, LocalDate startDate, LocalDate endDate) {
-        if (startDate == null && endDate == null) {
-            return true;
-        }
-        LocalDate releasedDate = parseBusinessDate(item.releasedTime());
-        if (releasedDate == null) {
-            return false;
-        }
-        if (startDate != null && releasedDate.isBefore(startDate)) {
-            return false;
-        }
-        return endDate == null || !releasedDate.isAfter(endDate);
     }
 
     private LocalDate parseFilterDate(String value, String fieldName) {
