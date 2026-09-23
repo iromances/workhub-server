@@ -11,6 +11,7 @@ import org.apache.ibatis.annotations.Update;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 待整理箱数据访问接口。
@@ -68,6 +69,7 @@ public interface IntakeMapper {
             closed_date,
             close_reason,
             estimated_effort,
+            process_estimated_effort,
             actual_effort,
             actual_testing_effort,
             priority,
@@ -223,6 +225,7 @@ public interface IntakeMapper {
                    closed_date,
                    close_reason,
                    estimated_effort,
+                   process_estimated_effort,
                    actual_effort,
                    actual_testing_effort,
                    priority,
@@ -241,6 +244,30 @@ public interface IntakeMapper {
               AND deleted = 0
             """)
     IntakeRecordEntity findById(Long id);
+
+    @Select("SELECT id FROM pm_intake_record WHERE id = #{id} AND deleted = 0 FOR UPDATE")
+    Long lockProcessInfo(Long id);
+
+    @Select("SELECT id FROM pm_intake_development_analysis WHERE intake_id = #{id} ORDER BY id DESC LIMIT 1 FOR UPDATE")
+    Long lockProcessAnalysis(Long id);
+
+    // formalChanges 的列名只由服务中的固定字段白名单生成，不能接收客户端列名。
+    @Update({
+            "<script>",
+            "UPDATE pm_intake_record SET",
+            "<foreach collection='formalChanges' index='column' item='value'>",
+            "${column} = #{value},",
+            "</foreach>",
+            "structured_data_json = #{structuredJson},",
+            "process_estimated_effort = #{estimatedJson},",
+            "updated_at = CURRENT_TIMESTAMP",
+            "WHERE id = #{id} AND deleted = 0",
+            "</script>"
+    })
+    int updateProcessInfo(@Param("id") Long id,
+                          @Param("formalChanges") Map<String, Object> formalChanges,
+                          @Param("structuredJson") String structuredJson,
+                          @Param("estimatedJson") String estimatedJson);
 
     @Select("""
             SELECT id,
@@ -292,6 +319,7 @@ public interface IntakeMapper {
                    closed_date,
                    close_reason,
                    estimated_effort,
+                   process_estimated_effort,
                    actual_effort,
                    actual_testing_effort,
                    priority,
@@ -359,6 +387,7 @@ public interface IntakeMapper {
                 closed_date,
                 close_reason,
                 estimated_effort,
+                process_estimated_effort,
                 actual_effort,
                 actual_testing_effort,
                 priority,
@@ -411,6 +440,7 @@ public interface IntakeMapper {
                 #{closedDate},
                 #{closeReason},
                 #{estimatedEffort},
+                #{processEstimatedEffort},
                 #{actualEffort},
                 #{actualTestingEffort},
                 #{priority},

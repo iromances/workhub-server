@@ -11,6 +11,8 @@ import cn.aslight.workhub.model.intake.IntakeCreateRequest;
 import cn.aslight.workhub.model.intake.IntakeDashboardResponse;
 import cn.aslight.workhub.model.intake.IntakeDevelopmentBranchRequest;
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
+import cn.aslight.workhub.model.intake.IntakeProcessInfoResponse;
+import cn.aslight.workhub.model.intake.IntakeProcessInfoUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeHistoryEntity;
 import cn.aslight.workhub.model.intake.IntakeHistoryResponse;
 import cn.aslight.workhub.model.intake.IntakePauseRequest;
@@ -54,6 +56,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
+import tools.jackson.databind.node.ObjectNode;
 import java.util.Locale;
 import java.util.List;
 import java.util.Map;
@@ -847,6 +851,103 @@ public class IntakeService {
         return detail(id, null, false);
     }
 
+    public IntakeProcessInfoResponse processInfo(Long id) {
+        IntakeRecordEntity entity = requireExisting(id);
+        return IntakeProcessInfoSupport.read(entity, toStructuredData(entity), objectMapper);
+    }
+
+    @Transactional
+    public IntakeProcessInfoResponse updateProcessInfo(Long id,
+                                                        IntakeProcessInfoUpdateRequest request,
+                                                        String operatorUserName) {
+        if (request.original() == null || request.original().values() == null || request.changes() == null) {
+            throw new IllegalArgumentException("原始过程信息和修改内容不能为空");
+        }
+        Map<String, String> changes = new LinkedHashMap<>();
+        request.changes().forEach((name, value) ->
+                changes.put(name, IntakeProcessInfoSupport.normalize(IntakeProcessInfoSupport.field(name), value)));
+        // 先锁主记录，再锁最新评估，锁定后的快照用于比较；写入与历史同一事务提交。
+        if (intakeMapper.lockProcessInfo(id) == null) {
+            throw new IllegalArgumentException("待整理记录不存在");
+        }
+        intakeMapper.lockProcessAnalysis(id);
+        IntakeRecordEntity entity = requireExisting(id);
+        IntakeStructuredData structured = toStructuredData(entity, intakeStructuredFieldMapper.findByIntakeId(id));
+        IntakeProcessInfoResponse before = IntakeProcessInfoSupport.read(entity, structured, objectMapper);
+        // 历史数据可能只有总预估，没有开发/测试拆分；显式清空也须覆盖该历史总值。
+        boolean clearLegacyTotal = (changes.containsKey("developmentEstimatedEffort") || changes.containsKey("testingEstimatedEffort"))
+                && changes.getOrDefault("developmentEstimatedEffort", before.values().get("developmentEstimatedEffort")) == null
+                && changes.getOrDefault("testingEstimatedEffort", before.values().get("testingEstimatedEffort")) == null
+                && before.values().get("totalEstimatedEffort") != null;
+        changes.entrySet().removeIf(entry -> Objects.equals(before.values().get(entry.getKey()), entry.getValue())
+                && !(clearLegacyTotal && IntakeProcessInfoSupport.field(entry.getKey()).column() == null));
+        if (changes.isEmpty()) {
+            return before;
+        }
+        if (!before.equals(request.original())) {
+            throw new IllegalArgumentException("过程信息已更新，请重新打开后修改");
+        }
+        Map<String, String> values = new LinkedHashMap<>(before.values());
+        values.putAll(changes);
+        IntakeProcessInfoSupport.validateDates(values);
+        boolean estimateChanged = changes.keySet().stream()
+                .anyMatch(name -> IntakeProcessInfoSupport.field(name).column() == null);
+        String estimateJson = entity.getProcessEstimatedEffort();
+        if (estimateChanged) {
+            Map<String, String> estimates = new LinkedHashMap<>();
+            for (String name : List.of("developmentEstimatedEffort", "testingEstimatedEffort")) {
+                String effort = IntakeProcessInfoSupport.normalize(IntakeProcessInfoSupport.field(name), values.get(name));
+                values.put(name, effort);
+                estimates.put(name, effort);
+            }
+            String total = IntakeProcessInfoSupport.total(estimates.get("developmentEstimatedEffort"), estimates.get("testingEstimatedEffort"));
+            values.put("totalEstimatedEffort", total);
+            estimates.put("totalEstimatedEffort", total);
+            estimateJson = objectMapper.writeValueAsString(estimates);
+        }
+        ObjectNode payload = structured == null ? objectMapper.createObjectNode() : objectMapper.valueToTree(structured);
+        Map<String, Object> formalChanges = new LinkedHashMap<>();
+        for (var change : changes.entrySet()) {
+            var field = IntakeProcessInfoSupport.field(change.getKey());
+            if (field.column() == null) {
+                continue;
+            }
+            payload.put(field.name(), change.getValue());
+            formalChanges.put(field.column(), field.date() && change.getValue() != null
+                    ? LocalDate.parse(change.getValue()) : change.getValue());
+        }
+        // 同步已有动态字段中的别名，不改审批原文或任务评估工时。
+        List<IntakeStructuredField> fields = new ArrayList<>();
+        for (IntakeStructuredField field : structured == null || structured.fields() == null ? List.<IntakeStructuredField>of() : structured.fields()) {
+            String key = intakeStructuredFieldNormalizer.normalizedKey(field.label());
+            String value = field.value();
+            for (var change : changes.entrySet()) {
+                var definition = IntakeProcessInfoSupport.field(change.getKey());
+                if (definition.column() != null && definition.column().equals(key)) {
+                    value = change.getValue();
+                }
+            }
+            fields.add(new IntakeStructuredField(field.label(), value));
+        }
+        payload.set("fields", objectMapper.valueToTree(fields));
+        payload.remove("businessLine");
+        // 不调用阶段动作、全实体更新或自动化，保留状态、人员和其他正式字段。
+        if (intakeMapper.updateProcessInfo(id, formalChanges, objectMapper.writeValueAsString(payload), estimateJson) != 1) {
+            throw new IllegalArgumentException("过程信息保存失败，请重新打开后修改");
+        }
+        replaceStructuredFields(id, objectMapper.treeToValue(payload, IntakeStructuredData.class));
+        List<String> history = new ArrayList<>();
+        for (var field : IntakeProcessInfoSupport.FIELDS) {
+            appendChange(history, field.label(), before.values().get(field.name()), values.get(field.name()));
+        }
+        appendChange(history, "总预估工时", before.values().get("totalEstimatedEffort"), values.get("totalEstimatedEffort"));
+        if (estimateChanged && !before.estimatedEffortOverridden()) {
+            history.add("预估工时来源：研发评估 -> 人工调整");
+        }
+        recordHistory(id, "UPDATE", "编辑需求过程信息", String.join("\n", history), operatorUserName);
+        return new IntakeProcessInfoResponse(values, before.estimatedEffortOverridden() || estimateChanged);
+    }
+
     @Transactional
     public IntakeDetailResponse updateZentaoLink(Long id,
                                                  IntakeZentaoLinkRequest request,
@@ -1056,7 +1157,8 @@ public class IntakeService {
                         .toList(),
                 entity.getConvertedWorkItemId(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
+                entity.getUpdatedAt(),
+                IntakeProcessInfoSupport.read(entity, structuredData, objectMapper)
         );
     }
 
@@ -1237,12 +1339,10 @@ public class IntakeService {
     private IntakeSummaryResponse toSummaryResponse(IntakeRecordEntity entity, boolean formalQueryFields) {
         // 列表与搜索的查询字段直接展示主表值，避免 JSON 回退值与 SQL 筛选口径不一致。
         IntakeStructuredData structuredData = toStructuredData(entity);
-        String totalEstimatedEffort = firstNonBlank(
-                normalizeJsonText(entity.getTotalEstimatedEffort()),
-                normalizeJsonText(entity.getEstimatedEffort())
-        );
-        String developmentEstimatedEffort = normalizeJsonText(entity.getDevelopmentEstimatedEffort());
-        String testingEstimatedEffort = normalizeJsonText(entity.getTestingEstimatedEffort());
+        Map<String, String> estimates = IntakeProcessInfoSupport.estimates(entity, objectMapper);
+        String totalEstimatedEffort = estimates.get("totalEstimatedEffort");
+        String developmentEstimatedEffort = estimates.get("developmentEstimatedEffort");
+        String testingEstimatedEffort = estimates.get("testingEstimatedEffort");
         String testingStartedDate = structuredData == null ? null : structuredData.testingStartedDate();
         return new IntakeSummaryResponse(
                 entity.getId(),

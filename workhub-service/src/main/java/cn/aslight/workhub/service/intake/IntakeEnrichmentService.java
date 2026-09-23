@@ -218,7 +218,7 @@ public class IntakeEnrichmentService {
                     requirementFolderService.scheduleMaterialExport(intakeId);
                 } catch (RuntimeException exportFailure) {
                     // 识别结果已经保存，目录故障不能把识别成功改成失败。
-                    log.warn("识别完成后同步需求目录失败，可通过打开需求文件夹重试。intakeId={}", intakeId, exportFailure);
+                    log.warn("识别完成后同步需求目录失败。intakeId={}", intakeId, exportFailure);
                 }
             }
         } catch (Exception ex) {

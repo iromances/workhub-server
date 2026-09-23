@@ -59,8 +59,14 @@ public class RequirementFolderService {
     }
 
     public IntakeRequirementFolderResponse open(Long intakeId) {
-        Path folderPath = materialExportService.synchronize(intakeId, () -> ensureFolder(intakeId));
+        IntakeRecordEntity intake = intakeMapper.findById(intakeId);
+        if (intake == null) {
+            throw new IllegalArgumentException("需求不存在");
+        }
+        // 手动入口只创建并打开目录，不触发材料导出或目录归属校验。
+        Path folderPath = resolveBasePath().resolve(buildFolderName(intake, null));
         try {
+            Files.createDirectories(folderPath);
             openPath(folderPath);
         } catch (IOException ex) {
             throw new IllegalStateException("打开需求文件夹失败：" + folderPath, ex);
@@ -81,7 +87,7 @@ public class RequirementFolderService {
             throw new IllegalArgumentException("需求不存在");
         }
         if (isRecognitionIncomplete(intake)) {
-            throw new IllegalStateException("需求识别尚未成功，请等待识别完成或重试识别后再打开需求文件夹");
+            throw new IllegalStateException("需求识别尚未成功，暂不自动导出需求材料");
         }
         Path configuredBase = resolveBasePath();
         try {

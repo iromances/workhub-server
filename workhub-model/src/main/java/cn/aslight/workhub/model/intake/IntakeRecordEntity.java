@@ -204,6 +204,8 @@ public class IntakeRecordEntity {
      * 预估工时。
      */
     private String estimatedEffort;
+    /** 需求级人工预估，null 表示沿用研发评估。 */
+    private String processEstimatedEffort;
     /**
      * 实际开发工时。
      */
@@ -643,6 +645,14 @@ public class IntakeRecordEntity {
 
     public void setCloseReason(String closeReason) {
         this.closeReason = closeReason;
+    }
+
+    public String getProcessEstimatedEffort() {
+        return processEstimatedEffort;
+    }
+
+    public void setProcessEstimatedEffort(String processEstimatedEffort) {
+        this.processEstimatedEffort = processEstimatedEffort;
     }
 
     public String getEstimatedEffort() {

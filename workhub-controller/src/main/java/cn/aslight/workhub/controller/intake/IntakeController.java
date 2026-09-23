@@ -13,6 +13,8 @@ import cn.aslight.workhub.model.intake.IntakeDevelopmentBranchRequest;
 import cn.aslight.workhub.model.intake.IntakeClarificationAnalysisResponse;
 import cn.aslight.workhub.model.intake.IntakeClarificationReplyRequest;
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
+import cn.aslight.workhub.model.intake.IntakeProcessInfoResponse;
+import cn.aslight.workhub.model.intake.IntakeProcessInfoUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakePauseRequest;
 import cn.aslight.workhub.model.intake.IntakePriorityUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeRequirementFolderResponse;
@@ -131,6 +133,20 @@ public class IntakeController {
      * @param authentication 当前认证信息
      * @return 详情结果
      */
+    @GetMapping("/{id}/process-info")
+    @PreAuthorize("hasAuthority('intake:metadata:update') or hasAuthority('intake:record:update')")
+    public ApiResponse<IntakeProcessInfoResponse> processInfo(@PathVariable Long id) {
+        return ApiResponse.success(intakeService.processInfo(id));
+    }
+
+    @PostMapping("/{id}/process-info")
+    @PreAuthorize("hasAuthority('intake:metadata:update') or hasAuthority('intake:record:update')")
+    public ApiResponse<IntakeProcessInfoResponse> updateProcessInfo(@PathVariable Long id,
+                                                                  @RequestBody IntakeProcessInfoUpdateRequest request,
+                                                                  Authentication authentication) {
+        return ApiResponse.success(intakeService.updateProcessInfo(id, request, authentication.getName()));
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('intake:record:detail')")
     public ApiResponse<IntakeDetailResponse> detail(@PathVariable Long id,

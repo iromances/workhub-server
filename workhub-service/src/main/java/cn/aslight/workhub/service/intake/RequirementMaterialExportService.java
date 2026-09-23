@@ -49,7 +49,7 @@ public class RequirementMaterialExportService {
                 synchronize(intakeId, folderSupplier);
             } catch (RuntimeException ex) {
                 // 数据库已提交，不能把副本导出失败报告为需求录入失败，也不能阻断异步识别。
-                log.warn("需求材料自动导出失败，可通过打开需求文件夹重试。intakeId={}", intakeId, ex);
+                log.warn("需求材料自动导出失败。intakeId={}", intakeId, ex);
             }
         };
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
@@ -103,7 +103,7 @@ public class RequirementMaterialExportService {
                 }
             }
         } catch (IOException ex) {
-            throw new IllegalStateException("需求材料导出失败，可重新打开需求文件夹重试", ex);
+            throw new IllegalStateException("需求材料导出失败", ex);
         }
         log.info("需求材料导出完成。intakeId={}, written={}, skipped={}", intakeId, written, skipped);
         return folder;

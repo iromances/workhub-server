@@ -51,7 +51,7 @@ class RequirementFolderServiceTest {
     }
 
     @Test
-    void createsNothingUntilRecognitionSucceedsIncludingManualOpen() {
+    void automaticExportCreatesNothingUntilRecognitionSucceeds() {
         var intake = intake(1L, "SP", "需求名称");
         for (String status : java.util.List.of("PENDING", "RUNNING", "FAILED")) {
             intake.setEnrichmentStatus(status);
@@ -148,7 +148,7 @@ class RequirementFolderServiceTest {
     }
 
     @Test
-    void automaticExportDoesNotOpenDesktopAndExplicitOpenExportsFirst() throws Exception {
+    void automaticExportDoesNotOpenDesktop() throws Exception {
         intake(1L, "SP", "需求");
         doAnswer(invocation -> {
             Supplier<Path> supplier = invocation.getArgument(1);
@@ -157,24 +157,68 @@ class RequirementFolderServiceTest {
         }).when(exporter).scheduleAfterCommit(eq(1L), any());
         folders.scheduleMaterialExport(1L);
         verify(folders, never()).openPath(any());
-        when(exporter.synchronize(eq(1L), any())).thenAnswer(invocation -> {
-            Supplier<Path> supplier = invocation.getArgument(1);
-            Path folder = supplier.get();
-            Files.writeString(folder.resolve("导出完成"), "ok");
-            return folder;
-        });
+    }
+
+    @Test
+    void explicitOpenPreservesExistingFilesAndIgnoresMarkersAndUnrelatedJson() throws Exception {
+        var intake = intake(1L, "SP", "需求");
+        intake.setEnrichmentStatus("FAILED");
+        intake.setStructuredDataJson("无效 JSON");
+        Path folder = Files.createDirectory(root.resolve("SP-需求"));
+        Path marker = Files.writeString(folder.resolve(".workhub-intake-id"), "无效标记");
+        Path document = Files.writeString(folder.resolve("方案.docx"), "已有文件");
+        Path unrelated = Files.createDirectory(root.resolve("其他需求"));
+        Files.writeString(unrelated.resolve(".workhub-intake-id"), "同样无效");
+        doNothing().when(folders).openPath(any());
+
+        var response = folders.open(1L);
+
+        assertTrue(response.opened());
+        assertEquals(folder.toString(), response.folderPath());
+        assertEquals("无效标记", Files.readString(marker));
+        assertEquals("已有文件", Files.readString(document));
+        verify(folders).openPath(folder);
+        verifyNoInteractions(exporter);
+    }
+
+    @Test
+    void explicitOpenCreatesMissingDirectoriesRegardlessOfRecognitionStatus() throws Exception {
         doAnswer(invocation -> {
             Path path = invocation.getArgument(0);
-            assertTrue(Files.exists(path.resolve("导出完成")));
+            assertTrue(Files.isDirectory(path));
+            assertFalse(Files.exists(path.resolve(".workhub-intake-id")));
             return null;
         }).when(folders).openPath(any());
-        var response = folders.open(1L);
-        assertTrue(response.opened());
-        assertEquals("SP-需求", response.folderName());
-        assertEquals(root.resolve("SP-需求").toRealPath().toString(), response.folderPath());
-        when(exporter.synchronize(eq(1L), any())).thenThrow(new IllegalStateException("导出失败"));
+        long id = 1;
+        for (String status : java.util.List.of("PENDING", "RUNNING", "FAILED", "SUCCEEDED")) {
+            var intake = intake(id, "SP-" + id, "需求");
+            intake.setEnrichmentStatus(status);
+
+            var response = folders.open(id);
+
+            assertTrue(response.opened());
+            assertEquals("SP-" + id + "-需求", response.folderName());
+            assertEquals(root.resolve(response.folderName()).toString(), response.folderPath());
+            id++;
+        }
+        verify(folders, times(4)).openPath(any());
+        verifyNoInteractions(exporter);
+    }
+
+    @Test
+    void explicitOpenReportsMissingRequirementAndFilesystemFailures() throws Exception {
+        assertThrows(IllegalArgumentException.class, () -> folders.open(404L));
+        intake(1L, "SP", "需求");
+        Path path = Files.writeString(root.resolve("SP-需求"), "同名文件");
         assertThrows(IllegalStateException.class, () -> folders.open(1L));
-        verify(folders, times(1)).openPath(any());
+        assertEquals("同名文件", Files.readString(path));
+        verify(folders, never()).openPath(any());
+
+        Files.delete(path);
+        doThrow(new java.io.IOException("系统打开失败")).when(folders).openPath(any());
+        IllegalStateException failure = assertThrows(IllegalStateException.class, () -> folders.open(1L));
+        assertEquals("系统打开失败", failure.getCause().getMessage());
+        verifyNoInteractions(exporter);
     }
 
     private IntakeRecordEntity intake(Long id, String code, String name) {
