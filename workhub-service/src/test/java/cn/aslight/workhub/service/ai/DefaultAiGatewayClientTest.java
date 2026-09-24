@@ -22,6 +22,24 @@ import static org.mockito.Mockito.when;
 class DefaultAiGatewayClientTest {
 
     @Test
+    void cliPassesDynamicCodesUnchangedAndOnlyNormalizesLegacyUppercase() {
+        for (String effort : List.of("minimal", "ultra", "futureEffort", "HIGH", "ULTRA")) {
+            TestContext context = new TestContext();
+            AiProviderConfigEntity provider = provider(null, "CLI", null);
+            provider.setCliCommand("codex");
+            provider.setCliWorkingDirectory("/tmp");
+            provider.setDefaultModel("CaseModel");
+            provider.setDefaultReasoningLevel(effort);
+            when(context.codexCliClient.isEnabled()).thenReturn(true);
+            when(context.codexCliClient.execute(any(), any()))
+                    .thenReturn(CodexCliClient.CodexCliResult.succeeded("{\"status\":\"OK\"}"));
+            assertTrue(context.gateway.testConnection(provider, null).succeeded());
+            String expected = switch (effort) { case "HIGH" -> "high"; case "ULTRA" -> "ultra"; default -> effort; };
+            verify(context.codexCliClient).execute(any(), argThat(options -> expected.equals(options.reasoningEffort())));
+        }
+    }
+
+    @Test
     void executeStructured_shouldResolveUseCaseRenderPromptAndRouteResponses() throws Exception {
         TestContext context = new TestContext();
         AiUseCaseConfigEntity useCase = useCase(AiUseCaseDefinitions.STRUCTURED_EXTRACT, 7L);

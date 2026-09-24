@@ -136,6 +136,7 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
                 throw new IllegalArgumentException("AI 接入配置不能为空");
             }
             model = requireText(provider.getDefaultModel(), "通道默认模型不能为空");
+            if ("CLI".equals(normalize(provider.getChannelType()))) model = provider.getDefaultModel();
             String output;
             if ("API".equals(normalize(provider.getChannelType()))) {
                 output = executeApi(new AiApiInvocation(
@@ -310,8 +311,8 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
                     ),
                     new CodexCliClient.CodexCliExecutionOptions(
                             provider.getCliCommand(),
-                            firstText(request.modelOverride(), firstText(useCase.getModel(), provider.getDefaultModel())),
-                            normalizeCliReasoning(firstText(request.reasoningLevelOverride(), firstText(useCase.getReasoningLevel(), provider.getDefaultReasoningLevel()))),
+                            firstCliValue(request.modelOverride(), firstCliValue(useCase.getModel(), provider.getDefaultModel())),
+                            normalizeCliReasoning(firstCliValue(request.reasoningLevelOverride(), firstCliValue(useCase.getReasoningLevel(), provider.getDefaultReasoningLevel()))),
                             positive(request.timeoutSecondsOverride(), positive(useCase.getTimeoutSeconds(), provider.getCallTimeoutSeconds())),
                             true,
                             localRepository
@@ -394,8 +395,18 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
         return objectMapper.writeValueAsString(value);
     }
 
+    private String firstCliValue(String first, String second) {
+        return first == null || first.isBlank() ? second : first;
+    }
+
     private String normalizeCliReasoning(String value) {
-        return AiHttpPayloadSupport.normalizeReasoning(value);
+        if (value == null || value.isBlank()) return null;
+        if (value.length() > 32) throw new IllegalArgumentException("CLI 推理强度不能超过32个字符");
+        // 仅兼容旧字典的大写值，动态目录返回的编码原样传递。
+        return switch (value) {
+            case "NONE", "LOW", "MEDIUM", "HIGH", "XHIGH", "MAX", "ULTRA" -> value.toLowerCase(Locale.ROOT);
+            default -> value;
+        };
     }
 
     private String normalize(String value) {

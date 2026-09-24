@@ -4,6 +4,7 @@ import cn.aslight.workhub.config.AiProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.BufferedWriter;
 import java.io.BufferedReader;
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 public class CodexCliClient {
 
     private static final Logger log = LoggerFactory.getLogger(CodexCliClient.class);
+    private static final JsonMapper CONFIG_JSON = JsonMapper.builder().build();
     private static final List<String> RESTRICTED_SCENE_DISABLED_FEATURES = List.of(
             "browser_use",
             "browser_use_external",
@@ -179,11 +181,11 @@ public class CodexCliClient {
         command.add("never");
         if (effectiveConfig.model() != null && !effectiveConfig.model().trim().isEmpty()) {
             command.add("-m");
-            command.add(effectiveConfig.model().trim());
+            command.add(effectiveConfig.model());
         }
         if (effectiveConfig.reasoningEffort() != null && !effectiveConfig.reasoningEffort().trim().isEmpty()) {
             command.add("-c");
-            command.add("model_reasoning_effort=\"" + effectiveConfig.reasoningEffort().trim() + "\"");
+            command.add("model_reasoning_effort=" + CONFIG_JSON.writeValueAsString(effectiveConfig.reasoningEffort()));
         }
         command.add("--output-schema");
         command.add(outputSchema.toString());
@@ -212,8 +214,8 @@ public class CodexCliClient {
         if (command == null) {
             throw new IllegalStateException("AI Provider 未配置 CLI 命令: " + useCaseCode);
         }
-        String model = trimToNull(executionOptions.model());
-        if (model == null) {
+        String model = executionOptions.model();
+        if (model == null || model.isBlank()) {
             throw new IllegalStateException("AI 场景未配置 CLI 模型: " + useCaseCode);
         }
         Integer timeoutSeconds = executionOptions.timeoutSeconds();
@@ -223,7 +225,7 @@ public class CodexCliClient {
         return new EffectiveCodexCliConfig(
                 command,
                 model,
-                trimToNull(executionOptions.reasoningEffort()),
+                executionOptions.reasoningEffort(),
                 timeoutSeconds,
                 executionOptions.disablePlugins(),
                 executionOptions.allowLocalTools()

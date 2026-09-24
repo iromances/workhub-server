@@ -191,8 +191,15 @@ public class AiProviderConfigService {
         entity.setChannelType(channelType);
         entity.setVendor(trimToNull(request.getVendor()));
         entity.setModelProvider(requireText(request.getModelProvider(), "模型厂商不能为空").toUpperCase(Locale.ROOT));
-        entity.setDefaultModel(firstText(request.getDefaultModel(), existing == null ? null : existing.getDefaultModel()));
-        entity.setDefaultReasoningLevel(upperOrExisting(request.getDefaultReasoningLevel(), existing == null ? null : existing.getDefaultReasoningLevel()));
+        String existingModel = existing == null ? null : existing.getDefaultModel();
+        entity.setDefaultModel(CHANNEL_CLI.equals(channelType)
+                ? cliValue(request.getDefaultModel(), existingModel, 128, "模型")
+                : firstText(request.getDefaultModel(), existingModel));
+        String reasoning = request.getDefaultReasoningLevel();
+        String existingReasoning = existing == null ? null : existing.getDefaultReasoningLevel();
+        entity.setDefaultReasoningLevel(CHANNEL_CLI.equals(channelType)
+                ? cliValue(reasoning, existingReasoning, 32, "推理强度")
+                : upperOrExisting(reasoning, existingReasoning));
         entity.setDefaultSpeedMode(upperOrExisting(request.getDefaultSpeedMode(), existing == null ? null : existing.getDefaultSpeedMode()));
         entity.setApiProtocol(trimToNull(request.getApiProtocol()));
         entity.setApiBaseUrl(trimToNull(request.getApiBaseUrl()));
@@ -207,6 +214,14 @@ public class AiProviderConfigService {
         entity.setEnabled(request.getEnabled() == null || request.getEnabled());
         entity.setRemark(trimToNull(request.getRemark()));
         return entity;
+    }
+
+    private String cliValue(String value, String existing, int maxLength, String label) {
+        String result = value == null || value.isBlank() ? existing : value;
+        if (result != null && result.length() > maxLength) {
+            throw new IllegalArgumentException("CLI " + label + "不能超过" + maxLength + "个字符");
+        }
+        return result;
     }
 
     private void validateChannelConfig(AiProviderConfigEntity entity) {

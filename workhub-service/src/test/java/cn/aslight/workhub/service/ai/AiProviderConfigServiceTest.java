@@ -36,6 +36,30 @@ class AiProviderConfigServiceTest {
     }
 
     @Test
+    void cliSavePreservesDynamicAndHistoricalReasoningCodes() {
+        for (String effort : List.of("minimal", "ultra", "futureEffort", "HIGH")) {
+            mapper = new FakeAiProviderConfigMapper();
+            service = new AiProviderConfigService(mapper, cryptoService);
+            AiProviderConfigRequest request = xianxingtongRequest("https://aiserver.thchengtay.com/v1");
+            request.setChannelType("CLI");
+            request.setCliCommand("codex");
+            request.setDefaultReasoningLevel(effort);
+            var response = service.create(request);
+            assertEquals(effort, response.defaultReasoningLevel());
+            assertEquals(effort, mapper.stored.getDefaultReasoningLevel());
+            service.update(response.id(), request);
+            assertEquals(effort, mapper.stored.getDefaultReasoningLevel());
+        }
+    }
+
+    @Test
+    void apiSaveStillUsesItsExistingDictionaryConvention() {
+        var request = xianxingtongRequest("https://aiserver.thchengtay.com/v1");
+        request.setDefaultReasoningLevel("high");
+        assertEquals("HIGH", service.create(request).defaultReasoningLevel());
+    }
+
+    @Test
     void create_shouldEncryptApiKeyAtRestAndReturnMaskedValue() {
         AiProviderConfigRequest request = xianxingtongRequest("https://aiserver.thchengtay.com/v1");
         request.setApiKey("provider-key-123456");
