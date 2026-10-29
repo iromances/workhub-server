@@ -63,6 +63,29 @@ class RequirementMaterialExportServiceTest {
     }
 
     @Test
+    void vaultExportKeepsOriginalBytesAndOnlyCurrentAttachmentsInEachInputSnapshot() throws Exception {
+        AttachmentEntity item = add(11L, AttachmentService.INTAKE_ATTACHMENT, "a.txt", "第一版");
+        Path folder = root.resolve("raw/公司项目/requirements/测试/附件");
+        Path first = root.resolve("raw/公司项目/requirements/测试/历史版本/run1/附件");
+        KnowledgeArchiveFiles.locked(root, () -> exporter.synchronizeVersioned(1L, root, folder, first));
+        byte[] original = Files.readAllBytes(first.resolve("11-a.txt"));
+        item.setFileContent("第二版".getBytes(StandardCharsets.UTF_8));
+        item.setFileSize((long) item.getFileContent().length);
+        item.setFileName("新名.txt");
+        Path second = root.resolve("raw/公司项目/requirements/测试/历史版本/run2/附件");
+        KnowledgeArchiveFiles.locked(root, () -> exporter.synchronizeVersioned(1L, root, folder, second));
+        assertArrayEquals(original, Files.readAllBytes(first.resolve("11-a.txt")));
+        assertEquals("第二版", Files.readString(second.resolve("11-新名.txt")));
+        assertFalse(Files.exists(second.resolve("11-a.txt")));
+        item.setFileContent("第三版".getBytes(StandardCharsets.UTF_8));
+        item.setFileSize((long) item.getFileContent().length);
+        KnowledgeArchiveFiles.locked(root, () -> exporter.synchronizeVersioned(1L, root, folder,
+                root.resolve("raw/公司项目/requirements/测试/历史版本/run3/附件")));
+        Path prior = folder.resolve("历史版本").resolve(KnowledgeArchiveFiles.digest("第二版".getBytes(StandardCharsets.UTF_8))).resolve("11-新名.txt");
+        assertEquals("第二版", Files.readString(prior));
+    }
+
+    @Test
     void repeatedExportSkipsIdenticalContentAndRepairsSameLengthCorruption() throws Exception {
         add(11L, AttachmentService.INTAKE_ATTACHMENT, "a.txt", "original");
         Path target = synchronize().resolve("11-a.txt");

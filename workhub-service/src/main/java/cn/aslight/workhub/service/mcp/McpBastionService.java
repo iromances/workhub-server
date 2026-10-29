@@ -95,21 +95,21 @@ public class McpBastionService {
                 || !Objects.equals(previousPassword, saved.getPasswordEncrypted())
                 || !Objects.equals(previousIdentity, saved.getIdentityFile())
                 || !Objects.equals(previousEnabled, saved.getEnabled())) {
-            invalidateAfterCommit(previousHost, previousPort, previousUser);
+            invalidateAfterCommit(id);
         }
         return toResponse(saved);
     }
 
-    private void invalidateAfterCommit(String host, int port, String username) {
+    private void invalidateAfterCommit(long bastionId) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    SshConnectionManager.invalidateShared(host, port, username);
+                    SshConnectionManager.invalidateShared(bastionId);
                 }
             });
         } else {
-            SshConnectionManager.invalidateShared(host, port, username);
+            SshConnectionManager.invalidateShared(bastionId);
         }
     }
 

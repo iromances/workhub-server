@@ -52,7 +52,8 @@ public class McpDatabaseConnectionTester {
                 input.bastion().port(),
                 input.bastion().username(),
                 input.bastion().password(),
-                input.bastion().identityFile()
+                input.bastion().identityFile(),
+                input.bastion().bastionId()
         );
         DatabaseTarget target = new DatabaseTarget(
                 "connection-test", null, List.of(), null, "connection-test", null, List.of(),
@@ -176,7 +177,11 @@ public class McpDatabaseConnectionTester {
                           int port,
                           String username,
                           String password,
-                          String identityFile) {
+                          String identityFile,
+                          Long bastionId) {
+        public Bastion(String host, int port, String username, String password, String identityFile) {
+            this(host, port, username, password, identityFile, null);
+        }
     }
 
     public record Result(boolean success,

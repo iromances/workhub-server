@@ -6,6 +6,7 @@ import cn.aslight.workhub.model.intake.IntakeHistoryResponse;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisResponse;
 import cn.aslight.workhub.model.intake.IntakeBusinessLineUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakePriorityUpdateRequest;
+import cn.aslight.workhub.model.intake.IntakeRequirementTypeUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
 import cn.aslight.workhub.model.intake.IntakePageResponse;
@@ -345,6 +346,26 @@ class IntakeControllerTest {
                 .andExpect(jsonPath("$.data.id").value(9));
 
         verify(intakeService).updatePriority(eq(9L), any(IntakePriorityUpdateRequest.class), eq("admin"));
+    }
+
+    @Test
+    void updateRequirementType_shouldExposeRequirementTypeApi() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        IntakeDetailResponse detail = simpleDetail(9L, "已收录");
+        when(intakeService.updateRequirementType(eq(9L), any(IntakeRequirementTypeUpdateRequest.class), eq("admin"))).thenReturn(detail);
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller(intakeService)).build();
+
+        mockMvc.perform(post("/api/intake/9/requirement-type")
+                        .principal(new UsernamePasswordAuthenticationToken("admin", "N/A"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"requirementType":"数据提取/运维"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(9));
+
+        verify(intakeService).updateRequirementType(eq(9L), any(IntakeRequirementTypeUpdateRequest.class), eq("admin"));
     }
 
     @Test

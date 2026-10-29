@@ -10,6 +10,7 @@ import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import org.springframework.transaction.PlatformTransactionManager;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
@@ -46,7 +47,8 @@ class IntakeEnrichmentServiceTest {
         var service = new IntakeEnrichmentService(mapper,
                 mock(cn.aslight.workhub.dao.intake.IntakeStructuredFieldMapper.class),
                 attachments, extraction, new IntakeStructuredDataExtractor(),
-                new IntakeStructuredFieldNormalizer(), codex, Runnable::run, new ObjectMapper(), folders);
+                new IntakeStructuredFieldNormalizer(), codex, Runnable::run, new ObjectMapper(), folders,
+                mock(PlatformTransactionManager.class));
 
         service.enrichUploadedIntake(7L, "上传", "需求名称：已识别需求");
 
@@ -77,7 +79,8 @@ class IntakeEnrichmentServiceTest {
                 codexCliStructuredExtractor,
                 executor,
                 new ObjectMapper(),
-                folders
+                folders,
+                mock(PlatformTransactionManager.class)
         );
 
         IntakeRecordEntity entity = new IntakeRecordEntity();
@@ -172,7 +175,8 @@ class IntakeEnrichmentServiceTest {
                 structuredDataExtractor,
                 codexCliStructuredExtractor,
                 executor,
-                new ObjectMapper()
+                new ObjectMapper(),
+                mock(PlatformTransactionManager.class)
         );
 
         IntakeRecordEntity entity = new IntakeRecordEntity();
@@ -254,7 +258,8 @@ class IntakeEnrichmentServiceTest {
                 structuredDataExtractor,
                 codexCliStructuredExtractor,
                 executor,
-                new ObjectMapper()
+                new ObjectMapper(),
+                mock(PlatformTransactionManager.class)
         );
 
         IntakeRecordEntity entity = new IntakeRecordEntity();

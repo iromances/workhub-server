@@ -68,7 +68,8 @@ public class McpDatabaseConnectionTestService {
                         bastion.getPort() == null ? 22 : bastion.getPort(),
                         bastion.getUsername(),
                         bastionService.decryptPassword(bastion),
-                        bastion.getIdentityFile()
+                        bastion.getIdentityFile(),
+                        bastion.getId()
                 );
 
         McpDatabaseConnectionTester.Result result = connectionTester.test(

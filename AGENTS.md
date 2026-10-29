@@ -1,46 +1,21 @@
-# AGENTS.md
+# WorkHub 仓库指引
 
-本文件是 `workhub-server` 仓库的 AI 入口，维护项目定位、职责边界及操作约束。
+本仓库是 WorkHub 后端，基于 Java 25、Spring Boot 4、MyBatis 和 MySQL；前端见 [workhub-web 指引](/Users/aslight/IDEAWorkspace/workhub-web/AGENTS.md)。
 
-## 1. AI 操作约束
+## 项目边界
 
-- 禁止 AI 自行启动应用；需要应用运行时，必须由用户启动，或先获得用户针对本次启动的明确授权。
-- 未经用户授权，不得安装任何软件或脚本。
+- WorkHub 负责研发协作、平台管理、受控运维、监测与集成配置；支付域仅管理接入配置，不编排真实支付交易。
+- 本仓库保留源码、测试、SQL 和运行资源。具体业务线代码在经核实的目标仓库维护，位置与分支按下述运维方法定位。
+- 未经用户授权，不安装软件、依赖或脚本，或者修改配置。
 
-## 2. 项目定位与职责
+## 按任务直达
 
-WorkHub 是公司内部研发协作与受控运维平台的工作台，不是任一具体业务线的业务系统。workhub-server基于 Java 25、Spring Boot 4、MyBatis 和 MySQL，前端仓库位于同级 `../workhub-web`。
+只读本次任务所需原文；已知目标直接进入，不遍历索引或无关指引。
 
-WorkHub 主要负责：
+- **研发、修复、方案、测试与交付**：[SDD 流程](</Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/schema/研发/SDD/流程.md>)与 [WorkHub 补充](</Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/workhub-server/AGENTS.md#SDD补充>)；编码前读[代码风格](</Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/schema/研发/代码风格.md>)。
+- **AI review、代码或分支审查**：[代码审查方法](</Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/schema/研发/WorkHub/代码审查方法.md>)。
+- **业务线代码、业务口径、数据或日志排查**：[业务运维分析方法](</Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/schema/研发/WorkHub/业务运维分析方法.md>)。
+- **需求建档、跨仓库归属与材料归档**：[需求归档指引](</Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/研发需求/AGENTS.md>)。
+- **系统资料与文档维护**：[项目文档指引](</Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/workhub-server/AGENTS.md#文档归属>)。
 
-- 研发管理：业务线、项目、迭代、版本、需求接收、研发分析、工作项、待办、附件和跟踪记录。
-- 平台管理：账号、角色、权限、系统配置、AI Provider、AI 场景、操作审计和站内通知。
-- 受控运维：通过 MCP 为 AI 提供业务线定位、GitLab 代码工作区、知识库上下文、数据库只读查询、服务状态和日志读取能力。
-- 运维监测：XXL-JOB、系统异常、慢 SQL、账务监测以及 ELK 日志链路。
-- 集成配置：企业微信、GitLab、AI 服务和支付渠道、商户、参数、项目绑定；支付域只管理接入配置，不承担真实支付交易编排。
-
-具体业务系统代码默认按 GitLab 组组织在 `/Users/aslight/IDEAWorkspace/{gitlabGroupName}` 下；公共依赖及单独存放仓库的例外见[代码目录约定](docs/研发规范/业务运维分析方法.md#2-找业务线代码)。代码分析、需求研发和测试使用经核实的实际工作区，不在 WorkHub 仓库内维护业务代码副本。
-
-## 3. 研发流程
-
-本节规定 WorkHub 自身任务及本仓库归档的业务线需求的流程与产物；需求归属按 [docs 跨仓库规则](docs/AGENTS.md#跨仓库需求归属)确定，归档在 agents-playbook 的需求沿用其流程和模板。业务代码在目标业务仓库中维护，遵守该仓库的操作约束和代码规范。
-
-- 新的开发、修复、接口或数据库变更、正式方案编写、测试与交付任务统一使用 SDD 。
-- 只读解释、诊断、回看资料及用户明确要求的文档整理、目录调整、路径修正和 AI 指引维护可直接进行。
-- 新增或修改代码前必须读取并遵守[代码风格](docs/研发规范/代码风格.md)。
-- 任务产物记录采用 SDD 流程及任务来源。已有任务的后续变更按 SDD 补充规格，保留既有产物及历史审批、验证结论。
-- 正式产物为唯一需求目录下的 `proposal.md`、`design.md`、`tasks.md`，以及按需生成的接口契约和 ADR。
-- AI 可连续起草完整规格，不逐份等待审批；规格达到当前变更所需完整度后，提交用户或有权人员统一确认，再开始实施。
-- 起草中遇到影响需求范围、关键方案或验收标准且无法从上下文确定的问题时，询问用户；其余可独立完成的内容继续起草。
-- 统一确认的范围、规格版本、结论、确认人与日期记录在 `tasks.md` 中。验证计划与实际结果分开记录。
-
-
-## 4. 运维
-
-当用户询问某个业务线的问题时，先归类为：代码理解、需求/业务口径、数据库数据核查、服务器/日志排查或综合排查。不要凭记忆或推理猜测资源位置。
-
-运维见[业务运维分析方法](docs/研发规范/业务运维分析方法.md)。
-
-## 5. 文档指引
-
-研发及文档工作遵守 [docs 文档指引](docs/AGENTS.md)中的文档组织、用途、归档与协作规则。
+只读解释、诊断、审查和文档整理可直接进行；转入系统研发后执行 SDD。

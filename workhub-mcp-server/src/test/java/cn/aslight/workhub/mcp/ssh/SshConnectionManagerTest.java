@@ -33,7 +33,47 @@ class SshConnectionManagerTest {
     }
 
     @Test
+    void alternatingConfigurationsOnSameEndpointKeepTheirOwnConnections() throws Exception {
+        var first = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "first", null, 1L);
+        var second = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "second", null, 2L);
+        try (var manager = manager()) {
+            for (int i = 0; i < 3; i++) {
+                manager.acquire(first, "consumer-db", 3306).close();
+                manager.acquire(second, "logistics-db", 3306).close();
+            }
+            assertEquals(2, connections.size());
+            assertTrue(connections.stream().allMatch(c -> c.closes.get() == 0));
+            assertTrue(connections.stream().allMatch(c -> c.forwards.get() == 1));
+        }
+        assertTrue(connections.stream().allMatch(c -> c.closes.get() == 1));
+    }
+
+    @Test
+    void differentConfigurationsWithIdenticalCredentialsStillRemainSeparate() throws Exception {
+        var first = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "password", null, 1L);
+        var second = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "password", null, 2L);
+        try (var manager = manager()) {
+            manager.acquire(first, "database", 3306).close();
+            manager.acquire(second, "database", 3306).close();
+            assertEquals(2, connections.size());
+        }
+    }
+
+    @Test
+    void savedConfigurationDoesNotShareConnectionWithLegacyTunnel() throws Exception {
+        var saved = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "password", null, 1L);
+        try (var manager = manager()) {
+            manager.acquire(saved, "database", 3306).close();
+            manager.acquire(bastion, "database", 3306).close();
+            manager.acquire(saved, "database", 3306).close();
+            assertEquals(2, connections.size());
+            assertTrue(connections.stream().allMatch(c -> c.closes.get() == 0));
+        }
+    }
+
+    @Test
     void sharesOneConnectionAcrossTargetsAndReturnsLeaseWithoutDisconnecting() throws Exception {
+        var bastion = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "password", null, 1L);
         try (var manager = manager()) {
             int databasePort;
             try (var lease = manager.acquire(bastion, "database", 3306)) {
@@ -53,6 +93,7 @@ class SshConnectionManagerTest {
 
     @Test
     void concurrentFirstRequestsAuthenticateAndForwardOnlyOnce() throws Exception {
+        var bastion = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "password", null, 1L);
         try (var manager = manager(); var executor = Executors.newFixedThreadPool(12)) {
             CountDownLatch start = new CountDownLatch(1);
             var tasks = new ArrayList<java.util.concurrent.Future<Integer>>();
@@ -74,11 +115,87 @@ class SshConnectionManagerTest {
     }
 
     @Test
-    void slowBastionDoesNotBlockAnotherBastion() throws Exception {
+    void invalidatingConfigurationKeepsOtherIdAndLegacyConnectionsAlive() throws Exception {
+        var first = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "first", null, 1L);
+        var moved = new DatabaseTarget.SshTunnel("bastion-b", 22, "user", "first", null, 1L);
+        var second = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "second", null, 2L);
+        try (var manager = manager()) {
+            var active = manager.acquire(first, "consumer-db", 3306);
+            manager.acquire(moved, "consumer-db", 3306).close();
+            manager.acquire(second, "logistics-db", 3306).close();
+            manager.acquire(bastion, "legacy-db", 3306).close();
+
+            manager.invalidate(1L);
+            assertEquals(0, connections.get(0).closes.get());
+            assertEquals(1, connections.get(1).closes.get());
+            assertEquals(0, connections.get(2).closes.get());
+            assertEquals(0, connections.get(3).closes.get());
+            manager.acquire(second, "logistics-db", 3306).close();
+            manager.acquire(bastion, "legacy-db", 3306).close();
+            assertEquals(4, connections.size());
+
+            manager.acquire(first, "consumer-db", 3306).close();
+            assertEquals(5, connections.size());
+            active.close();
+            assertEquals(1, connections.get(0).closes.get());
+        }
+    }
+
+    @Test
+    void failedAuthenticationOnOneIdDoesNotSuppressAnotherIdOnSameEndpoint() throws Exception {
+        AtomicInteger attempts = new AtomicInteger();
+        var first = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "bad", null, 1L);
+        var second = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "good", null, 2L);
+        try (var manager = new SshConnectionManager(credentials -> {
+            attempts.incrementAndGet();
+            if ("bad".equals(credentials.password)) {
+                throw new IOException("堡垒机认证失败");
+            }
+            return new FakeConnection();
+        }, time::get, false)) {
+            assertThrows(IOException.class, () -> manager.acquire(first, "db", 3306));
+            assertThrows(IOException.class, () -> manager.acquire(first, "db", 3306));
+            manager.acquire(second, "db", 3306).close();
+            manager.acquire(second, "db", 3306).close();
+            assertEquals(2, attempts.get());
+            manager.invalidate(1L);
+            assertThrows(IOException.class, () -> manager.acquire(first, "db", 3306));
+            assertEquals(3, attempts.get());
+            manager.acquire(second, "db", 3306).close();
+            assertEquals(3, attempts.get());
+        }
+    }
+
+    @Test
+    void credentialChangeAndDeadConnectionOnlyReplaceTheirOwnConfiguration() throws Exception {
+        var first = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "first", null, 1L);
+        var changed = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "changed", null, 1L);
+        var second = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "second", null, 2L);
+        try (var manager = manager()) {
+            manager.acquire(first, "db", 3306).close();
+            manager.acquire(second, "db", 3306).close();
+            manager.acquire(changed, "db", 3306).close();
+            assertEquals(3, connections.size());
+            assertEquals(1, connections.get(0).closes.get());
+            assertEquals(0, connections.get(1).closes.get());
+
+            connections.get(2).healthy = false;
+            manager.acquire(changed, "db", 3306).close();
+            manager.acquire(second, "db", 3306).close();
+            assertEquals(4, connections.size());
+            assertEquals(1, connections.get(2).closes.get());
+            assertEquals(0, connections.get(1).closes.get());
+        }
+    }
+
+    @Test
+    void slowConfigurationDoesNotBlockAnotherConfigurationOnSameEndpoint() throws Exception {
         CountDownLatch entered = new CountDownLatch(1);
         CountDownLatch resume = new CountDownLatch(1);
+        var slowConfig = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "slow-password", null, 1L);
+        var fastConfig = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "password", null, 2L);
         try (var manager = new SshConnectionManager(credentials -> {
-            if (credentials.endpoint.host().equals("slow")) {
+            if ("slow-password".equals(credentials.password)) {
                 entered.countDown();
                 try {
                     if (!resume.await(3, TimeUnit.SECONDS)) throw new IOException("test timeout");
@@ -88,10 +205,10 @@ class SshConnectionManagerTest {
             }
             return new FakeConnection();
         }, time::get, false); var executor = Executors.newFixedThreadPool(2)) {
-            var slow = executor.submit(() -> manager.acquire(config("slow", "password"), "db", 3306));
+            var slow = executor.submit(() -> manager.acquire(slowConfig, "db", 3306));
             assertTrue(entered.await(1, TimeUnit.SECONDS));
             try {
-                var fast = executor.submit(() -> manager.acquire(bastion, "db", 3306));
+                var fast = executor.submit(() -> manager.acquire(fastConfig, "db", 3306));
                 fast.get(1, TimeUnit.SECONDS).close();
             } finally {
                 resume.countDown();
@@ -181,9 +298,10 @@ class SshConnectionManagerTest {
 
     @Test
     void invalidateDrainsActiveLeaseAndRebuildsEvenWithSameCredentials() throws Exception {
+        var bastion = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "password", null, 1L);
         try (var manager = manager()) {
             var active = manager.acquire(bastion, "db", 3306);
-            manager.invalidate("bastion-a", 22, "user");
+            manager.invalidate(1L);
             assertEquals(0, connections.getFirst().closes.get());
             manager.acquire(bastion, "db", 3306).close();
             assertEquals(2, connections.size());
@@ -260,9 +378,10 @@ class SshConnectionManagerTest {
 
     @Test
     void shutdownClosesActiveAndRetiredConnectionsAndRejectsNewLeases() throws Exception {
+        var bastion = new DatabaseTarget.SshTunnel("bastion-a", 22, "user", "password", null, 1L);
         var manager = manager();
         var first = manager.acquire(bastion, "db", 3306);
-        manager.invalidate("bastion-a", 22, "user");
+        manager.invalidate(1L);
         var second = manager.acquire(bastion, "db", 3306);
         manager.close();
         manager.close();

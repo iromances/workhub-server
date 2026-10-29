@@ -510,8 +510,8 @@ public class McpRuntimeService {
         Map<String, Object> context = new LinkedHashMap<>(catalog.knowledge());
         Object vaultPath = context.get("projectVaultPath");
         if (vaultPath != null) {
-            context.put("businessLineWikiRoot", vaultPath + "/wiki/projects/" + firstNonBlank(businessLine.code(), businessLine.name()));
-            context.put("businessLineRawRoot", vaultPath + "/raw/requirements/" + firstNonBlank(businessLine.code(), businessLine.name()));
+            context.put("businessLineWikiRoot", vaultPath + "/wiki/公司项目/projects/" + firstNonBlank(businessLine.code(), businessLine.name()));
+            context.put("businessLineRawRoot", vaultPath + "/raw/公司项目/requirements/" + firstNonBlank(businessLine.code(), businessLine.name()));
         }
         return context;
     }

@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 class McpBastionServiceTest {
 
     @Test
-    void update_invalidatesOriginalEndpointOnlyAfterCommit() {
+    void update_invalidatesSelectedConfigurationOnlyAfterCommit() {
         McpBastionMapper mapper = mock(McpBastionMapper.class);
         McpBastionEntity existing = entity();
         when(mapper.findById(1L)).thenReturn(existing);
@@ -44,7 +44,7 @@ class McpBastionServiceTest {
                 var callbacks = TransactionSynchronizationManager.getSynchronizations();
                 assertEquals(1, callbacks.size());
                 callbacks.forEach(TransactionSynchronization::afterCommit);
-                connections.verify(() -> SshConnectionManager.invalidateShared("10.10.0.8", 22, "workhub"));
+                connections.verify(() -> SshConnectionManager.invalidateShared(1L));
             } finally {
                 TransactionSynchronizationManager.clearSynchronization();
             }

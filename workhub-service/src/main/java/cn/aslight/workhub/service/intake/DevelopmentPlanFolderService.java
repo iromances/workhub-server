@@ -58,10 +58,10 @@ public class DevelopmentPlanFolderService {
         IntakeStructuredData structuredData = readStructuredData(intake.getStructuredDataJson());
         ProjectDetailResponse project = resolveProject(structuredData);
         ProjectKnowledgeBaseService.RequirementKnowledgeLocation location =
-                projectKnowledgeBaseService.resolveRequirementIterationLocation(structuredData, project);
+                projectKnowledgeBaseService.resolveRequirementIterationLocation(structuredData, project, intake.getId());
         Path folderPath = location.wikiFolderPath();
         try {
-            Files.createDirectories(folderPath);
+            KnowledgeArchiveFiles.directory(location.vaultRoot(), folderPath);
             pathOpener.open(folderPath);
         } catch (IOException ex) {
             throw new IllegalStateException("打开开发方案文件夹失败：" + folderPath, ex);

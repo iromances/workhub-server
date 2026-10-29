@@ -9,6 +9,7 @@ import cn.aslight.workhub.model.intake.IntakeDevelopmentBranchRequest;
 import cn.aslight.workhub.model.intake.IntakeHistoryEntity;
 import cn.aslight.workhub.model.intake.IntakePauseRequest;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
+import cn.aslight.workhub.model.intake.IntakeRequirementTypeUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeSqlDraft;
 import cn.aslight.workhub.model.intake.IntakeStageActionRequest;
 import cn.aslight.workhub.model.intake.IntakeUploadRequest;
@@ -1413,6 +1414,207 @@ class IntakeServiceTest {
                 () -> service.updateBusinessLine(404L, request, "admin"));
         assertEquals("业务线不存在或未启用：资产业务", ex.getMessage());
         verify(intakeMapper, never()).updateStructuredData(eq(404L), any());
+        verify(intakeHistoryMapper, never()).insert(any());
+    }
+
+    @Test
+    void updateRequirementType_shouldPersistTypeClearBranchAndRecordHistory() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeStructuredDataExtractor intakeStructuredDataExtractor = new IntakeStructuredDataExtractor();
+        IntakeEnrichmentService intakeEnrichmentService = mock(IntakeEnrichmentService.class);
+
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                intakeStructuredDataExtractor,
+                intakeEnrichmentService,
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity before = new IntakeRecordEntity();
+        before.setId(405L);
+        before.setSenderName("admin");
+        before.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        before.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"周拓的系统开发2.0","proposerName":"周拓","approvalCode":"202603250009","submittedTime":"2026/3/25 16:17","requirementType":"研发需求","developmentBranchName":"feature/req-202603250009","requirementDigest":"沃橙绑卡","requirementName":"沃橙绑卡需求","requirementSummary":"描述","department":"供应链业务部","businessLine":"供应链科技","remark":"高优","estimatedEffort":"2d","plannedDueDate":"2026/04/05","projectHint":"供应链科技","fields":[],"attachmentSummaries":[]}
+                """);
+        before.setDemandStatus("待排期");
+        before.setEnrichmentStatus("SUCCEEDED");
+        before.setIntakeStatus("待整理");
+
+        IntakeRecordEntity after = new IntakeRecordEntity();
+        after.setId(405L);
+        after.setSenderName("admin");
+        after.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        after.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"周拓的系统开发2.0","proposerName":"周拓","approvalCode":"202603250009","submittedTime":"2026/3/25 16:17","requirementType":"数据提取/运维","developmentBranchName":null,"requirementDigest":"沃橙绑卡","requirementName":"沃橙绑卡需求","requirementSummary":"描述","department":"供应链业务部","businessLine":"供应链科技","remark":"高优","estimatedEffort":"2d","plannedDueDate":"2026/04/05","projectHint":"供应链科技","fields":[],"attachmentSummaries":[]}
+                """);
+        after.setDemandStatus("待排期");
+        after.setEnrichmentStatus("SUCCEEDED");
+        after.setIntakeStatus("待整理");
+
+        when(intakeMapper.findById(405L)).thenReturn(before, after);
+        when(attachmentService.listIntakeAttachments(405L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(405L, 20)).thenReturn(List.of());
+
+        IntakeRequirementTypeUpdateRequest request = new IntakeRequirementTypeUpdateRequest();
+        request.setRequirementType("数据提取/运维");
+
+        var detail = service.updateRequirementType(405L, request, "admin");
+
+        ArgumentCaptor<IntakeRecordEntity> formalEntityCaptor = ArgumentCaptor.forClass(IntakeRecordEntity.class);
+        verify(intakeMapper).updateFormalFields(formalEntityCaptor.capture());
+        assertEquals("数据提取/运维", formalEntityCaptor.getValue().getRequirementType());
+        assertNull(formalEntityCaptor.getValue().getDevelopmentBranchName());
+
+        ArgumentCaptor<String> structuredJsonCaptor = ArgumentCaptor.forClass(String.class);
+        verify(intakeMapper).updateStructuredData(eq(405L), structuredJsonCaptor.capture());
+        assertTrue(structuredJsonCaptor.getValue().contains("\"requirementType\":\"数据提取/运维\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"developmentBranchName\":null"));
+
+        ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
+        verify(intakeHistoryMapper).insert(historyCaptor.capture());
+        assertEquals("修改需求类型", historyCaptor.getValue().getActionSummary());
+        assertEquals("需求类型：研发需求 -> 数据提取/运维\n研发分支名：feature/req-202603250009 -> -",
+                historyCaptor.getValue().getDetailText());
+        assertEquals("admin", historyCaptor.getValue().getOperatorUserName());
+
+        assertEquals("数据提取/运维", detail.structuredData().requirementType());
+        assertNull(detail.structuredData().developmentBranchName());
+    }
+
+    @Test
+    void updateRequirementType_shouldGenerateBranchWhenSwitchingToDevelopment() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeStructuredDataExtractor intakeStructuredDataExtractor = new IntakeStructuredDataExtractor();
+        IntakeEnrichmentService intakeEnrichmentService = mock(IntakeEnrichmentService.class);
+
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                intakeStructuredDataExtractor,
+                intakeEnrichmentService,
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity before = new IntakeRecordEntity();
+        before.setId(406L);
+        before.setSenderName("admin");
+        before.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        before.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"运维同学的批量数据修复申请","proposerName":"运维同学","approvalCode":"202610280001","submittedTime":"2026/10/28 09:28","requirementType":"数据提取/运维","developmentBranchName":null,"requirementDigest":"批量修复历史还款数据","requirementName":"批量修复历史还款数据","requirementSummary":"描述","department":"运营支持部","businessLine":"资产业务","projectHint":"资产业务","fields":[],"attachmentSummaries":[]}
+                """);
+        before.setDemandStatus("已收录");
+        before.setEnrichmentStatus("SUCCEEDED");
+        before.setIntakeStatus("待整理");
+
+        when(intakeMapper.findById(406L)).thenReturn(before, before);
+        when(attachmentService.listIntakeAttachments(406L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(406L, 20)).thenReturn(List.of());
+
+        IntakeRequirementTypeUpdateRequest request = new IntakeRequirementTypeUpdateRequest();
+        request.setRequirementType("研发需求");
+
+        var detail = service.updateRequirementType(406L, request, "admin");
+
+        assertEquals("研发需求", detail.structuredData().requirementType());
+        assertEquals("feature/repayment_data_fix_202610280001", detail.structuredData().developmentBranchName());
+
+        ArgumentCaptor<String> structuredJsonCaptor = ArgumentCaptor.forClass(String.class);
+        verify(intakeMapper).updateStructuredData(eq(406L), structuredJsonCaptor.capture());
+        assertTrue(structuredJsonCaptor.getValue().contains("\"requirementType\":\"研发需求\""));
+        assertTrue(structuredJsonCaptor.getValue().contains("\"developmentBranchName\":\"feature/repayment_data_fix_202610280001\""));
+
+        ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
+        verify(intakeHistoryMapper).insert(historyCaptor.capture());
+        assertEquals("需求类型：数据提取/运维 -> 研发需求\n研发分支名：- -> feature/repayment_data_fix_202610280001",
+                historyCaptor.getValue().getDetailText());
+    }
+
+    @Test
+    void updateRequirementType_shouldShortCircuitWhenTypeUnchanged() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                new IntakeStructuredDataExtractor(),
+                mock(IntakeEnrichmentService.class),
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity entity = new IntakeRecordEntity();
+        entity.setId(407L);
+        entity.setSenderName("admin");
+        entity.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        entity.setStructuredDataJson("""
+                {"requirementType":"研发需求","fields":[],"attachmentSummaries":[]}
+                """);
+        entity.setDemandStatus("已收录");
+        entity.setEnrichmentStatus("SUCCEEDED");
+        entity.setIntakeStatus("待整理");
+        when(intakeMapper.findById(407L)).thenReturn(entity);
+        when(attachmentService.listIntakeAttachments(407L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(407L, 20)).thenReturn(List.of());
+
+        IntakeRequirementTypeUpdateRequest request = new IntakeRequirementTypeUpdateRequest();
+        request.setRequirementType("研发需求");
+
+        var detail = service.updateRequirementType(407L, request, "admin");
+
+        assertEquals("研发需求", detail.structuredData().requirementType());
+        verify(intakeMapper, never()).updateFormalFields(any());
+        verify(intakeMapper, never()).updateStructuredData(any(), any());
+        verify(intakeHistoryMapper, never()).insert(any());
+    }
+
+    @Test
+    void updateRequirementType_shouldRejectInvalidOrBlankType() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                attachmentService,
+                new IntakeStructuredDataExtractor(),
+                mock(IntakeEnrichmentService.class),
+                mock(CodexCliSqlDraftGenerator.class),
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity entity = new IntakeRecordEntity();
+        entity.setId(408L);
+        entity.setStructuredDataJson("""
+                {"requirementType":"研发需求","fields":[],"attachmentSummaries":[]}
+                """);
+        when(intakeMapper.findById(408L)).thenReturn(entity);
+
+        IntakeRequirementTypeUpdateRequest invalidRequest = new IntakeRequirementTypeUpdateRequest();
+        invalidRequest.setRequirementType("测试需求");
+        IllegalArgumentException invalidEx = assertThrows(IllegalArgumentException.class,
+                () -> service.updateRequirementType(408L, invalidRequest, "admin"));
+        assertEquals("需求类型仅支持研发需求、数据提取/运维", invalidEx.getMessage());
+
+        IntakeRequirementTypeUpdateRequest blankRequest = new IntakeRequirementTypeUpdateRequest();
+        IllegalArgumentException blankEx = assertThrows(IllegalArgumentException.class,
+                () -> service.updateRequirementType(408L, blankRequest, "admin"));
+        assertEquals("需求类型不能为空", blankEx.getMessage());
+
+        verify(intakeMapper, never()).updateStructuredData(any(), any());
         verify(intakeHistoryMapper, never()).insert(any());
     }
 

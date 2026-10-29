@@ -81,7 +81,7 @@ class McpDatabaseConnectionTestServiceTest {
         verify(tester).test(new McpDatabaseConnectionTester.Input(
                 "db.internal", 3306, "asset", "readonly", "saved-db-password",
                 new McpDatabaseConnectionTester.Bastion(
-                        "jump.internal", 22, "ops", "ssh-password", null
+                        "jump.internal", 22, "ops", "ssh-password", null, 1L
                 )
         ));
     }

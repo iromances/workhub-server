@@ -30,7 +30,7 @@ public final class SshConnectionManager implements AutoCloseable {
     static final long IDLE_NANOS = Duration.ofHours(4).toNanos();
     private static volatile SshConnectionManager shared;
     private static boolean sharedClosed;
-    private final Map<Endpoint, Slot> slots = new ConcurrentHashMap<>();
+    private final Map<ConnectionKey, Slot> slots = new ConcurrentHashMap<>();
     private final ReentrantReadWriteLock lifecycle = new ReentrantReadWriteLock();
     private final Connector connector;
     private final LongSupplier clock;
@@ -61,10 +61,10 @@ public final class SshConnectionManager implements AutoCloseable {
     }
 
     /** 不因更新配置而初始化连接管理器，更不会主动登录堡垒机。 */
-    public static void invalidateShared(String host, int port, String username) {
+    public static void invalidateShared(long bastionId) {
         SshConnectionManager manager = shared;
         if (manager != null) {
-            manager.invalidate(host, port, username);
+            manager.invalidate(bastionId);
         }
     }
 
@@ -91,7 +91,8 @@ public final class SshConnectionManager implements AutoCloseable {
             if (closed) {
                 throw new IOException("堡垒机连接管理器已关闭");
             }
-            Slot slot = slots.computeIfAbsent(credentials.endpoint, ignored -> new Slot());
+            ConnectionKey key = new ConnectionKey(config.bastionId(), credentials.endpoint);
+            Slot slot = slots.computeIfAbsent(key, ignored -> new Slot());
             synchronized (slot) {
                 Entry entry = slot.current;
                 if (entry != null && (!entry.version.equals(version) || expired(entry) || !entry.connection.healthy())) {
@@ -127,9 +128,13 @@ public final class SshConnectionManager implements AutoCloseable {
         }
     }
 
-    public void invalidate(String host, int port, String username) {
-        Slot slot = slots.get(new Endpoint(host, port <= 0 ? 22 : port, username));
-        if (slot != null) {
+    public void invalidate(long bastionId) {
+        for (var item : slots.entrySet()) {
+            Long configuredId = item.getKey().bastionId();
+            if (configuredId == null || configuredId != bastionId) {
+                continue;
+            }
+            Slot slot = item.getValue();
             synchronized (slot) {
                 if (slot.current != null) {
                     retire(slot, slot.current);
@@ -264,6 +269,7 @@ public final class SshConnectionManager implements AutoCloseable {
     }
 
     record Endpoint(String host, int port, String username) { }
+    private record ConnectionKey(Long bastionId, Endpoint endpoint) { }
     record Target(String host, int port) { }
 
     // 不生成包含密码的 record.toString，也不在共享注册表中长期保留明文凭据。

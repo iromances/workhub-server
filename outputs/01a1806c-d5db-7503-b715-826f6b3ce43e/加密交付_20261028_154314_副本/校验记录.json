@@ -1,0 +1,17 @@
+{
+  "verified_at": "2026-10-28T18:48:08.741400+08:00",
+  "source": "/Users/aslight/Desktop/国胜数据/无标题_水印加密_20261028_154314_副本.xlsx",
+  "source_bytes": 2432512,
+  "source_sha256": "1d033fc874993e27e5ed54cf227bdbccf2f00e9d0c1d2a31448c88ea2fa7e144",
+  "archive": "无标题_水印加密_20261028_154314_副本_AES256.zip",
+  "archive_bytes": 2404184,
+  "archive_sha256": "5175698f27486a4388f2acd65c5eb94418155bafb3aa86b2b93cd70a70a194ea",
+  "encryption": "WinZip AES-256",
+  "compression": "deflate",
+  "file_count": 1,
+  "wrong_password_rejected": true,
+  "no_password_rejected": true,
+  "roundtrip_sha256_matches_source": true,
+  "user_confirmed_delivery_copy": true,
+  "password_stored_in_delivery_folder": false
+}

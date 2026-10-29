@@ -14,6 +14,10 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface DevelopmentAnalysisMapper {
 
+    /** 正式发布在独立事务中锁定当前分析，避免迟到回调覆盖新的人工修改。 */
+    @Select("SELECT id FROM pm_intake_development_analysis WHERE id = #{id} FOR UPDATE")
+    Long lockForKnowledgeArchive(Long id);
+
     @Select("""
             SELECT a.id, a.intake_id, a.project_id, a.business_line_code, bl.business_line_name AS business_line,
                    a.repository_url, a.analysis_status, a.analysis_message,

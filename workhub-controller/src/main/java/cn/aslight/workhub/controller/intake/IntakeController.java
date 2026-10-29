@@ -18,6 +18,7 @@ import cn.aslight.workhub.model.intake.IntakeProcessInfoUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakePauseRequest;
 import cn.aslight.workhub.model.intake.IntakePriorityUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeRequirementFolderResponse;
+import cn.aslight.workhub.model.intake.IntakeRequirementTypeUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeStageActionRequest;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
 import cn.aslight.workhub.model.intake.IntakeTodoCreateRequest;
@@ -472,6 +473,22 @@ public class IntakeController {
     }
 
     /**
+     * 修改需求类型。
+     *
+     * @param id 待整理记录 ID
+     * @param request 需求类型请求
+     * @param authentication 当前认证信息
+     * @return 更新后的需求详情
+     */
+    @PostMapping("/{id}/requirement-type")
+    @PreAuthorize("hasAuthority('intake:metadata:update') or hasAuthority('intake:record:update')")
+    public ApiResponse<IntakeDetailResponse> updateRequirementType(@PathVariable Long id,
+                                                                   @RequestBody IntakeRequirementTypeUpdateRequest request,
+                                                                   Authentication authentication) {
+        return ApiResponse.success(intakeService.updateRequirementType(id, request, authentication.getName()));
+    }
+
+    /**
      * 为数据提取/运维类需求生成 SQL 草稿。
      *
      * <p>接口只生成草稿并保存，不连接数据库、不执行 SQL。</p>
@@ -551,6 +568,12 @@ public class IntakeController {
     public ApiResponse<DevelopmentAnalysisConfirmResponse> confirmDevelopmentAnalysis(@PathVariable Long id,
                                                                                      Authentication authentication) {
         return ApiResponse.success(developmentAnalysisService.confirm(id, authentication.getName()));
+    }
+
+    @PostMapping("/{id}/knowledge-archive")
+    @PreAuthorize("hasAuthority('intake:ai:operate')")
+    public ApiResponse<String> retryKnowledgeArchive(@PathVariable Long id, Authentication authentication) {
+        return ApiResponse.success(developmentAnalysisService.retryKnowledgeArchive(id, authentication.getName()));
     }
 
     @PostMapping("/{id}/zentao-sync")

@@ -74,6 +74,41 @@ class IntakeClarificationAnalysisServiceTest {
         verify(executor).execute(any(Runnable.class));
     }
 
+    @Test
+    void successfulClarificationQueuesNotesOnlyAfterDatabaseResultIsSaved() {
+        IntakeMapper intakes = mock(IntakeMapper.class);
+        IntakeClarificationAnalysisMapper analyses = mock(IntakeClarificationAnalysisMapper.class);
+        ProjectKnowledgeBaseService archive = mock(ProjectKnowledgeBaseService.class);
+        GitlabRepositoryService repositories = mock(GitlabRepositoryService.class);
+        CodexCliClarificationAnalysisGenerator generator = mock(CodexCliClarificationAnalysisGenerator.class);
+        when(intakes.findById(92L)).thenReturn(clarifyingDevelopmentIntake());
+        var entity = pendingAnalysis(LocalDateTime.now());
+        when(analyses.findById(2L)).thenReturn(entity);
+        var items = java.util.List.of(new cn.aslight.workhub.model.intake.IntakeClarificationItem(
+                1, "QUESTION", "待确认", "规则未明确", "需求资料", "OPEN", null, null, null));
+        when(archive.upsertRequirementIterationNote(any(), any(), any())).thenReturn(
+                new ProjectKnowledgeBaseService.RequirementKnowledgeNote("raw/公司项目/requirements/历史版本/run1/source.md",
+                        null, null, "原始需求", true));
+        when(archive.buildContext(any(), any())).thenReturn("现状");
+        when(generator.generate(any(), any(), any(), any(), any(), any())).thenReturn(items);
+        IntakeClarificationAnalysisService service = new IntakeClarificationAnalysisService(intakes,
+                mock(IntakeHistoryMapper.class), analyses, mock(ProjectMapper.class), repositories, archive,
+                generator, mock(DevelopmentAnalysisService.class), ignored -> { }, new ObjectMapper());
+        service.executeAnalysis(2L, 92L, "reviewer");
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(analyses, archive);
+        order.verify(analyses).updateExecutionState(entity);
+        order.verify(archive).upsertRequirementIterationNote(any(), any(), any());
+        order.verify(archive).buildContext(any(), any());
+        order.verify(analyses).update(entity);
+        org.mockito.ArgumentCaptor<Runnable> callback = org.mockito.ArgumentCaptor.forClass(Runnable.class);
+        order.verify(archive).archiveAfterCommit(callback.capture(), any());
+        org.mockito.Mockito.verify(archive, never()).appendAnalysisNote(any(), any(), any(), any(), any(), any());
+        callback.getValue().run();
+        org.mockito.Mockito.verify(archive).appendAnalysisNote(org.mockito.ArgumentMatchers.eq(92L), org.mockito.ArgumentMatchers.eq(2L),
+                org.mockito.ArgumentMatchers.eq("生成需求澄清项"), org.mockito.ArgumentMatchers.eq(items),
+                org.mockito.ArgumentMatchers.contains("历史版本/run1"), org.mockito.ArgumentMatchers.eq("reviewer"));
+    }
+
     private IntakeClarificationAnalysisService newService(IntakeMapper intakeMapper,
                                                           IntakeClarificationAnalysisMapper analysisMapper,
                                                           Executor executor) {

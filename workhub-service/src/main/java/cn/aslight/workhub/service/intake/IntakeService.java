@@ -20,6 +20,7 @@ import cn.aslight.workhub.model.intake.IntakePriorityUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeListQuery;
 import cn.aslight.workhub.model.intake.IntakePageResponse;
 import cn.aslight.workhub.model.intake.IntakeRelatedWorkItemResponse;
+import cn.aslight.workhub.model.intake.IntakeRequirementTypeUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeTodoEntity;
 import cn.aslight.workhub.model.intake.IntakeTodoResponse;
 import cn.aslight.workhub.model.intake.IntakeWorkItemRelationEntity;
@@ -1039,6 +1040,34 @@ public class IntakeService {
         return detail(id, null, false);
     }
 
+    @Transactional
+    public IntakeDetailResponse updateRequirementType(Long id,
+                                                      IntakeRequirementTypeUpdateRequest request,
+                                                      String operatorUserName) {
+        IntakeRecordEntity entity = requireExisting(id);
+        String requirementType = requireRequirementType(request == null ? null : request.getRequirementType());
+        IntakeStructuredData currentStructuredData = toStructuredData(entity, intakeStructuredFieldMapper.findByIntakeId(id));
+        String previousRequirementType = currentStructuredData == null ? null : trimToNull(currentStructuredData.requirementType());
+        if (Objects.equals(previousRequirementType, requirementType)) {
+            return detail(id, null, false);
+        }
+        IntakeStructuredData baseline = normalizeStructuredData(currentStructuredData);
+        String previousDevelopmentBranchName = baseline == null ? null : trimToNull(baseline.developmentBranchName());
+        IntakeStructuredData nextStructuredData = normalizeStructuredData(withRequirementType(baseline, requirementType));
+        String nextDevelopmentBranchName = nextStructuredData == null ? null : trimToNull(nextStructuredData.developmentBranchName());
+        intakeStructuredFieldNormalizer.applyStructuredData(entity, nextStructuredData);
+        intakeMapper.updateFormalFields(entity);
+        intakeMapper.updateStructuredData(id, writeStructuredDataJson(nextStructuredData));
+        replaceStructuredFields(id, nextStructuredData);
+        recordHistory(id,
+                "UPDATE",
+                "修改需求类型",
+                buildRequirementTypeHistory(previousRequirementType, requirementType,
+                        previousDevelopmentBranchName, nextDevelopmentBranchName),
+                operatorUserName);
+        return detail(id, null, false);
+    }
+
     /**
      * 为数据提取/运维类需求生成 SQL 草稿。
      *
@@ -1663,6 +1692,85 @@ public class IntakeService {
         );
     }
 
+    private IntakeStructuredData withRequirementType(IntakeStructuredData structuredData, String requirementType) {
+        if (structuredData == null) {
+            return new IntakeStructuredData(
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    requirementType,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of(),
+                    List.of(),
+                    null
+            );
+        }
+        return new IntakeStructuredData(
+                structuredData.category(),
+                structuredData.approvalTitle(),
+                structuredData.proposerName(),
+                structuredData.developmentOwnerUserName(),
+                structuredData.approvalCode(),
+                structuredData.submittedTime(),
+                requirementType,
+                structuredData.developmentBranchName(),
+                structuredData.zentaoUrl(),
+                structuredData.requirementDigest(),
+                structuredData.requirementName(),
+                structuredData.requirementSummary(),
+                structuredData.department(),
+                structuredData.businessLine(),
+                structuredData.businessLineCode(),
+                structuredData.remark(),
+                structuredData.plannedDueDate(),
+                structuredData.plannedDevelopmentStartDate(),
+                structuredData.plannedTestingStartDate(),
+                structuredData.plannedReleaseDate(),
+                structuredData.developmentStartedDate(),
+                structuredData.actualEffort(),
+                structuredData.testingStartedDate(),
+                structuredData.actualCompletedTime(),
+                structuredData.scheduledAcceptanceDate(),
+                structuredData.actualTestingEffort(),
+                structuredData.actualTestingCompletedDate(),
+                structuredData.acceptanceTime(),
+                structuredData.releasedTime(),
+                structuredData.closedTime(),
+                structuredData.closeReason(),
+                structuredData.projectHint(),
+                structuredData.fields(),
+                structuredData.attachmentSummaries(),
+                structuredData.sqlDraft()
+        );
+    }
+
     private BusinessLineEntity resolveEnabledBusinessLine(String businessLineCode,
                                                           String businessLine,
                                                           boolean required) {
@@ -1708,6 +1816,24 @@ public class IntakeService {
                     .append(defaultHistoryValue(previousProjectHint))
                     .append(" -> ")
                     .append(defaultHistoryValue(businessLine));
+        }
+        return builder.toString();
+    }
+
+    private String buildRequirementTypeHistory(String previousRequirementType,
+                                               String requirementType,
+                                               String previousDevelopmentBranchName,
+                                               String nextDevelopmentBranchName) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("需求类型：")
+                .append(defaultHistoryValue(previousRequirementType))
+                .append(" -> ")
+                .append(defaultHistoryValue(requirementType));
+        if (!java.util.Objects.equals(previousDevelopmentBranchName, nextDevelopmentBranchName)) {
+            builder.append("\n研发分支名：")
+                    .append(defaultHistoryValue(previousDevelopmentBranchName))
+                    .append(" -> ")
+                    .append(defaultHistoryValue(nextDevelopmentBranchName));
         }
         return builder.toString();
     }
@@ -2348,6 +2474,18 @@ public class IntakeService {
             throw new IllegalArgumentException("优先级仅支持高、中、低");
         }
         return priority;
+    }
+
+    private String requireRequirementType(String value) {
+        String requirementType = requireValue(value, "需求类型不能为空");
+        if (!isDevelopmentRequirementType(requirementType) && !isOperationsRequirement(requirementType)) {
+            throw new IllegalArgumentException("需求类型仅支持研发需求、数据提取/运维");
+        }
+        return requirementType;
+    }
+
+    private boolean isDevelopmentRequirementType(String requirementType) {
+        return "研发需求".equals(trimToNull(requirementType));
     }
 
     private String requireEffortValue(String value, String errorMessage) {

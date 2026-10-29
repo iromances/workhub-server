@@ -1,0 +1,18 @@
+{
+  "verified_at": "2026-10-29T13:58:48.222614+08:00",
+  "source": "/Users/aslight/Desktop/20261029/需求202610270002_中恒项目全量数据_20261029_132751_水印加密_20261029_135357.xlsx",
+  "source_bytes": 36353024,
+  "source_sha256": "0c993fdd73fafe6e762f8b0ecfd7f2b106fa822dd3dd981d18d7cddbfaf96986",
+  "archive": "需求202610270002_中恒项目全量数据_20261029_132751_水印加密_20261029_135357_AES256.zip",
+  "archive_bytes": 36253029,
+  "archive_sha256": "41db57ca2055af2655c7dfb13f5459f9d982ca959781904532071e1cf1b40afb",
+  "encryption": "WinZip AES-256",
+  "compression": "deflate",
+  "file_count": 1,
+  "wrong_password_rejected": true,
+  "no_password_rejected": true,
+  "roundtrip_sha256_matches_source": true,
+  "new_random_password": true,
+  "password_stored_in_delivery_folder": false,
+  "tool": "macOS bsdtar 3.5.3 / libarchive 3.7.4"
+}

@@ -1,0 +1,25 @@
+{
+  "project": "PRJ-ZH-001",
+  "original_queries_sha256": {
+    "assets": "0dbf12f496b10ad64e5578aef5286a8db2d9eb3980766a1e9ef3509d51fdf1a4",
+    "bank": "9d77078b40f832b421d433dcc6833d238bed7646fba0f3c4ed0061a6610dfbed",
+    "bills": "6d0bdcbaeab84dfbfe65d7769186a40d6d8f13c8d8650f5d62091f5d9bc8d15f"
+  },
+  "template_column_counts": [
+    67,
+    7,
+    27
+  ],
+  "template_headers_match": true,
+  "original_asset_columns": 56,
+  "original_bill_columns": 31,
+  "validation": "EXPLAIN only; no new full-data export",
+  "explain_verified": {
+    "assets": true,
+    "bank": true,
+    "bills": true
+  },
+  "environment": "production",
+  "target_key": "db-prod",
+  "profile_key": "readonly"
+}

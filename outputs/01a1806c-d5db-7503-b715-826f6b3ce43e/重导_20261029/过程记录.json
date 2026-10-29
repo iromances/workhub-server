@@ -1,0 +1,118 @@
+{
+  "requirement": "202610270002",
+  "intake_id": 261,
+  "business_line": "嘉泰租赁资产保理",
+  "environment": "prod",
+  "project": "PRJ-ZH-001",
+  "snapshot_time": "2026-10-29 13:27:51.413140",
+  "connection_id": 198386902,
+  "server_uuid": "6fc1c5f9-3471-11ef-bd2b-fa163ebac391",
+  "source": "DataGrip PROD-物流平台（@192.168.0.49）",
+  "cutoff_date": "2026-10-29",
+  "output_format": "未脱敏、未加密的三页Excel",
+  "preflight_at": "2026-10-29 13:23:19.265703",
+  "preflight_counts": {
+    "assets": 8062,
+    "cards": 8718,
+    "bills": 286488,
+    "deleted_bills": 36,
+    "max_contacts": 8,
+    "duplicate_success_financing": 0
+  },
+  "files_exported": [
+    {
+      "file": "原始数据/assets.xlsx",
+      "rows": 8062,
+      "query_started_at": "2026-10-29 13:37:47.978817",
+      "file_written_at": "2026-10-29T13:38:00.440555+08:00",
+      "connection_id": 198386902,
+      "sha256": "f90ca827391a7ea6841366102a5b1821b65bfccfd1326306aa8c3131b21baef5"
+    },
+    {
+      "file": "原始数据/cards.xlsx",
+      "rows": 8718,
+      "query_started_at": "2026-10-29 13:33:37.290534",
+      "file_written_at": "2026-10-29T13:33:38.017385+08:00",
+      "connection_id": 198386902,
+      "sha256": "1bbe6b42acbaa3cf0e459d214306303d9a87674bf16bd224c39737074345c2bd"
+    },
+    {
+      "file": "原始数据/bills.xlsx",
+      "rows": 286488,
+      "query_started_at": "2026-10-29 13:39:15.171227",
+      "file_written_at": "2026-10-29T13:39:38.034308+08:00",
+      "connection_id": 198386902,
+      "sha256": "91ae50192d9e9284deb8d92dc26680fa03eedc6f4b93f9317cc5746595cf12f0"
+    }
+  ],
+  "date_calculation": "按用户确认的2026-10-29填写转让日期；逾期天数按源实还时间或该日期与源宽限日期的日期差计算，下限为0。",
+  "snapshot_audit": {
+    "checked_at": "2026-10-29 13:43:25.683133",
+    "connection_id": "198386902",
+    "trx_started": "2026-10-29 13:27:51",
+    "trx_isolation_level": "REPEATABLE READ",
+    "trx_is_read_only": "1",
+    "trx_rows_modified": "0",
+    "assets_count": "8062",
+    "cards_count": "8718",
+    "bills_count": "286488",
+    "deleted_bills_count": "36",
+    "remaining_principal": "598010825.14",
+    "remaining_rent": "754394586.75"
+  },
+  "audit_file": {
+    "file": "原始数据/audit.xlsx",
+    "sha256": "f29ac4e7c35afe5aaf3dde303bb5fcea5a7c7f47dc333642e2d554809675e067",
+    "file_written_at": "2026-10-29T13:43:30.915436+08:00"
+  },
+  "transaction_end": {
+    "action": "ROLLBACK",
+    "confirmed_no_active_transaction": true,
+    "confirmation_source": "information_schema.innodb_trx WHERE trx_mysql_thread_id=198386902 查询为空"
+  },
+  "final_output": {
+    "path": "/Users/aslight/IDEAWorkspace/workhub-server/outputs/01a1806c-d5db-7503-b715-826f6b3ce43e/重导_20261029/需求202610270002_中恒项目全量数据_20261029_132751.xlsx",
+    "bytes": 36038202,
+    "sha256": "9997c18b4905f56d3789c5a9b226276174ca887717665a04b3b5010a99db56c2",
+    "created_at": "2026-10-29T13:45:31.542433+08:00",
+    "verified_at": "2026-10-29T13:52:28.391527+08:00",
+    "format": "未脱敏、未加密的三页Excel"
+  },
+  "bank_card_delta": {
+    "previous_rows": 8717,
+    "current_rows": 8718,
+    "net_change": 1,
+    "comparison_key": [
+      "资产编号",
+      "银行卡卡号",
+      "绑定日期"
+    ],
+    "previous_key_duplicate_rows": 4,
+    "current_key_duplicate_rows": 4,
+    "same_key_changed_rows": 5,
+    "changed_fields": {
+      "协议号": 5
+    },
+    "ambiguous_changed_key_groups": 0,
+    "added_key_rows": 3,
+    "removed_key_rows": 2,
+    "added_binding_times": [
+      "2026-10-28 13:30:43",
+      "2026-10-28 18:33:00",
+      "2026-10-29 10:21:21"
+    ],
+    "removed_binding_times": [
+      "2025-08-22 10:58:47",
+      "2025-08-27 17:16:11"
+    ],
+    "assets_with_both_added_and_removed_keys": 2
+  },
+  "validation": {
+    "all_output_cells_match_raw": true,
+    "balance_mismatches": 0,
+    "deleted_bill_rows": 36,
+    "remaining_principal": "598010825.14",
+    "remaining_rent": "754394586.75",
+    "visual_review_complete": true
+  }
+}

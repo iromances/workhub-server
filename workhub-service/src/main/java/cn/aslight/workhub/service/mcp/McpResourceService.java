@@ -268,8 +268,11 @@ public class McpResourceService {
                 ProjectKnowledgeBaseService.CONFIG_GROUP,
                 ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH
         ));
-        knowledge.put("requirementRawPathPattern", "raw/requirements/{业务线}/{项目名称}/{年份}/{审批编号}/source.md");
-        knowledge.put("requirementWikiPathPattern", "wiki/projects/{业务线}/需求迭代/{项目名称}/{年份}/{审批编号}-{需求名称}.md");
+        knowledge.put("requirementRawPathPattern", "raw/公司项目/requirements/{业务线}/{项目名称}/{年份}/{审批编号}/source.md");
+        knowledge.put("requirementWikiPathPattern", "wiki/公司项目/研发需求/{业务线}/需求迭代/{项目名称}/{年份}/{审批编号}-{需求名称}/研发评估.md");
+        knowledge.put("temporaryAnalysisPath", "notes.md#公司项目");
+        knowledge.put("historyDirectory", "历史版本/{版本ID}/");
+        knowledge.put("wikiPublishRule", "用户确认后发布；原始材料仅 raw，未确认分析追加 notes");
         return knowledge;
     }
 
@@ -316,6 +319,7 @@ public class McpResourceService {
     private Map<String, Object> sshTunnel(McpResourceResponse resource) {
         Map<String, Object> tunnel = new LinkedHashMap<>();
         if (Boolean.TRUE.equals(resource.sshBastionEnabled()) && resource.sshBastionHost() != null) {
+            tunnel.put("bastionId", resource.bastionId());
             tunnel.put("bastionHost", resource.sshBastionHost());
             tunnel.put("bastionPort", defaultInt(resource.sshBastionPort(), 22));
             tunnel.put("bastionUser", resource.sshBastionUser());

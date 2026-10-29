@@ -103,9 +103,9 @@ class DevelopmentAnalysisServiceTest {
         when(gitlabRepositoryService.resolveAndFetchGroup(project)).thenReturn(repositoryBundle);
         when(projectKnowledgeBaseService.upsertRequirementIterationNote(any(), any(), eq(project)))
                 .thenReturn(new ProjectKnowledgeBaseService.RequirementKnowledgeNote(
-                        "raw/requirements/账单管理/物流平台-账务系统/2026/202603130005/source.md",
-                        "wiki/projects/账单管理/物流平台-账务系统/需求迭代/2026/202603130005.md",
-                        "obsidian://open?vault=Company+Obsidian+Vault&file=wiki%2Fprojects%2F%E8%B4%A6%E5%8D%95%E7%AE%A1%E7%90%86.md",
+                        "raw/公司项目/requirements/账单管理/物流平台-账务系统/2026/202603130005/历史版本/run1/source.md",
+                        null,
+                        null,
                         "# 需求 Markdown",
                         true
                 ));

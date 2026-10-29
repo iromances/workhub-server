@@ -39,7 +39,8 @@ class ProjectKnowledgeBaseServiceTest {
         SysConfigService sysConfigService = mock(SysConfigService.class);
         when(sysConfigService.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH))
                 .thenReturn(vault.toString());
-        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService);
+        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
+                new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         String context = service.buildContext(structuredData(), project());
 
@@ -66,7 +67,8 @@ class ProjectKnowledgeBaseServiceTest {
         SysConfigService sysConfigService = mock(SysConfigService.class);
         when(sysConfigService.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH))
                 .thenReturn(vault.toString());
-        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService);
+        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
+                new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         String context = service.buildContext(quxuebeiStructuredData(), billingProject());
 
@@ -95,7 +97,8 @@ class ProjectKnowledgeBaseServiceTest {
         SysConfigService sysConfigService = mock(SysConfigService.class);
         when(sysConfigService.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH))
                 .thenReturn(vault.toString());
-        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService);
+        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
+                new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         String context = service.buildContext(premiumInstallmentStructuredData(), premiumInstallmentProject());
 
@@ -111,7 +114,8 @@ class ProjectKnowledgeBaseServiceTest {
         SysConfigService sysConfigService = mock(SysConfigService.class);
         when(sysConfigService.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH))
                 .thenReturn(vault.toString());
-        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService);
+        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
+                new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(220007L);
@@ -122,20 +126,16 @@ class ProjectKnowledgeBaseServiceTest {
                 service.upsertRequirementIterationNote(intake, structuredData, billingProject());
 
         assertTrue(note.written());
-        assertTrue(note.rawRelativePath().contains("raw/requirements/账单管理/趣学呗/2026/202604220007/source.md"));
-        assertTrue(note.wikiRelativePath().contains("wiki/projects/账单管理/需求迭代/趣学呗/2026/202604220007-趣学呗平台账户展示切换.md"));
-        assertTrue(note.wikiObsidianUrl().startsWith("obsidian://open?"));
+        assertTrue(note.rawRelativePath().contains("raw/公司项目/requirements/账单管理/趣学呗/2026/202604220007/历史版本/"));
+        org.junit.jupiter.api.Assertions.assertNull(note.wikiRelativePath());
+        org.junit.jupiter.api.Assertions.assertNull(note.wikiObsidianUrl());
         Path rawPath = vault.resolve(note.rawRelativePath());
-        Path wikiPath = vault.resolve(note.wikiRelativePath());
         assertTrue(Files.exists(rawPath));
-        assertTrue(Files.exists(wikiPath));
-        String markdown = Files.readString(wikiPath);
-        assertTrue(markdown.contains("# 趣学呗平台账户展示切换"));
-        assertTrue(markdown.contains("raw/requirements/账单管理/趣学呗/2026/202604220007/source.md"));
-        assertTrue(markdown.contains("截图.png"));
-        assertTrue(markdown.contains("页面截图显示平台方账户字段需要切换。"));
+        assertFalse(Files.exists(vault.resolve("wiki")));
+        String markdown = Files.readString(rawPath);
         assertTrue(markdown.contains("原始审批内容：趣学呗平台账户切换为新主体。"));
-        assertTrue(note.asPromptContext().contains("知识库需求迭代文件："));
+        assertFalse(markdown.contains("页面截图显示平台方账户字段需要切换。"));
+        assertTrue(note.asPromptContext().contains("知识库原始材料版本："));
     }
 
     private IntakeStructuredData structuredData() {

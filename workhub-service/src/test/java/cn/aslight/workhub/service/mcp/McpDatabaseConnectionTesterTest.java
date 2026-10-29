@@ -1,13 +1,19 @@
 package cn.aslight.workhub.service.mcp;
 
+import cn.aslight.workhub.mcp.config.McpResourceCatalog.DatabaseTarget;
+import cn.aslight.workhub.mcp.ssh.SshTunnel;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mockStatic;
 
 class McpDatabaseConnectionTesterTest {
 
@@ -37,6 +43,24 @@ class McpDatabaseConnectionTesterTest {
         assertTrue(result.success());
         assertEquals("BASTION", result.connectionMode());
         assertEquals("经堡垒机连接数据库成功", result.message());
+    }
+
+    @Test
+    void actualProbePassesSavedBastionIdIntoTunnel() {
+        try (var tunnels = mockStatic(SshTunnel.class)) {
+            tunnels.when(() -> SshTunnel.open(any(DatabaseTarget.class)))
+                    .thenThrow(new IOException("test tunnel failure"));
+
+            var result = new McpDatabaseConnectionTester().test(input(
+                    new McpDatabaseConnectionTester.Bastion("bastion", 22, "ops", "ssh-password", null, 8L)));
+
+            assertFalse(result.success());
+            assertEquals("BASTION", result.failureStage());
+            ArgumentCaptor<DatabaseTarget> target = ArgumentCaptor.forClass(DatabaseTarget.class);
+            tunnels.verify(() -> SshTunnel.open(target.capture()));
+            assertEquals(8L, target.getValue().sshTunnel().bastionId());
+            assertEquals("db.internal", target.getValue().host());
+        }
     }
 
     @Test

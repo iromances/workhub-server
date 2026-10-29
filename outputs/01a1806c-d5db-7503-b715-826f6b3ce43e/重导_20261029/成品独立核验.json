@@ -1,0 +1,77 @@
+{
+  "file": "/Users/aslight/IDEAWorkspace/workhub-server/outputs/01a1806c-d5db-7503-b715-826f6b3ce43e/重导_20261029/需求202610270002_中恒项目全量数据_20261029_132751.xlsx",
+  "cutoff_date": "2026-10-29",
+  "sheets": {
+    "资产清单": {
+      "rows": 8062,
+      "columns": 67,
+      "text_cells_verified": 228182,
+      "long_numeric_text_cells_verified": 7380,
+      "date_cells_verified": 40194,
+      "numeric_cells_verified": 55994,
+      "all_cells_equal_to_source": true,
+      "without_success_financing": 115,
+      "cost_rates": {
+        "7.50000000": 2257,
+        "7.00000000": 5690
+      }
+    },
+    "银行卡列表": {
+      "rows": 8718,
+      "columns": 7,
+      "text_cells_verified": 50291,
+      "long_numeric_text_cells_verified": 8717,
+      "date_cells_verified": 8718,
+      "numeric_cells_verified": 0,
+      "all_cells_equal_to_source": true
+    },
+    "客户账单": {
+      "rows": 286488,
+      "columns": 27,
+      "text_cells_verified": 1838844,
+      "long_numeric_text_cells_verified": 0,
+      "date_cells_verified": 700799,
+      "numeric_cells_verified": 4870296,
+      "all_cells_equal_to_source": true
+    }
+  },
+  "bank_card_delta": {
+    "previous_rows": 8717,
+    "current_rows": 8718,
+    "net_change": 1,
+    "comparison_key": [
+      "资产编号",
+      "银行卡卡号",
+      "绑定日期"
+    ],
+    "previous_key_duplicate_rows": 4,
+    "current_key_duplicate_rows": 4,
+    "same_key_changed_rows": 5,
+    "changed_fields": {
+      "协议号": 5
+    },
+    "ambiguous_changed_key_groups": 0,
+    "added_key_rows": 3,
+    "removed_key_rows": 2,
+    "added_binding_times": [
+      "2026-10-28 13:30:43",
+      "2026-10-28 18:33:00",
+      "2026-10-29 10:21:21"
+    ],
+    "removed_binding_times": [
+      "2025-08-22 10:58:47",
+      "2025-08-27 17:16:11"
+    ],
+    "assets_with_both_added_and_removed_keys": 2
+  },
+  "output_sha256": "9997c18b4905f56d3789c5a9b226276174ca887717665a04b3b5010a99db56c2",
+  "completed_at": "2026-10-29T13:50:46.077883+08:00",
+  "layout_check": {
+    "three_sheets_rendered": true,
+    "header_numbers_dates_legible": true,
+    "frozen_header_row": true,
+    "preview_only_long_numeric_text_display_prefix": true,
+    "note": "Artifact Tool 渲染器将 @ 格式长数字文本显示为科学计数法；正式 XLSX 全部对应单元格已确认是原文文本，预览只增加临时文本前缀用于检查列宽，未修改成品。"
+  },
+  "final_verified_at": "2026-10-29T13:52:28.391527+08:00"
+}

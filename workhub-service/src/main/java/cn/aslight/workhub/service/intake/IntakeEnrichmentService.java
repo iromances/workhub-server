@@ -14,8 +14,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -25,6 +28,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * 待整理箱异步增强服务。
@@ -44,6 +48,7 @@ public class IntakeEnrichmentService {
     private final Executor workhubTaskExecutor;
     private final ObjectMapper objectMapper;
     private final RequirementFolderService requirementFolderService;
+    private final TransactionTemplate failureTransaction;
 
     public IntakeEnrichmentService(IntakeMapper intakeMapper,
                                    AttachmentService attachmentService,
@@ -51,7 +56,8 @@ public class IntakeEnrichmentService {
                                    IntakeStructuredDataExtractor intakeStructuredDataExtractor,
                                    CodexCliStructuredExtractor codexCliStructuredExtractor,
                                    @Qualifier("workhubTaskExecutor") Executor workhubTaskExecutor,
-                                   ObjectMapper objectMapper) {
+                                   ObjectMapper objectMapper,
+                                   PlatformTransactionManager transactionManager) {
         this(
                 intakeMapper,
                 new NoopIntakeStructuredFieldMapper(),
@@ -61,7 +67,8 @@ public class IntakeEnrichmentService {
                 new IntakeStructuredFieldNormalizer(),
                 codexCliStructuredExtractor,
                 workhubTaskExecutor,
-                objectMapper
+                objectMapper,
+                transactionManager
         );
     }
 
@@ -73,10 +80,11 @@ public class IntakeEnrichmentService {
                                    IntakeStructuredFieldNormalizer intakeStructuredFieldNormalizer,
                                    CodexCliStructuredExtractor codexCliStructuredExtractor,
                                    @Qualifier("workhubTaskExecutor") Executor workhubTaskExecutor,
-                                   ObjectMapper objectMapper) {
+                                   ObjectMapper objectMapper,
+                                   PlatformTransactionManager transactionManager) {
         this(intakeMapper, intakeStructuredFieldMapper, attachmentService, attachmentTextExtractionService,
                 intakeStructuredDataExtractor, intakeStructuredFieldNormalizer, codexCliStructuredExtractor,
-                workhubTaskExecutor, objectMapper, null);
+                workhubTaskExecutor, objectMapper, null, transactionManager);
     }
 
     @Autowired
@@ -89,7 +97,8 @@ public class IntakeEnrichmentService {
                                    CodexCliStructuredExtractor codexCliStructuredExtractor,
                                    @Qualifier("workhubTaskExecutor") Executor workhubTaskExecutor,
                                    ObjectMapper objectMapper,
-                                   RequirementFolderService requirementFolderService) {
+                                   RequirementFolderService requirementFolderService,
+                                   PlatformTransactionManager transactionManager) {
         this.intakeMapper = intakeMapper;
         this.intakeStructuredFieldMapper = intakeStructuredFieldMapper;
         this.attachmentService = attachmentService;
@@ -100,6 +109,8 @@ public class IntakeEnrichmentService {
         this.workhubTaskExecutor = workhubTaskExecutor;
         this.objectMapper = objectMapper;
         this.requirementFolderService = requirementFolderService;
+        this.failureTransaction = new TransactionTemplate(transactionManager);
+        this.failureTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     private static class NoopIntakeStructuredFieldMapper implements IntakeStructuredFieldMapper {
@@ -137,26 +148,53 @@ public class IntakeEnrichmentService {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    workhubTaskExecutor.execute(task);
+                    submitEnrichment(intakeId, task);
                 }
             });
             return;
         }
-        workhubTaskExecutor.execute(task);
+        submitEnrichment(intakeId, task);
+    }
+
+    private void submitEnrichment(Long intakeId, Runnable task) {
+        try {
+            workhubTaskExecutor.execute(task);
+        } catch (RejectedExecutionException ex) {
+            log.warn("需求已保存，但后台识别任务提交失败。intakeId={}", intakeId, ex);
+            markFailed(intakeId, "后台识别任务未能提交，请稍后重新识别");
+        }
+    }
+
+    private void markFailed(Long intakeId, String failureSummary) {
+        try {
+            // afterCommit 中原事务尚未清理，失败状态必须由新事务独立提交。
+            failureTransaction.executeWithoutResult(status -> {
+                IntakeRecordEntity entity = requireExisting(intakeId);
+                intakeMapper.updateEnrichmentState(
+                        intakeId,
+                        IntakeEnrichmentStatus.FAILED,
+                        IntakeDemandStatusRules.resolveWhenRunning(entity.getDemandStatus()),
+                        failureSummary,
+                        LocalDateTime.now()
+                );
+            });
+        } catch (RuntimeException ex) {
+            // 原始需求已经提交；数据库回写故障不能把保存结果改为失败。
+            log.error("需求识别失败状态保存失败，请核查该记录。intakeId={}", intakeId, ex);
+        }
     }
 
     void enrichUploadedIntake(Long intakeId, String sourceChannel, String rawContent) {
         log.info("Intake enrichment started. intakeId={}, sourceChannel={}", intakeId, sourceChannel);
-        IntakeRecordEntity runningEntity = requireExisting(intakeId);
-        intakeMapper.updateEnrichmentState(
-                intakeId,
-                IntakeEnrichmentStatus.RUNNING,
-                IntakeDemandStatusRules.resolveWhenRunning(runningEntity.getDemandStatus()),
-                null,
-                LocalDateTime.now()
-        );
         try {
             IntakeRecordEntity entity = requireExisting(intakeId);
+            intakeMapper.updateEnrichmentState(
+                    intakeId,
+                    IntakeEnrichmentStatus.RUNNING,
+                    IntakeDemandStatusRules.resolveWhenRunning(entity.getDemandStatus()),
+                    null,
+                    LocalDateTime.now()
+            );
             List<AttachmentService.AttachmentFileContext> attachments = attachmentService.listIntakeFileContexts(intakeId);
             log.info("Loaded intake attachments for enrichment. intakeId={}, attachmentCount={}", intakeId, attachments.size());
             AttachmentTextExtractionService.AttachmentExtractionBatch extractionBatch =
@@ -223,18 +261,7 @@ public class IntakeEnrichmentService {
             }
         } catch (Exception ex) {
             log.warn("Intake enrichment failed. intakeId={}", intakeId, ex);
-            IntakeRecordEntity failedEntity = requireExisting(intakeId);
-            intakeMapper.updateEnrichmentState(
-                    intakeId,
-                    IntakeEnrichmentStatus.FAILED,
-                    IntakeDemandStatusRules.resolveAfterEnrichment(
-                            failedEntity.getDemandStatus(),
-                            IntakeEnrichmentStatus.FAILED,
-                            toStructuredData(failedEntity, intakeStructuredFieldMapper.findByIntakeId(intakeId))
-                    ),
-                    summarizeException(ex),
-                    LocalDateTime.now()
-            );
+            markFailed(intakeId, summarizeException(ex));
         }
     }
 

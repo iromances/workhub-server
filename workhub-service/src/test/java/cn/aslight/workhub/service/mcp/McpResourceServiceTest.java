@@ -445,6 +445,7 @@ class McpResourceServiceTest {
 
         @SuppressWarnings("unchecked")
         Map<String, Object> tunnel = (Map<String, Object>) catalog.databaseTargets().getFirst().get("sshTunnel");
+        assertEquals(8L, tunnel.get("bastionId"));
         assertEquals("10.10.0.8", tunnel.get("bastionHost"));
         assertEquals("workhub", tunnel.get("bastionUser"));
         assertEquals("plain-bastion-password", tunnel.get("password"));
@@ -508,6 +509,9 @@ class McpResourceServiceTest {
         assertEquals(List.of("assets-saps"), businessLineSummary.get("involvedSystems"));
         assertEquals(List.of("authing"), businessLineSummary.get("globalSystems"));
         assertEquals("/mnt/workhub/project-knowledge", catalog.knowledge().get("projectVaultPath"));
+        assertEquals("notes.md#公司项目", catalog.knowledge().get("temporaryAnalysisPath"));
+        assertTrue(catalog.knowledge().get("requirementWikiPathPattern").toString().endsWith("/研发评估.md"));
+        assertTrue(catalog.knowledge().get("wikiPublishRule").toString().contains("用户确认后"));
         assertEquals("http://gitlab.example.com", catalog.gitlab().get("webApiUrl"));
         assertEquals(true, catalog.gitlab().get("accessTokenConfigured"));
         assertTrue(!catalog.gitlab().containsValue("plain-gitlab-token"));

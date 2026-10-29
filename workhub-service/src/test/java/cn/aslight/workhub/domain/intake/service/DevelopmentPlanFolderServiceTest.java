@@ -27,7 +27,7 @@ class DevelopmentPlanFolderServiceTest {
     Path tempDir;
 
     @Test
-    void open_shouldCreateAndOpenDevelopmentPlanYearFolderInKnowledgeVault() throws Exception {
+    void open_shouldCreateDedicatedRequirementFolderInKnowledgeVault() throws Exception {
         Path vault = tempDir.resolve("project-knowledge");
         ObjectMapper objectMapper = new ObjectMapper();
         IntakeRecordEntity intake = new IntakeRecordEntity();
@@ -45,7 +45,8 @@ class DevelopmentPlanFolderServiceTest {
                 .thenReturn(vault.toString());
 
         RecordingPathOpener opener = new RecordingPathOpener();
-        ProjectKnowledgeBaseService knowledgeBaseService = new ProjectKnowledgeBaseService(sysConfigService);
+        ProjectKnowledgeBaseService knowledgeBaseService = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
+                new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
         DevelopmentPlanFolderService service = new DevelopmentPlanFolderService(
                 intakeMapper,
                 projectMapper,
@@ -57,16 +58,18 @@ class DevelopmentPlanFolderServiceTest {
         IntakeRequirementFolderResponse response = service.open(101L);
 
         Path expectedFolder = vault.resolve("wiki")
-                .resolve("projects")
+                .resolve("公司项目")
+                .resolve("研发需求")
                 .resolve("账单管理")
                 .resolve("需求迭代")
                 .resolve("趣学呗")
-                .resolve("2026");
+                .resolve("2026")
+                .resolve("202604220007-趣学呗平台账户展示切换");
         assertTrue(Files.isDirectory(expectedFolder));
         assertEquals(expectedFolder, opener.openedPath);
         assertEquals(101L, response.intakeId());
         assertEquals(vault.toString(), response.basePath());
-        assertEquals("2026", response.folderName());
+        assertEquals("202604220007-趣学呗平台账户展示切换", response.folderName());
         assertEquals(expectedFolder.toString(), response.folderPath());
         assertTrue(response.opened());
     }

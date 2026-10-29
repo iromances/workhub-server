@@ -145,7 +145,12 @@ public record McpResourceCatalog(List<BusinessLine> businessLines,
                                 int bastionPort,
                                 String bastionUser,
                                 String password,
-                                String identityFile) {
+                                String identityFile,
+                                Long bastionId) {
+            public SshTunnel(String bastionHost, int bastionPort, String bastionUser,
+                             String password, String identityFile) {
+                this(bastionHost, bastionPort, bastionUser, password, identityFile, null);
+            }
         }
 
         public record DatabaseProfile(String key,

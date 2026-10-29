@@ -1,0 +1,16 @@
+{
+  "verified_at": "2026-10-28T15:52:09.174337+08:00",
+  "source": "/Users/aslight/Desktop/无标题_水印加密_20261028_154314.xlsx",
+  "source_bytes": 42532352,
+  "source_sha256": "8f5a6b364cb025000c5bab6d6093bad60dc4648abcfa6ecf1f5fc57c72741a7e",
+  "archive": "无标题_水印加密_20261028_154314_AES256.zip",
+  "archive_bytes": 42415893,
+  "archive_sha256": "458779935f9313f041e62b7576a2c930c86d6210e63467baa4276f19656fd526",
+  "encryption": "WinZip AES-256",
+  "compression": "deflate",
+  "file_count": 1,
+  "wrong_password_rejected": true,
+  "no_password_rejected": true,
+  "roundtrip_sha256_matches_source": true,
+  "password_stored_in_delivery_folder": false
+}
