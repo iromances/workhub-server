@@ -1,0 +1,43 @@
+diff --git a/docs/change-log.md b/docs/change-log.md
+index b9a2e23a..d370fe72 100644
+--- a/docs/change-log.md
++++ b/docs/change-log.md
+@@ -275,3 +275,25 @@
+ ### 回滚
+ 
+ 纯代码改动，`git revert` 即可。
++
++## 2026-10-30 退款同步时间窗改为退款单创建时间
++
++**分支**：`fix_device_flow_ly_20261028`
++
++**背景**：退款同步 SQL 的时间窗原先锚定 `replace_battery_device_flow.create_time`（=支付单创建日）。10-1 支付、10-30 退款的场景，日常 job（窗口=昨天）永远扫不到该退款；退款回调失败后无法自愈，只能人工传 `executeDate=支付日+1` 补数。
++
++**改动**：`CustomerOrderMapper.xml#selectRefundOrderSyncPage` 窗口条件由 `f.create_time` 改为 `r.create_time`（退款单创建时间），其余条件不变：
++- JOIN 流水仍用于 `flow_status >= 40 且 ≠ 60` 与 `FIND_IN_SET(refund_order_no)` 幂等过滤；
++- `sub_type=3001`、`status=4`、支付单有效等条件不变。
++
++**影响与决策**：
++- 退款步骤每天覆盖"昨天创建的退款成功单"，与支付日期解耦；
++- 保持单日窗口，不引入多天回看：退款回调 + 次日 job 连续未处理属系统级异常（job 未执行、DB 故障等），由日志、告警和人工补数处理；
++- 其他三个步骤窗口不变（仍以流水创建时间为锚点）；
++- 补数口径：退款步骤传 `executeDate = 退款单创建日 + 1`，其余步骤传 `executeDate = 流水创建日 + 1`（`orders` 仍为支付单号）。
++
++**索引/验证**：
++- 需 EXPLAIN 确认 `customer_order(create_time)`、`source_order_no` 与 `replace_battery_device_flow.order_no` 索引命中；
++- `mvn -DskipTests compile` 通过。
++
++**回滚**：单行 SQL 条件改动，`git revert` 即可。
+diff --git a/lease-saps-dao/src/main/resources/mapper/CustomerOrderMapper.xml b/lease-saps-dao/src/main/resources/mapper/CustomerOrderMapper.xml
+index 33eaf8c5..17a11c35 100644
+--- a/lease-saps-dao/src/main/resources/mapper/CustomerOrderMapper.xml
++++ b/lease-saps-dao/src/main/resources/mapper/CustomerOrderMapper.xml
+@@ -280,7 +280,7 @@
+           AND r.is_cancel = 0
+           AND r.sub_type = 3001 <!-- 3001=账单退款(TransactionSubTypeEnum.REFUND_NORMAL) -->
+           AND r.status = 4 <!-- 4=退款成功(PaymentStatusEnum.SUCCESS) -->
+-          AND f.create_time BETWEEN #{dayStart} AND #{dayEnd} <!-- 时间窗按流水创建时间（下单日），与其余步骤一致 -->
++          AND r.create_time BETWEEN #{dayStart} AND #{dayEnd} <!-- 时间窗按退款单创建时间：与支付日期解耦，避免老订单的退款漏扫 -->
+           <!-- 支付单必须存在且有效：下游按 sourceOrderNo 反查支付单，缺失会抛错中断整批 -->
+           AND EXISTS (
+               SELECT 1

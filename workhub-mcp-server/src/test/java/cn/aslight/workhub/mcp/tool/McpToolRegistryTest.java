@@ -14,6 +14,19 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class McpToolRegistryTest {
 
     @Test
+    void knowledgeContextKeepsVaultReadOnlyAndResolvesArchivePathsUnderRepository() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        McpToolRegistry registry = McpToolRegistry.firstVersion(
+                new McpResourceCatalog(List.of(), List.of(), List.of(), List.of(),
+                        Map.of("projectVaultPath", "/knowledge", "projectDocumentPath", "/workspace/workhub-server/docs"), Map.of()),
+                mapper);
+        JsonNode context = mapper.valueToTree(registry.call("get_knowledge_context", mapper.readTree("{\"businessLine\":\"BL000001\"}")));
+        assertEquals("/knowledge", context.path("projectVaultPath").asText());
+        assertEquals("/workspace/workhub-server/docs/requirement-sources/BL000001", context.path("businessLineRawRoot").asText());
+        assertEquals("/workspace/workhub-server/docs/requirements/BL000001", context.path("businessLineWikiRoot").asText());
+    }
+
+    @Test
     void firstVersion_shouldExposeControlledLogSearchTool() {
         McpToolRegistry registry = McpToolRegistry.firstVersion(
                 new McpResourceCatalog(List.of(), List.of(), List.of(), List.of(), Map.of(), Map.of()),

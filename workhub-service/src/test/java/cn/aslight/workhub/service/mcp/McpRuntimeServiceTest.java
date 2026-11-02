@@ -103,7 +103,7 @@ class McpRuntimeServiceTest {
                 List.of(Map.of("code", "prod", "name", "prod", "production", true, "enabled", true)),
                 List.of(databaseTarget("jiatai-hp-db-prod", "汇浦")),
                 List.of(),
-                Map.of("projectVaultPath", "/mnt/workhub/project-knowledge"),
+                Map.of("projectVaultPath", "/mnt/workhub/project-knowledge", "projectDocumentPath", "/workspace/workhub-server/docs"),
                 Map.of(
                         "webApiUrl", "http://gitlab.example.com",
                         "sshHost", "git@gitlab.example.com",
@@ -140,7 +140,7 @@ class McpRuntimeServiceTest {
                 List.of(Map.of("code", "prod", "name", "prod", "production", true, "enabled", true)),
                 List.of(databaseTarget("jiatai-hp-db-prod", "汇浦")),
                 List.of(),
-                Map.of("projectVaultPath", "/mnt/workhub/project-knowledge"),
+                Map.of("projectVaultPath", "/mnt/workhub/project-knowledge", "projectDocumentPath", "/workspace/workhub-server/docs"),
                 Map.of(
                         "webApiUrl", "http://gitlab.example.com",
                         "sshHost", "git@gitlab.example.com",
@@ -161,6 +161,8 @@ class McpRuntimeServiceTest {
         assertTrue(text.contains("codeWorkspaceRoot"));
         assertTrue(text.contains("projectVaultPath"));
         assertTrue(text.contains("accessTokenConfigured"));
+        assertTrue(text.contains("/workspace/workhub-server/docs/requirement-sources/汇浦"));
+        assertTrue(text.contains("/workspace/workhub-server/docs/requirements/汇浦"));
         assertTrue(!text.contains("plain-gitlab-token"));
     }
 
@@ -344,7 +346,7 @@ class McpRuntimeServiceTest {
                         databaseTarget("unrelated-db-test", "BL000007", "test", "assets-admin")
                 ),
                 List.of(serverTarget("jiatai-hp-server-test", "BL000007", "test", "assets-saps")),
-                Map.of("projectVaultPath", "/mnt/workhub/project-knowledge"),
+                Map.of("projectVaultPath", "/mnt/workhub/project-knowledge", "projectDocumentPath", "/workspace/workhub-server/docs"),
                 Map.of(
                         "webApiUrl", "http://gitlab.example.com",
                         "sshHost", "git@gitlab.example.com",

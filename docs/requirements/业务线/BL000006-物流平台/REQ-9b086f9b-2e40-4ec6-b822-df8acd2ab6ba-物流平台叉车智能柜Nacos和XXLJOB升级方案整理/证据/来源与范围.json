@@ -1,0 +1,33 @@
+{
+  "requestId": "REQ-9b086f9b-2e40-4ec6-b822-df8acd2ab6ba",
+  "directory": "/Users/aslight/IDEAWorkspace/workhub-server/docs/requirements/业务线/BL000006-物流平台/REQ-9b086f9b-2e40-4ec6-b822-df8acd2ab6ba-物流平台叉车智能柜Nacos和XXLJOB升级方案整理",
+  "date": "2026-10-30",
+  "baseline": "origin/master",
+  "businessLines": [
+    {
+      "code": "BL000006",
+      "name": "物流平台",
+      "group": "xxt-plateform"
+    },
+    {
+      "code": "BL000008",
+      "name": "叉车",
+      "group": "lease-saas"
+    },
+    {
+      "code": "BL000005",
+      "name": "智能柜",
+      "group": "ol"
+    }
+  ],
+  "sources": [
+    {
+      "path": "/Users/aslight/Desktop/nacos和xxljob升级/消费分期Nacos和XXLJOB升级迁移方案_20261028.md",
+      "sha256": "d85e754b1dd1cb01865a26babdb92e4c69501fa0d50de3b19fb3397634d3c940"
+    },
+    {
+      "path": "/Users/aslight/Desktop/nacos和xxljob升级/thctay-public和amp-saps升级改动清单_20261029.md",
+      "sha256": "0b54b8d933e9cd352b2241e7b486ba09496faa6ee286dcfabd6936c0332d0dc5"
+    }
+  ]
+}

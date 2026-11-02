@@ -1,0 +1,16 @@
+{
+  "name": "com.amp.saps.business.pend.impl.PendEntryBizImplTest",
+  "tests": "6",
+  "failures": "0",
+  "errors": "0",
+  "skipped": "0",
+  "cases": [
+    "shouldSkipPersistenceForNullDetails",
+    "shouldIgnoreOutgoingDetail",
+    "shouldKeepExistingWarningForFailedQuery",
+    "shouldSkipPersistenceForEmptyDetails",
+    "shouldSkipPersistenceForMissingData",
+    "shouldSaveIncomingDetailWithOriginalAmountAndSerialNo"
+  ],
+  "scope": "10:20:53 测试版本；不适用于 10:21:54 后被外部修改的生产源码"
+}

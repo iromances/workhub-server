@@ -1187,9 +1187,10 @@ public class DevelopmentAnalysisService {
                 draft.projectId(),
                 draft.projectName(),
                 draft.repositoryUrl(),
-                draft.requirementRawPath(),
-                draft.requirementWikiPath(),
-                draft.requirementWikiUrl(),
+                RepositoryDocumentPaths.migrateRelativePath(draft.requirementRawPath()),
+                RepositoryDocumentPaths.migrateRelativePath(draft.requirementWikiPath()),
+                draft.requirementWikiUrl() != null && draft.requirementWikiUrl().startsWith("obsidian://")
+                        ? null : draft.requirementWikiUrl(),
                 draft.summary(),
                 draft.requirementChangePoints(),
                 draft.impactedModules(),

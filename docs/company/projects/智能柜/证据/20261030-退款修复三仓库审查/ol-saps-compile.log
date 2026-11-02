@@ -1,0 +1,27 @@
+[INFO] Scanning for projects...
+[ERROR] [ERROR] Some problems were encountered while processing the POMs:
+[ERROR] 'dependencies.dependency.version' for com.lease:lease-permission:jar is missing. @ line 24, column 17
+[ERROR] 'dependencies.dependency.version' for com.lease:lease-permission:jar is missing. @ line 22, column 17
+[ERROR] 'dependencies.dependency.version' for com.lease:lease-permission:jar is missing. @ line 25, column 17
+[ERROR] 'dependencies.dependency.version' for com.lease:lease-permission:jar is missing. @ line 18, column 17
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: com.baomidou:mybatis-plus-generator:jar -> duplicate declaration of version (?) @ line 77, column 19
+ @ 
+[ERROR] The build could not read 4 projects -> [Help 1]
+[ERROR]   
+[ERROR]   The project com.lease.lease-saps:lease-saps-model:0.0.1-SNAPSHOT (/private/tmp/refund-review-20261030/source/ol-saps/lease-saps-model/pom.xml) has 1 error
+[ERROR]     'dependencies.dependency.version' for com.lease:lease-permission:jar is missing. @ line 24, column 17
+[ERROR]   
+[ERROR]   The project com.lease.lease-saps:lease-saps-service:0.0.1-SNAPSHOT (/private/tmp/refund-review-20261030/source/ol-saps/lease-saps-service/pom.xml) has 1 error
+[ERROR]     'dependencies.dependency.version' for com.lease:lease-permission:jar is missing. @ line 22, column 17
+[ERROR]   
+[ERROR]   The project com.lease.lease-saps:lease-saps-controller:0.0.1-SNAPSHOT (/private/tmp/refund-review-20261030/source/ol-saps/lease-saps-controller/pom.xml) has 1 error
+[ERROR]     'dependencies.dependency.version' for com.lease:lease-permission:jar is missing. @ line 25, column 17
+[ERROR]   
+[ERROR]   The project com.lease.lease-saps:lease-saps-api:0.0.1-SNAPSHOT (/private/tmp/refund-review-20261030/source/ol-saps/lease-saps-api/pom.xml) has 1 error
+[ERROR]     'dependencies.dependency.version' for com.lease:lease-permission:jar is missing. @ line 18, column 17
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/ProjectBuildingException

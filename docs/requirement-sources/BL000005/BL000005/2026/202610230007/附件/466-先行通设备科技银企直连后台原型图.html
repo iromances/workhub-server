@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>对公收款管理</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: #f0f2f5;
+    color: #333;
+    font-size: 14px;
+    padding: 20px;
+  }
+  .page-title { font-size: 20px; font-weight: 600; margin-bottom: 16px; color: #111; }
+  .card { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.08); padding: 20px; margin-bottom: 16px; }
+  .filter-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 24px; }
+  .filter-item { display: flex; align-items: center; gap: 8px; }
+  .filter-item label { font-size: 13px; color: #666; white-space: nowrap; min-width: 90px; }
+  .filter-item input, .filter-item select {
+    flex: 1; height: 32px; border: 1px solid #d9d9d9; border-radius: 4px;
+    padding: 0 10px; font-size: 13px; outline: none;
+  }
+  .filter-item input:focus, .filter-item select:focus { border-color: #1890ff; box-shadow: 0 0 0 2px rgba(24,144,255,.15); }
+  .filter-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .btn { height: 32px; padding: 0 16px; border-radius: 4px; font-size: 13px; cursor: pointer; border: 1px solid transparent; transition: all .2s; }
+  .btn-primary { background: #1890ff; color: #fff; border-color: #1890ff; }
+  .btn-primary:hover { background: #40a9ff; }
+  .btn-default { background: #fff; border-color: #d9d9d9; color: #333; }
+  .btn-default:hover { color: #1890ff; }
+  .btn-danger { background: #fff; color: #ff4d4f; border-color: #ffa39e; }
+  .btn-danger:hover { color: #fff; background: #ff4d4f; }
+  .btn-sm { height: 26px; padding: 0 10px; font-size: 12px; }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .toolbar-left { display: flex; gap: 8px; align-items: center; }
+  .table-wrapper { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1700px; }
+  thead tr { background: #fafafa; }
+  th, td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; text-align: left; white-space: nowrap; }
+  th { font-weight: 500; color: #555; border-bottom: 1px solid #e8e8e8; }
+  tbody tr:hover { background: #f5f8ff; }
+  .status-tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
+  .status-1 { background: #e6f7e6; color: #52c41a; }
+  .status-2 { background: #fff7e6; color: #fa8c16; }
+  .status-3 { background: #e6f4ff; color: #1890ff; }
+  .status-4 { background: #fff1f0; color: #ff4d4f; }
+  .action-btn { color: #1890ff; cursor: pointer; margin-right: 10px; font-size: 13px; }
+  .action-btn:hover { text-decoration: underline; }
+  .action-btn.warn { color: #fa8c16; }
+  .action-btn.danger { color: #ff4d4f; }
+  .pagination { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 16px; font-size: 13px; color: #666; }
+  .pagination select { height: 28px; border: 1px solid #d9d9d9; border-radius: 4px; padding: 0 8px; }
+
+  /* 角标 */
+  .badge { display: inline-block; min-width: 16px; height: 16px; line-height: 16px; padding: 0 5px; border-radius: 8px; background: #ff4d4f; color: #fff; font-size: 11px; text-align: center; margin-left: 6px; }
+  .btn-default .badge { background: #ff4d4f; }
+
+  /* 弹窗 */
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 999; justify-content: center; align-items: center; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: #fff; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.15); min-width: 600px; max-width: 90vw; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f0f0f0; }
+  .modal-title { font-size: 16px; font-weight: 600; }
+  .modal-close { width: 24px; height: 24px; border-radius: 50%; background: #f5f5f5; border: none; cursor: pointer; font-size: 16px; line-height: 22px; text-align: center; color: #999; }
+  .modal-close:hover { background: #e8e8e8; color: #666; }
+  .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+  .modal-footer { padding: 12px 20px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* 入账明细弹窗 */
+  #entryModal .modal { min-width: 800px; }
+
+  /* 基础信息区 */
+  .base-info { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid #e8e8e8; border-radius: 6px; overflow: hidden; margin-bottom: 16px; }
+  .base-info-cell { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; border-right: 1px solid #f0f0f0; font-size: 13px; display: flex; }
+  .base-info-cell:nth-child(4n) { border-right: none; }
+  .base-info-cell:nth-last-child(-n+4) { border-bottom: none; }
+  .base-info-label { color: #888; min-width: 100px; white-space: nowrap; }
+  .base-info-value { color: #333; word-break: break-all; }
+
+  /* 入账明细表 */
+  .entry-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .entry-table th { background: #fafafa; padding: 8px 12px; text-align: left; border: 1px solid #e8e8e8; font-weight: 500; color: #555; }
+  .entry-table td { padding: 8px 12px; border: 1px solid #e8e8e8; color: #333; }
+  .entry-table.table-min { min-width: 900px; }
+
+  /* 合计行 */
+  .summary-total { display: flex; align-items: center; gap: 24px; padding: 10px 14px; background: #fafafa; border: 1px solid #e8e8e8; border-radius: 4px; font-size: 13px; margin-top: 12px; }
+  .summary-total span:first-child { color: #888; }
+  .summary-total span:last-child { color: #1890ff; font-weight: 600; }
+
+  /* 手工清分弹窗 */
+  #clearModal .modal { min-width: 760px; }
+  #auditModal .modal { min-width: 1000px; }
+  .clear-filter-row { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+
+  /* 流程说明条 */
+  .flow-tip { display: flex; align-items: center; gap: 8px; background: #f0f8ff; border: 1px solid #bae7ff; border-radius: 6px; padding: 10px 14px; font-size: 13px; color: #096dd9; margin-bottom: 16px; }
+  .flow-tip b { font-weight: 600; }
+  .flow-step { display: inline-block; background: #fff; border: 1px solid #91d5ff; border-radius: 12px; padding: 1px 10px; }
+
+  /* 审核页签 */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid #f0f0f0; margin-bottom: 14px; }
+  .tab { padding: 8px 16px; font-size: 13px; color: #666; cursor: pointer; border-bottom: 2px solid transparent; }
+  .tab.active { color: #1890ff; border-bottom-color: #1890ff; font-weight: 600; }
+  .tab .badge { vertical-align: middle; }
+
+  /* 审核意见弹窗 */
+  #reviewModal .modal { min-width: 460px; }
+  .review-field { margin-bottom: 14px; }
+  .review-field label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; }
+  .review-field textarea, .review-field input { width: 100%; border: 1px solid #d9d9d9; border-radius: 4px; padding: 8px 10px; font-size: 13px; outline: none; font-family: inherit; }
+  .review-field textarea:focus, .review-field input:focus { border-color: #1890ff; box-shadow: 0 0 0 2px rgba(24,144,255,.15); }
+
+  /* Toast */
+  #toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.8); color: #fff; padding: 10px 20px; border-radius: 4px; font-size: 13px; z-index: 2000; display: none; }
+</style>
+</head>
+<body>
+
+<div class="page-title">对公收款管理</div>
+
+<!-- 筛选区 -->
+<div class="card">
+  <div class="filter-grid">
+    <div class="filter-item"><label>交易流水</label><input type="text" id="fTradeNo" placeholder="请输入"></div>
+    <div class="filter-item"><label>付款银行账号</label><input type="text" id="fPayerAccount" placeholder="请输入"></div>
+    <div class="filter-item"><label>付款银行账户名称</label><input type="text" id="fPayerName" placeholder="请输入"></div>
+    <div class="filter-item"><label>收款银行账号</label><input type="text" id="fRecvAccount" placeholder="请输入"></div>
+    <div class="filter-item"><label>收款银行账户名称</label><input type="text" id="fRecvName" placeholder="请输入"></div>
+    <div class="filter-item">
+      <label>项目名称</label>
+      <select id="fProject"><option value="">全部</option><option>里易二轮车</option><option>美智零售柜</option><option>优利卡货车电池</option></select>
+    </div>
+    <div class="filter-item">
+      <label>状态</label>
+      <select id="fStatus"><option value="">全部</option><option>已入账</option><option>未入账</option><option>待审核</option><option>已驳回</option></select>
+    </div>
+    <div class="filter-item">
+      <label>交易时间</label>
+      <input type="date" id="fTimeStart" style="flex:1"> — <input type="date" id="fTimeEnd" style="flex:1">
+    </div>
+    <div class="filter-item"><label>交易金额</label><input type="text" id="fAmount" placeholder="请输入"></div>
+    <div class="filter-item"><label>转账备注</label><input type="text" id="fRemark" placeholder="请输入"></div>
+    <div class="filter-item">
+      <label>入账方式</label>
+      <select id="fEntryType"><option value="">全部</option><option>自动入账</option><option>手工入账</option></select>
+    </div>
+    <div class="filter-item"><label>操作员</label><input type="text" id="fOperator" placeholder="请输入"></div>
+    <div class="filter-item">
+      <label>挂账提示</label>
+      <select id="fHangTip"><option value="">全部</option><option>付款转账备注为空</option><option>付款转账备注无法匹配业务</option><option>付款金额不匹配</option><option>付款账户名称不匹配</option><option>未知付款</option></select>
+    </div>
+  </div>
+  <div class="filter-actions">
+    <button class="btn btn-default" onclick="resetFilter()">重置</button>
+    <button class="btn btn-primary" onclick="renderTable()">查询</button>
+  </div>
+</div>
+
+<!-- 列表区 -->
+<div class="card">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <button class="btn btn-default" onclick="openAuditModal()">入账审核<span class="badge" id="auditBadge">0</span></button>
+      <button class="btn btn-default">导出</button>
+    </div>
+    <div class="toolbar-left" style="color:#888;font-size:12px;">
+      未入账记录可在行「操作」中发起【手工入账】，发起后进入待审核，审核通过后完成入账
+    </div>
+  </div>
+  <div class="table-wrapper">
+    <table id="mainTable">
+      <thead>
+        <tr>
+          <th><input type="checkbox" style="width:16px;height:16px;cursor:pointer;"></th>
+          <th>项目编号</th><th>项目名称</th><th>交易流水</th><th>交易金额</th>
+          <th>付款银行账户名称</th><th>付款银行账号</th>
+          <th>收款银行账户名称</th><th>收款银行账号</th>
+          <th>转账备注</th><th>交易时间</th><th>状态</th>
+          <th>挂账提示</th><th>入账方式</th><th>操作员</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="mainTableBody"></tbody>
+    </table>
+  </div>
+  <div class="pagination">
+    共 <span id="totalCount">0</span> 条 &nbsp;
+    <select><option>10条/页</option></select>&nbsp;
+    <button class="btn btn-default" style="height:28px;padding:0 10px;">上一页</button>&nbsp;
+    <span>第 1 / 1 页</span>&nbsp;
+    <button class="btn btn-default" style="height:28px;padding:0 10px;">下一页</button>
+  </div>
+  <div class="summary-total">
+    <span>筛选结果合计：</span>
+    <span>交易金额合计 <strong style="color:#1890ff;" id="amountTotal">¥ 0.00</strong></span>
+  </div>
+</div>
+
+<!-- ===================== 弹窗们 ===================== -->
+
+<!-- 入账明细弹窗 -->
+<div class="modal-overlay" id="entryModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">入账明细</span>
+      <button class="modal-close" onclick="closeEntryModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- 收款基础信息 -->
+      <div class="base-info">
+        <div class="base-info-cell"><span class="base-info-label">交易流水</span><span class="base-info-value" id="modalTradeNo">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">交易金额</span><span class="base-info-value" id="modalAmount">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">付款银行账户名称</span><span class="base-info-value" id="modalPayerName">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">付款银行账号</span><span class="base-info-value" id="modalPayerAccount">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">收款银行账户名称</span><span class="base-info-value">先行通设备科技</span></div>
+        <div class="base-info-cell"><span class="base-info-label">收款银行账号</span><span class="base-info-value">400123****7890</span></div>
+        <div class="base-info-cell"><span class="base-info-label">交易时间</span><span class="base-info-value" id="modalTradeTime">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">状态</span><span class="base-info-value" id="modalStatus">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">入账方式</span><span class="base-info-value" id="modalEntryType">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">发起人</span><span class="base-info-value" id="modalApplicant">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">发起时间</span><span class="base-info-value" id="modalApplyTime">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">审核人</span><span class="base-info-value" id="modalAuditor">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">审核时间</span><span class="base-info-value" id="modalAuditTime">-</span></div>
+      </div>
+      <!-- 明细列表 -->
+      <table class="entry-table">
+        <thead>
+          <tr>
+            <th>入账ID</th><th>入账时间</th><th>入账金额</th><th>入账类型</th><th>关联业务单号</th>
+          </tr>
+        </thead>
+        <tbody id="entryDetailBody"></tbody>
+      </table>
+      <!-- 明细合计 -->
+      <div class="summary-total">
+        <span>明细合计：</span>
+        <span>入账金额合计 <strong style="color:#1890ff;" id="modalDetailTotal">¥ 0.00</strong></span>
+      </div>
+      <!-- 审核意见 -->
+      <div id="rejectTip" style="display:none;margin-top:12px;background:#fff1f0;border:1px solid #ffa39e;border-radius:6px;padding:10px 14px;font-size:13px;color:#cf1322;">
+        驳回原因：<span id="rejectReason"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-default" onclick="closeEntryModal()">关闭</button>
+      <button class="btn btn-primary" id="entryAuditBtn" style="display:none;" onclick="openAuditModalByTrade(currentTradeNo)">去审核</button>
+    </div>
+  </div>
+</div>
+
+<!-- 手工入账（发起）弹窗 -->
+<div class="modal-overlay" id="clearModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">手工入账（发起入账申请）</span>
+      <button class="modal-close" onclick="closeClearModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="flow-tip">
+        <b>操作流程：</b>
+        <span class="flow-step">① 手工入账（发起）</span> →
+        <span class="flow-step">② 待审核</span> →
+        <span class="flow-step">③ 入账审核</span> →
+        <span class="flow-step">④ 已入账</span>
+        <span>（审核驳回则回到「已驳回」，可重新发起）</span>
+      </div>
+      <!-- 本次发起对应的收款流水（单笔，不可批量） -->
+      <div class="base-info">
+        <div class="base-info-cell"><span class="base-info-label">交易流水</span><span class="base-info-value" id="mTradeNo">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">交易金额</span><span class="base-info-value" id="mAmount">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">付款账户名称</span><span class="base-info-value" id="mPayerName">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">付款银行账号</span><span class="base-info-value" id="mPayerAccount">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">转账备注</span><span class="base-info-value" id="mRemark">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">交易时间</span><span class="base-info-value" id="mTradeTime">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">挂账提示</span><span class="base-info-value" id="mHangTip">-</span></div>
+        <div class="base-info-cell"><span class="base-info-label">可入账金额</span><span class="base-info-value" id="mAvailable">-</span></div>
+      </div>
+      <div class="clear-filter-row">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <label style="font-size:13px;color:#666;">入账类型</label>
+          <select id="clearType" onchange="syncCustLabels(this.value)" style="height:32px;border:1px solid #d9d9d9;border-radius:4px;padding:0 10px;font-size:13px;">
+            <option value="">全部</option>
+            <option value="缴费单">缴费单</option>
+            <option value="客户账单">客户账单</option>
+            <option value="对账单">对账单</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <label style="font-size:13px;color:#666;" id="lblCustId">用户编号</label>
+          <input type="text" id="filterCustId" placeholder="请输入" style="height:32px;border:1px solid #d9d9d9;border-radius:4px;padding:0 10px;font-size:13px;width:130px;">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <label style="font-size:13px;color:#666;" id="lblCustName">用户名称</label>
+          <input type="text" id="filterCustName" placeholder="请输入" style="height:32px;border:1px solid #d9d9d9;border-radius:4px;padding:0 10px;font-size:13px;width:130px;">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <label style="font-size:13px;color:#666;">业务单号</label>
+          <input type="text" id="filterBizNo" placeholder="请输入" style="height:32px;border:1px solid #d9d9d9;border-radius:4px;padding:0 10px;font-size:13px;width:130px;">
+        </div>
+        <button class="btn btn-primary" onclick="queryClear()" style="height:32px;padding:0 16px;">查询</button>
+      </div>
+      <table class="entry-table table-min">
+        <thead>
+          <tr>
+            <th>选择</th><th>入账类型</th><th id="thCustId">用户编号</th><th id="thCustName">用户名称</th><th>业务单号</th><th>应还金额</th><th>已还金额</th><th>未还金额</th><th>本次入账金额</th>
+          </tr>
+        </thead>
+        <tbody id="clearResultBody">
+          <tr><td colspan="9" style="text-align:center;color:#999;padding:20px;">请选择入账类型后查询</td></tr>
+        </tbody>
+      </table>
+      <div class="summary-total">
+        <span>本次入账合计：</span>
+        <span>入账金额合计 <strong style="color:#1890ff;" id="mEntryTotal">¥ 0.00</strong></span>
+        <span style="color:#888;">可入账金额 <strong id="mAvailable2" style="color:#1890ff;">¥ 0.00</strong></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-default" onclick="closeClearModal()">取消</button>
+      <button class="btn btn-primary" onclick="submitEntry()">发起入账</button>
+    </div>
+  </div>
+</div>
+
+<!-- 入账审核弹窗 -->
+<div class="modal-overlay" id="auditModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">入账审核</span>
+      <button class="modal-close" onclick="closeAuditModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="flow-tip">
+        <b>审核说明：</b>对「手工入账」发起的申请进行审核，<b>审核通过</b>后该笔收款正式入账（状态变更为「已入账」）；<b>审核驳回</b>则状态变更为「已驳回」，可重新发起入账。
+      </div>
+      <div class="tabs">
+        <div class="tab active" id="tabPending" onclick="switchAuditTab('pending')">待审核<span class="badge" id="pendingBadge">0</span></div>
+        <div class="tab" id="tabDone" onclick="switchAuditTab('done')">已审核</div>
+      </div>
+      <div class="table-wrapper">
+        <table class="entry-table table-min">
+          <thead>
+            <tr>
+              <th>交易流水</th><th>项目名称</th><th>交易金额</th><th>付款账户名称</th><th>转账备注</th>
+              <th>发起人</th><th>发起时间</th><th>审核状态</th><th>审核人</th><th>审核时间</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="auditTableBody"></tbody>
+        </table>
+      </div>
+      <div class="summary-total">
+        <span>待审核合计：</span>
+        <span>金额合计 <strong style="color:#1890ff;" id="pendingTotal">¥ 0.00</strong></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-default" onclick="closeAuditModal()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 审核意见弹窗 -->
+<div class="modal-overlay" id="reviewModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="reviewTitle">审核</span>
+      <button class="modal-close" onclick="closeReviewModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="review-field">
+        <label>审核结论</label>
+        <input type="text" id="reviewConclusion" readonly>
+      </div>
+      <div class="review-field">
+        <label>审核意见<span id="opinionRequired" style="color:#ff4d4f;">（驳回必填）</span></label>
+        <textarea id="reviewOpinion" rows="4" placeholder="请输入审核意见"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-default" onclick="closeReviewModal()">取消</button>
+      <button class="btn btn-primary" id="reviewConfirmBtn" onclick="confirmReview()">确认</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============ 数据 ============ */
+var records = [
+  {
+    projId: 'LIYI2026001', projName: '里易二轮车', tradeNo: '20260725103456789', amount: 3200.00,
+    payerName: '张三', payerAccount: '622202****1234', recvName: '先行通设备科技', recvAccount: '400123****7890',
+    remark: '租金-7月', tradeTime: '2026-07-25 10:34:56', status: '已入账', hangTip: '',
+    entryType: '自动入账', operator: 'admin', applicant: '系统', applyTime: '2026-07-25 10:34:56',
+    auditor: '系统', auditTime: '2026-07-25 10:34:56', rejectReason: '',
+    details: [{ id: 'IN20260725001', time: '2026-07-25 10:35:12', amt: 3200.00, type: '缴费单', biz: 'JF20260701' }]
+  },
+  {
+    projId: 'MEIZHI001', projName: '美智零售柜', tradeNo: '20260724113456701', amount: 8500.00,
+    payerName: '李四', payerAccount: '621799****5678', recvName: '先行通设备科技', recvAccount: '400123****7890',
+    remark: '设备款', tradeTime: '2026-07-24 11:34:56', status: '未入账', hangTip: '付款转账备注为空',
+    entryType: '手工入账', operator: '李四', applicant: '', applyTime: '', auditor: '', auditTime: '', rejectReason: '',
+    details: []
+  },
+  {
+    projId: 'YOULIKA001', projName: '优利卡货车电池', tradeNo: '20260722103456001', amount: 12000.00,
+    payerName: '王五', payerAccount: '622208****9012', recvName: '先行通设备科技', recvAccount: '400123****7890',
+    remark: '电池租金', tradeTime: '2026-07-22 10:34:56', status: '未入账', hangTip: '付款金额不匹配',
+    entryType: '手工入账', operator: '王五', applicant: '', applyTime: '', auditor: '', auditTime: '', rejectReason: '',
+    details: []
+  },
+  {
+    projId: 'LIYI2026001', projName: '里易二轮车', tradeNo: '20260720103456002', amount: 3200.00,
+    payerName: '赵六', payerAccount: '623052****3456', recvName: '先行通设备科技', recvAccount: '400123****7890',
+    remark: '租金-6月补缴', tradeTime: '2026-07-20 10:34:56', status: '已入账', hangTip: '',
+    entryType: '自动入账', operator: 'admin', applicant: '系统', applyTime: '2026-07-20 10:34:56',
+    auditor: '系统', auditTime: '2026-07-20 10:34:56', rejectReason: '',
+    details: [{ id: 'IN20260720001', time: '2026-07-20 10:35:12', amt: 3200.00, type: '客户账单', biz: 'ZD20260701' }]
+  },
+  {
+    projId: 'MEIZHI001', projName: '美智零售柜', tradeNo: '20260723153012001', amount: 1600.00,
+    payerName: '钱七', payerAccount: '622588****3344', recvName: '先行通设备科技', recvAccount: '400123****7890',
+    remark: '柜机租金-7月', tradeTime: '2026-07-23 15:30:12', status: '待审核', hangTip: '',
+    entryType: '手工入账', operator: '李四', applicant: '李四', applyTime: '2026-07-23 15:32:08',
+    auditor: '', auditTime: '', rejectReason: '',
+    details: [{ id: 'IN20260723001', time: '2026-07-23 15:32:08', amt: 1600.00, type: '缴费单', biz: 'JF202607003' }]
+  }
+];
+
+var clearData = {
+  '缴费单': [
+    { type: '缴费单', custId: 'CUST001', custName: '张三', bizNo: 'JF202607001', due: 3200.00, paid: 3200.00, unpaid: 0 },
+    { type: '缴费单', custId: 'CUST002', custName: '李四', bizNo: 'JF202607002', due: 1600.00, paid: 1000.00, unpaid: 600.00 },
+    { type: '缴费单', custId: 'CUST005', custName: '钱七', bizNo: 'JF202607003', due: 1600.00, paid: 0, unpaid: 1600.00 }
+  ],
+  '客户账单': [
+    { type: '客户账单', custId: 'CUST003', custName: '王五', bizNo: 'ZD202607001', due: 8800.00, paid: 5000.00, unpaid: 3800.00 },
+    { type: '客户账单', custId: 'CUST004', custName: '赵六', bizNo: 'ZD202607002', due: 4400.00, paid: 4400.00, unpaid: 0 }
+  ],
+  '对账单': [
+    { type: '对账单', custId: 'FAC001', custName: '钱七', bizNo: 'DS202607001', due: 12000.00, paid: 8000.00, unpaid: 4000.00 }
+  ]
+};
+
+var currentTradeNo = '';
+var auditTab = 'pending';
+var reviewCtx = { tradeNo: '', result: '' };
+
+/* ============ 工具 ============ */
+function fmt(n) {
+  return '¥ ' + Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function statusTag(status) {
+  var map = { '已入账': 'status-1', '未入账': 'status-2', '待审核': 'status-3', '已驳回': 'status-4' };
+  return '<span class="status-tag ' + (map[status] || 'status-2') + '">' + status + '</span>';
+}
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(function () { t.style.display = 'none'; }, 2200);
+}
+function nowStr() {
+  var d = new Date();
+  function p(n) { return n < 10 ? '0' + n : '' + n; }
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+
+/* ============ 主列表 ============ */
+function getFiltered() {
+  var res = records.slice();
+  var f = function (id) { return (document.getElementById(id).value || '').trim(); };
+  var tradeNo = f('fTradeNo'), payerAcc = f('fPayerAccount'), payerName = f('fPayerName');
+  var recvAcc = f('fRecvAccount'), recvName = f('fRecvName'), proj = f('fProject');
+  var status = f('fStatus'), entryType = f('fEntryType'), operator = f('fOperator');
+  var hangTip = f('fHangTip'), remark = f('fRemark'), amount = f('fAmount');
+  var ts = f('fTimeStart'), te = f('fTimeEnd');
+
+  res = res.filter(function (r) {
+    if (tradeNo && r.tradeNo.indexOf(tradeNo) === -1) return false;
+    if (payerAcc && r.payerAccount.indexOf(payerAcc) === -1) return false;
+    if (payerName && r.payerName.indexOf(payerName) === -1) return false;
+    if (recvAcc && r.recvAccount.indexOf(recvAcc) === -1) return false;
+    if (recvName && r.recvName.indexOf(recvName) === -1) return false;
+    if (proj && r.projName !== proj) return false;
+    if (status && r.status !== status) return false;
+    if (entryType && r.entryType !== entryType) return false;
+    if (operator && r.operator.indexOf(operator) === -1) return false;
+    if (hangTip && r.hangTip !== hangTip) return false;
+    if (remark && (r.remark || '').indexOf(remark) === -1) return false;
+    if (amount && String(r.amount).indexOf(amount) === -1) return false;
+    if (ts && r.tradeTime.slice(0, 10) < ts) return false;
+    if (te && r.tradeTime.slice(0, 10) > te) return false;
+    return true;
+  });
+  return res;
+}
+
+function renderTable() {
+  var list = getFiltered();
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    var r = list[i];
+    var ops = '<span class="action-btn" onclick="openEntryModal(\'' + r.tradeNo + '\')">入账明细</span>';
+    if (r.status === '待审核') {
+      ops += '<span class="action-btn warn" onclick="openAuditModalByTrade(\'' + r.tradeNo + '\')">去审核</span>';
+    } else if (r.status === '未入账' || r.status === '已驳回') {
+      ops += '<span class="action-btn" onclick="openClearModal(\'' + r.tradeNo + '\')">手工入账</span>';
+    }
+    html += '<tr>' +
+      '<td><input type="checkbox" style="width:16px;height:16px;cursor:pointer;"></td>' +
+      '<td>' + r.projId + '</td><td>' + r.projName + '</td><td>' + r.tradeNo + '</td>' +
+      '<td>' + fmt(r.amount) + '</td><td>' + r.payerName + '</td><td>' + r.payerAccount + '</td>' +
+      '<td>' + r.recvName + '</td><td>' + r.recvAccount + '</td>' +
+      '<td>' + (r.remark || '—') + '</td><td>' + r.tradeTime + '</td>' +
+      '<td>' + statusTag(r.status) + '</td>' +
+      '<td>' + (r.hangTip || '—') + '</td><td>' + r.entryType + '</td><td>' + (r.operator || '—') + '</td>' +
+      '<td>' + ops + '</td></tr>';
+  }
+  document.getElementById('mainTableBody').innerHTML = html || '<tr><td colspan="16" style="text-align:center;color:#999;padding:24px;">暂无数据</td></tr>';
+  document.getElementById('totalCount').textContent = list.length;
+  var total = 0;
+  for (var j = 0; j < list.length; j++) total += list[j].amount;
+  document.getElementById('amountTotal').textContent = fmt(total);
+  updateBadge();
+}
+
+function resetFilter() {
+  var ids = ['fTradeNo', 'fPayerAccount', 'fPayerName', 'fRecvAccount', 'fRecvName', 'fProject', 'fStatus',
+    'fTimeStart', 'fTimeEnd', 'fAmount', 'fRemark', 'fEntryType', 'fOperator', 'fHangTip'];
+  for (var i = 0; i < ids.length; i++) document.getElementById(ids[i]).value = '';
+  renderTable();
+}
+
+function updateBadge() {
+  var n = 0;
+  for (var i = 0; i < records.length; i++) if (records[i].status === '待审核') n++;
+  document.getElementById('auditBadge').textContent = n;
+  document.getElementById('pendingBadge').textContent = n;
+}
+
+/* ============ 入账明细弹窗 ============ */
+function findRecord(tradeNo) {
+  for (var i = 0; i < records.length; i++) if (records[i].tradeNo === tradeNo) return records[i];
+  return null;
+}
+function openEntryModal(tradeNo) {
+  var r = findRecord(tradeNo);
+  if (!r) return;
+  currentTradeNo = tradeNo;
+  document.getElementById('modalTradeNo').textContent = r.tradeNo;
+  document.getElementById('modalAmount').textContent = fmt(r.amount);
+  document.getElementById('modalPayerName').textContent = r.payerName;
+  document.getElementById('modalPayerAccount').textContent = r.payerAccount;
+  document.getElementById('modalTradeTime').textContent = r.tradeTime;
+  document.getElementById('modalStatus').innerHTML = statusTag(r.status);
+  document.getElementById('modalEntryType').textContent = r.entryType;
+  document.getElementById('modalApplicant').textContent = r.applicant || '—';
+  document.getElementById('modalApplyTime').textContent = r.applyTime || '—';
+  document.getElementById('modalAuditor').textContent = r.auditor || '—';
+  document.getElementById('modalAuditTime').textContent = r.auditTime || '—';
+
+  var tbody = document.getElementById('entryDetailBody');
+  if (!r.details.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;padding:20px;">暂无入账明细</td></tr>';
+  } else {
+    var html = '', dt = 0;
+    for (var i = 0; i < r.details.length; i++) {
+      var d = r.details[i];
+      dt += d.amt;
+      html += '<tr><td>' + d.id + '</td><td>' + d.time + '</td><td>' + fmt(d.amt) + '</td><td>' + d.type + '</td><td>' + d.biz + '</td></tr>';
+    }
+    tbody.innerHTML = html;
+    document.getElementById('modalDetailTotal').textContent = fmt(dt);
+  }
+  if (!r.details.length) document.getElementById('modalDetailTotal').textContent = fmt(0);
+
+  var tip = document.getElementById('rejectTip');
+  if (r.status === '已驳回' && r.rejectReason) {
+    tip.style.display = 'block';
+    document.getElementById('rejectReason').textContent = r.rejectReason;
+  } else { tip.style.display = 'none'; }
+
+  var auditBtn = document.getElementById('entryAuditBtn');
+  auditBtn.style.display = (r.status === '待审核') ? 'inline-block' : 'none';
+
+  document.getElementById('entryModal').classList.add('show');
+}
+function closeEntryModal() { document.getElementById('entryModal').classList.remove('show'); }
+
+/* ============ 手工入账（发起，单笔） ============ */
+var currentEntryTradeNo = '';
+
+function openClearModal(tradeNo) {
+  var r = findRecord(tradeNo);
+  if (!r) return;
+  if (r.status !== '未入账' && r.status !== '已驳回') { toast('该笔收款当前状态为「' + r.status + '」，不可发起手工入账'); return; }
+  currentEntryTradeNo = tradeNo;
+  document.getElementById('mTradeNo').textContent = r.tradeNo;
+  document.getElementById('mAmount').textContent = fmt(r.amount);
+  document.getElementById('mPayerName').textContent = r.payerName;
+  document.getElementById('mPayerAccount').textContent = r.payerAccount;
+  document.getElementById('mRemark').textContent = r.remark || '—';
+  document.getElementById('mTradeTime').textContent = r.tradeTime;
+  document.getElementById('mHangTip').textContent = r.hangTip || '—';
+  document.getElementById('mAvailable').textContent = fmt(r.amount);
+  document.getElementById('mAvailable2').textContent = fmt(r.amount);
+  document.getElementById('mEntryTotal').textContent = fmt(0);
+  document.getElementById('clearType').value = '';
+  syncCustLabels('');
+  document.getElementById('filterCustId').value = '';
+  document.getElementById('filterCustName').value = '';
+  document.getElementById('filterBizNo').value = '';
+  document.getElementById('clearResultBody').innerHTML =
+    '<tr><td colspan="9" style="text-align:center;color:#999;padding:20px;">请选择入账类型后查询</td></tr>';
+  document.getElementById('clearModal').classList.add('show');
+}
+function closeClearModal() { document.getElementById('clearModal').classList.remove('show'); }
+
+function syncCustLabels(t) {
+  var isFactory = (t === '对账单');
+  var idTxt = isFactory ? '设备厂家编号' : '用户编号';
+  var nmTxt = isFactory ? '设备厂家名称' : '用户名称';
+  document.getElementById('lblCustId').textContent = idTxt;
+  document.getElementById('lblCustName').textContent = nmTxt;
+  document.getElementById('thCustId').textContent = idTxt;
+  document.getElementById('thCustName').textContent = nmTxt;
+}
+
+function queryClear() {
+  var t = document.getElementById('clearType').value;
+  if (!t) { toast('请先选择入账类型'); return; }
+  syncCustLabels(t);
+  var cid = (document.getElementById('filterCustId').value || '').trim();
+  var cname = (document.getElementById('filterCustName').value || '').trim();
+  var bno = (document.getElementById('filterBizNo').value || '').trim();
+  var data = (clearData[t] || []).filter(function (d) {
+    if (cid && d.custId.indexOf(cid) === -1) return false;
+    if (cname && d.custName.indexOf(cname) === -1) return false;
+    if (bno && d.bizNo.indexOf(bno) === -1) return false;
+    return true;
+  });
+  var html = '';
+  for (var i = 0; i < data.length; i++) {
+    var d = data[i];
+    html += '<tr>' +
+      '<td><input type="checkbox" class="clearChk" data-idx="' + i + '" onchange="calcEntryTotal()" style="width:16px;height:16px;cursor:pointer;"></td>' +
+      '<td>' + d.type + '</td><td>' + d.custId + '</td><td>' + d.custName + '</td>' +
+      '<td>' + d.bizNo + '</td><td>' + fmt(d.due) + '</td><td>' + fmt(d.paid) + '</td>' +
+      '<td style="color:' + (d.unpaid > 0 ? '#ff4d4f' : '#52c41a') + ';font-weight:600;">' + fmt(d.unpaid) + '</td>' +
+      '<td><input type="text" class="entryAmt" data-idx="' + i + '" value="' + d.unpaid + '" style="width:100px;height:28px;border:1px solid #d9d9d9;border-radius:4px;padding:0 8px;font-size:13px;" oninput="calcEntryTotal()"></td></tr>';
+  }
+  document.getElementById('clearResultBody').innerHTML = html || '<tr><td colspan="9" style="text-align:center;color:#999;padding:20px;">无数据</td></tr>';
+  calcEntryTotal();
+}
+
+function calcEntryTotal() {
+  var chks = document.querySelectorAll('#clearResultBody .clearChk');
+  var amts = document.querySelectorAll('#clearResultBody .entryAmt');
+  var sum = 0;
+  for (var i = 0; i < chks.length; i++) {
+    if (chks[i].checked) {
+      var v = parseFloat((amts[i] && amts[i].value) || 0);
+      if (!isNaN(v)) sum += v;
+    }
+  }
+  document.getElementById('mEntryTotal').textContent = fmt(sum);
+  return sum;
+}
+
+/* 发起入账：仅生成待审核申请（单笔，挂在原交易流水上） */
+function submitEntry() {
+  var t = document.getElementById('clearType').value;
+  if (!t) { toast('请先选择入账类型并查询'); return; }
+  var r = findRecord(currentEntryTradeNo);
+  if (!r) { toast('未找到对应收款流水'); return; }
+
+  var chks = document.querySelectorAll('#clearResultBody .clearChk');
+  var amts = document.querySelectorAll('#clearResultBody .entryAmt');
+  var picked = [], sum = 0;
+  for (var i = 0; i < chks.length; i++) {
+    if (!chks[i].checked) continue;
+    var idx = parseInt(chks[i].getAttribute('data-idx'), 10);
+    var src = (clearData[t] || [])[idx];
+    if (!src) continue;
+    var v = parseFloat((amts[i] && amts[i].value) || 0);
+    if (isNaN(v) || v <= 0) { toast('本次入账金额必须大于 0'); return; }
+    if (v > src.unpaid) { toast('本次入账金额不能超过未还金额'); return; }
+    picked.push({ src: src, amt: v });
+    sum += v;
+  }
+  if (!picked.length) { toast('请至少勾选一条未还金额大于 0 的记录'); return; }
+  if (sum > r.amount + 0.001) { toast('本次入账金额合计不能超过该笔收款金额 ' + fmt(r.amount)); return; }
+
+  var details = picked.map(function (p, idx) {
+    return { id: 'IN' + currentEntryTradeNo.slice(-11) + '0' + idx, time: nowStr(), amt: p.amt, type: p.src.type, biz: p.src.bizNo };
+  });
+
+  /* 原记录状态流转：未入账/已驳回 → 待审核 */
+  r.status = '待审核';
+  r.hangTip = sum < r.amount ? '部分入账，待核销差额 ' + fmt(r.amount - sum) : '';
+  r.entryType = '手工入账';
+  r.operator = '李四';
+  r.applicant = '李四';
+  r.applyTime = nowStr();
+  r.auditor = '';
+  r.auditTime = '';
+  r.rejectReason = '';
+  r.details = details;
+
+  closeClearModal();
+  renderTable();
+  toast('入账申请已发起，请到「入账审核」中处理');
+}
+
+/* ============ 入账审核 ============ */
+function openAuditModal() { auditTab = 'pending'; switchAuditTab('pending'); document.getElementById('auditModal').classList.add('show'); }
+function openAuditModalByTrade(tradeNo) {
+  auditTab = 'pending';
+  switchAuditTab('pending');
+  document.getElementById('auditModal').classList.add('show');
+  var r = findRecord(tradeNo);
+  if (r && r.status === '待审核') setTimeout(function () { openReview(tradeNo, 'pass'); }, 200);
+}
+function closeAuditModal() { document.getElementById('auditModal').classList.remove('show'); }
+
+function switchAuditTab(tab) {
+  auditTab = tab;
+  document.getElementById('tabPending').classList.toggle('active', tab === 'pending');
+  document.getElementById('tabDone').classList.toggle('active', tab === 'done');
+  renderAuditTable();
+}
+
+function renderAuditTable() {
+  var html = '', total = 0, cnt = 0;
+  for (var i = 0; i < records.length; i++) {
+    var r = records[i];
+    var isPending = r.status === '待审核';
+    if (auditTab === 'pending' && !isPending) continue;
+    if (auditTab === 'done' && isPending) continue;
+    var ops = '';
+    if (isPending) {
+      ops = '<span class="action-btn" onclick="openReview(\'' + r.tradeNo + '\',\'pass\')">审核通过</span>' +
+            '<span class="action-btn danger" onclick="openReview(\'' + r.tradeNo + '\',\'reject\')">驳回</span>';
+    } else {
+      ops = '<span class="action-btn" onclick="openEntryModal(\'' + r.tradeNo + '\')">查看明细</span>';
+    }
+    if (isPending) { total += r.amount; cnt++; }
+    html += '<tr>' +
+      '<td>' + r.tradeNo + '</td><td>' + r.projName + '</td><td>' + fmt(r.amount) + '</td>' +
+      '<td>' + r.payerName + '</td><td>' + (r.remark || '—') + '</td>' +
+      '<td>' + (r.applicant || '—') + '</td><td>' + (r.applyTime || '—') + '</td>' +
+      '<td>' + statusTag(r.status) + '</td><td>' + (r.auditor || '—') + '</td><td>' + (r.auditTime || '—') + '</td>' +
+      '<td>' + ops + '</td></tr>';
+  }
+  document.getElementById('auditTableBody').innerHTML = html || '<tr><td colspan="11" style="text-align:center;color:#999;padding:24px;">暂无数据</td></tr>';
+  document.getElementById('pendingTotal').textContent = fmt(total);
+  document.getElementById('pendingBadge').textContent = records.filter(function (r) { return r.status === '待审核'; }).length;
+}
+
+/* 审核弹窗 */
+function openReview(tradeNo, result) {
+  reviewCtx = { tradeNo: tradeNo, result: result };
+  var r = findRecord(tradeNo);
+  if (!r) return;
+  document.getElementById('reviewTitle').textContent = result === 'pass' ? '审核通过' : '审核驳回';
+  document.getElementById('reviewConclusion').value = (result === 'pass' ? '审核通过，确认入账' : '审核驳回，不予入账');
+  document.getElementById('reviewOpinion').value = '';
+  document.getElementById('opinionRequired').style.display = result === 'reject' ? 'inline' : 'none';
+  var btn = document.getElementById('reviewConfirmBtn');
+  btn.textContent = result === 'pass' ? '确认通过' : '确认驳回';
+  btn.className = result === 'pass' ? 'btn btn-primary' : 'btn btn-danger';
+  document.getElementById('reviewModal').classList.add('show');
+}
+function closeReviewModal() { document.getElementById('reviewModal').classList.remove('show'); }
+
+function confirmReview() {
+  var r = findRecord(reviewCtx.tradeNo);
+  if (!r) return;
+  var opinion = document.getElementById('reviewOpinion').value.trim();
+  if (reviewCtx.result === 'reject' && !opinion) { toast('驳回必须填写审核意见'); return; }
+  var t = nowStr();
+  if (reviewCtx.result === 'pass') {
+    r.status = '已入账';
+    r.auditor = '王主管';
+    r.auditTime = t;
+    r.operator = '王主管';
+    r.rejectReason = '';
+    toast('审核通过，该笔收款已入账');
+  } else {
+    r.status = '已驳回';
+    r.auditor = '王主管';
+    r.auditTime = t;
+    r.operator = '王主管';
+    r.rejectReason = opinion;
+    toast('已驳回，可重新发起入账');
+  }
+  closeReviewModal();
+  renderAuditTable();
+  renderTable();
+  if (document.getElementById('entryModal').classList.contains('show') && currentTradeNo === r.tradeNo) {
+    openEntryModal(currentTradeNo);
+  }
+}
+
+/* ============ 初始化 ============ */
+renderTable();
+document.getElementById('entryModal').addEventListener('click', function (e) { if (e.target === this) closeEntryModal(); });
+document.getElementById('clearModal').addEventListener('click', function (e) { if (e.target === this) closeClearModal(); });
+document.getElementById('auditModal').addEventListener('click', function (e) { if (e.target === this) closeAuditModal(); });
+document.getElementById('reviewModal').addEventListener('click', function (e) { if (e.target === this) closeReviewModal(); });
+</script>
+
+</body>
+</html>

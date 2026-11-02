@@ -1,0 +1,219 @@
+{
+  "date": "2026-10-30",
+  "files": [
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/AGENTS.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/AGENTS.md",
+      "originalSha256": "749beef6927aefb7a8c3460082dc5c5ab01004971f14f3f1a7a34c5797b99538",
+      "migratedSha256": "8a5e10095e58f7c0eaee176596a730da41ce5fcc11c9d46a2c9fceefd15ced65",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/concepts/公司知识体系.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/concepts/公司知识体系.md",
+      "originalSha256": "9700f7d4e95163deb83ad489fa8a5781792d86cf8e8e6f3fc4c45cb1ee93ecc8",
+      "migratedSha256": "27f81d1353682d06f2874253d2fbcfbf756d13897ce2e7c72eddcc2cea9d173c",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/entities/公司地图.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/entities/公司地图.md",
+      "originalSha256": "d6641afb5b5db648b9b987b9b55bf91a8cc72b7e1cd57a693e18acf5a35446f4",
+      "migratedSha256": "addc71495f72918ae9f99d25a97d10e4dfbf7eba70622e04fc6d003cfaaaee6f",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/.DS_Store",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/.DS_Store",
+      "originalSha256": "00114df60e0dcaf38ca40ad1cab74964ecbbed32fcab6002ea78744d41f81a67",
+      "migratedSha256": "00114df60e0dcaf38ca40ad1cab74964ecbbed32fcab6002ea78744d41f81a67",
+      "bytePreserved": true
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/保费分期/核心业务链路与资金账务逻辑.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/保费分期/核心业务链路与资金账务逻辑.md",
+      "originalSha256": "93b24a04f6862035feeec7aeedc188b7a243b30dff1ee4894b82383ddbd86395",
+      "migratedSha256": "93b24a04f6862035feeec7aeedc188b7a243b30dff1ee4894b82383ddbd86395",
+      "bytePreserved": true
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/保费分期/生产错误归类与处理建议-20261021.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/保费分期/生产错误归类与处理建议-20261021.md",
+      "originalSha256": "cba069348f0749c3b03118c99a37ce31efdb9d397b463b6b5cd051d69f13374e",
+      "migratedSha256": "1a9714e4a9041779d7207b9d04e93d1a20389cdc07ddf6dc9934ae3981104730",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/保费分期/系统现状.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/保费分期/系统现状.md",
+      "originalSha256": "9d2798367abf245c2c8811b06dfd5f1a521dc8a0d4c069cc38822bf9a15da47e",
+      "migratedSha256": "c0d136c90b0c6f2ac887c519c7ae1dcf825332f348d606bb569cfaf67971b2a3",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/保费分期/自营渠道进件流程.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/保费分期/自营渠道进件流程.md",
+      "originalSha256": "4fb16939ad9c56ac9f484186aabf209aae20f83b26c92369033aea4f534c7521",
+      "migratedSha256": "5fb51ec785a866b5d367df2f6e3cc75da80159d0453946b55bd5a050f4e7b0f8",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/保费分期/运营端功能菜单.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/保费分期/运营端功能菜单.md",
+      "originalSha256": "7323c330a683a357f209ca2593d7412a604e5aa06f67c000fecb07126b88021e",
+      "migratedSha256": "7323c330a683a357f209ca2593d7412a604e5aa06f67c000fecb07126b88021e",
+      "bytePreserved": true
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/保费分期/迭代日志.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/保费分期/迭代日志.md",
+      "originalSha256": "33506d81ad510d14255337ecf31b30d6d5327b609b43653e6d0e2a68c1f4673c",
+      "migratedSha256": "33506d81ad510d14255337ecf31b30d6d5327b609b43653e6d0e2a68c1f4673c",
+      "bytePreserved": true
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/可信资产交易平台/合作方清单.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/可信资产交易平台/合作方清单.md",
+      "originalSha256": "c0cc3c1989948459fd6bb508eb0f6f7cf95901442ade52e0c5151fa2fc603c7b",
+      "migratedSha256": "4d7a3b76d129569cbb92978708b4ac1b2ee204ca7d0cca243361c01c25a3b0b6",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/可信资产交易平台/项目概览.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/可信资产交易平台/项目概览.md",
+      "originalSha256": "3bf749711ad4d7b375635fa679902d7e7149f91a9ae49fcaa22c57db31ea0de7",
+      "migratedSha256": "d6bdc19cd9cf1d2a7de2400d8a3c9ba3095298d873b8b8e6532e2fca197a5684",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/新消费分期/AGENTS.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/新消费分期/AGENTS.md",
+      "originalSha256": "6b6006e3f799006d32d51e64da1495d1536cc687fe6c9b9aa6b79ba6f33f5446",
+      "migratedSha256": "e9f629d67c8aae4aec8c7459af5367bb083417b04fdd70f7e4c2067280533368",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/新消费分期/接入接口与付息产品参考.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/新消费分期/接入接口与付息产品参考.md",
+      "originalSha256": "843208ad134721bdc8a55375ff2a0b09e3255821724b3953df80065bf291bd61",
+      "migratedSha256": "2797114665c9fab9818d48556b80c44c046c2a7fb846d3fa8922c49e9a15b37d",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/新消费分期/系统资料/先行通供应链消金资管平台接入文档.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/新消费分期/系统资料/先行通供应链消金资管平台接入文档.md",
+      "originalSha256": "35f1c0ea66ff95c4292f16cfb5971aac0363c2fdc2190c5fa3b54a6d80ef51ef",
+      "migratedSha256": "35f1c0ea66ff95c4292f16cfb5971aac0363c2fdc2190c5fa3b54a6d80ef51ef",
+      "bytePreserved": true
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/新消费分期/系统资料/申城消费分期产品要素.xlsx",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/新消费分期/系统资料/申城消费分期产品要素.xlsx",
+      "originalSha256": "42c326071f421aefb7b76651b7334951e20417f3a308ae7b0fc0685f846aaddc",
+      "migratedSha256": "42c326071f421aefb7b76651b7334951e20417f3a308ae7b0fc0685f846aaddc",
+      "bytePreserved": true
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/蔚能电池项目/蔚能电池需求问题梳理.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/蔚能电池项目/蔚能电池需求问题梳理.md",
+      "originalSha256": "70c49197e81bb3c1e55db3d4a06c941934b9f50c97e13aa882882fec59e721ba",
+      "migratedSha256": "408cc0f1288d3850835415214a21293b9f47297cf8757435f696e2f735357d1d",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/资产平台/AGENTS.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/资产平台/AGENTS.md",
+      "originalSha256": "b7f82da3f6987124d4938641ea755e806d3c28324668280b2d398aa510066d1c",
+      "migratedSha256": "1675080cdbea7689a0bf7282cb6d51503c2325261c932ee698e3917c8bd2da3d",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/资产平台/代收代付对账单需求与系统功能.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/资产平台/代收代付对账单需求与系统功能.md",
+      "originalSha256": "af6d63d62b5140d5bcd134cd42a0c3d14fb769dfaf996bb8ad1e23a5f9d4aa35",
+      "migratedSha256": "2fd595b2e045183c5f357ef1d51d5b641884201b006c7a60a7ef38a730945af2",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/projects/资产平台/回购写表逻辑梳理.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/资产平台/回购写表逻辑梳理.md",
+      "originalSha256": "42baa909bf2a280efca1c78a35fe0d68d563d07bfc9f5555fd279e1c8603b017",
+      "migratedSha256": "d64a02606041b7837b7acbd6a7aad8931ccaf4eea1185bd0eb6447faafc73a15",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/wiki/公司项目/sources/当前仓库总览.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/sources/当前仓库总览.md",
+      "originalSha256": "2b894b13e8c2e857734ec236588b9446832865fc1c8c6a65789b0c92763fc4be",
+      "migratedSha256": "23b2e39a2375868ae2afac4143c1d2b1d592c5150b6367f46bd78a152bdef568",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/raw/公司项目/README.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/raw/README.md",
+      "originalSha256": "e31f839e046e72eecab53e7b17af40b0d81e025288139b62808be5b3c5b8baa1",
+      "migratedSha256": "ce23d9d3af1b21900daeb2e83f442e5daa7f36e214b243d586b29f3d4e9ce31a",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/raw/公司项目/imports/README.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/raw/imports/README.md",
+      "originalSha256": "e682204c489b3f0b1709d52da7cdd8e52b50f077a53f9ffa5370d18fbe95634f",
+      "migratedSha256": "6ad0042a2e5269efad830d7d61921e4d0d50e4e02bdacfcd0b7f291c5ab4313e",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/raw/公司项目/projects/保费分期/接口文档/IT_保费分期对接文档V1.3.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/raw/projects/保费分期/接口文档/IT_保费分期对接文档V1.3.md",
+      "originalSha256": "d091fa523618dd7c2000ca01b7ef1530dafb266dea99f44bc2598d58fe4823e2",
+      "migratedSha256": "d091fa523618dd7c2000ca01b7ef1530dafb266dea99f44bc2598d58fe4823e2",
+      "bytePreserved": true
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/raw/公司项目/projects/保费分期/接口文档/IT_先行通供应链金融平台接入文档V1.2.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/raw/projects/保费分期/接口文档/IT_先行通供应链金融平台接入文档V1.2.md",
+      "originalSha256": "e4bfc17a3805220453c6080027d95b77594daab4de0e2d4c36fcb208d4079975",
+      "migratedSha256": "e4bfc17a3805220453c6080027d95b77594daab4de0e2d4c36fcb208d4079975",
+      "bytePreserved": true
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/raw/公司项目/projects/保费分期/接口文档/README.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/raw/projects/保费分期/接口文档/README.md",
+      "originalSha256": "593572cc074895f5cd4304b0fd95c2b3db8f2b711a89138225a341358b735592",
+      "migratedSha256": "593572cc074895f5cd4304b0fd95c2b3db8f2b711a89138225a341358b735592",
+      "bytePreserved": true
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/raw/公司项目/projects/可信资产交易平台/2026/source.md",
+      "target": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/raw/projects/可信资产交易平台/2026/source.md",
+      "originalSha256": "4d9efc5248615604568df1f92e88adea517b395e5d6fefc6d3c6749384f21441",
+      "migratedSha256": "4d9efc5248615604568df1f92e88adea517b395e5d6fefc6d3c6749384f21441",
+      "bytePreserved": true
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/schema/公司项目/README.md",
+      "target": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/schema/研发/资料整理/README.md",
+      "originalSha256": "05ade732aa853937646bdf56ddde53c2374e9894b12d1cd9ce1f14d09ae28009",
+      "migratedSha256": "259e19dd42b46d21ca4135fae54f52f3e9f009dcfc794952df574e664e5edaa2",
+      "bytePreserved": false
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/schema/公司项目/templates/durable-note-template.md",
+      "target": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/schema/研发/资料整理/templates/durable-note-template.md",
+      "originalSha256": "1bb0b3f976c92402bf0b25690077c6446bc5e2275dadcede4ec1afa556170b13",
+      "migratedSha256": "1bb0b3f976c92402bf0b25690077c6446bc5e2275dadcede4ec1afa556170b13",
+      "bytePreserved": true
+    },
+    {
+      "source": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/schema/公司项目/templates/source-ingest-template.md",
+      "target": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault/schema/研发/资料整理/templates/source-ingest-template.md",
+      "originalSha256": "3fa78afebd6bd1f4cb23c91f1e05b646a7ea721da128606c22766f8343d4d3fa",
+      "migratedSha256": "3fa78afebd6bd1f4cb23c91f1e05b646a7ea721da128606c22766f8343d4d3fa",
+      "bytePreserved": true
+    }
+  ],
+  "companyHistorySha256": "30bc7c7025be8fbe8642833099b1f079add053973fc8100ee1160b554caf008f",
+  "previouslyDeletedFilesNotRestored": [
+    "wiki/公司项目/projects/嘉泰回购恢复数据排查.md"
+  ]
+}

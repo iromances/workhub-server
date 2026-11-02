@@ -20,7 +20,7 @@ class DatabaseDiagnosticServiceTest {
         String url = DatabaseDiagnosticService.jdbcUrl("127.0.0.1", 3306, null);
 
         assertEquals(
-                "jdbc:mysql://127.0.0.1:3306/?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false",
+                "jdbc:mysql://127.0.0.1:3306/?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false&connectTimeout=10000&socketTimeout=60000",
                 url
         );
     }

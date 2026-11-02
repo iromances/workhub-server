@@ -1,0 +1,41 @@
+[
+  {
+    "repo": "ol-saps",
+    "path": "/Users/aslight/IDEAWorkspace/ol/ol-saps",
+    "ref": "origin/fix_device_flow_ly_20261028",
+    "tip": "b41899bcb43ff5b806d6f1ba6388b46a51edd4a3 2026-10-30 18:29:25 +0800 docs: 补充退款同步时间窗变更记录",
+    "sha": "b41899bcb43ff5b806d6f1ba6388b46a51edd4a3",
+    "master": "1452001667b4f0568f3f5b077f9282704f81935c",
+    "base": "b41899bcb43ff5b806d6f1ba6388b46a51edd4a3",
+    "new_commits": "b41899bc docs: 补充退款同步时间窗变更记录\n4a15d338 fix(dao): 修正退款单时间窗口查询条件",
+    "new_diff": "docs/change-log.md                                 | 22 ++++++++++++++++++++++\n .../main/resources/mapper/CustomerOrderMapper.xml  |  2 +-\n 2 files changed, 23 insertions(+), 1 deletion(-)",
+    "master_contains": "origin/HEAD -> origin/master\n  origin/fix_device_flow_ly_20261028\n  origin/master",
+    "master_ahead_stat": ""
+  },
+  {
+    "repo": "intf-paychannel",
+    "path": "/Users/aslight/IDEAWorkspace/xxt-pay/intf-paychannel",
+    "ref": "origin/fix/refund_time_1970_20261030",
+    "tip": "454d7e73bade92f7a31ea4be12a77dc83ac6cc72 2026-10-30 18:35:55 +0800 fix(account-detail): 交行流水查询失败返回业务错误信息",
+    "sha": "454d7e73bade92f7a31ea4be12a77dc83ac6cc72",
+    "master": "ef42afb9588a53778a3a6783e2b6d4efb9bef066",
+    "base": "454d7e73bade92f7a31ea4be12a77dc83ac6cc72",
+    "new_commits": "454d7e7 fix(account-detail): 交行流水查询失败返回业务错误信息",
+    "new_diff": ".../com/intf/paychannel/adapter/bcm/service/BcmEventServer.java    | 7 ++++++-\n 1 file changed, 6 insertions(+), 1 deletion(-)",
+    "master_contains": "origin/HEAD -> origin/master\n  origin/fix/refund_time_1970_20261030\n  origin/master",
+    "master_ahead_stat": "...216\\245\\345\\205\\245\\346\\203\\205\\345\\206\\265.md\" |   2 +-\n .../adapter/zj/ZjUnifyChannelAdapter.java          |  62 +++-\n .../adapter/zj/config/ZjUnifyProperties.java       |   2 +-\n .../model/enums/ZjUnifySharingLocalErrorEnums.java | 102 +++++++\n .../model/unify/ZjUnifySharingChangeSnapshot.java  | 185 ++++++++++++\n .../model/unify/ZjUnifySharingProcessResult.java   | 140 +++++++++\n .../zj/service/unify/ZjUnifyPaymentService.java    |  16 ++\n .../unify/ZjUnifySharingParameterProcessor.java    | 319 +++++++++++++++++++++\n .../zj/support/ZjUnifySharingChangeLogSupport.java |  50 ++++\n 9 files changed, 872 insertions(+), 6 deletions(-)"
+  },
+  {
+    "repo": "xxt-pay",
+    "path": "/Users/aslight/IDEAWorkspace/xxt-pay/xxt-pay",
+    "ref": "origin/master",
+    "tip": "43b0b00df3b382bfbd0df99edc54d3bef6d1c0b1 2026-10-29 18:20:59 +0800 Merge branch 'feature/channel_flow_query_optimize_20261015' into 'master'",
+    "sha": "43b0b00df3b382bfbd0df99edc54d3bef6d1c0b1",
+    "master": "43b0b00df3b382bfbd0df99edc54d3bef6d1c0b1",
+    "base": "43b0b00df3b382bfbd0df99edc54d3bef6d1c0b1",
+    "new_commits": "",
+    "new_diff": "",
+    "master_contains": "origin/HEAD -> origin/master\n  origin/master",
+    "master_ahead_stat": ""
+  }
+]

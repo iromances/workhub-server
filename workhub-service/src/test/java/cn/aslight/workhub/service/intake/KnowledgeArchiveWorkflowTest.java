@@ -66,6 +66,22 @@ class KnowledgeArchiveWorkflowTest {
     }
 
     @Test
+    void readingLegacyAnalysisReturnsRepositoryPathsWithoutRewritingStoredHistory() {
+        var data = json.valueToTree(draft);
+        ((tools.jackson.databind.node.ObjectNode) data).put("requirementWikiPath", "wiki/公司项目/研发需求/测试/研发评估.md");
+        ((tools.jackson.databind.node.ObjectNode) data).put("requirementWikiUrl", "obsidian://open?vault=old");
+        String original = json.writeValueAsString(data);
+        saved.setDraftJson(original);
+        var response = service.detail(5L);
+        assertEquals("requirement-sources/测试/历史版本/run1/source.md", response.draft().requirementRawPath());
+        assertEquals("requirements/测试/研发评估.md", response.draft().requirementWikiPath());
+        assertNull(response.draft().requirementWikiUrl());
+        assertEquals(original, saved.getDraftJson());
+        verify(analyses, never()).update(any());
+        verifyNoInteractions(archive, ai, workItems);
+    }
+
+    @Test
     void confirmationSchedulesPublicationInsteadOfWritingBeforeCommit() {
         service.confirm(5L, "reviewer");
         ArgumentCaptor<Runnable> export = ArgumentCaptor.forClass(Runnable.class);

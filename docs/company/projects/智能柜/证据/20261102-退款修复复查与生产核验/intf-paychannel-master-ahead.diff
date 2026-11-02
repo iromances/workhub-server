@@ -1,0 +1,989 @@
+diff --git "a/docs/\346\270\240\351\201\223\346\216\245\345\205\245\346\203\205\345\206\265.md" "b/docs/\346\270\240\351\201\223\346\216\245\345\205\245\346\203\205\345\206\265.md"
+index e10248c..4d6857f 100644
+--- "a/docs/\346\270\240\351\201\223\346\216\245\345\205\245\346\203\205\345\206\265.md"
++++ "b/docs/\346\270\240\351\201\223\346\216\245\345\205\245\346\203\205\345\206\265.md"
+@@ -193,7 +193,7 @@
+ 
+ ## 5. 中金支付（ZJPAY）
+ 
+-中金聚合主扫只读 `channel_access_config.resv_three`。
++中金聚合主扫的证书、出码配置和普通无分账请求的结算标识读取 `channel_access_config.resv_three`。Tx2811 出码前由聚合侧 `ZjUnifySharingParameterProcessor` 按 `sharing_config` 与 `sharing_main_mer` 执行分账门禁：开通则原样分账，未开通时仅把主接收方按金额全额自分账降为单扣，其他真实分账本地失败且不调中金。降级后的 `SplitType=10`，`SettlementFlag` 及审计快照均使用 `sharing_main_mer`，与协议支付一致；普通无分账请求仍取 `resv_three.settlementFlag`。本次只调整聚合 Tx2811 降级请求的结算标识，不修改交易金额、状态映射、外部通知、查单补偿路径或协议支付代码；降级审计仍在渠道调用前写入，失败则不调用渠道。
+ 
+ ### 5.1 协议支付
+ 
+diff --git a/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/ZjUnifyChannelAdapter.java b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/ZjUnifyChannelAdapter.java
+index 6bee7d3..586ad3e 100644
+--- a/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/ZjUnifyChannelAdapter.java
++++ b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/ZjUnifyChannelAdapter.java
+@@ -2,9 +2,13 @@ package com.intf.paychannel.adapter.zj;
+ 
+ import com.intf.paychannel.adapter.api.port.UnifyPaymentChannelAdapter;
+ import com.intf.paychannel.adapter.support.AbstractChannelAdapter;
++import com.intf.paychannel.adapter.zj.model.enums.ZjUnifySharingLocalErrorEnums;
++import com.intf.paychannel.adapter.zj.model.unify.ZjUnifySharingProcessResult;
+ import com.intf.paychannel.adapter.zj.service.unify.ZjUnifyCancelService;
+ import com.intf.paychannel.adapter.zj.service.unify.ZjUnifyPaymentQueryService;
+ import com.intf.paychannel.adapter.zj.service.unify.ZjUnifyPaymentService;
++import com.intf.paychannel.adapter.zj.service.unify.ZjUnifySharingParameterProcessor;
++import com.intf.paychannel.adapter.zj.support.ZjUnifySharingChangeLogSupport;
+ import com.intf.paychannel.common.enums.ChannelEnum;
+ import com.intf.paychannel.common.exception.BizException;
+ import com.intf.paychannel.common.exception.BizExceptionEnum;
+@@ -20,6 +24,7 @@ import com.intf.paychannel.model.refund.BalanceTransfeResponse;
+ import com.intf.paychannel.model.refund.BalanceTransferquestDTO;
+ import com.intf.paychannel.model.refund.RefundRequestDTO;
+ import com.intf.paychannel.model.refund.RefundResponseDTO;
++import lombok.extern.slf4j.Slf4j;
+ import org.springframework.stereotype.Component;
+ 
+ import javax.annotation.Resource;
+@@ -31,6 +36,7 @@ import javax.annotation.Resource;
+  * 聚合通知由 {@link ZjAgreeChannelAdapter#handleNotify} 按产品类型转发。</p>
+  */
+ @Component
++@Slf4j
+ public class ZjUnifyChannelAdapter extends AbstractChannelAdapter implements UnifyPaymentChannelAdapter {
+ 
+     /**
+@@ -39,6 +45,18 @@ public class ZjUnifyChannelAdapter extends AbstractChannelAdapter implements Uni
+     @Resource
+     private ZjUnifyPaymentService zjUnifyPaymentService;
+ 
++    /**
++     * 中金聚合分账门禁。
++     */
++    @Resource
++    private ZjUnifySharingParameterProcessor zjUnifySharingParameterProcessor;
++
++    /**
++     * 中金聚合分账参数变更日志支撑。
++     */
++    @Resource
++    private ZjUnifySharingChangeLogSupport zjUnifySharingChangeLogSupport;
++
+     /**
+      * 中金聚合查单服务。
+      */
+@@ -62,15 +80,51 @@ public class ZjUnifyChannelAdapter extends AbstractChannelAdapter implements Uni
+     }
+ 
+     /**
+-     * 发起中金聚合主扫出码。
++     * 执行中金聚合分账预处理并发起主扫出码。
+      *
+-     * @param request      统一下单请求
++     * @param request      原始统一下单请求
+      * @param accessConfig 渠道接入配置
+-     * @return 支付响应
++     * @return 支付响应；门禁本地错误使用失败状态表达
+      */
+     @Override
+     public PaymentResponseDTO applyPayment(UnifiedPaymentRequestDTO request, ChannelAccessConfigEntity accessConfig) {
+-        return zjUnifyPaymentService.applyPayment(request, accessConfig);
++        ZjUnifySharingProcessResult result = zjUnifySharingParameterProcessor.process(request, accessConfig);
++        if (!result.isProceed()) {
++            return buildLocalFailure(request, result.getLocalError());
++        }
++        if (result.isChanged()) {
++            try {
++                zjUnifySharingChangeLogSupport.save(result.getChangeSnapshot());
++            } catch (Exception e) {
++                log.error("中金聚合分账参数变更日志保存失败, merchantNo={}, orderId={}",
++                        request == null ? null : request.getMerchantNo(),
++                        request == null ? null : request.getOrderId(), e);
++                return buildLocalFailure(request, ZjUnifySharingLocalErrorEnums.SHARING_CHANGE_LOG_ERROR);
++            }
++        }
++        return zjUnifyPaymentService.applyPayment(result.getProcessedRequest(), accessConfig, result.isChanged());
++    }
++
++    /**
++     * 构造中金聚合分账门禁本地支付失败响应。
++     *
++     * @param request 支付原始请求
++     * @param error   本地错误映射
++     * @return 本地支付失败响应
++     */
++    private PaymentResponseDTO buildLocalFailure(UnifiedPaymentRequestDTO request,
++                                                 ZjUnifySharingLocalErrorEnums error) {
++        PaymentResponseDTO response = new PaymentResponseDTO();
++        response.setChannel(ChannelEnum.ZJPAY.getValue());
++        if (request != null) {
++            response.setOrderId(request.getOrderId());
++            response.setTransactionAmt(request.getTransactionAmt());
++        }
++        response.setChannelSn(null);
++        response.setStatus(error.toPaymentStatus().getValue());
++        response.setRespCode(error.getCode());
++        response.setRespMsg(error.getDesc());
++        return response;
+     }
+ 
+     /**
+diff --git a/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/config/ZjUnifyProperties.java b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/config/ZjUnifyProperties.java
+index 2759402..8a00af5 100644
+--- a/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/config/ZjUnifyProperties.java
++++ b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/config/ZjUnifyProperties.java
+@@ -44,7 +44,7 @@ public class ZjUnifyProperties {
+     private String isDoubleCert;
+ 
+     /**
+-     * 不分账时的主结算标识。
++     * 普通无分账请求的结算标识；门禁降级时由出码服务改用主接收方。
+      */
+     private String settlementFlag;
+ 
+diff --git a/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/model/enums/ZjUnifySharingLocalErrorEnums.java b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/model/enums/ZjUnifySharingLocalErrorEnums.java
+new file mode 100644
+index 0000000..17f601e
+--- /dev/null
++++ b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/model/enums/ZjUnifySharingLocalErrorEnums.java
+@@ -0,0 +1,102 @@
++package com.intf.paychannel.adapter.zj.model.enums;
++
++import com.intf.paychannel.common.enums.PaymentStatusEnum;
++
++/**
++ * 中金聚合支付分账门禁本地错误与统一支付状态映射。
++ *
++ * <p>响应码字符串与协议支付门禁保持一致，枚举本身只供聚合支付使用。</p>
++ */
++public enum ZjUnifySharingLocalErrorEnums {
++
++    /**
++     * 完整配置对的内容不合法。
++     */
++    SHARING_CONFIG_ERROR("SHARING_CONFIG_ERROR", "中金分账配置异常", PaymentStatusEnum.FAILED),
++
++    /**
++     * 允许分账，但明细无法组装为中金聚合报文。
++     */
++    SHARING_PARAM_ERROR("SHARING_PARAM_ERROR", "中金分账参数校验失败", PaymentStatusEnum.FAILED),
++
++    /**
++     * 未开通分账且不满足等价单扣条件。
++     */
++    SHARING_NOT_ENABLED("SHARING_NOT_ENABLED", "当前中金商户未开通分账，且分账明细不满足等价单扣条件",
++            PaymentStatusEnum.FAILED),
++
++    /**
++     * 等价降级的审计日志保存失败。
++     */
++    SHARING_CHANGE_LOG_ERROR("SHARING_CHANGE_LOG_ERROR", "中金分账参数变更日志保存失败",
++            PaymentStatusEnum.FAILED),
++
++    /**
++     * 分账门禁内未预期的本地处理错误。
++     */
++    SHARING_PROCESS_ERROR("SHARING_PROCESS_ERROR", "中金分账参数处理失败", PaymentStatusEnum.FAILED);
++
++    /**
++     * 本地响应码。
++     */
++    private final String code;
++
++    /**
++     * 本地响应信息。
++     */
++    private final String desc;
++
++    /**
++     * 映射后的统一支付状态。
++     */
++    private final PaymentStatusEnum paymentStatus;
++
++    /**
++     * 构造中金聚合分账门禁本地错误映射。
++     *
++     * @param code          本地响应码
++     * @param desc          本地响应信息
++     * @param paymentStatus 统一支付状态
++     */
++    ZjUnifySharingLocalErrorEnums(String code, String desc, PaymentStatusEnum paymentStatus) {
++        this.code = code;
++        this.desc = desc;
++        this.paymentStatus = paymentStatus;
++    }
++
++    /**
++     * 获取本地响应码。
++     *
++     * @return 本地响应码
++     */
++    public String getCode() {
++        return code;
++    }
++
++    /**
++     * 获取本地响应信息。
++     *
++     * @return 本地响应信息
++     */
++    public String getDesc() {
++        return desc;
++    }
++
++    /**
++     * 获取统一支付状态。
++     *
++     * @return 统一支付状态
++     */
++    public PaymentStatusEnum getPaymentStatus() {
++        return paymentStatus;
++    }
++
++    /**
++     * 映射为统一支付状态。
++     *
++     * @return 统一支付状态
++     */
++    public PaymentStatusEnum toPaymentStatus() {
++        return paymentStatus;
++    }
++}
+diff --git a/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/model/unify/ZjUnifySharingChangeSnapshot.java b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/model/unify/ZjUnifySharingChangeSnapshot.java
+new file mode 100644
+index 0000000..d97e625
+--- /dev/null
++++ b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/model/unify/ZjUnifySharingChangeSnapshot.java
+@@ -0,0 +1,185 @@
++package com.intf.paychannel.adapter.zj.model.unify;
++
++import com.intf.paychannel.common.enums.ChannelEnum;
++
++import java.util.Date;
++import java.util.Map;
++
++/**
++ * 中金聚合支付分账参数等价降级审计快照。
++ *
++ * <p>只保存门禁判定所需字段。{@code afterData.settlementFlag} 记录清空明细后
++ * 实际单扣使用的 {@code sharing_main_mer}。</p>
++ */
++public final class ZjUnifySharingChangeSnapshot {
++
++    /**
++     * 支付订单号。
++     */
++    private final String serialNo;
++
++    /**
++     * 渠道编码。
++     */
++    private final ChannelEnum channel;
++
++    /**
++     * 当前配置环境。
++     */
++    private final String profile;
++
++    /**
++     * 中金机构号。
++     */
++    private final String merchantNo;
++
++    /**
++     * 参数变更类型。
++     */
++    private final String changeType;
++
++    /**
++     * 分账配置快照。
++     */
++    private final Map<String, Object> configSnapshot;
++
++    /**
++     * 修改前参数快照。
++     */
++    private final Map<String, Object> beforeData;
++
++    /**
++     * 修改后参数快照。
++     */
++    private final Map<String, Object> afterData;
++
++    /**
++     * 中文变更原因。
++     */
++    private final String changeReason;
++
++    /**
++     * 完成参数判定的时间。
++     */
++    private final Date requestTime;
++
++    /**
++     * 构造中金聚合分账参数变更快照。
++     *
++     * @param serialNo       支付订单号
++     * @param channel        渠道编码
++     * @param profile        当前配置环境
++     * @param merchantNo     中金机构号
++     * @param changeType     参数变更类型
++     * @param configSnapshot 配置快照
++     * @param beforeData     修改前参数
++     * @param afterData      修改后参数
++     * @param changeReason   变更原因
++     * @param requestTime    参数判定时间
++     */
++    public ZjUnifySharingChangeSnapshot(String serialNo, ChannelEnum channel, String profile, String merchantNo,
++                                        String changeType, Map<String, Object> configSnapshot,
++                                        Map<String, Object> beforeData, Map<String, Object> afterData,
++                                        String changeReason, Date requestTime) {
++        this.serialNo = serialNo;
++        this.channel = channel;
++        this.profile = profile;
++        this.merchantNo = merchantNo;
++        this.changeType = changeType;
++        this.configSnapshot = configSnapshot;
++        this.beforeData = beforeData;
++        this.afterData = afterData;
++        this.changeReason = changeReason;
++        this.requestTime = requestTime;
++    }
++
++    /**
++     * 获取支付订单号。
++     *
++     * @return 支付订单号
++     */
++    public String getSerialNo() {
++        return serialNo;
++    }
++
++    /**
++     * 获取渠道编码。
++     *
++     * @return 渠道编码
++     */
++    public ChannelEnum getChannel() {
++        return channel;
++    }
++
++    /**
++     * 获取当前配置环境。
++     *
++     * @return 当前配置环境
++     */
++    public String getProfile() {
++        return profile;
++    }
++
++    /**
++     * 获取中金机构号。
++     *
++     * @return 中金机构号
++     */
++    public String getMerchantNo() {
++        return merchantNo;
++    }
++
++    /**
++     * 获取参数变更类型。
++     *
++     * @return 参数变更类型
++     */
++    public String getChangeType() {
++        return changeType;
++    }
++
++    /**
++     * 获取分账配置快照。
++     *
++     * @return 分账配置快照
++     */
++    public Map<String, Object> getConfigSnapshot() {
++        return configSnapshot;
++    }
++
++    /**
++     * 获取修改前参数快照。
++     *
++     * @return 修改前参数快照
++     */
++    public Map<String, Object> getBeforeData() {
++        return beforeData;
++    }
++
++    /**
++     * 获取修改后参数快照。
++     *
++     * @return 修改后参数快照
++     */
++    public Map<String, Object> getAfterData() {
++        return afterData;
++    }
++
++    /**
++     * 获取中文变更原因。
++     *
++     * @return 中文变更原因
++     */
++    public String getChangeReason() {
++        return changeReason;
++    }
++
++    /**
++     * 获取参数判定时间。
++     *
++     * @return 参数判定时间
++     */
++    public Date getRequestTime() {
++        return requestTime;
++    }
++}
+diff --git a/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/model/unify/ZjUnifySharingProcessResult.java b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/model/unify/ZjUnifySharingProcessResult.java
+new file mode 100644
+index 0000000..fceb02b
+--- /dev/null
++++ b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/model/unify/ZjUnifySharingProcessResult.java
+@@ -0,0 +1,140 @@
++package com.intf.paychannel.adapter.zj.model.unify;
++
++import com.intf.paychannel.adapter.zj.model.enums.ZjUnifySharingLocalErrorEnums;
++import com.intf.paychannel.model.payment.UnifiedPaymentRequestDTO;
++
++/**
++ * 中金聚合支付分账参数预处理结果。
++ */
++public final class ZjUnifySharingProcessResult {
++
++    /**
++     * 是否允许继续进入中金聚合支付服务。
++     */
++    private final boolean proceed;
++
++    /**
++     * 防御性复制并完成分账兼容处理后的统一下单请求。
++     */
++    private final UnifiedPaymentRequestDTO processedRequest;
++
++    /**
++     * 是否把主接收方全额自分账修改为单扣表达。
++     */
++    private final boolean changed;
++
++    /**
++     * 等价降级时的参数变更快照。
++     */
++    private final ZjUnifySharingChangeSnapshot changeSnapshot;
++
++    /**
++     * 不允许继续时的本地错误。
++     */
++    private final ZjUnifySharingLocalErrorEnums localError;
++
++    /**
++     * 构造中金聚合分账参数预处理结果。
++     *
++     * @param proceed          是否继续处理
++     * @param processedRequest 处理后的请求副本
++     * @param changed          是否发生参数变更
++     * @param changeSnapshot   参数变更快照
++     * @param localError       本地错误
++     */
++    private ZjUnifySharingProcessResult(boolean proceed, UnifiedPaymentRequestDTO processedRequest, boolean changed,
++                                        ZjUnifySharingChangeSnapshot changeSnapshot,
++                                        ZjUnifySharingLocalErrorEnums localError) {
++        this.proceed = proceed;
++        this.processedRequest = processedRequest;
++        this.changed = changed;
++        this.changeSnapshot = changeSnapshot;
++        this.localError = localError;
++    }
++
++    /**
++     * 创建未发生参数变更的成功结果。
++     *
++     * @param processedRequest 处理后的请求副本
++     * @return 成功结果
++     */
++    public static ZjUnifySharingProcessResult pass(UnifiedPaymentRequestDTO processedRequest) {
++        if (processedRequest == null) {
++            throw new IllegalArgumentException("处理后的中金聚合支付请求不能为空");
++        }
++        return new ZjUnifySharingProcessResult(true, processedRequest, false, null, null);
++    }
++
++    /**
++     * 创建发生等价单扣降级的成功结果。
++     *
++     * @param processedRequest 处理后的请求副本
++     * @param changeSnapshot   参数变更快照
++     * @return 变更成功结果
++     */
++    public static ZjUnifySharingProcessResult changed(UnifiedPaymentRequestDTO processedRequest,
++                                                      ZjUnifySharingChangeSnapshot changeSnapshot) {
++        if (processedRequest == null || changeSnapshot == null) {
++            throw new IllegalArgumentException("处理后的中金聚合支付请求和变更快照不能为空");
++        }
++        return new ZjUnifySharingProcessResult(true, processedRequest, true, changeSnapshot, null);
++    }
++
++    /**
++     * 创建门禁本地失败结果。
++     *
++     * @param localError 本地错误
++     * @return 失败结果
++     */
++    public static ZjUnifySharingProcessResult failure(ZjUnifySharingLocalErrorEnums localError) {
++        if (localError == null) {
++            throw new IllegalArgumentException("中金聚合分账门禁本地错误不能为空");
++        }
++        return new ZjUnifySharingProcessResult(false, null, false, null, localError);
++    }
++
++    /**
++     * 获取是否允许继续渠道调用。
++     *
++     * @return 是否允许继续
++     */
++    public boolean isProceed() {
++        return proceed;
++    }
++
++    /**
++     * 获取处理后的请求副本。
++     *
++     * @return 处理后的请求副本
++     */
++    public UnifiedPaymentRequestDTO getProcessedRequest() {
++        return processedRequest;
++    }
++
++    /**
++     * 获取是否发生参数变更。
++     *
++     * @return 是否发生参数变更
++     */
++    public boolean isChanged() {
++        return changed;
++    }
++
++    /**
++     * 获取参数变更快照。
++     *
++     * @return 参数变更快照
++     */
++    public ZjUnifySharingChangeSnapshot getChangeSnapshot() {
++        return changeSnapshot;
++    }
++
++    /**
++     * 获取本地错误。
++     *
++     * @return 本地错误
++     */
++    public ZjUnifySharingLocalErrorEnums getLocalError() {
++        return localError;
++    }
++}
+diff --git a/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/service/unify/ZjUnifyPaymentService.java b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/service/unify/ZjUnifyPaymentService.java
+index f1e0366..0d18dbf 100644
+--- a/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/service/unify/ZjUnifyPaymentService.java
++++ b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/service/unify/ZjUnifyPaymentService.java
+@@ -96,7 +96,23 @@ public class ZjUnifyPaymentService {
+      * @return 支付响应
+      */
+     public PaymentResponseDTO applyPayment(UnifiedPaymentRequestDTO request, ChannelAccessConfigEntity accessConfig) {
++        return applyPayment(request, accessConfig, false);
++    }
++
++    /**
++     * 按分账门禁结果发起主扫出码，降级单扣使用主接收方结算标识。
++     *
++     * @param request           处理后的统一下单请求
++     * @param accessConfig      渠道接入配置
++     * @param sharingDowngraded 是否由全额自分账降级为单扣
++     * @return 支付响应
++     */
++    public PaymentResponseDTO applyPayment(UnifiedPaymentRequestDTO request, ChannelAccessConfigEntity accessConfig,
++                                            boolean sharingDowngraded) {
+         ZjUnifyProperties properties = ZjUnifyProperties.from(accessConfig);
++        if (sharingDowngraded) {
++            properties.setSettlementFlag(StringUtils.trimToNull(accessConfig.getSharingMainMer()));
++        }
+         Tx2811Request tx = buildApplyRequest(request, properties);
+         ChannelApiConfigEntity apiConfig = apiConfigSupport.getRequired(accessConfig, ProductTypeEnum.UNIFY_PAYMENT);
+         ZjGatewayResult result = null;
+diff --git a/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/service/unify/ZjUnifySharingParameterProcessor.java b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/service/unify/ZjUnifySharingParameterProcessor.java
+new file mode 100644
+index 0000000..f286bca
+--- /dev/null
++++ b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/service/unify/ZjUnifySharingParameterProcessor.java
+@@ -0,0 +1,319 @@
++package com.intf.paychannel.adapter.zj.service.unify;
++
++import com.alibaba.fastjson.JSON;
++import com.alibaba.fastjson.JSONObject;
++import com.intf.paychannel.adapter.zj.model.enums.ZjUnifySharingLocalErrorEnums;
++import com.intf.paychannel.adapter.zj.model.unify.ZjUnifySharingChangeSnapshot;
++import com.intf.paychannel.adapter.zj.model.unify.ZjUnifySharingProcessResult;
++import com.intf.paychannel.common.enums.ChannelEnum;
++import com.intf.paychannel.common.exception.BizException;
++import com.intf.paychannel.model.entity.ChannelAccessConfigEntity;
++import com.intf.paychannel.model.payment.SharingDetailsDTO;
++import com.intf.paychannel.model.payment.UnifiedPaymentRequestDTO;
++import lombok.extern.slf4j.Slf4j;
++import org.apache.commons.lang3.StringUtils;
++import org.springframework.beans.BeanUtils;
++import org.springframework.stereotype.Component;
++
++import java.util.ArrayList;
++import java.util.Collections;
++import java.util.Date;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++
++/**
++ * 中金聚合支付分账参数预处理器。
++ *
++ * <p>只处理中金 Tx2811 请求。判断规则与协议支付门禁相同，但不调用协议支付类。
++ * 处理器始终复制统一下单请求，只允许修改副本的 {@code sharingDetails}。
++ * 清空明细后的单扣结算标识使用 {@code sharing_main_mer}，与协议支付保持一致。</p>
++ */
++@Component
++@Slf4j
++public class ZjUnifySharingParameterProcessor {
++
++    /**
++     * 聚合支付主接收方按金额全额自分账降级为单扣的变更类型。
++     */
++    static final String CHANGE_TYPE_SELF_FULL_AMOUNT_TO_SINGLE_DEBIT =
++            "ZJ_UNIFY_SELF_FULL_AMOUNT_TO_SINGLE_DEBIT";
++
++    /**
++     * 参数变更原因。
++     */
++    private static final String CHANGE_REASON = "未开通分账的中金商户将聚合支付主接收方按金额全额自分账降级为单扣";
++
++    /**
++     * 校验分账门禁并返回处理后的请求副本。
++     *
++     * @param originalRequest 原始统一下单请求，只读
++     * @param accessConfig    本次已定位的渠道接入配置快照
++     * @return 中金聚合分账预处理结果
++     */
++    public ZjUnifySharingProcessResult process(UnifiedPaymentRequestDTO originalRequest,
++                                               ChannelAccessConfigEntity accessConfig) {
++        try {
++            UnifiedPaymentRequestDTO processedRequest = copyRequest(originalRequest);
++            if (isEmpty(originalRequest.getSharingDetails())) {
++                return ZjUnifySharingProcessResult.pass(processedRequest);
++            }
++            if (!isConfigPairPresent(accessConfig)) {
++                return validatePassThrough(processedRequest);
++            }
++
++            boolean sharingEnabled = parseRequiredSharingEnabled(accessConfig.getSharingConfig());
++            String sharingMainMer = StringUtils.trimToNull(accessConfig.getSharingMainMer());
++            if (sharingMainMer == null) {
++                throw new ZjUnifySharingConfigException("中金聚合分账主接收方配置为空");
++            }
++            if (sharingEnabled) {
++                return validatePassThrough(processedRequest);
++            }
++            if (!isEquivalentSingleDebit(originalRequest, sharingMainMer)) {
++                return ZjUnifySharingProcessResult.failure(ZjUnifySharingLocalErrorEnums.SHARING_NOT_ENABLED);
++            }
++
++            ZjUnifySharingChangeSnapshot snapshot = buildSnapshot(originalRequest, accessConfig, sharingMainMer);
++            processedRequest.setSharingDetails(new ArrayList<SharingDetailsDTO>());
++            return ZjUnifySharingProcessResult.changed(processedRequest, snapshot);
++        } catch (ZjUnifySharingConfigException e) {
++            log.warn("中金聚合分账配置校验失败, merchantNo={}, orderId={}, message={}",
++                    merchantNo(originalRequest), orderId(originalRequest), e.getMessage());
++            return ZjUnifySharingProcessResult.failure(ZjUnifySharingLocalErrorEnums.SHARING_CONFIG_ERROR);
++        } catch (Exception e) {
++            log.error("中金聚合分账参数预处理异常, merchantNo={}, orderId={}",
++                    merchantNo(originalRequest), orderId(originalRequest), e);
++            return ZjUnifySharingProcessResult.failure(ZjUnifySharingLocalErrorEnums.SHARING_PROCESS_ERROR);
++        }
++    }
++
++    /**
++     * 校验允许分账的明细能否按现有聚合规则组装。
++     *
++     * @param processedRequest 处理后的请求副本
++     * @return 原样通过结果或分账参数失败结果
++     */
++    private ZjUnifySharingProcessResult validatePassThrough(UnifiedPaymentRequestDTO processedRequest) {
++        try {
++            ZjUnifySettlementAssembler.build(processedRequest.getSharingDetails(), null);
++            return ZjUnifySharingProcessResult.pass(processedRequest);
++        } catch (BizException e) {
++            return ZjUnifySharingProcessResult.failure(ZjUnifySharingLocalErrorEnums.SHARING_PARAM_ERROR);
++        }
++    }
++
++    /**
++     * 判断分账配置对是否同时非空。
++     *
++     * @param accessConfig 渠道接入配置
++     * @return 是否构成完整配置对
++     */
++    private boolean isConfigPairPresent(ChannelAccessConfigEntity accessConfig) {
++        return accessConfig != null
++                && StringUtils.isNotBlank(accessConfig.getSharingConfig())
++                && StringUtils.isNotBlank(accessConfig.getSharingMainMer());
++    }
++
++    /**
++     * 从完整配置对中读取必填的布尔开关。
++     *
++     * @param sharingConfig 分账 JSON 配置
++     * @return 是否允许分账
++     */
++    private boolean parseRequiredSharingEnabled(String sharingConfig) {
++        final JSONObject config;
++        try {
++            config = JSON.parseObject(sharingConfig);
++        } catch (Exception e) {
++            throw new ZjUnifySharingConfigException("中金聚合分账配置不是合法 JSON 对象", e);
++        }
++        if (config == null || !config.containsKey("sharingEnabled")) {
++            throw new ZjUnifySharingConfigException("中金聚合分账配置缺少 sharingEnabled");
++        }
++        Object value = config.get("sharingEnabled");
++        if (!(value instanceof Boolean)) {
++            throw new ZjUnifySharingConfigException("中金聚合分账配置 sharingEnabled 必须为布尔类型");
++        }
++        return (Boolean) value;
++    }
++
++    /**
++     * 判断请求是否与主接收方单扣经济效果等价。
++     *
++     * @param request        原始支付请求
++     * @param sharingMainMer 中金主结算标识
++     * @return 是否满足等价单扣条件
++     */
++    private boolean isEquivalentSingleDebit(UnifiedPaymentRequestDTO request, String sharingMainMer) {
++        List<SharingDetailsDTO> details = request.getSharingDetails();
++        if (details == null || details.size() != 1) {
++            return false;
++        }
++        SharingDetailsDTO detail = details.get(0);
++        if (detail == null || !isAmountType(detail.getSharingType())) {
++            return false;
++        }
++        if (!StringUtils.equals(StringUtils.trimToEmpty(detail.getSharingMerId()), sharingMainMer)) {
++            return false;
++        }
++        return detail.getSharingAmt() != null
++                && request.getTransactionAmt() != null
++                && detail.getSharingAmt().compareTo(request.getTransactionAmt()) == 0;
++    }
++
++    /**
++     * 判断统一分账类型是否为按金额类型。
++     *
++     * <p>与协议支付门禁相同：空、{@code 1}、{@code 30} 视为按金额。
++     * 允许分账时，现有聚合组包仍只接受空、{@code 1}、{@code 2}。</p>
++     *
++     * @param sharingType 分账类型
++     * @return 是否为按金额类型
++     */
++    private boolean isAmountType(Integer sharingType) {
++        return sharingType == null || Integer.valueOf(1).equals(sharingType)
++                || Integer.valueOf(30).equals(sharingType);
++    }
++
++    /**
++     * 创建只包含门禁判定字段的审计快照。
++     *
++     * @param request        原始请求
++     * @param accessConfig   渠道接入配置
++     * @param sharingMainMer 中金主结算标识
++     * @return 参数变更快照
++     */
++    private ZjUnifySharingChangeSnapshot buildSnapshot(UnifiedPaymentRequestDTO request,
++                                                       ChannelAccessConfigEntity accessConfig,
++                                                       String sharingMainMer) {
++        SharingDetailsDTO detail = request.getSharingDetails().get(0);
++        Map<String, Object> configSnapshot = new LinkedHashMap<String, Object>();
++        configSnapshot.put("sharingEnabled", false);
++        configSnapshot.put("sharingMainMer", sharingMainMer);
++        configSnapshot.put("settlementFlag", sharingMainMer);
++
++        Map<String, Object> detailSnapshot = new LinkedHashMap<String, Object>();
++        detailSnapshot.put("sharingMerId", StringUtils.trimToEmpty(detail.getSharingMerId()));
++        detailSnapshot.put("sharingAmt", detail.getSharingAmt());
++        detailSnapshot.put("sharingType", detail.getSharingType());
++
++        Map<String, Object> beforeData = new LinkedHashMap<String, Object>();
++        beforeData.put("transactionAmt", request.getTransactionAmt());
++        beforeData.put("sharingDetails", Collections.singletonList(detailSnapshot));
++
++        Map<String, Object> afterData = new LinkedHashMap<String, Object>();
++        afterData.put("transactionAmt", request.getTransactionAmt());
++        afterData.put("sharingDetails", Collections.emptyList());
++        afterData.put("splitType", "10");
++        afterData.put("settlementFlag", sharingMainMer);
++
++        return new ZjUnifySharingChangeSnapshot(request.getOrderId(), ChannelEnum.ZJPAY, accessConfig.getProfile(),
++                request.getMerchantNo(), CHANGE_TYPE_SELF_FULL_AMOUNT_TO_SINGLE_DEBIT, configSnapshot,
++                beforeData, afterData, CHANGE_REASON, new Date());
++    }
++
++    /**
++     * 深复制统一下单请求中的分账明细。
++     *
++     * @param originalRequest 原始请求
++     * @return 请求副本
++     */
++    private UnifiedPaymentRequestDTO copyRequest(UnifiedPaymentRequestDTO originalRequest) {
++        if (originalRequest == null) {
++            throw new IllegalArgumentException("中金聚合支付请求不能为空");
++        }
++        UnifiedPaymentRequestDTO copy = new UnifiedPaymentRequestDTO();
++        BeanUtils.copyProperties(originalRequest, copy);
++        if (originalRequest.getSharingDetails() == null) {
++            copy.setSharingDetails(null);
++            return copy;
++        }
++        List<SharingDetailsDTO> copiedDetails = new ArrayList<SharingDetailsDTO>(
++                originalRequest.getSharingDetails().size());
++        for (SharingDetailsDTO detail : originalRequest.getSharingDetails()) {
++            copiedDetails.add(copyDetail(detail));
++        }
++        copy.setSharingDetails(copiedDetails);
++        return copy;
++    }
++
++    /**
++     * 深复制单条分账明细。
++     *
++     * @param detail 原始分账明细
++     * @return 分账明细副本
++     */
++    private SharingDetailsDTO copyDetail(SharingDetailsDTO detail) {
++        if (detail == null) {
++            return null;
++        }
++        SharingDetailsDTO copy = new SharingDetailsDTO();
++        copy.setSharingMerId(detail.getSharingMerId());
++        copy.setSharingAmt(detail.getSharingAmt());
++        copy.setSharingType(detail.getSharingType());
++        copy.setSharingNotifyUrl(detail.getSharingNotifyUrl());
++        copy.setSharingOrderId(detail.getSharingOrderId());
++        return copy;
++    }
++
++    /**
++     * 判断列表是否为空。
++     *
++     * @param details 分账明细
++     * @return 是否为空
++     */
++    private boolean isEmpty(List<SharingDetailsDTO> details) {
++        return details == null || details.isEmpty();
++    }
++
++    /**
++     * 安全读取请求商户号。
++     *
++     * @param request 支付请求
++     * @return 商户号
++     */
++    private String merchantNo(UnifiedPaymentRequestDTO request) {
++        return request == null ? null : request.getMerchantNo();
++    }
++
++    /**
++     * 安全读取请求订单号。
++     *
++     * @param request 支付请求
++     * @return 订单号
++     */
++    private String orderId(UnifiedPaymentRequestDTO request) {
++        return request == null ? null : request.getOrderId();
++    }
++
++    /**
++     * 中金聚合分账配置内容异常。
++     */
++    private static final class ZjUnifySharingConfigException extends RuntimeException {
++
++        /**
++         * 序列化版本号。
++         */
++        private static final long serialVersionUID = 1L;
++
++        /**
++         * 构造分账配置内容异常。
++         *
++         * @param message 异常信息
++         */
++        private ZjUnifySharingConfigException(String message) {
++            super(message);
++        }
++
++        /**
++         * 构造包含原始原因的分账配置内容异常。
++         *
++         * @param message 异常信息
++         * @param cause   原始异常
++         */
++        private ZjUnifySharingConfigException(String message, Throwable cause) {
++            super(message, cause);
++        }
++    }
++}
+diff --git a/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/support/ZjUnifySharingChangeLogSupport.java b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/support/ZjUnifySharingChangeLogSupport.java
+new file mode 100644
+index 0000000..a88baad
+--- /dev/null
++++ b/intf-paychannel-adapter/intf-paychannel-adapter-zj/src/main/java/com/intf/paychannel/adapter/zj/support/ZjUnifySharingChangeLogSupport.java
+@@ -0,0 +1,50 @@
++package com.intf.paychannel.adapter.zj.support;
++
++import com.alibaba.fastjson.JSON;
++import com.intf.paychannel.adapter.zj.model.unify.ZjUnifySharingChangeSnapshot;
++import com.intf.paychannel.model.entity.ChannelSharingChangeLogEntity;
++import com.intf.paychannel.service.ChannelSharingChangeLogService;
++import org.springframework.stereotype.Component;
++
++import javax.annotation.Resource;
++
++/**
++ * 中金聚合支付分账参数变更日志支撑。
++ *
++ * <p>把聚合门禁快照转换为通用日志实体并持久化，不参与门禁判断，
++ * 也不调用协议支付的变更日志支撑。</p>
++ */
++@Component
++public class ZjUnifySharingChangeLogSupport {
++
++    /**
++     * 渠道分账参数变更日志服务。
++     */
++    @Resource
++    private ChannelSharingChangeLogService channelSharingChangeLogService;
++
++    /**
++     * 保存中金聚合分账参数变更日志。
++     *
++     * @param snapshot 参数变更快照
++     */
++    public void save(ZjUnifySharingChangeSnapshot snapshot) {
++        if (snapshot == null) {
++            throw new IllegalArgumentException("中金聚合分账参数变更快照不能为空");
++        }
++        ChannelSharingChangeLogEntity entity = new ChannelSharingChangeLogEntity();
++        entity.setSerialNo(snapshot.getSerialNo());
++        entity.setChannel(snapshot.getChannel());
++        entity.setProfile(snapshot.getProfile());
++        entity.setMerchantNo(snapshot.getMerchantNo());
++        entity.setChangeType(snapshot.getChangeType());
++        entity.setConfigSnapshot(JSON.toJSONString(snapshot.getConfigSnapshot()));
++        entity.setBeforeData(JSON.toJSONString(snapshot.getBeforeData()));
++        entity.setAfterData(JSON.toJSONString(snapshot.getAfterData()));
++        entity.setChangeReason(snapshot.getChangeReason());
++        entity.setRequestTime(snapshot.getRequestTime());
++        if (!channelSharingChangeLogService.save(entity)) {
++            throw new IllegalStateException("中金聚合分账参数变更日志保存失败");
++        }
++    }
++}

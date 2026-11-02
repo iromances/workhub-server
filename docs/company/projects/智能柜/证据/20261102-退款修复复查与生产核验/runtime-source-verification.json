@@ -1,0 +1,27 @@
+[
+  {
+    "path": "lease-saps-service/src/main/java/com/lease/saps/service/replacebattery/impl/ReplaceBatteryDeviceServiceImpl.java",
+    "unchanged": true,
+    "sha256": "839892a2167ea38ad950546e0fdc9204a666c0d0153194ec2a4a03acc76df0da"
+  },
+  {
+    "path": "lease-saps-business/src/main/java/com/lease/saps/business/impl/DeviceFlowLYBizServiceImpl.java",
+    "unchanged": true,
+    "sha256": "424c2541b1f903b1751e2e30d5ca1551b3851d4a9618477916974bb6305fdaee"
+  },
+  {
+    "path": "lease-saps-business/src/main/java/com/lease/saps/business/service/refund/impl/RefundOrderSaveBizImpl.java",
+    "unchanged": true,
+    "sha256": "cb706ed46d3b092e0452feeed9d538378be4f0b6fcddcf31f1061b84b7037df2"
+  },
+  {
+    "path": "lease-saps-business/src/main/java/com/lease/saps/business/service/order/impl/CustomerOrderNotifyBizImpl.java",
+    "unchanged": true,
+    "sha256": "a4dfb44bdb39e4ef1feafc3fefe95bf3e8c6cfec00eee781b7d3bb419cb81f16"
+  },
+  {
+    "path": "lease-saps-business/src/main/java/com/lease/saps/business/service/refund/impl/RefundCallbackBizImpl.java",
+    "unchanged": true,
+    "sha256": "d08d6dea59c0a435d7c64a9d04b12465757f3d137a487a3c7861867786d3afda"
+  }
+]

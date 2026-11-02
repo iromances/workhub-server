@@ -1,0 +1,179 @@
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.intf.paychannel:intf-paychannel-adapter-syxpay:jar:0.0.1-SNAPSHOT
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.bouncycastle:bctls-jdk15on:jar -> duplicate declaration of version (?) @ line 61, column 21
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] intf-paychannel                                                    [pom]
+[INFO] intf-paychannel-infra-common                                       [jar]
+[INFO] intf-paychannel-domain                                             [jar]
+[INFO] intf-paychannel-infra-dao                                          [jar]
+[INFO] intf-paychannel-infra-service                                      [jar]
+[INFO] intf-paychannel-adapter                                            [pom]
+[INFO] intf-paychannel-adapter-api                                        [jar]
+[INFO] intf-paychannel-application                                        [jar]
+[INFO] intf-paychannel-adapter-support                                    [jar]
+[INFO] intf-paychannel-adapter-allinpay                                   [jar]
+[INFO] 
+[INFO] ----------------< com.intf.paychannel:intf-paychannel >-----------------
+[INFO] Building intf-paychannel 0.0.1-SNAPSHOT                           [1/10]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] ----------< com.intf.paychannel:intf-paychannel-infra-common >----------
+[INFO] Building intf-paychannel-infra-common 0.0.1-SNAPSHOT              [2/10]
+[INFO]   from intf-paychannel-infra-common/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] The POM for com.alibaba:druid:jar:1.2.6 is invalid, transitive dependencies (if any) will not be available: 2 problems were encountered while building the effective model for com.alibaba:druid:1.2.6
+[ERROR] 'dependencies.dependency.systemPath' for com.sun:tools:jar must specify an absolute path but is ${project.basedir}/lib/openjdk-1.8-tools.jar @ 
+[ERROR] 'dependencies.dependency.systemPath' for com.sun:jconsole:jar must specify an absolute path but is ${project.basedir}/lib/openjdk-1.8-jconsole.jar @ 
+
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.0.20.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.0.20.Final
+[INFO] 
+[INFO] --- resources:3.1.0:resources (default-resources) @ intf-paychannel-infra-common ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-infra-common/src/main/resources
+[INFO] skip non existing resourceDirectory /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-infra-common/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ intf-paychannel-infra-common ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 92 source files to /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-infra-common/target/classes
+[INFO] /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-infra-common/src/main/java/com/intf/paychannel/common/util/MatrixToImageUtil.java: /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-infra-common/src/main/java/com/intf/paychannel/common/util/MatrixToImageUtil.java使用或覆盖了已过时的 API。
+[INFO] /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-infra-common/src/main/java/com/intf/paychannel/common/util/MatrixToImageUtil.java: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+[INFO] /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-infra-common/src/main/java/com/intf/paychannel/common/core/PageResponse.java: 某些输入文件使用了未经检查或不安全的操作。
+[INFO] /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-infra-common/src/main/java/com/intf/paychannel/common/core/PageResponse.java: 有关详细信息, 请使用 -Xlint:unchecked 重新编译。
+[INFO] 
+[INFO] -------------< com.intf.paychannel:intf-paychannel-domain >-------------
+[INFO] Building intf-paychannel-domain 0.0.1-SNAPSHOT                    [3/10]
+[INFO]   from intf-paychannel-domain/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.0.20.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.0.20.Final
+[INFO] 
+[INFO] --- resources:3.1.0:resources (default-resources) @ intf-paychannel-domain ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-domain/src/main/resources
+[INFO] skip non existing resourceDirectory /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-domain/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ intf-paychannel-domain ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 90 source files to /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-domain/target/classes
+[INFO] 
+[INFO] -----------< com.intf.paychannel:intf-paychannel-infra-dao >------------
+[INFO] Building intf-paychannel-infra-dao 0.0.1-SNAPSHOT                 [4/10]
+[INFO]   from intf-paychannel-infra-dao/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.0.20.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.0.20.Final
+[INFO] 
+[INFO] --- resources:3.1.0:resources (default-resources) @ intf-paychannel-infra-dao ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 0 resource
+[INFO] skip non existing resourceDirectory /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-infra-dao/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ intf-paychannel-infra-dao ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 10 source files to /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-infra-dao/target/classes
+[INFO] 
+[INFO] ---------< com.intf.paychannel:intf-paychannel-infra-service >----------
+[INFO] Building intf-paychannel-infra-service 0.0.1-SNAPSHOT             [5/10]
+[INFO]   from intf-paychannel-infra-service/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.0.20.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.0.20.Final
+[INFO] 
+[INFO] --- resources:3.1.0:resources (default-resources) @ intf-paychannel-infra-service ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-infra-service/src/main/resources
+[INFO] skip non existing resourceDirectory /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-infra-service/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ intf-paychannel-infra-service ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 22 source files to /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-infra-service/target/classes
+[INFO] 
+[INFO] ------------< com.intf.paychannel:intf-paychannel-adapter >-------------
+[INFO] Building intf-paychannel-adapter 0.0.1-SNAPSHOT                   [6/10]
+[INFO]   from intf-paychannel-adapter/pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] ----------< com.intf.paychannel:intf-paychannel-adapter-api >-----------
+[INFO] Building intf-paychannel-adapter-api 0.0.1-SNAPSHOT               [7/10]
+[INFO]   from intf-paychannel-adapter/intf-paychannel-adapter-api/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.0.20.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.0.20.Final
+[INFO] 
+[INFO] --- resources:3.1.0:resources (default-resources) @ intf-paychannel-adapter-api ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-adapter/intf-paychannel-adapter-api/src/main/resources
+[INFO] skip non existing resourceDirectory /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-adapter/intf-paychannel-adapter-api/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ intf-paychannel-adapter-api ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 17 source files to /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-adapter/intf-paychannel-adapter-api/target/classes
+[INFO] 
+[INFO] ----------< com.intf.paychannel:intf-paychannel-application >-----------
+[INFO] Building intf-paychannel-application 0.0.1-SNAPSHOT               [8/10]
+[INFO]   from intf-paychannel-application/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.0.20.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.0.20.Final
+[INFO] 
+[INFO] --- resources:3.1.0:resources (default-resources) @ intf-paychannel-application ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-application/src/main/resources
+[INFO] skip non existing resourceDirectory /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-application/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ intf-paychannel-application ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 35 source files to /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-application/target/classes
+[INFO] 
+[INFO] --------< com.intf.paychannel:intf-paychannel-adapter-support >---------
+[INFO] Building intf-paychannel-adapter-support 0.0.1-SNAPSHOT           [9/10]
+[INFO]   from intf-paychannel-adapter/intf-paychannel-adapter-support/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.0.20.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.0.20.Final
+[INFO] 
+[INFO] --- resources:3.1.0:resources (default-resources) @ intf-paychannel-adapter-support ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-adapter/intf-paychannel-adapter-support/src/main/resources
+[INFO] skip non existing resourceDirectory /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-adapter/intf-paychannel-adapter-support/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ intf-paychannel-adapter-support ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 2 source files to /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-adapter/intf-paychannel-adapter-support/target/classes
+[INFO] 
+[INFO] --------< com.intf.paychannel:intf-paychannel-adapter-allinpay >--------
+[INFO] Building intf-paychannel-adapter-allinpay 0.0.1-SNAPSHOT         [10/10]
+[INFO]   from intf-paychannel-adapter/intf-paychannel-adapter-allinpay/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] The artifact org.hibernate:hibernate-validator:jar:6.0.20.Final has been relocated to org.hibernate.validator:hibernate-validator:jar:6.0.20.Final
+[INFO] 
+[INFO] --- resources:3.1.0:resources (default-resources) @ intf-paychannel-adapter-allinpay ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-adapter/intf-paychannel-adapter-allinpay/src/main/resources
+[INFO] skip non existing resourceDirectory /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-adapter/intf-paychannel-adapter-allinpay/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ intf-paychannel-adapter-allinpay ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 70 source files to /private/tmp/refund-review-20261030/source/intf-paychannel/intf-paychannel-adapter/intf-paychannel-adapter-allinpay/target/classes
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for intf-paychannel 0.0.1-SNAPSHOT:
+[INFO] 
+[INFO] intf-paychannel .................................... SUCCESS [  0.001 s]
+[INFO] intf-paychannel-infra-common ....................... SUCCESS [  2.105 s]
+[INFO] intf-paychannel-domain ............................. SUCCESS [  1.006 s]
+[INFO] intf-paychannel-infra-dao .......................... SUCCESS [  0.385 s]
+[INFO] intf-paychannel-infra-service ...................... SUCCESS [  0.529 s]
+[INFO] intf-paychannel-adapter ............................ SUCCESS [  0.001 s]
+[INFO] intf-paychannel-adapter-api ........................ SUCCESS [  0.353 s]
+[INFO] intf-paychannel-application ........................ SUCCESS [  0.527 s]
+[INFO] intf-paychannel-adapter-support .................... SUCCESS [  0.299 s]
+[INFO] intf-paychannel-adapter-allinpay ................... SUCCESS [  0.684 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  6.269 s
+[INFO] Finished at: 2026-10-30T17:39:53+08:00
+[INFO] ------------------------------------------------------------------------

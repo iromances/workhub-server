@@ -1,0 +1,850 @@
+[
+  {
+    "repo": "lease-finance",
+    "path": "lease-finance-controller/src/main/java/com/lease/finance/controller/apply/ApplyController.java",
+    "line": 553,
+    "class": "RetrySubmitRiskControlOrAuditFlowJob",
+    "method": "paymentResultHandle",
+    "test": false
+  },
+  {
+    "repo": "lease-payment",
+    "path": "lease-payment-controller/src/main/java/com/lease/payment/controller/test/ScheduleTestController.java",
+    "line": 35,
+    "class": "RemitSchedule",
+    "method": "remitStatus",
+    "test": false
+  },
+  {
+    "repo": "lease-payment",
+    "path": "lease-payment-controller/src/main/java/com/lease/payment/controller/test/ScheduleTestController.java",
+    "line": 47,
+    "class": "RemitSchedule",
+    "method": "remitNotify",
+    "test": false
+  },
+  {
+    "repo": "lease-payment",
+    "path": "lease-payment-controller/src/main/java/com/lease/payment/controller/test/ScheduleTestController.java",
+    "line": 59,
+    "class": "RemitSchedule",
+    "method": "downLoadBankVoucher",
+    "test": false
+  },
+  {
+    "repo": "lease-payment",
+    "path": "lease-payment-controller/src/main/java/com/lease/payment/controller/test/TestController.java",
+    "line": 56,
+    "class": "TradeSyncJobHandler",
+    "method": "inTimeWheelPadding",
+    "test": false
+  },
+  {
+    "repo": "lease-payment",
+    "path": "lease-payment-controller/src/main/java/com/lease/payment/controller/test/TestController.java",
+    "line": 65,
+    "class": "PayCheckSchedule",
+    "method": "process",
+    "test": false
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-business/src/test/java/com/lease/saps/business/schedule/statement/RentSaleStatementGenerateScheduleTest.java",
+    "line": 72,
+    "class": "RentSaleStatementGenerateSchedule",
+    "method": "monthly",
+    "test": true
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-business/src/test/java/com/lease/saps/business/schedule/statement/RentSaleStatementGenerateScheduleTest.java",
+    "line": 88,
+    "class": "RentSaleStatementGenerateSchedule",
+    "method": "monthly",
+    "test": true
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-business/src/test/java/com/lease/saps/business/schedule/statement/RentSaleStatementGenerateScheduleTest.java",
+    "line": 104,
+    "class": "RentSaleStatementGenerateSchedule",
+    "method": "monthly",
+    "test": true
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-business/src/test/java/com/lease/saps/business/schedule/statement/RentSaleStatementGenerateScheduleTest.java",
+    "line": 124,
+    "class": "RentSaleStatementGenerateSchedule",
+    "method": "monthly",
+    "test": true
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/RuiTestController.java",
+    "line": 151,
+    "class": "HotAccountRecordSummaryUpdateSchedule",
+    "method": "process",
+    "test": false
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 77,
+    "class": "SysSchedule",
+    "method": "sysBusinessDayUpdateJob",
+    "test": false
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 127,
+    "class": "SysSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 154,
+    "class": "InvoiceNoticeSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 143,
+    "class": "CustomerBillReportSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 161,
+    "class": "PrepaymentMarginSettleBillSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 110,
+    "class": "CustomBillWithholdSchedule",
+    "method": "agreementPayCheckSchedule",
+    "test": false
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 92,
+    "class": "CustomBillWithholdSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 64,
+    "class": "CustomerBillOverdueSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 174,
+    "class": "CustomerBillNotifySchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 204,
+    "class": "CustomerBillNotifySchedule",
+    "method": "overdueCustomer",
+    "test": false
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 191,
+    "class": "CustomerBillNotifySchedule",
+    "method": "wxSingleBillOverdeuNotifySchedule",
+    "test": false
+  },
+  {
+    "repo": "lease-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/TestController.java",
+    "line": 69,
+    "class": "StatementOverdueSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/InstallImageFingerprintBackfillJobRecognitionTest.java",
+    "line": 73,
+    "class": "InstallImageFingerprintBackfillJob",
+    "method": "backfillRecognition",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/InstallImageFingerprintBackfillJobRecognitionTest.java",
+    "line": 85,
+    "class": "InstallImageFingerprintBackfillJob",
+    "method": "backfillRecognition",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/InstallImageFingerprintBackfillJobRecognitionTest.java",
+    "line": 99,
+    "class": "InstallImageFingerprintBackfillJob",
+    "method": "backfillRecognition",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/InstallImageFingerprintBackfillJobRecognitionTest.java",
+    "line": 115,
+    "class": "InstallImageFingerprintBackfillJob",
+    "method": "backfillRecognition",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/InstallImageFingerprintBackfillJobRecognitionTest.java",
+    "line": 132,
+    "class": "InstallImageFingerprintBackfillJob",
+    "method": "backfillRecognition",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/InstallImageFingerprintBackfillJobRecognitionTest.java",
+    "line": 151,
+    "class": "InstallImageFingerprintBackfillJob",
+    "method": "backfillRecognition",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/InstallImageFingerprintBackfillJobRecognitionTest.java",
+    "line": 172,
+    "class": "InstallImageFingerprintBackfillJob",
+    "method": "backfillRecognition",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/ManufacturerNotifyCompensateJobTest.java",
+    "line": 109,
+    "class": "ManufacturerNotifyCompensateJob",
+    "method": "execute",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/ManufacturerNotifyCompensateJobTest.java",
+    "line": 118,
+    "class": "ManufacturerNotifyCompensateJob",
+    "method": "execute",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/ManufacturerNotifyCompensateJobTest.java",
+    "line": 130,
+    "class": "ManufacturerNotifyCompensateJob",
+    "method": "execute",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/ManufacturerNotifyCompensateJobTest.java",
+    "line": 139,
+    "class": "ManufacturerNotifyCompensateJob",
+    "method": "execute",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/ManufacturerNotifyCompensateJobTest.java",
+    "line": 171,
+    "class": "ManufacturerNotifyCompensateJob",
+    "method": "execute",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/ManufacturerNotifyCompensateJobTest.java",
+    "line": 188,
+    "class": "ManufacturerNotifyCompensateJob",
+    "method": "execute",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/ManufacturerNotifyCompensateJobTest.java",
+    "line": 202,
+    "class": "ManufacturerNotifyCompensateJob",
+    "method": "execute",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/MessageSendCompensateJobTest.java",
+    "line": 74,
+    "class": "MessageSendCompensateJob",
+    "method": "execute",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/MessageSendCompensateJobTest.java",
+    "line": 92,
+    "class": "MessageSendCompensateJob",
+    "method": "execute",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/MessageSendCompensateJobTest.java",
+    "line": 109,
+    "class": "MessageSendCompensateJob",
+    "method": "execute",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/MessageSendCompensateJobTest.java",
+    "line": 127,
+    "class": "MessageSendCompensateJob",
+    "method": "execute",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/MessageSendCompensateJobTest.java",
+    "line": 144,
+    "class": "MessageSendCompensateJob",
+    "method": "execute",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/MessageSendCompensateJobTest.java",
+    "line": 163,
+    "class": "MessageSendCompensateJob",
+    "method": "execute",
+    "test": true
+  },
+  {
+    "repo": "ol-order",
+    "path": "order-service/src/test/java/com/ol/order/service/xxljob/MessageSendCompensateJobTest.java",
+    "line": 166,
+    "class": "MessageSendCompensateJob",
+    "method": "execute",
+    "test": true
+  },
+  {
+    "repo": "ol-payment",
+    "path": "lease-payment-controller/src/main/java/com/lease/payment/controller/test/ScheduleTestController.java",
+    "line": 42,
+    "class": "PayResultNotifyCompensateSchedule",
+    "method": "channelQuerySchedule",
+    "test": false
+  },
+  {
+    "repo": "ol-payment",
+    "path": "lease-payment-controller/src/main/java/com/lease/payment/controller/test/ScheduleTestController.java",
+    "line": 78,
+    "class": "TransferSchedule",
+    "method": "dayCollectMonitorSchedule",
+    "test": false
+  },
+  {
+    "repo": "ol-payment",
+    "path": "lease-payment-controller/src/main/java/com/lease/payment/controller/test/ScheduleTestController.java",
+    "line": 66,
+    "class": "TransferSchedule",
+    "method": "dayCollectSchedule",
+    "test": false
+  },
+  {
+    "repo": "ol-payment",
+    "path": "lease-payment-controller/src/main/java/com/lease/payment/controller/test/ScheduleTestController.java",
+    "line": 54,
+    "class": "PayCheckSchedule",
+    "method": "process",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/RuiTestController.java",
+    "line": 71,
+    "class": "CustomerBillOverdueFeeSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/RuiTestController.java",
+    "line": 114,
+    "class": "HotAccountRecordSummaryUpdateSchedule",
+    "method": "process",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 133,
+    "class": "BuybackStatementGenerateSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 231,
+    "class": "DeviceFlowPullSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 325,
+    "class": "CustomerOrderSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 342,
+    "class": "CustomerOrderSchedule",
+    "method": "executeOrderNotifyRetry",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 220,
+    "class": "SysWarnSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 247,
+    "class": "CustomerBillReportSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 170,
+    "class": "CollectionServiceStatementGenerateSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 265,
+    "class": "PrepaymentMarginSettleBillSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 86,
+    "class": "CustomerMonthRentBalanceReportSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 158,
+    "class": "TechnologyServiceStatementGenerateSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 107,
+    "class": "DepositMonthReportSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 145,
+    "class": "CompensatoryStatementGenerateSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 202,
+    "class": "CustomBillWithholdSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 185,
+    "class": "StatementGenerateSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 296,
+    "class": "CustomerBillNotifySchedule",
+    "method": "overdueCustomer",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 278,
+    "class": "CustomerBillNotifySchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/ScheduleTestController.java",
+    "line": 258,
+    "class": "BillSettledNoticeSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "ol-saps",
+    "path": "lease-saps-controller/src/main/java/com/lease/saps/controller/test/TestController.java",
+    "line": 81,
+    "class": "StatementOverdueSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "intf-hs",
+    "path": "domain/hlj/intf-hlj-web/src/main/java/com/thctay/hlj/controller/ConsumeGainController.java",
+    "line": 140,
+    "class": "HljConsumeGetService",
+    "method": "consumeFileCompensation",
+    "test": false
+  },
+  {
+    "repo": "thctay-account",
+    "path": "account-controller/src/main/java/com/thchengtay/account/controller/test/ScheduleTestController.java",
+    "line": 39,
+    "class": "HighwayAccountSchedule",
+    "method": "highwayAccountCheckWarnSchedule",
+    "test": false
+  },
+  {
+    "repo": "thctay-account",
+    "path": "account-controller/src/main/java/com/thchengtay/account/controller/test/ScheduleTestController.java",
+    "line": 51,
+    "class": "HighwayAccountSchedule",
+    "method": "dayCheck",
+    "test": false
+  },
+  {
+    "repo": "thctay-account",
+    "path": "account-controller/src/main/java/com/thchengtay/account/controller/test/ScheduleTestController.java",
+    "line": 65,
+    "class": "HighwayAccountSchedule",
+    "method": "highwayAccountDayRecordSchedule",
+    "test": false
+  },
+  {
+    "repo": "thctay-account",
+    "path": "account-controller/src/main/java/com/thchengtay/account/controller/test/TestController.java",
+    "line": 44,
+    "class": "ReportAccountBalanceDaySummaryJobHandler",
+    "method": "process",
+    "test": false
+  },
+  {
+    "repo": "thctay-eas",
+    "path": "eas-controller/src/main/java/com/thchengtay/eas/controller/TestController.java",
+    "line": 169,
+    "class": "AssetsVoucherSchedule",
+    "method": "assetsQxbVoucherCreateSchedule",
+    "test": false
+  },
+  {
+    "repo": "thctay-eas",
+    "path": "eas-controller/src/main/java/com/thchengtay/eas/controller/TestController.java",
+    "line": 202,
+    "class": "LoanVoucherGenerateSchedule",
+    "method": "processNew",
+    "test": false
+  },
+  {
+    "repo": "thctay-eas",
+    "path": "eas-controller/src/main/java/com/thchengtay/eas/controller/TestController.java",
+    "line": 235,
+    "class": "LoanVoucherGenerateSchedule",
+    "method": "loanRefactorCapital",
+    "test": false
+  },
+  {
+    "repo": "thctay-eas",
+    "path": "eas-controller/src/main/java/com/thchengtay/eas/controller/TestController.java",
+    "line": 143,
+    "class": "OnlineVoucherGenerateSchedule",
+    "method": "onlineRefactorVoucherGenerateSchedule",
+    "test": false
+  },
+  {
+    "repo": "thctay-eas",
+    "path": "eas-controller/src/main/java/com/thchengtay/eas/controller/TestController.java",
+    "line": 111,
+    "class": "OnlineVoucherGenerateSchedule",
+    "method": "processNew",
+    "test": false
+  },
+  {
+    "repo": "thctay-eas",
+    "path": "eas-controller/src/main/java/com/thchengtay/eas/controller/TestController.java",
+    "line": 56,
+    "class": "OnlineVoucherGenerateSchedule",
+    "method": "process",
+    "test": false
+  },
+  {
+    "repo": "thctay-eas",
+    "path": "eas-controller/src/main/java/com/thchengtay/eas/controller/test/AmpTestController.java",
+    "line": 110,
+    "class": "AmpVoucherCreateSchedule",
+    "method": "monthFee",
+    "test": false
+  },
+  {
+    "repo": "thctay-eas",
+    "path": "eas-controller/src/main/java/com/thchengtay/eas/controller/test/AmpTestController.java",
+    "line": 78,
+    "class": "AmpVoucherCreateSchedule",
+    "method": "process",
+    "test": false
+  },
+  {
+    "repo": "thctay-eas",
+    "path": "eas-controller/src/main/java/com/thchengtay/eas/controller/test/AmpTestController.java",
+    "line": 54,
+    "class": "VoucherRetrySchedule",
+    "method": "process",
+    "test": false
+  },
+  {
+    "repo": "thctay-eas",
+    "path": "eas-controller/src/main/java/com/thchengtay/eas/controller/test/AssetsTestController.java",
+    "line": 63,
+    "class": "AssetsVoucherSchedule",
+    "method": "assetsVoucherCreateSchedule",
+    "test": false
+  },
+  {
+    "repo": "thctay-eas",
+    "path": "eas-controller/src/main/java/com/thchengtay/eas/controller/test/AssetsTestController.java",
+    "line": 138,
+    "class": "AssetsVoucherSchedule",
+    "method": "assetsLeaseVoucherCreateSchedule",
+    "test": false
+  },
+  {
+    "repo": "thctay-eas",
+    "path": "eas-controller/src/main/java/com/thchengtay/eas/controller/test/AssetsTestController.java",
+    "line": 101,
+    "class": "AssetsVoucherSchedule",
+    "method": "assetsQxbVoucherCreateSchedule",
+    "test": false
+  },
+  {
+    "repo": "thctay-eas",
+    "path": "eas-controller/src/main/java/com/thchengtay/eas/controller/test/AssetsTestController.java",
+    "line": 163,
+    "class": "ScfVoucherRetrySchedule",
+    "method": "process",
+    "test": false
+  },
+  {
+    "repo": "thctay-eas",
+    "path": "eas-controller/src/main/java/com/thchengtay/eas/controller/test/ScfTestController.java",
+    "line": 113,
+    "class": "ThctayFactorTianJinMergeSchedule",
+    "method": "thctayVoucherCreateSchedule",
+    "test": false
+  },
+  {
+    "repo": "thctay-eas",
+    "path": "eas-controller/src/main/java/com/thchengtay/eas/controller/test/ScfTestController.java",
+    "line": 81,
+    "class": "XxtSupplychainTianJinMergeSchedule",
+    "method": "scfXxtVoucherCreateSchedule",
+    "test": false
+  },
+  {
+    "repo": "thctay-etc",
+    "path": "etc-controller/src/main/java/com/thctay/etc/controller/aftersale/AfterSaleWorkOrderPlatformController.java",
+    "line": 105,
+    "class": "AfterSaleWorkOrderRetryMsgJob",
+    "method": "inspectNoticeCrmCancel",
+    "test": false
+  },
+  {
+    "repo": "thctay-etc",
+    "path": "etc-controller/src/main/java/com/thctay/etc/controller/aftersale/AfterSaleWorkOrderPlatformController.java",
+    "line": 67,
+    "class": "AfterSaleWorkOrderRetryMsgJob",
+    "method": "batchRetrySendAfterSaleMsgJob",
+    "test": false
+  },
+  {
+    "repo": "thctay-etc",
+    "path": "etc-controller/src/main/java/com/thctay/etc/controller/aftersale/AfterSaleWorkOrderPlatformController.java",
+    "line": 93,
+    "class": "AfterSaleWorkOrderRetryMsgJob",
+    "method": "batchRetryChangeSuitJob",
+    "test": false
+  },
+  {
+    "repo": "thctay-etc",
+    "path": "etc-controller/src/main/java/com/thctay/etc/controller/aftersale/AfterSaleWorkOrderPlatformController.java",
+    "line": 80,
+    "class": "AfterSaleWorkOrderRetryMsgJob",
+    "method": "batchRetryLoseRedoJob",
+    "test": false
+  },
+  {
+    "repo": "thctay-etc",
+    "path": "etc-controller/src/main/java/com/thctay/etc/controller/test/CooperateConsumeTestController.java",
+    "line": 106,
+    "class": "SanChuanhandlePassBillBatchJob",
+    "method": "sanChuanhandlePassBillBatchJob",
+    "test": false
+  },
+  {
+    "repo": "thctay-etc",
+    "path": "etc-controller/src/main/java/com/thctay/etc/controller/test/CooperateConsumeTestController.java",
+    "line": 93,
+    "class": "SanChuanCalcServiceJob",
+    "method": "SanChuanCalcServiceJob",
+    "test": false
+  },
+  {
+    "repo": "thctay-etc",
+    "path": "etc-controller/src/test/java/com/thctay/etc/aftersale/AfterSaleWorkOrderTest.java",
+    "line": 510,
+    "class": "AfterSaleWorkOrderRetryMsgJob",
+    "method": "batchRetrySendAfterSaleMsgJob",
+    "test": true
+  },
+  {
+    "repo": "thctay-payment",
+    "path": "payment-controller/src/main/java/com/thchengtay/payment/controller/TestController.java",
+    "line": 171,
+    "class": "NotifyPaymentResultJobHandler",
+    "method": "notifyOrderHandler",
+    "test": false
+  },
+  {
+    "repo": "thctay-payment",
+    "path": "payment-controller/src/main/java/com/thchengtay/payment/controller/test/NewPayTestController.java",
+    "line": 44,
+    "class": "SplitOrderJobHandler",
+    "method": "newSplitOrderJobHandler",
+    "test": false
+  },
+  {
+    "repo": "thctay-payment",
+    "path": "payment-controller/src/main/java/com/thchengtay/payment/controller/test/TestPayController.java",
+    "line": 206,
+    "class": "TradeSyncJobHandler",
+    "method": "inTimeWheelPadding",
+    "test": false
+  },
+  {
+    "repo": "thctay-payment",
+    "path": "payment-controller/src/test/java/com/thchengtay/payment/schedule/NotifyPaymentResultJobHandlerTest.java",
+    "line": 27,
+    "class": "NotifyPaymentResultJobHandler",
+    "method": "notifyOrderHandler",
+    "test": true
+  },
+  {
+    "repo": "thctay-payment",
+    "path": "payment-controller/src/test/java/com/thchengtay/payment/schedule/SplitOrderJobHandlerTest.java",
+    "line": 32,
+    "class": "SplitOrderJobHandler",
+    "method": "newSplitOrderJobHandler",
+    "test": true
+  },
+  {
+    "repo": "thctay-payment",
+    "path": "payment-controller/src/test/java/com/thchengtay/payment/schedule/SplitOrderJobHandlerTest.java",
+    "line": 48,
+    "class": "SplitOrderJobHandler",
+    "method": "newSplitOrderJobHandler",
+    "test": true
+  },
+  {
+    "repo": "thctay-saps",
+    "path": "saps-controller/src/main/java/com/thchengtay/saps/controller/test/JiangSuTestController.java",
+    "line": 96,
+    "class": "NewModelCusBillSchedule",
+    "method": "overdueNotifySchedule",
+    "test": false
+  },
+  {
+    "repo": "thctay-saps",
+    "path": "saps-controller/src/main/java/com/thchengtay/saps/controller/test/ScheduleController.java",
+    "line": 164,
+    "class": "ETCBillLastPayDateNotifySchedule",
+    "method": "process",
+    "test": false
+  },
+  {
+    "repo": "thctay-saps",
+    "path": "saps-controller/src/main/java/com/thchengtay/saps/controller/test/TestController.java",
+    "line": 387,
+    "class": "CustomerOverdueMessageETCSchedule",
+    "method": "execute",
+    "test": false
+  },
+  {
+    "repo": "thctay-saps",
+    "path": "saps-controller/src/main/java/com/thchengtay/saps/controller/test/TestController.java",
+    "line": 419,
+    "class": "MonthManageFeeBillGenerateSchedule",
+    "method": "process",
+    "test": false
+  },
+  {
+    "repo": "thctay-saps",
+    "path": "saps-controller/src/main/java/com/thchengtay/saps/controller/test/TestController.java",
+    "line": 190,
+    "class": "EtcBillAgreementPaySchedule",
+    "method": "execute",
+    "test": false
+  }
+]

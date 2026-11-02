@@ -1,0 +1,90 @@
+{
+  "date": "2026-10-30",
+  "timezone": "Asia/Shanghai",
+  "business_context": "BL000005 智能柜 / ol; shared payment systems in GitLab xxt-pay group (verified WorkHub targets)",
+  "scope": "Static review and isolated local validation; no production database/log/deployment checks",
+  "repositories": [
+    {
+      "repository": "intf-paychannel",
+      "path": "/Users/aslight/IDEAWorkspace/xxt-pay/intf-paychannel",
+      "target_ref": "origin/fix/refund_time_1970_20261030",
+      "target_sha": "d6b71c9909bce5fa7eb1e034062c33bdd1c83184",
+      "source_snapshot": "/private/tmp/refund-review-20261030/source/intf-paychannel",
+      "baseline_ref": "origin/master",
+      "baseline_sha": "870acf0e00f0f62695fecbbbaf16930d32bb98f0",
+      "merge_base": "da5692a95938dd1f7e651658e3a2beb6300cca73",
+      "baseline_reason": "No MR target specified; remote default HEAD is master",
+      "diff_files": [
+        "intf-paychannel-adapter/intf-paychannel-adapter-allinpay/src/main/java/com/intf/paychannel/adapter/allinpay/service/RefundNotifyService.java"
+      ]
+    },
+    {
+      "repository": "xxt-pay",
+      "path": "/Users/aslight/IDEAWorkspace/xxt-pay/xxt-pay",
+      "target_ref": "origin/master",
+      "target_sha": "43b0b00df3b382bfbd0df99edc54d3bef6d1c0b1",
+      "source_snapshot": "/private/tmp/refund-review-20261030/source/xxt-pay"
+    },
+    {
+      "repository": "ol-saps",
+      "path": "/Users/aslight/IDEAWorkspace/ol/ol-saps",
+      "target_ref": "origin/fix_device_flow_ly_20261028",
+      "target_sha": "b83576e62b83693bfbb70bae7c3153a0189ec219",
+      "source_snapshot": "/private/tmp/refund-review-20261030/source/ol-saps",
+      "baseline_ref": "origin/master",
+      "baseline_sha": "3036e4e4ca17bf915da936830e65f1354c2a682c",
+      "merge_base": "3036e4e4ca17bf915da936830e65f1354c2a682c",
+      "baseline_reason": "No MR target specified; remote default HEAD is master",
+      "diff_files": [
+        "docs/change-log.md",
+        "\"docs/plan/feature/fix_device_flow_ly_20261028/261030-\\346\\265\\201\\346\\260\\264\\345\\271\\266\\345\\217\\221\\345\\206\\231\\345\\205\\245\\344\\270\\216\\351\\200\\200\\346\\254\\276\\346\\227\\266\\351\\227\\264\\344\\277\\256\\345\\244\\215\\350\\256\\241\\345\\210\\222.md\"",
+        "lease-saps-business/src/main/java/com/lease/saps/business/impl/DeviceFlowLYBizServiceImpl.java",
+        "lease-saps-business/src/main/java/com/lease/saps/business/service/refund/impl/RefundOrderSaveBizImpl.java",
+        "lease-saps-dao/src/main/java/com/lease/saps/mapper/CustomerOrderMapper.java",
+        "lease-saps-dao/src/main/java/com/lease/saps/mapper/ReplaceBatteryDeviceFlowMapper.java",
+        "lease-saps-dao/src/main/resources/mapper/CustomerOrderMapper.xml",
+        "lease-saps-dao/src/main/resources/mapper/ReplaceBatteryDeviceFlowMapper.xml",
+        "lease-saps-model/src/main/java/com/lease/saps/model/dto/replacebattery/DeviceFlowPaySyncDto.java",
+        "lease-saps-model/src/main/java/com/lease/saps/model/dto/replacebattery/DeviceFlowSyncPageReq.java",
+        "lease-saps-model/src/main/java/com/lease/saps/model/enums/RedisPrefixKeyEnum.java",
+        "lease-saps-service/src/main/java/com/lease/saps/service/CustomerOrderService.java",
+        "lease-saps-service/src/main/java/com/lease/saps/service/impl/CustomerOrderServiceImpl.java",
+        "lease-saps-service/src/main/java/com/lease/saps/service/replacebattery/ReplaceBatteryDeviceService.java",
+        "lease-saps-service/src/main/java/com/lease/saps/service/replacebattery/impl/ReplaceBatteryDeviceServiceImpl.java"
+      ]
+    }
+  ],
+  "validation": {
+    "channel_module_compile": "PASS offline Maven allinpay module and required reactor modules",
+    "saps_full_compile": "BLOCKED: cached parent POM missing lease-permission version",
+    "saps_runtime": "Current target methods extracted verbatim, current target entities/DTO/enums compiled; real Spring5.2.8 MyBatis3.5.5 MP3.3.2 H2 1.4.200. Order/detail services replaced by memory doubles; Redis mutex replaced by local lock. No application context booted.",
+    "channel_runtime": "Actual compiled RefundNotifyService, Feign callback replaced by local proxy; downstream parsers extracted from pinned targets. Query common converter tested directly.",
+    "query_runtime": "Four select statements copied unchanged from current target XML, isolated namespace; H2 MySQL mode with FIND_IN_SET helper. Not MySQL plan validation.",
+    "diff_check": "PASS both modified branches"
+  },
+  "comparison": {
+    "R1": "Fixed for new refund requests; history not verified",
+    "R2": "Reproduced afterCommit race and ignored optimistic-lock update failure",
+    "R3": "Fixed max finish time for ordered/reversed/cross-page processing; concurrency still constrained by R2",
+    "R4": "Reproduced legacy orderNo silently ignored",
+    "1970_time": "Correct paytime preference validated; no business date-range validation; historical upstream raw evidence not fetched",
+    "historical_data": "Replay skips recorded refund; no production verification",
+    "old_payment_compensation": "Query still filters original flow.create_time; reproduced recent refund excluded"
+  },
+  "official_contract": "https://prodoc.allinpay.com/doc/2331/",
+  "artifacts": {
+    "ReviewQueries.java": "3d74d74441e48308bb1714fcab70040f37046ffd7f55d5e04e524e8c30416684",
+    "isolated-compile.log": "7e700f9eeff5f0b6b87904f9daf06f04a0cd539ff190049fdf100b0537434350",
+    "ReviewRuntime.java": "88181811974205076d93f8ef20d3d1e590616aefc06ab89dc790da6d7c210ee7",
+    "queries.xml": "fdece93cc7b8cd4a327ca635c581e08c0823c9fb9ca9d2d7978129311ab5e057",
+    "runtime-validation.txt": "38acb4c87b947e2787e850077eb520c30e6f090d88675ece82ce8f945a5e917d",
+    "ChannelTimeReview.java": "ca03674857047ff2504b872451c5f9a5cd8f5e05fabb2c8addec6c6992e8d31c",
+    "query-validation.txt": "eb8131eed4ef71764abbbc2aa2c8609a45cae0eb5a6aaf3e625bda8d1deac1d7",
+    "channel-classpath.txt": "036c056d879b5242b83489324c16a117beb6af33cff84e8db615397b524d423d",
+    "classpath.txt": "1cd543c57860ebca680a291768ceb65ce3643ae37363e7dde00e6ee0833e3b81",
+    "channel-time-validation.txt": "18f9e5e888d2d70f98a597da9fa64272048071fb1be01a0767f129985ee3bbe5",
+    "channel-compile.log": "54ef603599df27f034530aa766a28a017310996d8f3f7c4d48eaf90127346090",
+    "source-files.txt": "c9e7ec69677da5753a90a79a6f510da768322b9753f2ed8b8ea1cfc354c9361e",
+    "ol-saps-compile.log": "5b97bff4a57452fa1c954054169ed0ba073656297318db27a81aa7edff3f59e6"
+  }
+}

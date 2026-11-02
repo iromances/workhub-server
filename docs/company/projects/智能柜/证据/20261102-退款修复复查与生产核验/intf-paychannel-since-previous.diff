@@ -1,0 +1,31 @@
+diff --git a/intf-paychannel-adapter/intf-paychannel-adapter-bcm/src/main/java/com/intf/paychannel/adapter/bcm/service/BcmEventServer.java b/intf-paychannel-adapter/intf-paychannel-adapter-bcm/src/main/java/com/intf/paychannel/adapter/bcm/service/BcmEventServer.java
+index d78bb10..a489dca 100644
+--- a/intf-paychannel-adapter/intf-paychannel-adapter-bcm/src/main/java/com/intf/paychannel/adapter/bcm/service/BcmEventServer.java
++++ b/intf-paychannel-adapter/intf-paychannel-adapter-bcm/src/main/java/com/intf/paychannel/adapter/bcm/service/BcmEventServer.java
+@@ -50,6 +50,7 @@ public class BcmEventServer extends BcmServer implements BcmInterfaceServer {
+         Result<BcmDetailResultDto> result = new Result<>();
+         result.setCode(ResultCode.INTERNAL_SERVER_ERROR.getCode());
+         if (StringUtils.isBlank(queryVo.getAcctNo())) {
++            result.setCode(ResultCode.PARAM_PARAMETER_ERROR.getCode());
+             result.setMessage("查询当日交易明细必填参数缺失，请核实！");
+             return result;
+         }
+@@ -72,6 +73,7 @@ public class BcmEventServer extends BcmServer implements BcmInterfaceServer {
+         Result<BcmDetailResultDto> result = new Result<>();
+         result.setCode(ResultCode.INTERNAL_SERVER_ERROR.getCode());
+         if (StringUtils.isAnyBlank(queryVo.getAcctNo(), queryVo.getStartDate(), queryVo.getEndDate())) {
++            result.setCode(ResultCode.PARAM_PARAMETER_ERROR.getCode());
+             result.setMessage("必填参数缺失，请核实！");
+             return result;
+         }
+@@ -108,7 +110,10 @@ public class BcmEventServer extends BcmServer implements BcmInterfaceServer {
+             String returnMsg = response.getHead().getParticular_info();
+             log.info("请求交行{}交易明细返回状态：{}，描述：{}", queryDesc, returnCode, returnMsg);
+             if (!"0000".equals(returnCode)) {
+-                result.setMessage("查询" + queryDesc + "交易明细失败！");
++                result.setCode(ResultCode.FAIL.getCode());
++                result.setMessage("查询" + queryDesc + "交易明细失败，渠道返回码["
++                        + StringUtils.defaultIfBlank(returnCode, "UNKNOWN") + "]："
++                        + StringUtils.defaultIfBlank(returnMsg, "渠道未返回错误描述"));
+                 return result;
+             }

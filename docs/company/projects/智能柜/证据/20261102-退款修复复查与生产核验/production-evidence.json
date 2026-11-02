@@ -1,0 +1,400 @@
+{
+  "environment": "prod",
+  "businessLine": "BL000005",
+  "targetKey": "db-prod",
+  "profileKey": "readonly",
+  "recentOrderTimeRange": "[2026-10-27 00:00:00, 2026-11-02 10:00:00) Asia/Shanghai",
+  "historicalRefundIdRange": [
+    1,
+    649094
+  ],
+  "queries": [
+    {
+      "name": "recent-refund-sync",
+      "sql": "SELECT DATE(r.order_time) AS order_day,COUNT(*) AS successful_refunds,SUM(r.finish_time IS NULL OR r.finish_time < '2000-01-01') AS abnormal_finish_time,SUM(NOT EXISTS(SELECT 1 FROM ol_saps.replace_battery_device_flow f WHERE f.order_no=r.source_order_no AND f.is_delete=0)) AS missing_flow,SUM(EXISTS(SELECT 1 FROM ol_saps.replace_battery_device_flow f WHERE f.order_no=r.source_order_no AND f.is_delete=0 AND FIND_IN_SET(r.order_no,COALESCE(f.refund_order_no,''))>0)) AS recorded_refunds,SUM(EXISTS(SELECT 1 FROM ol_saps.replace_battery_device_flow f WHERE f.order_no=r.source_order_no AND f.is_delete=0 AND f.flow_status>=40 AND f.flow_status<>60 AND FIND_IN_SET(r.order_no,COALESCE(f.refund_order_no,''))=0)) AS eligible_unrecorded FROM ol_saps.customer_order r WHERE r.order_time >= '2026-10-27 00:00:00' AND r.order_time < '2026-11-02 10:00:00' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 GROUP BY DATE(r.order_time) ORDER BY order_day LIMIT 10",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "tool call error: tool call failed for `workhub/run_readonly_query`\n\nCaused by:\n    timed out awaiting tools/call after 60s"
+          }
+        ],
+        "isError": true
+      }
+    },
+    {
+      "name": "detail-metadata",
+      "sql": "SELECT table_schema,table_name,GROUP_CONCAT(column_name ORDER BY ordinal_position) AS columns_def FROM information_schema.columns WHERE (table_schema='ol_saps' AND table_name='customer_order_detail') OR (table_name='xxl_job_group' AND table_schema IN ('xxl_job','lease_xxl_job','ll_xxl_job','loan_xxl')) GROUP BY table_schema,table_name LIMIT 10",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"TABLE_SCHEMA\", \"TABLE_NAME\", \"columns_def\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"TABLE_SCHEMA\" : \"lease_xxl_job\",\n      \"TABLE_NAME\" : \"xxl_job_group\",\n      \"columns_def\" : \"id,app_name,title,address_type,address_list\"\n    }, {\n      \"TABLE_SCHEMA\" : \"ll_xxl_job\",\n      \"TABLE_NAME\" : \"xxl_job_group\",\n      \"columns_def\" : \"id,app_name,title,address_type,address_list\"\n    }, {\n      \"TABLE_SCHEMA\" : \"loan_xxl\",\n      \"TABLE_NAME\" : \"xxl_job_group\",\n      \"columns_def\" : \"id,app_name,title,address_type,address_list\"\n    }, {\n      \"TABLE_SCHEMA\" : \"ol_saps\",\n      \"TABLE_NAME\" : \"customer_order_detail\",\n      \"columns_def\" : \"id,order_no,trans_no,subject_no,amount,create_by,create_time,modify_by,modify_time,delete_by,delete_time,is_delete,is_cancel,version,remark\"\n    }, {\n      \"TABLE_SCHEMA\" : \"xxl_job\",\n      \"TABLE_NAME\" : \"xxl_job_group\",\n      \"columns_def\" : \"id,app_name,title,address_type,address_list\"\n    } ]\n  },\n  \"sql\" : \"SELECT table_schema,table_name,GROUP_CONCAT(column_name ORDER BY ordinal_position) AS columns_def FROM information_schema.columns WHERE (table_schema='***' AND table_name='***') OR (table_name='***' AND table_schema IN ('***','***','***','***')) GROUP BY table_schema,table_name LIMIT 10\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "db-clock",
+      "sql": "SELECT NOW() AS db_now,UTC_TIMESTAMP() AS db_utc,@@system_time_zone AS system_zone",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"db_now\", \"db_utc\", \"system_zone\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"db_now\" : \"2026-11-02T10:08:18\",\n      \"db_utc\" : \"2026-11-02T02:08:18\",\n      \"system_zone\" : \"+08\"\n    } ]\n  },\n  \"sql\" : \"SELECT NOW() AS db_now,UTC_TIMESTAMP() AS db_utc,@@system_time_zone AS system_zone LIMIT 100\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "recent-refund-summary",
+      "sql": "SELECT DATE(order_time) AS order_day,COUNT(*) AS successful_refunds,SUM(finish_time IS NULL OR finish_time<'2000-01-01') AS abnormal_finish_time,MIN(id) AS min_id,MAX(id) AS max_id FROM ol_saps.customer_order WHERE order_time>='2026-10-27 00:00:00' AND order_time<'2026-11-02 10:00:00' AND sub_type=3001 AND status=4 AND is_delete=0 AND is_cancel=0 GROUP BY DATE(order_time) ORDER BY order_day LIMIT 10",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"order_day\", \"successful_refunds\", \"abnormal_finish_time\", \"min_id\", \"max_id\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"order_day\" : \"2026-10-27\",\n      \"successful_refunds\" : 170,\n      \"abnormal_finish_time\" : 0,\n      \"min_id\" : 647091,\n      \"max_id\" : 653882\n    }, {\n      \"order_day\" : \"2026-10-28\",\n      \"successful_refunds\" : 160,\n      \"abnormal_finish_time\" : 0,\n      \"min_id\" : 653901,\n      \"max_id\" : 660943\n    }, {\n      \"order_day\" : \"2026-10-29\",\n      \"successful_refunds\" : 170,\n      \"abnormal_finish_time\" : 0,\n      \"min_id\" : 660951,\n      \"max_id\" : 668409\n    }, {\n      \"order_day\" : \"2026-10-30\",\n      \"successful_refunds\" : 171,\n      \"abnormal_finish_time\" : 0,\n      \"min_id\" : 668414,\n      \"max_id\" : 676277\n    }, {\n      \"order_day\" : \"2026-10-31\",\n      \"successful_refunds\" : 188,\n      \"abnormal_finish_time\" : 0,\n      \"min_id\" : 676280,\n      \"max_id\" : 684033\n    }, {\n      \"order_day\" : \"2026-11-01\",\n      \"successful_refunds\" : 209,\n      \"abnormal_finish_time\" : 0,\n      \"min_id\" : 684061,\n      \"max_id\" : 691842\n    }, {\n      \"order_day\" : \"2026-11-02\",\n      \"successful_refunds\" : 36,\n      \"abnormal_finish_time\" : 0,\n      \"min_id\" : 691843,\n      \"max_id\" : 693113\n    } ]\n  },\n  \"sql\" : \"SELECT DATE(order_time) AS order_day,COUNT(*) AS successful_refunds,SUM(finish_time IS NULL OR finish_time<'***') AS abnormal_finish_time,MIN(id) AS min_id,MAX(id) AS max_id FROM ol_saps.customer_order WHERE order_time>='***' AND order_time<'***' AND sub_type=3001 AND status=4 AND is_delete=0 AND is_cancel=0 GROUP BY DATE(order_time) ORDER BY order_day LIMIT 10\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "sync-explain",
+      "sql": "EXPLAIN SELECT r.id,f.id FROM ol_saps.customer_order r LEFT JOIN ol_saps.replace_battery_device_flow f ON f.order_no=r.source_order_no AND f.is_delete=0 WHERE r.order_time>='2026-10-27 00:00:00' AND r.order_time<'2026-11-02 10:00:00' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 LIMIT 20",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"id\", \"select_type\", \"table\", \"partitions\", \"type\", \"possible_keys\", \"key\", \"key_len\", \"ref\", \"rows\", \"filtered\", \"Extra\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"id\" : 1,\n      \"select_type\" : \"SIMPLE\",\n      \"table\" : \"r\",\n      \"partitions\" : null,\n      \"type\" : \"range\",\n      \"possible_keys\" : \"idx_order_time\",\n      \"key\" : \"idx_order_time\",\n      \"key_len\" : \"6\",\n      \"ref\" : null,\n      \"rows\" : 89052,\n      \"filtered\" : 0.01,\n      \"Extra\" : \"Using index condition; Using where\"\n    }, {\n      \"id\" : 1,\n      \"select_type\" : \"SIMPLE\",\n      \"table\" : \"f\",\n      \"partitions\" : null,\n      \"type\" : \"ALL\",\n      \"possible_keys\" : \"idx_order_no\",\n      \"key\" : null,\n      \"key_len\" : null,\n      \"ref\" : null,\n      \"rows\" : 229665,\n      \"filtered\" : 100.0,\n      \"Extra\" : \"Using where; Using join buffer (hash join)\"\n    } ]\n  },\n  \"sql\" : \"EXPLAIN SELECT r.id,f.id FROM ol_saps.customer_order r LEFT JOIN ol_saps.replace_battery_device_flow f ON f.order_no=r.source_order_no AND f.is_delete=0 WHERE r.order_time>='***' AND r.order_time<'***' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 LIMIT 20\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "scheduler-groups",
+      "sql": "SELECT 'xxl_job' AS db_name,id,app_name,title FROM xxl_job.xxl_job_group WHERE app_name LIKE '%ol%' OR title LIKE '%智能%' UNION ALL SELECT 'lease_xxl_job',id,app_name,title FROM lease_xxl_job.xxl_job_group WHERE app_name LIKE '%ol%' OR title LIKE '%智能%' UNION ALL SELECT 'll_xxl_job',id,app_name,title FROM ll_xxl_job.xxl_job_group WHERE app_name LIKE '%ol%' OR title LIKE '%智能%' UNION ALL SELECT 'loan_xxl',id,app_name,title FROM loan_xxl.xxl_job_group WHERE app_name LIKE '%ol%' OR title LIKE '%智能%' LIMIT 30",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "数据库查询失败：Illegal mix of collations for operation '***'"
+          }
+        ],
+        "isError": true
+      }
+    },
+    {
+      "name": "join-collations",
+      "sql": "SELECT table_name,column_name,character_set_name,collation_name FROM information_schema.columns WHERE table_schema='ol_saps' AND ((table_name='customer_order' AND column_name IN ('order_no','source_order_no','create_time','order_time')) OR (table_name='replace_battery_device_flow' AND column_name='order_no') OR (table_name='customer_order_detail' AND column_name='order_no')) ORDER BY table_name,column_name LIMIT 12",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"TABLE_NAME\", \"COLUMN_NAME\", \"CHARACTER_SET_NAME\", \"COLLATION_NAME\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"TABLE_NAME\" : \"customer_order\",\n      \"COLUMN_NAME\" : \"create_time\",\n      \"CHARACTER_SET_NAME\" : null,\n      \"COLLATION_NAME\" : null\n    }, {\n      \"TABLE_NAME\" : \"customer_order\",\n      \"COLUMN_NAME\" : \"order_no\",\n      \"CHARACTER_SET_NAME\" : \"utf8mb4\",\n      \"COLLATION_NAME\" : \"utf8mb4_0900_ai_ci\"\n    }, {\n      \"TABLE_NAME\" : \"customer_order\",\n      \"COLUMN_NAME\" : \"order_time\",\n      \"CHARACTER_SET_NAME\" : null,\n      \"COLLATION_NAME\" : null\n    }, {\n      \"TABLE_NAME\" : \"customer_order\",\n      \"COLUMN_NAME\" : \"source_order_no\",\n      \"CHARACTER_SET_NAME\" : \"utf8mb4\",\n      \"COLLATION_NAME\" : \"utf8mb4_0900_ai_ci\"\n    }, {\n      \"TABLE_NAME\" : \"customer_order_detail\",\n      \"COLUMN_NAME\" : \"order_no\",\n      \"CHARACTER_SET_NAME\" : \"utf8\",\n      \"COLLATION_NAME\" : \"utf8_general_ci\"\n    }, {\n      \"TABLE_NAME\" : \"replace_battery_device_flow\",\n      \"COLUMN_NAME\" : \"order_no\",\n      \"CHARACTER_SET_NAME\" : \"utf8\",\n      \"COLLATION_NAME\" : \"utf8_general_ci\"\n    } ]\n  },\n  \"sql\" : \"SELECT table_name,column_name,character_set_name,collation_name FROM information_schema.columns WHERE table_schema='***' AND ((table_name='***' AND column_name IN ('***','***','***','***')) OR (table_name='***' AND column_name='***') OR (table_name='***' AND column_name='***')) ORDER BY table_name,column_name LIMIT 12\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "job-group-ol",
+      "sql": "SELECT id,app_name,title FROM lease_xxl_job.xxl_job_group WHERE app_name LIKE '%ol%' OR title LIKE '%智能%' LIMIT 20",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"id\", \"app_name\", \"title\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"id\" : 8,\n      \"app_name\" : \"ol-saps\",\n      \"title\" : \"智能柜-saps\"\n    }, {\n      \"id\" : 9,\n      \"app_name\" : \"ol-payment\",\n      \"title\" : \"智能柜-payment\"\n    }, {\n      \"id\" : 10,\n      \"app_name\" : \"ol-risk\",\n      \"title\" : \"智能柜风控\"\n    }, {\n      \"id\" : 11,\n      \"app_name\" : \"ol-order\",\n      \"title\" : \"智能柜-订单\"\n    } ]\n  },\n  \"sql\" : \"SELECT id,app_name,title FROM lease_xxl_job.xxl_job_group WHERE app_name LIKE '***' OR title LIKE '***' LIMIT 20\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "job-handler-other",
+      "sql": "SELECT id,job_group,job_desc,executor_handler,executor_param,executor_fail_retry_count,trigger_status,update_time FROM lease_xxl_job.xxl_job_info WHERE executor_handler='replaceBatterySyncSchedule' LIMIT 10",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"id\", \"job_group\", \"job_desc\", \"executor_handler\", \"executor_param\", \"executor_fail_retry_count\", \"trigger_status\", \"update_time\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"id\" : 97,\n      \"job_group\" : 8,\n      \"job_desc\" : \"设备交易流水分账信息同步\",\n      \"executor_handler\" : \"replaceBatterySyncSchedule\",\n      \"executor_param\" : \"{\\\"batchSize\\\":500}\",\n      \"executor_fail_retry_count\" : 0,\n      \"trigger_status\" : 0,\n      \"update_time\" : \"2026-10-30T18:44:22\"\n    } ]\n  },\n  \"sql\" : \"SELECT id,job_group,job_desc,executor_handler,executor_param,executor_fail_retry_count,trigger_status,update_time FROM lease_xxl_job.xxl_job_info WHERE executor_handler='***' LIMIT 10\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "recent-sync-fast",
+      "sql": "SELECT DATE(r.order_time) AS order_day,COUNT(DISTINCT r.id) AS successful_refunds,COUNT(DISTINCT CASE WHEN f.id IS NULL THEN r.id END) AS missing_flow,COUNT(DISTINCT CASE WHEN FIND_IN_SET(r.order_no,COALESCE(f.refund_order_no,''))>0 THEN r.id END) AS recorded_refunds,COUNT(DISTINCT CASE WHEN f.flow_status>=40 AND f.flow_status<>60 AND FIND_IN_SET(r.order_no,COALESCE(f.refund_order_no,''))=0 THEN r.id END) AS eligible_unrecorded,COUNT(DISTINCT CASE WHEN f.id IS NOT NULL AND (f.flow_status<40 OR f.flow_status=60 OR f.flow_status IS NULL) THEN r.id END) AS ineligible_flow FROM ol_saps.customer_order r LEFT JOIN ol_saps.replace_battery_device_flow f ON f.order_no=CONVERT(r.source_order_no USING utf8) COLLATE utf8_general_ci AND f.is_delete=0 WHERE r.order_time>='2026-10-27 00:00:00' AND r.order_time<'2026-11-02 10:00:00' AND r.project_no='PRJ000060' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 GROUP BY DATE(r.order_time) ORDER BY order_day LIMIT 10",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"order_day\", \"successful_refunds\", \"missing_flow\", \"recorded_refunds\", \"eligible_unrecorded\", \"ineligible_flow\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"order_day\" : \"2026-10-27\",\n      \"successful_refunds\" : 170,\n      \"missing_flow\" : 0,\n      \"recorded_refunds\" : 170,\n      \"eligible_unrecorded\" : 0,\n      \"ineligible_flow\" : 0\n    }, {\n      \"order_day\" : \"2026-10-28\",\n      \"successful_refunds\" : 160,\n      \"missing_flow\" : 0,\n      \"recorded_refunds\" : 160,\n      \"eligible_unrecorded\" : 0,\n      \"ineligible_flow\" : 0\n    }, {\n      \"order_day\" : \"2026-10-29\",\n      \"successful_refunds\" : 170,\n      \"missing_flow\" : 0,\n      \"recorded_refunds\" : 170,\n      \"eligible_unrecorded\" : 0,\n      \"ineligible_flow\" : 0\n    }, {\n      \"order_day\" : \"2026-10-30\",\n      \"successful_refunds\" : 171,\n      \"missing_flow\" : 0,\n      \"recorded_refunds\" : 171,\n      \"eligible_unrecorded\" : 0,\n      \"ineligible_flow\" : 0\n    }, {\n      \"order_day\" : \"2026-10-31\",\n      \"successful_refunds\" : 188,\n      \"missing_flow\" : 0,\n      \"recorded_refunds\" : 188,\n      \"eligible_unrecorded\" : 0,\n      \"ineligible_flow\" : 0\n    }, {\n      \"order_day\" : \"2026-11-01\",\n      \"successful_refunds\" : 209,\n      \"missing_flow\" : 0,\n      \"recorded_refunds\" : 209,\n      \"eligible_unrecorded\" : 0,\n      \"ineligible_flow\" : 0\n    }, {\n      \"order_day\" : \"2026-11-02\",\n      \"successful_refunds\" : 36,\n      \"missing_flow\" : 0,\n      \"recorded_refunds\" : 36,\n      \"eligible_unrecorded\" : 0,\n      \"ineligible_flow\" : 0\n    } ]\n  },\n  \"sql\" : \"SELECT DATE(r.order_time) AS order_day,COUNT(DISTINCT r.id) AS successful_refunds,COUNT(DISTINCT CASE WHEN f.id IS NULL THEN r.id END) AS missing_flow,COUNT(DISTINCT CASE WHEN FIND_IN_SET(r.order_no,COALESCE(f.refund_order_no,'***'))>0 THEN r.id END) AS recorded_refunds,COUNT(DISTINCT CASE WHEN f.flow_status>=40 AND f.flow_status<>60 AND FIND_IN_SET(r.order_no,COALESCE(f.refund_order_no,'***'))=0 THEN r.id END) AS eligible_unrecorded,COUNT(DISTINCT CASE WHEN f.id IS NOT NULL AND (f.flow_status<40 OR f.flow_status=60 OR f.flow_status IS NULL) THEN r.id END) AS ineligible_flow FROM ol_saps.customer_order r LEFT JOIN ol_saps.replace_battery_device_flow f ON f.order_no=CONVERT(r.source_order_no USING utf8) COLLATE utf8_general_ci AND f.is_delete=0 WHERE r.order_time>='***' AND r.order_time<'***' AND r.project_no='***' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 GROUP BY DATE(r.order_time) ORDER BY order_day LIMIT 10\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "recent-detail",
+      "sql": "SELECT COUNT(*) AS refunds,SUM(detail_count=0) AS missing_details,SUM(transaction_amount<>detail_amount) AS amount_mismatch,SUM(transaction_amount) AS refund_amount,SUM(detail_amount) AS detail_amount FROM (SELECT r.id,r.transaction_amount,COUNT(d.id) AS detail_count,COALESCE(SUM(d.amount),0) AS detail_amount FROM ol_saps.customer_order r LEFT JOIN ol_saps.customer_order_detail d ON d.order_no=CONVERT(r.order_no USING utf8) COLLATE utf8_general_ci AND d.is_delete=0 AND d.is_cancel=0 WHERE r.order_time>='2026-10-27 00:00:00' AND r.order_time<'2026-11-02 10:00:00' AND r.project_no='PRJ000060' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 GROUP BY r.id,r.transaction_amount) s LIMIT 1",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"refunds\", \"missing_details\", \"amount_mismatch\", \"refund_amount\", \"detail_amount\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"refunds\" : 1104,\n      \"missing_details\" : 0,\n      \"amount_mismatch\" : 0,\n      \"refund_amount\" : 30111.41,\n      \"detail_amount\" : 30111.41\n    } ]\n  },\n  \"sql\" : \"SELECT COUNT(*) AS refunds,SUM(detail_count=0) AS missing_details,SUM(transaction_amount<>detail_amount) AS amount_mismatch,SUM(transaction_amount) AS refund_amount,SUM(detail_amount) AS detail_amount FROM (SELECT r.id,r.transaction_amount,COUNT(d.id) AS detail_count,COALESCE(SUM(d.amount),0) AS detail_amount FROM ol_saps.customer_order r LEFT JOIN ol_saps.customer_order_detail d ON d.order_no=CONVERT(r.order_no USING utf8) COLLATE utf8_general_ci AND d.is_delete=0 AND d.is_cancel=0 WHERE r.order_time>='***' AND r.order_time<'***' AND r.project_no='***' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 GROUP BY r.id,r.transaction_amount) s LIMIT 1\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "new-query-plan",
+      "sql": "EXPLAIN SELECT DISTINCT r.id,r.order_no FROM ol_saps.customer_order r JOIN ol_saps.replace_battery_device_flow f ON f.order_no=r.source_order_no AND f.is_delete=0 WHERE r.is_delete=0 AND r.is_cancel=0 AND r.sub_type=3001 AND r.status=4 AND r.create_time BETWEEN '2026-11-01 00:00:00' AND '2026-11-01 23:59:59' AND EXISTS(SELECT 1 FROM ol_saps.customer_order p WHERE p.order_no=r.source_order_no AND p.is_delete=0 AND p.is_cancel=0) AND r.id>0 AND f.flow_status>=40 AND f.flow_status<>60 AND (f.refund_order_no IS NULL OR FIND_IN_SET(r.order_no,f.refund_order_no)=0) ORDER BY r.id LIMIT 500",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"id\", \"select_type\", \"table\", \"partitions\", \"type\", \"possible_keys\", \"key\", \"key_len\", \"ref\", \"rows\", \"filtered\", \"Extra\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"id\" : 1,\n      \"select_type\" : \"SIMPLE\",\n      \"table\" : \"r\",\n      \"partitions\" : null,\n      \"type\" : \"range\",\n      \"possible_keys\" : \"PRIMARY,idx_order,index_order,idx_source_order_no\",\n      \"key\" : \"PRIMARY\",\n      \"key_len\" : \"4\",\n      \"ref\" : null,\n      \"rows\" : 324102,\n      \"filtered\" : 0.0,\n      \"Extra\" : \"Using where; Using temporary; Using filesort; Start temporary\"\n    }, {\n      \"id\" : 1,\n      \"select_type\" : \"SIMPLE\",\n      \"table\" : \"p\",\n      \"partitions\" : null,\n      \"type\" : \"ref\",\n      \"possible_keys\" : \"index_order\",\n      \"key\" : \"index_order\",\n      \"key_len\" : \"259\",\n      \"ref\" : \"ol_saps.r.source_order_no\",\n      \"rows\" : 1,\n      \"filtered\" : 4.5,\n      \"Extra\" : \"Using index condition; Using where; Distinct\"\n    }, {\n      \"id\" : 1,\n      \"select_type\" : \"SIMPLE\",\n      \"table\" : \"f\",\n      \"partitions\" : null,\n      \"type\" : \"range\",\n      \"possible_keys\" : \"idx_order_no,idx_status_create\",\n      \"key\" : \"idx_status_create\",\n      \"key_len\" : \"2\",\n      \"ref\" : null,\n      \"rows\" : 114833,\n      \"filtered\" : 1.0,\n      \"Extra\" : \"Using index condition; Using where; Distinct; End temporary; Using join buffer (hash join)\"\n    } ]\n  },\n  \"sql\" : \"EXPLAIN SELECT DISTINCT r.id,r.order_no FROM ol_saps.customer_order r JOIN ol_saps.replace_battery_device_flow f ON f.order_no=r.source_order_no AND f.is_delete=0 WHERE r.is_delete=0 AND r.is_cancel=0 AND r.sub_type=3001 AND r.status=4 AND r.create_time BETWEEN '***' AND '***' AND EXISTS(SELECT 1 FROM ol_saps.customer_order p WHERE p.order_no=r.source_order_no AND p.is_delete=0 AND p.is_cancel=0) AND r.id>0 AND f.flow_status>=40 AND f.flow_status<>60 AND (f.refund_order_no IS NULL OR FIND_IN_SET(r.order_no,f.refund_order_no)=0) ORDER BY r.id LIMIT 500\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "historical-bad-time",
+      "sql": "SELECT YEAR(finish_time) AS finish_year,COUNT(*) AS affected_refunds,SUM(transaction_amount) AS refund_amount,MIN(order_time) AS first_order,MAX(order_time) AS last_order FROM ol_saps.customer_order WHERE id BETWEEN 1 AND 649094 AND project_no='PRJ000060' AND sub_type=3001 AND status=4 AND is_delete=0 AND is_cancel=0 AND (finish_time IS NULL OR finish_time<'2000-01-01') GROUP BY YEAR(finish_time) LIMIT 10",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"finish_year\", \"affected_refunds\", \"refund_amount\", \"first_order\", \"last_order\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ ]\n  },\n  \"sql\" : \"SELECT YEAR(finish_time) AS finish_year,COUNT(*) AS affected_refunds,SUM(transaction_amount) AS refund_amount,MIN(order_time) AS first_order,MAX(order_time) AS last_order FROM ol_saps.customer_order WHERE id BETWEEN 1 AND 649094 AND project_no='***' AND sub_type=3001 AND status=4 AND is_delete=0 AND is_cancel=0 AND (finish_time IS NULL OR finish_time<'***') GROUP BY YEAR(finish_time) LIMIT 10\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "historical-amounts",
+      "sql": "SELECT COUNT(*) AS original_orders,SUM(COALESCE(f.refund_business_income_amount,0)<>r.income) AS income_mismatch,SUM(COALESCE(f.refund_deposit_amount,0)<>r.deposit) AS deposit_mismatch,SUM(COALESCE(f.refund_business_income_amount,0)<>r.income OR COALESCE(f.refund_deposit_amount,0)<>r.deposit) AS either_mismatch,SUM(COALESCE(f.refund_business_income_amount,0)-r.income) AS income_overstated,SUM(COALESCE(f.refund_deposit_amount,0)-r.deposit) AS deposit_overstated FROM (SELECT o.source_order_no,SUM(CASE WHEN d.subject_no='202' THEN d.amount ELSE 0 END) AS deposit,SUM(CASE WHEN d.subject_no IN ('101','300') THEN d.amount ELSE 0 END) AS income FROM ol_saps.customer_order o JOIN ol_saps.customer_order_detail d ON d.order_no=CONVERT(o.order_no USING utf8) COLLATE utf8_general_ci AND d.is_delete=0 WHERE o.id BETWEEN 1 AND 649094 AND o.project_no='PRJ000060' AND o.sub_type=3001 AND o.status=4 AND o.is_delete=0 AND o.is_cancel=0 GROUP BY o.source_order_no) r JOIN ol_saps.replace_battery_device_flow f ON f.order_no=CONVERT(r.source_order_no USING utf8) COLLATE utf8_general_ci AND f.is_delete=0 AND f.is_cancel=0 WHERE NOT EXISTS (SELECT 1 FROM ol_saps.customer_order newer WHERE newer.source_order_no=r.source_order_no AND newer.id>649094 AND newer.status=4 AND newer.is_delete=0 AND newer.is_cancel=0) LIMIT 1",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"original_orders\", \"income_mismatch\", \"deposit_mismatch\", \"either_mismatch\", \"income_overstated\", \"deposit_overstated\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"original_orders\" : 22482,\n      \"income_mismatch\" : 6,\n      \"deposit_mismatch\" : 0,\n      \"either_mismatch\" : 6,\n      \"income_overstated\" : 0.20,\n      \"deposit_overstated\" : 0.00\n    } ]\n  },\n  \"sql\" : \"SELECT COUNT(*) AS original_orders,SUM(COALESCE(f.refund_business_income_amount,0)<>r.income) AS income_mismatch,SUM(COALESCE(f.refund_deposit_amount,0)<>r.deposit) AS deposit_mismatch,SUM(COALESCE(f.refund_business_income_amount,0)<>r.income OR COALESCE(f.refund_deposit_amount,0)<>r.deposit) AS either_mismatch,SUM(COALESCE(f.refund_business_income_amount,0)-r.income) AS income_overstated,SUM(COALESCE(f.refund_deposit_amount,0)-r.deposit) AS deposit_overstated FROM (SELECT o.source_order_no,SUM(CASE WHEN d.subject_no='***' THEN d.amount ELSE 0 END) AS deposit,SUM(CASE WHEN d.subject_no IN ('***','***') THEN d.amount ELSE 0 END) AS income FROM ol_saps.customer_order o JOIN ol_saps.customer_order_detail d ON d.order_no=CONVERT(o.order_no USING utf8) COLLATE utf8_general_ci AND d.is_delete=0 WHERE o.id BETWEEN 1 AND 649094 AND o.project_no='***' AND o.sub_type=3001 AND o.status=4 AND o.is_delete=0 AND o.is_cancel=0 GROUP BY o.source_order_no) r JOIN ol_saps.replace_battery_device_flow f O\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "historical-full-status",
+      "sql": "SELECT COUNT(*) AS full_refunded_orders,SUM(f.refund_status IS NULL OR f.refund_status<>3) AS wrong_status FROM (SELECT source_order_no,SUM(transaction_amount) AS refunded FROM ol_saps.customer_order WHERE id BETWEEN 1 AND 649094 AND project_no='PRJ000060' AND sub_type=3001 AND status=4 AND is_delete=0 AND is_cancel=0 GROUP BY source_order_no) r JOIN ol_saps.customer_order o ON o.order_no=r.source_order_no JOIN ol_saps.replace_battery_device_flow f ON f.order_no=CONVERT(r.source_order_no USING utf8) COLLATE utf8_general_ci AND f.is_delete=0 AND f.is_cancel=0 WHERE r.refunded=o.transaction_amount LIMIT 1",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"full_refunded_orders\", \"wrong_status\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"full_refunded_orders\" : 2752,\n      \"wrong_status\" : 0\n    } ]\n  },\n  \"sql\" : \"SELECT COUNT(*) AS full_refunded_orders,SUM(f.refund_status IS NULL OR f.refund_status<>3) AS wrong_status FROM (SELECT source_order_no,SUM(transaction_amount) AS refunded FROM ol_saps.customer_order WHERE id BETWEEN 1 AND 649094 AND project_no='***' AND sub_type=3001 AND status=4 AND is_delete=0 AND is_cancel=0 GROUP BY source_order_no) r JOIN ol_saps.customer_order o ON o.order_no=r.source_order_no JOIN ol_saps.replace_battery_device_flow f ON f.order_no=CONVERT(r.source_order_no USING utf8) COLLATE utf8_general_ci AND f.is_delete=0 AND f.is_cancel=0 WHERE r.refunded=o.transaction_amount LIMIT 1\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "job-log-columns",
+      "sql": "SELECT table_name,GROUP_CONCAT(column_name ORDER BY ordinal_position) AS columns_def FROM information_schema.columns WHERE table_schema='lease_xxl_job' AND table_name IN ('xxl_job_log','xxl_job_info') GROUP BY table_name LIMIT 2",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"TABLE_NAME\", \"columns_def\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"TABLE_NAME\" : \"xxl_job_info\",\n      \"columns_def\" : \"id,job_group,job_cron,job_desc,add_time,update_time,author,alarm_email,executor_route_strategy,executor_handler,executor_param,executor_block_strategy,executor_timeout,executor_fail_retry_count,glue_type,glue_source,glue_remark,glue_updatetime,child_jobid,trigger_status,trigger_last_time,trigger_next_time\"\n    }, {\n      \"TABLE_NAME\" : \"xxl_job_log\",\n      \"columns_def\" : \"id,job_group,job_id,executor_address,executor_handler,executor_param,executor_sharding_param,executor_fail_retry_count,trigger_time,trigger_code,trigger_msg,handle_time,handle_code,handle_msg,alarm_status\"\n    } ]\n  },\n  \"sql\" : \"SELECT table_name,GROUP_CONCAT(column_name ORDER BY ordinal_position) AS columns_def FROM information_schema.columns WHERE table_schema='***' AND table_name IN ('***','***') GROUP BY table_name LIMIT 2\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "historical-six",
+      "sql": "SELECT f.id AS flow_id,r.refund_count,r.income AS expected_101_300,r.other_income,r.deposit AS expected_deposit,f.refund_business_income_amount AS stored_income,f.refund_deposit_amount AS stored_deposit,f.refund_status,f.refund_time,f.modify_time FROM (SELECT o.source_order_no,COUNT(DISTINCT o.id) AS refund_count,SUM(CASE WHEN d.subject_no='202' THEN d.amount ELSE 0 END) AS deposit,SUM(CASE WHEN d.subject_no IN ('101','300') THEN d.amount ELSE 0 END) AS income,SUM(CASE WHEN d.subject_no NOT IN ('101','300','202') THEN d.amount ELSE 0 END) AS other_income FROM ol_saps.customer_order o JOIN ol_saps.customer_order_detail d ON d.order_no=CONVERT(o.order_no USING utf8) COLLATE utf8_general_ci AND d.is_delete=0 WHERE o.id BETWEEN 1 AND 649094 AND o.project_no='PRJ000060' AND o.sub_type=3001 AND o.status=4 AND o.is_delete=0 AND o.is_cancel=0 GROUP BY o.source_order_no) r JOIN ol_saps.replace_battery_device_flow f ON f.order_no=CONVERT(r.source_order_no USING utf8) COLLATE utf8_general_ci AND f.is_delete=0 AND f.is_cancel=0 WHERE (COALESCE(f.refund_business_income_amount,0)<>r.income OR COALESCE(f.refund_deposit_amount,0)<>r.deposit) AND NOT EXISTS(SELECT 1 FROM ol_saps.customer_order n WHERE n.source_order_no=r.source_order_no AND n.id>649094 AND n.status=4 AND n.is_delete=0 AND n.is_cancel=0) ORDER BY f.id LIMIT 15",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"flow_id\", \"refund_count\", \"expected_101_300\", \"other_income\", \"expected_deposit\", \"stored_income\", \"stored_deposit\", \"refund_status\", \"refund_time\", \"modify_time\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"flow_id\" : 8,\n      \"refund_count\" : 2,\n      \"expected_101_300\" : 0.03,\n      \"other_income\" : 0.03,\n      \"expected_deposit\" : 0.02,\n      \"stored_income\" : 0.06,\n      \"stored_deposit\" : 0.02,\n      \"refund_status\" : 3,\n      \"refund_time\" : \"2026-03-06T18:23:32\",\n      \"modify_time\" : \"2026-10-27T18:57:35\"\n    }, {\n      \"flow_id\" : 16,\n      \"refund_count\" : 3,\n      \"expected_101_300\" : 0.03,\n      \"other_income\" : 0.03,\n      \"expected_deposit\" : 0.02,\n      \"stored_income\" : 0.06,\n      \"stored_deposit\" : 0.02,\n      \"refund_status\" : 3,\n      \"refund_time\" : \"2026-03-09T09:40:58\",\n      \"modify_time\" : \"2026-10-27T18:57:35\"\n    }, {\n      \"flow_id\" : 30,\n      \"refund_count\" : 2,\n      \"expected_101_300\" : 0.05,\n      \"other_income\" : 0.03,\n      \"expected_deposit\" : 0.01,\n      \"stored_income\" : 0.08,\n      \"stored_deposit\" : 0.01,\n      \"refund_status\" : 3,\n      \"refund_time\" : \"2026-03-20T16:35:30\",\n      \"modify_time\" : \"2026-10-27T18:57:35\"\n    }, {\n      \"flow_id\" : 65,\n      \"refund_count\" : 2,\n      \"expected_101_300\" : 0.05,\n      \"other_income\" : 0.03,\n      \"expected_deposit\" : 0.01,\n      \"stored_income\" : 0.08,\n      \"stored_deposit\" : 0.01,\n      \"refund_status\" : 3,\n      \"refund_time\" : \"2026-04-20T14:53:20\",\n      \"modify_time\" : \"2026-10-27T18:57:35\"\n    }, {\n      \"flow_id\" : 58338,\n      \"refund_count\" : 1,\n      \"expected_101_300\" : 0.10,\n      \"other_income\" : 0.05,\n      \"expected_deposit\" : 0.00,\n      \"stored_income\" : 0.15,\n      \"stored_deposit\" : 0.00,\n      \"refund_status\" : 3,\n      \"refund_time\" : \"2026-05-08T14:49:16\",\n      \"modify_time\" : \"2026-10-27T18:57:35\"\n    }, {\n      \"flow_id\" : 58345,\n      \"refund_count\" : 3,\n      \"expected_101_300\" : 0.02,\n      \"other_income\" : 0.03,\n      \"expected_deposit\" : 0.01,\n      \"stored_income\" : 0.05,\n      \"stored_deposit\" : 0.01,\n      \"refund_status\" : 3,\n      \"refund_time\" : \"2026-05-08T14:50:03\",\n      \"modify_time\" : \"2026-10-27T18:57:35\"\n    } ]\n  },\n  \"sql\" : \"SELECT f.id AS flow_id,r.refund_count,r.income AS expected_101_300,r.other_income,r.deposit AS expected_deposit,f.refund_business_income_amount AS stored_income,f.refund_deposit_amount AS stored_deposit,f.refund_status,f.refund_time,f.modify_time FROM (SELECT o.source_order_no,COUNT(DISTINCT o.id) AS refund_count,SUM(CASE WHEN d.subject_no='***' THEN d.amount ELSE 0 END) AS deposit,SUM(CASE WHEN d.subject_no IN ('***','***') THEN d.amount ELSE 0 END) AS income,SUM(CASE WHEN d.subject_no NOT IN ('***','***','***') THEN d.amount ELSE 0 END) AS other_income FROM ol_saps.customer_order o JOIN ol_saps.customer_order_detail d ON d.order_no=CONVERT(o.order_no USING utf8) COLLATE utf8_general_ci AND d.is_delete=0 WHERE o.id BETWEEN 1 AND 649094 AND o.project_no='***' AND o.sub_type=3001 AND o.status=4 AND o.is_delete=0 AND o.is_cancel=0 GROUP BY o.source_order_no) r JOIN ol_saps.replace_battery_device_flow f ON f.order_no=CONVERT(r.source_order_no USING utf8) COLLATE utf8_general_ci AND f.is_d\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "job-recent-log",
+      "sql": "SELECT id,job_id,executor_handler,executor_param,trigger_time,trigger_code,handle_time,handle_code FROM lease_xxl_job.xxl_job_log WHERE job_id=97 AND trigger_time>='2026-10-27 00:00:00' AND trigger_time<'2026-11-02 10:00:00' ORDER BY id DESC LIMIT 12",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"id\", \"job_id\", \"executor_handler\", \"executor_param\", \"trigger_time\", \"trigger_code\", \"handle_time\", \"handle_code\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ ]\n  },\n  \"sql\" : \"SELECT id,job_id,executor_handler,executor_param,trigger_time,trigger_code,handle_time,handle_code FROM lease_xxl_job.xxl_job_log WHERE job_id=97 AND trigger_time>='***' AND trigger_time<'***' ORDER BY id DESC LIMIT 12\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "historical-all-subjects",
+      "sql": "SELECT COUNT(*) AS original_orders,SUM(COALESCE(f.refund_business_income_amount,0)<>r.income OR COALESCE(f.refund_deposit_amount,0)<>r.deposit) AS amount_mismatch,SUM(f.refund_time IS NULL OR f.refund_time<'2000-01-01') AS abnormal_flow_time,SUM(f.refund_time<>r.latest_finish) AS flow_time_mismatch FROM (SELECT o.source_order_no,SUM(CASE WHEN d.subject_no='202' THEN d.amount ELSE 0 END) AS deposit,SUM(CASE WHEN d.subject_no<>'202' THEN d.amount ELSE 0 END) AS income,MAX(o.finish_time) AS latest_finish FROM ol_saps.customer_order o JOIN ol_saps.customer_order_detail d ON d.order_no=CONVERT(o.order_no USING utf8) COLLATE utf8_general_ci AND d.is_delete=0 WHERE o.id BETWEEN 1 AND 649094 AND o.project_no='PRJ000060' AND o.sub_type=3001 AND o.status=4 AND o.is_delete=0 AND o.is_cancel=0 GROUP BY o.source_order_no) r JOIN ol_saps.replace_battery_device_flow f ON f.order_no=CONVERT(r.source_order_no USING utf8) COLLATE utf8_general_ci AND f.is_delete=0 AND f.is_cancel=0 WHERE NOT EXISTS(SELECT 1 FROM ol_saps.customer_order n WHERE n.source_order_no=r.source_order_no AND n.id>649094 AND n.status=4 AND n.is_delete=0 AND n.is_cancel=0) LIMIT 1",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"original_orders\", \"amount_mismatch\", \"abnormal_flow_time\", \"flow_time_mismatch\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"original_orders\" : 22482,\n      \"amount_mismatch\" : 0,\n      \"abnormal_flow_time\" : 0,\n      \"flow_time_mismatch\" : 0\n    } ]\n  },\n  \"sql\" : \"SELECT COUNT(*) AS original_orders,SUM(COALESCE(f.refund_business_income_amount,0)<>r.income OR COALESCE(f.refund_deposit_amount,0)<>r.deposit) AS amount_mismatch,SUM(f.refund_time IS NULL OR f.refund_time<'***') AS abnormal_flow_time,SUM(f.refund_time<>r.latest_finish) AS flow_time_mismatch FROM (SELECT o.source_order_no,SUM(CASE WHEN d.subject_no='***' THEN d.amount ELSE 0 END) AS deposit,SUM(CASE WHEN d.subject_no<>'***' THEN d.amount ELSE 0 END) AS income,MAX(o.finish_time) AS latest_finish FROM ol_saps.customer_order o JOIN ol_saps.customer_order_detail d ON d.order_no=CONVERT(o.order_no USING utf8) COLLATE utf8_general_ci AND d.is_delete=0 WHERE o.id BETWEEN 1 AND 649094 AND o.project_no='***' AND o.sub_type=3001 AND o.status=4 AND o.is_delete=0 AND o.is_cancel=0 GROUP BY o.source_order_no) r JOIN ol_saps.replace_battery_device_flow f ON f.order_no=CONVERT(r.source_order_no USING utf8) COLLATE utf8_general_ci AND f.is_delete=0 AND f.is_cancel=0 WHERE NOT EXISTS(SELECT 1 FROM ol_s\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "cross-pay-samples",
+      "sql": "SELECT s.id AS saps_id,x.id AS pay_id,c.id AS channel_id,s.transaction_amount AS saps_amount,x.refund_amount AS pay_amount,s.finish_time AS saps_finish,x.finish_time AS pay_finish,c.finish_time AS channel_finish,x.status AS pay_status,c.status AS channel_status FROM ol_saps.customer_order s LEFT JOIN xxt_pay.refund_order x ON x.serial_no=s.pay_serial_no AND x.is_delete=0 LEFT JOIN xxt_pay.order_channel c ON c.order_business_sn=x.serial_no AND c.is_delete=0 WHERE s.id IN (693113,693106,693101) LIMIT 10",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"saps_id\", \"pay_id\", \"channel_id\", \"saps_amount\", \"pay_amount\", \"saps_finish\", \"pay_finish\", \"channel_finish\", \"pay_status\", \"channel_status\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"saps_id\" : 693101,\n      \"pay_id\" : 25820,\n      \"channel_id\" : 989395,\n      \"saps_amount\" : 1.00,\n      \"pay_amount\" : 1.00,\n      \"saps_finish\" : \"2026-11-02T09:50:28\",\n      \"pay_finish\" : \"2026-11-02T09:50:28\",\n      \"channel_finish\" : \"2026-11-02T09:50:28\",\n      \"pay_status\" : \"4\",\n      \"channel_status\" : \"4\"\n    }, {\n      \"saps_id\" : 693106,\n      \"pay_id\" : 25821,\n      \"channel_id\" : 989405,\n      \"saps_amount\" : 25.00,\n      \"pay_amount\" : 25.00,\n      \"saps_finish\" : \"2026-11-02T09:54:09\",\n      \"pay_finish\" : \"2026-11-02T09:54:09\",\n      \"channel_finish\" : \"2026-11-02T09:54:09\",\n      \"pay_status\" : \"4\",\n      \"channel_status\" : \"4\"\n    }, {\n      \"saps_id\" : 693113,\n      \"pay_id\" : 25822,\n      \"channel_id\" : 989413,\n      \"saps_amount\" : 1.00,\n      \"pay_amount\" : 1.00,\n      \"saps_finish\" : \"2026-11-02T09:55:31\",\n      \"pay_finish\" : \"2026-11-02T09:55:31\",\n      \"channel_finish\" : \"2026-11-02T09:55:31\",\n      \"pay_status\" : \"4\",\n      \"channel_status\" : \"4\"\n    } ]\n  },\n  \"sql\" : \"SELECT s.id AS saps_id,x.id AS pay_id,c.id AS channel_id,s.transaction_amount AS saps_amount,x.refund_amount AS pay_amount,s.finish_time AS saps_finish,x.finish_time AS pay_finish,c.finish_time AS channel_finish,x.status AS pay_status,c.status AS channel_status FROM ol_saps.customer_order s LEFT JOIN xxt_pay.refund_order x ON x.serial_no=s.pay_serial_no AND x.is_delete=0 LEFT JOIN xxt_pay.order_channel c ON c.order_business_sn=x.serial_no AND c.is_delete=0 WHERE s.id IN (693113,693106,693101) LIMIT 10\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "recent-ledger",
+      "sql": "SELECT COUNT(*) AS payment_orders,SUM(COALESCE(f.refund_business_income_amount,0)<>r.income OR COALESCE(f.refund_deposit_amount,0)<>r.deposit) AS amount_mismatch,SUM(f.refund_time IS NULL OR f.refund_time<>r.latest_finish) AS time_mismatch,SUM(f.refund_status IS NULL OR f.refund_status<>CASE WHEN r.income+r.deposit>=p.transaction_amount THEN 3 WHEN r.income+r.deposit>0 THEN 2 ELSE 1 END) AS status_mismatch FROM (SELECT a.source_order_no,SUM(CASE WHEN d.subject_no='202' THEN d.amount ELSE 0 END) AS deposit,SUM(CASE WHEN d.subject_no<>'202' THEN d.amount ELSE 0 END) AS income,MAX(a.finish_time) AS latest_finish FROM (SELECT DISTINCT source_order_no FROM ol_saps.customer_order WHERE order_time>='2026-10-27 00:00:00' AND order_time<'2026-11-02 10:00:00' AND project_no='PRJ000060' AND sub_type=3001 AND status=4 AND is_delete=0 AND is_cancel=0) q JOIN ol_saps.customer_order a ON a.source_order_no=q.source_order_no AND a.sub_type=3001 AND a.status=4 AND a.is_delete=0 AND a.is_cancel=0 AND a.id<=693113 JOIN ol_saps.customer_order_detail d ON d.order_no=CONVERT(a.order_no USING utf8) COLLATE utf8_general_ci AND d.is_delete=0 AND d.is_cancel=0 GROUP BY a.source_order_no) r JOIN ol_saps.customer_order p ON p.order_no=r.source_order_no AND p.is_delete=0 AND p.is_cancel=0 JOIN ol_saps.replace_battery_device_flow f ON f.order_no=CONVERT(r.source_order_no USING utf8) COLLATE utf8_general_ci AND f.is_delete=0 AND f.is_cancel=0 LIMIT 1",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"payment_orders\", \"amount_mismatch\", \"time_mismatch\", \"status_mismatch\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"payment_orders\" : 1080,\n      \"amount_mismatch\" : 0,\n      \"time_mismatch\" : 0,\n      \"status_mismatch\" : 0\n    } ]\n  },\n  \"sql\" : \"SELECT COUNT(*) AS payment_orders,SUM(COALESCE(f.refund_business_income_amount,0)<>r.income OR COALESCE(f.refund_deposit_amount,0)<>r.deposit) AS amount_mismatch,SUM(f.refund_time IS NULL OR f.refund_time<>r.latest_finish) AS time_mismatch,SUM(f.refund_status IS NULL OR f.refund_status<>CASE WHEN r.income+r.deposit>=p.transaction_amount THEN 3 WHEN r.income+r.deposit>0 THEN 2 ELSE 1 END) AS status_mismatch FROM (SELECT a.source_order_no,SUM(CASE WHEN d.subject_no='***' THEN d.amount ELSE 0 END) AS deposit,SUM(CASE WHEN d.subject_no<>'***' THEN d.amount ELSE 0 END) AS income,MAX(a.finish_time) AS latest_finish FROM (SELECT DISTINCT source_order_no FROM ol_saps.customer_order WHERE order_time>='***' AND order_time<'***' AND project_no='***' AND sub_type=3001 AND status=4 AND is_delete=0 AND is_cancel=0) q JOIN ol_saps.customer_order a ON a.source_order_no=q.source_order_no AND a.sub_type=3001 AND a.status=4 AND a.is_delete=0 AND a.is_cancel=0 AND a.id<=693113 JOIN ol_saps.customer_order_\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "historical-coverage",
+      "sql": "SELECT COUNT(DISTINCT r.id) AS refunds,COUNT(DISTINCT r.source_order_no) AS payment_orders,COUNT(DISTINCT CASE WHEN d.id IS NULL THEN r.id END) AS no_details,COUNT(DISTINCT CASE WHEN f.id IS NULL THEN r.source_order_no END) AS no_flow,COUNT(DISTINCT CASE WHEN n.id IS NOT NULL THEN r.source_order_no END) AS payment_orders_with_later_refunds FROM ol_saps.customer_order r LEFT JOIN ol_saps.customer_order_detail d ON d.order_no=CONVERT(r.order_no USING utf8) COLLATE utf8_general_ci AND d.is_delete=0 LEFT JOIN ol_saps.replace_battery_device_flow f ON f.order_no=CONVERT(r.source_order_no USING utf8) COLLATE utf8_general_ci AND f.is_delete=0 AND f.is_cancel=0 LEFT JOIN ol_saps.customer_order n ON n.source_order_no=r.source_order_no AND n.id>649094 AND n.status=4 AND n.is_delete=0 AND n.is_cancel=0 WHERE r.id BETWEEN 1 AND 649094 AND r.project_no='PRJ000060' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 LIMIT 1",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"refunds\", \"payment_orders\", \"no_details\", \"no_flow\", \"payment_orders_with_later_refunds\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"refunds\" : 23408,\n      \"payment_orders\" : 22485,\n      \"no_details\" : 0,\n      \"no_flow\" : 0,\n      \"payment_orders_with_later_refunds\" : 3\n    } ]\n  },\n  \"sql\" : \"SELECT COUNT(DISTINCT r.id) AS refunds,COUNT(DISTINCT r.source_order_no) AS payment_orders,COUNT(DISTINCT CASE WHEN d.id IS NULL THEN r.id END) AS no_details,COUNT(DISTINCT CASE WHEN f.id IS NULL THEN r.source_order_no END) AS no_flow,COUNT(DISTINCT CASE WHEN n.id IS NOT NULL THEN r.source_order_no END) AS payment_orders_with_later_refunds FROM ol_saps.customer_order r LEFT JOIN ol_saps.customer_order_detail d ON d.order_no=CONVERT(r.order_no USING utf8) COLLATE utf8_general_ci AND d.is_delete=0 LEFT JOIN ol_saps.replace_battery_device_flow f ON f.order_no=CONVERT(r.source_order_no USING utf8) COLLATE utf8_general_ci AND f.is_delete=0 AND f.is_cancel=0 LEFT JOIN ol_saps.customer_order n ON n.source_order_no=r.source_order_no AND n.id>649094 AND n.status=4 AND n.is_delete=0 AND n.is_cancel=0 WHERE r.id BETWEEN 1 AND 649094 AND r.project_no='***' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 LIMIT 1\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "historical-extra-subjects",
+      "sql": "SELECT d.subject_no,COUNT(*) AS detail_count,SUM(d.amount) AS amount FROM ol_saps.replace_battery_device_flow f JOIN ol_saps.customer_order r ON r.source_order_no=CONVERT(f.order_no USING utf8mb4) COLLATE utf8mb4_0900_ai_ci AND r.id<=649094 AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 JOIN ol_saps.customer_order_detail d ON d.order_no=CONVERT(r.order_no USING utf8) COLLATE utf8_general_ci AND d.is_delete=0 WHERE f.id IN (8,16,30,65,58338,58345) AND d.subject_no NOT IN ('101','300','202') GROUP BY d.subject_no LIMIT 10",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"subject_no\", \"detail_count\", \"amount\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"subject_no\" : \"400\",\n      \"detail_count\" : 8,\n      \"amount\" : 0.20\n    } ]\n  },\n  \"sql\" : \"SELECT d.subject_no,COUNT(*) AS detail_count,SUM(d.amount) AS amount FROM ol_saps.replace_battery_device_flow f JOIN ol_saps.customer_order r ON r.source_order_no=CONVERT(f.order_no USING utf8mb4) COLLATE utf8mb4_0900_ai_ci AND r.id<=649094 AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 JOIN ol_saps.customer_order_detail d ON d.order_no=CONVERT(r.order_no USING utf8) COLLATE utf8_general_ci AND d.is_delete=0 WHERE f.id IN (8,16,30,65,58338,58345) AND d.subject_no NOT IN ('***','***','***') GROUP BY d.subject_no LIMIT 10\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "history-three-later",
+      "sql": "SELECT COUNT(*) AS payment_orders,SUM(COALESCE(f.refund_business_income_amount,0)<>z.income OR COALESCE(f.refund_deposit_amount,0)<>z.deposit) AS amount_mismatch,SUM(f.refund_time IS NULL OR f.refund_time<>z.latest_finish) AS time_mismatch FROM (SELECT a.source_order_no,SUM(CASE WHEN d.subject_no='202' THEN d.amount ELSE 0 END) AS deposit,SUM(CASE WHEN d.subject_no<>'202' THEN d.amount ELSE 0 END) AS income,MAX(a.finish_time) AS latest_finish FROM (SELECT DISTINCT old.source_order_no FROM ol_saps.customer_order old JOIN ol_saps.customer_order n ON n.source_order_no=old.source_order_no AND n.id>649094 AND n.id<=693113 AND n.status=4 AND n.is_delete=0 AND n.is_cancel=0 WHERE old.id BETWEEN 1 AND 649094 AND old.project_no='PRJ000060' AND old.sub_type=3001 AND old.status=4 AND old.is_delete=0 AND old.is_cancel=0) q JOIN ol_saps.customer_order a ON a.source_order_no=q.source_order_no AND a.id<=693113 AND a.sub_type=3001 AND a.status=4 AND a.is_delete=0 AND a.is_cancel=0 JOIN ol_saps.customer_order_detail d ON d.order_no=CONVERT(a.order_no USING utf8) COLLATE utf8_general_ci AND d.is_delete=0 GROUP BY a.source_order_no) z JOIN ol_saps.replace_battery_device_flow f ON f.order_no=CONVERT(z.source_order_no USING utf8) COLLATE utf8_general_ci AND f.is_delete=0 AND f.is_cancel=0 LIMIT 1",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"payment_orders\", \"amount_mismatch\", \"time_mismatch\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"payment_orders\" : 3,\n      \"amount_mismatch\" : 0,\n      \"time_mismatch\" : 0\n    } ]\n  },\n  \"sql\" : \"SELECT COUNT(*) AS payment_orders,SUM(COALESCE(f.refund_business_income_amount,0)<>z.income OR COALESCE(f.refund_deposit_amount,0)<>z.deposit) AS amount_mismatch,SUM(f.refund_time IS NULL OR f.refund_time<>z.latest_finish) AS time_mismatch FROM (SELECT a.source_order_no,SUM(CASE WHEN d.subject_no='***' THEN d.amount ELSE 0 END) AS deposit,SUM(CASE WHEN d.subject_no<>'***' THEN d.amount ELSE 0 END) AS income,MAX(a.finish_time) AS latest_finish FROM (SELECT DISTINCT old.source_order_no FROM ol_saps.customer_order old JOIN ol_saps.customer_order n ON n.source_order_no=old.source_order_no AND n.id>649094 AND n.id<=693113 AND n.status=4 AND n.is_delete=0 AND n.is_cancel=0 WHERE old.id BETWEEN 1 AND 649094 AND old.project_no='***' AND old.sub_type=3001 AND old.status=4 AND old.is_delete=0 AND old.is_cancel=0) q JOIN ol_saps.customer_order a ON a.source_order_no=q.source_order_no AND a.id<=693113 AND a.sub_type=3001 AND a.status=4 AND a.is_delete=0 AND a.is_cancel=0 JOIN ol_saps.customer_orde\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "historical-pay-plan",
+      "sql": "EXPLAIN SELECT r.id,x.id,c.id FROM ol_saps.customer_order r LEFT JOIN xxt_pay.refund_order x ON x.serial_no=r.pay_serial_no AND x.is_delete=0 LEFT JOIN xxt_pay.order_channel c ON c.order_business_sn=x.serial_no AND c.is_delete=0 WHERE r.id BETWEEN 1 AND 649094 AND r.project_no='PRJ000060' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 LIMIT 20",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"id\", \"select_type\", \"table\", \"partitions\", \"type\", \"possible_keys\", \"key\", \"key_len\", \"ref\", \"rows\", \"filtered\", \"Extra\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"id\" : 1,\n      \"select_type\" : \"SIMPLE\",\n      \"table\" : \"r\",\n      \"partitions\" : null,\n      \"type\" : \"range\",\n      \"possible_keys\" : \"PRIMARY\",\n      \"key\" : \"PRIMARY\",\n      \"key_len\" : \"4\",\n      \"ref\" : null,\n      \"rows\" : 324106,\n      \"filtered\" : 0.0,\n      \"Extra\" : \"Using where\"\n    }, {\n      \"id\" : 1,\n      \"select_type\" : \"SIMPLE\",\n      \"table\" : \"x\",\n      \"partitions\" : null,\n      \"type\" : \"eq_ref\",\n      \"possible_keys\" : \"uk_serial_no\",\n      \"key\" : \"uk_serial_no\",\n      \"key_len\" : \"130\",\n      \"ref\" : \"ol_saps.r.pay_serial_no\",\n      \"rows\" : 1,\n      \"filtered\" : 100.0,\n      \"Extra\" : \"Using where\"\n    }, {\n      \"id\" : 1,\n      \"select_type\" : \"SIMPLE\",\n      \"table\" : \"c\",\n      \"partitions\" : null,\n      \"type\" : \"ref\",\n      \"possible_keys\" : \"idx_order_business_sn\",\n      \"key\" : \"idx_order_business_sn\",\n      \"key_len\" : \"259\",\n      \"ref\" : \"xxt_pay.x.serial_no\",\n      \"rows\" : 1,\n      \"filtered\" : 100.0,\n      \"Extra\" : \"Using where\"\n    } ]\n  },\n  \"sql\" : \"EXPLAIN SELECT r.id,x.id,c.id FROM ol_saps.customer_order r LEFT JOIN xxt_pay.refund_order x ON x.serial_no=r.pay_serial_no AND x.is_delete=0 LEFT JOIN xxt_pay.order_channel c ON c.order_business_sn=x.serial_no AND c.is_delete=0 WHERE r.id BETWEEN 1 AND 649094 AND r.project_no='***' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 LIMIT 20\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ascii-order-scope",
+      "sql": "SELECT COUNT(*) AS refunds,SUM(order_no REGEXP '[^0-9A-Za-z_-]' OR source_order_no REGEXP '[^0-9A-Za-z_-]') AS non_ascii_keys FROM ol_saps.customer_order WHERE id BETWEEN 1 AND 693113 AND project_no='PRJ000060' AND sub_type=3001 AND status=4 AND is_delete=0 AND is_cancel=0 LIMIT 1",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"refunds\", \"non_ascii_keys\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"refunds\" : 24470,\n      \"non_ascii_keys\" : 0\n    } ]\n  },\n  \"sql\" : \"SELECT COUNT(*) AS refunds,SUM(order_no REGEXP '***' OR source_order_no REGEXP '***') AS non_ascii_keys FROM ol_saps.customer_order WHERE id BETWEEN 1 AND 693113 AND project_no='***' AND sub_type=3001 AND status=4 AND is_delete=0 AND is_cancel=0 LIMIT 1\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "historical-cross-pay",
+      "sql": "SELECT COUNT(DISTINCT r.id) AS saps_refunds,COUNT(DISTINCT CASE WHEN x.id IS NULL THEN r.id END) AS missing_pay_refund,COUNT(DISTINCT CASE WHEN x.id IS NOT NULL AND (x.finish_time IS NULL OR x.finish_time<'2000-01-01') THEN r.id END) AS bad_pay_time,COUNT(DISTINCT CASE WHEN x.id IS NOT NULL AND r.finish_time<>x.finish_time THEN r.id END) AS saps_pay_time_mismatch,COUNT(DISTINCT CASE WHEN c.id IS NOT NULL AND (c.finish_time IS NULL OR c.finish_time<'2000-01-01') THEN r.id END) AS bad_channel_time,COUNT(DISTINCT CASE WHEN c.id IS NULL THEN r.id END) AS missing_channel FROM ol_saps.customer_order r LEFT JOIN xxt_pay.refund_order x ON x.serial_no=r.pay_serial_no AND x.is_delete=0 LEFT JOIN xxt_pay.order_channel c ON c.order_business_sn=x.serial_no AND c.is_delete=0 WHERE r.id BETWEEN 1 AND 649094 AND r.project_no='PRJ000060' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 LIMIT 1",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"saps_refunds\", \"missing_pay_refund\", \"bad_pay_time\", \"saps_pay_time_mismatch\", \"bad_channel_time\", \"missing_channel\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"saps_refunds\" : 23408,\n      \"missing_pay_refund\" : 0,\n      \"bad_pay_time\" : 0,\n      \"saps_pay_time_mismatch\" : 1561,\n      \"bad_channel_time\" : 13651,\n      \"missing_channel\" : 0\n    } ]\n  },\n  \"sql\" : \"SELECT COUNT(DISTINCT r.id) AS saps_refunds,COUNT(DISTINCT CASE WHEN x.id IS NULL THEN r.id END) AS missing_pay_refund,COUNT(DISTINCT CASE WHEN x.id IS NOT NULL AND (x.finish_time IS NULL OR x.finish_time<'***') THEN r.id END) AS bad_pay_time,COUNT(DISTINCT CASE WHEN x.id IS NOT NULL AND r.finish_time<>x.finish_time THEN r.id END) AS saps_pay_time_mismatch,COUNT(DISTINCT CASE WHEN c.id IS NOT NULL AND (c.finish_time IS NULL OR c.finish_time<'***') THEN r.id END) AS bad_channel_time,COUNT(DISTINCT CASE WHEN c.id IS NULL THEN r.id END) AS missing_channel FROM ol_saps.customer_order r LEFT JOIN xxt_pay.refund_order x ON x.serial_no=r.pay_serial_no AND x.is_delete=0 LEFT JOIN xxt_pay.order_channel c ON c.order_business_sn=x.serial_no AND c.is_delete=0 WHERE r.id BETWEEN 1 AND 649094 AND r.project_no='***' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 LIMIT 1\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "recent-cross-pay",
+      "sql": "SELECT COUNT(DISTINCT r.id) AS saps_refunds,COUNT(DISTINCT CASE WHEN x.id IS NULL THEN r.id END) AS missing_pay_refund,COUNT(DISTINCT CASE WHEN x.id IS NOT NULL AND (x.finish_time IS NULL OR x.finish_time<'2000-01-01') THEN r.id END) AS bad_pay_time,COUNT(DISTINCT CASE WHEN x.id IS NOT NULL AND (r.finish_time<>x.finish_time OR r.transaction_amount<>x.refund_amount) THEN r.id END) AS saps_pay_mismatch,COUNT(DISTINCT CASE WHEN c.id IS NULL THEN r.id END) AS missing_channel,COUNT(DISTINCT CASE WHEN c.id IS NOT NULL AND (c.finish_time IS NULL OR c.finish_time<'2000-01-01' OR c.finish_time<>x.finish_time) THEN r.id END) AS channel_time_mismatch FROM ol_saps.customer_order r LEFT JOIN xxt_pay.refund_order x ON x.serial_no=r.pay_serial_no AND x.is_delete=0 LEFT JOIN xxt_pay.order_channel c ON c.order_business_sn=x.serial_no AND c.is_delete=0 WHERE r.order_time>='2026-10-27 00:00:00' AND r.order_time<'2026-11-02 10:00:00' AND r.project_no='PRJ000060' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 LIMIT 1",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"saps_refunds\", \"missing_pay_refund\", \"bad_pay_time\", \"saps_pay_mismatch\", \"missing_channel\", \"channel_time_mismatch\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"saps_refunds\" : 1104,\n      \"missing_pay_refund\" : 0,\n      \"bad_pay_time\" : 0,\n      \"saps_pay_mismatch\" : 0,\n      \"missing_channel\" : 0,\n      \"channel_time_mismatch\" : 617\n    } ]\n  },\n  \"sql\" : \"SELECT COUNT(DISTINCT r.id) AS saps_refunds,COUNT(DISTINCT CASE WHEN x.id IS NULL THEN r.id END) AS missing_pay_refund,COUNT(DISTINCT CASE WHEN x.id IS NOT NULL AND (x.finish_time IS NULL OR x.finish_time<'***') THEN r.id END) AS bad_pay_time,COUNT(DISTINCT CASE WHEN x.id IS NOT NULL AND (r.finish_time<>x.finish_time OR r.transaction_amount<>x.refund_amount) THEN r.id END) AS saps_pay_mismatch,COUNT(DISTINCT CASE WHEN c.id IS NULL THEN r.id END) AS missing_channel,COUNT(DISTINCT CASE WHEN c.id IS NOT NULL AND (c.finish_time IS NULL OR c.finish_time<'***' OR c.finish_time<>x.finish_time) THEN r.id END) AS channel_time_mismatch FROM ol_saps.customer_order r LEFT JOIN xxt_pay.refund_order x ON x.serial_no=r.pay_serial_no AND x.is_delete=0 LEFT JOIN xxt_pay.order_channel c ON c.order_business_sn=x.serial_no AND c.is_delete=0 WHERE r.order_time>='***' AND r.order_time<'***' AND r.project_no='***' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 LIMIT 1\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "recent-channel-time-by-day",
+      "sql": "SELECT DATE(r.order_time) AS order_day,COUNT(DISTINCT r.id) AS refunds,COUNT(DISTINCT CASE WHEN c.status='4' AND (c.finish_time IS NULL OR c.finish_time<'2000-01-01') THEN r.id END) AS successful_channel_bad_time,COUNT(DISTINCT CASE WHEN c.status='4' AND c.finish_time>='2000-01-01' AND c.finish_time<>x.finish_time THEN r.id END) AS valid_but_different,COUNT(DISTINCT CASE WHEN c.status<>'4' THEN r.id END) AS has_non_success_channel FROM ol_saps.customer_order r JOIN xxt_pay.refund_order x ON x.serial_no=r.pay_serial_no AND x.is_delete=0 JOIN xxt_pay.order_channel c ON c.order_business_sn=x.serial_no AND c.is_delete=0 WHERE r.order_time>='2026-10-27 00:00:00' AND r.order_time<'2026-11-02 10:00:00' AND r.project_no='PRJ000060' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 GROUP BY DATE(r.order_time) ORDER BY order_day LIMIT 10",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"order_day\", \"refunds\", \"successful_channel_bad_time\", \"valid_but_different\", \"has_non_success_channel\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"order_day\" : \"2026-10-27\",\n      \"refunds\" : 170,\n      \"successful_channel_bad_time\" : 170,\n      \"valid_but_different\" : 0,\n      \"has_non_success_channel\" : 0\n    }, {\n      \"order_day\" : \"2026-10-28\",\n      \"refunds\" : 160,\n      \"successful_channel_bad_time\" : 160,\n      \"valid_but_different\" : 0,\n      \"has_non_success_channel\" : 0\n    }, {\n      \"order_day\" : \"2026-10-29\",\n      \"refunds\" : 170,\n      \"successful_channel_bad_time\" : 170,\n      \"valid_but_different\" : 0,\n      \"has_non_success_channel\" : 0\n    }, {\n      \"order_day\" : \"2026-10-30\",\n      \"refunds\" : 171,\n      \"successful_channel_bad_time\" : 117,\n      \"valid_but_different\" : 0,\n      \"has_non_success_channel\" : 0\n    }, {\n      \"order_day\" : \"2026-10-31\",\n      \"refunds\" : 188,\n      \"successful_channel_bad_time\" : 0,\n      \"valid_but_different\" : 0,\n      \"has_non_success_channel\" : 0\n    }, {\n      \"order_day\" : \"2026-11-01\",\n      \"refunds\" : 209,\n      \"successful_channel_bad_time\" : 0,\n      \"valid_but_different\" : 0,\n      \"has_non_success_channel\" : 0\n    }, {\n      \"order_day\" : \"2026-11-02\",\n      \"refunds\" : 36,\n      \"successful_channel_bad_time\" : 0,\n      \"valid_but_different\" : 0,\n      \"has_non_success_channel\" : 0\n    } ]\n  },\n  \"sql\" : \"SELECT DATE(r.order_time) AS order_day,COUNT(DISTINCT r.id) AS refunds,COUNT(DISTINCT CASE WHEN c.status='***' AND (c.finish_time IS NULL OR c.finish_time<'***') THEN r.id END) AS successful_channel_bad_time,COUNT(DISTINCT CASE WHEN c.status='***' AND c.finish_time>='***' AND c.finish_time<>x.finish_time THEN r.id END) AS valid_but_different,COUNT(DISTINCT CASE WHEN c.status<>'***' THEN r.id END) AS has_non_success_channel FROM ol_saps.customer_order r JOIN xxt_pay.refund_order x ON x.serial_no=r.pay_serial_no AND x.is_delete=0 JOIN xxt_pay.order_channel c ON c.order_business_sn=x.serial_no AND c.is_delete=0 WHERE r.order_time>='***' AND r.order_time<'***' AND r.project_no='***' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 GROUP BY DATE(r.order_time) ORDER BY order_day LIMIT 10\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "historical-time-difference",
+      "sql": "SELECT COUNT(*) AS time_mismatch,SUM(ABS(TIMESTAMPDIFF(SECOND,x.finish_time,r.finish_time))<=5) AS within_5_seconds,SUM(ABS(TIMESTAMPDIFF(SECOND,x.finish_time,r.finish_time))>60) AS over_60_seconds,MIN(TIMESTAMPDIFF(SECOND,x.finish_time,r.finish_time)) AS min_seconds,MAX(TIMESTAMPDIFF(SECOND,x.finish_time,r.finish_time)) AS max_seconds FROM ol_saps.customer_order r JOIN xxt_pay.refund_order x ON x.serial_no=r.pay_serial_no AND x.is_delete=0 WHERE r.id BETWEEN 1 AND 649094 AND r.project_no='PRJ000060' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 AND r.finish_time<>x.finish_time LIMIT 1",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"time_mismatch\", \"within_5_seconds\", \"over_60_seconds\", \"min_seconds\", \"max_seconds\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"time_mismatch\" : 1561,\n      \"within_5_seconds\" : 1561,\n      \"over_60_seconds\" : 0,\n      \"min_seconds\" : -2,\n      \"max_seconds\" : 1\n    } ]\n  },\n  \"sql\" : \"SELECT COUNT(*) AS time_mismatch,SUM(ABS(TIMESTAMPDIFF(SECOND,x.finish_time,r.finish_time))<=5) AS within_5_seconds,SUM(ABS(TIMESTAMPDIFF(SECOND,x.finish_time,r.finish_time))>60) AS over_60_seconds,MIN(TIMESTAMPDIFF(SECOND,x.finish_time,r.finish_time)) AS min_seconds,MAX(TIMESTAMPDIFF(SECOND,x.finish_time,r.finish_time)) AS max_seconds FROM ol_saps.customer_order r JOIN xxt_pay.refund_order x ON x.serial_no=r.pay_serial_no AND x.is_delete=0 WHERE r.id BETWEEN 1 AND 649094 AND r.project_no='***' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 AND r.finish_time<>x.finish_time LIMIT 1\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    },
+    {
+      "name": "historical-time-samples",
+      "sql": "SELECT r.id AS saps_id,x.id AS pay_id,c.id AS channel_id,r.finish_time AS saps_finish,x.finish_time AS pay_finish,c.finish_time AS channel_finish,r.modify_time AS saps_modified,x.modify_time AS pay_modified,c.modify_time AS channel_modified FROM ol_saps.customer_order r JOIN xxt_pay.refund_order x ON x.serial_no=r.pay_serial_no AND x.is_delete=0 LEFT JOIN xxt_pay.order_channel c ON c.order_business_sn=x.serial_no AND c.is_delete=0 WHERE r.id BETWEEN 1 AND 649094 AND r.project_no='PRJ000060' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 AND r.finish_time<>x.finish_time ORDER BY r.id DESC LIMIT 5",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "数据库查询失败：CLI-specific condition,  message from server: '***'"
+          }
+        ],
+        "isError": true
+      }
+    },
+    {
+      "name": "channel-bad-years",
+      "sql": "SELECT YEAR(c.finish_time) AS finish_year,COUNT(DISTINCT r.id) AS refunds FROM ol_saps.customer_order r JOIN xxt_pay.refund_order x ON x.serial_no=r.pay_serial_no AND x.is_delete=0 JOIN xxt_pay.order_channel c ON c.order_business_sn=x.serial_no AND c.is_delete=0 WHERE r.id BETWEEN 1 AND 649094 AND r.project_no='PRJ000060' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 AND (c.finish_time IS NULL OR c.finish_time<'2000-01-01') GROUP BY YEAR(c.finish_time) LIMIT 10",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"result\" : {\n    \"columns\" : [ \"finish_year\", \"refunds\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"finish_year\" : 1970,\n      \"refunds\" : 13651\n    } ]\n  },\n  \"sql\" : \"SELECT YEAR(c.finish_time) AS finish_year,COUNT(DISTINCT r.id) AS refunds FROM ol_saps.customer_order r JOIN xxt_pay.refund_order x ON x.serial_no=r.pay_serial_no AND x.is_delete=0 JOIN xxt_pay.order_channel c ON c.order_business_sn=x.serial_no AND c.is_delete=0 WHERE r.id BETWEEN 1 AND 649094 AND r.project_no='***' AND r.sub_type=3001 AND r.status=4 AND r.is_delete=0 AND r.is_cancel=0 AND (c.finish_time IS NULL OR c.finish_time<'***') GROUP BY YEAR(c.finish_time) LIMIT 10\",\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+          }
+        ]
+      }
+    }
+  ]
+}

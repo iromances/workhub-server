@@ -1,0 +1,65 @@
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.amp.payment:payment-common:jar:0.0.1-SNAPSHOT
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: cn.hutool:hutool-all:jar -> version 5.4.0 vs 5.5.8 @ com.amp.payment:scf-payment:0.0.1-SNAPSHOT, /Users/aslight/IDEAWorkspace/scf/scf-payment/pom.xml, line 271, column 21
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.amp.payment:scf-payment:pom:0.0.1-SNAPSHOT
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: cn.hutool:hutool-all:jar -> version 5.4.0 vs 5.5.8 @ line 271, column 21
+[WARNING] 'dependencyManagement.dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.apache.poi:poi:jar -> duplicate declaration of version 3.17 @ com.thchengtay:thctay-dependencies:0.0.1-SNAPSHOT, /Users/aslight/.m2/repository/com/thchengtay/thctay-dependencies/0.0.1-SNAPSHOT/thctay-dependencies-0.0.1-SNAPSHOT.pom, line 337, column 19
+[WARNING] 'dependencyManagement.dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.apache.poi:poi-ooxml:jar -> duplicate declaration of version 3.17 @ com.thchengtay:thctay-dependencies:0.0.1-SNAPSHOT, /Users/aslight/.m2/repository/com/thchengtay/thctay-dependencies/0.0.1-SNAPSHOT/thctay-dependencies-0.0.1-SNAPSHOT.pom, line 343, column 19
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] scf-payment                                                        [pom]
+[INFO] payment-common                                                     [jar]
+[INFO] payment-model                                                      [jar]
+[INFO] payment-dao                                                        [jar]
+[INFO] payment-api                                                        [jar]
+[INFO] payment-service                                                    [jar]
+[INFO] 
+[INFO] --------------------< com.amp.payment:scf-payment >---------------------
+[INFO] Building scf-payment 0.0.1-SNAPSHOT                                [1/6]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] -------------------< com.amp.payment:payment-common >-------------------
+[INFO] Building payment-common 0.0.1-SNAPSHOT                             [2/6]
+[INFO]   from payment-common/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] The POM for com.bocom.cscs.utils:ipct_safety2:jar:2.1.0 is missing, no dependency information available
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for scf-payment 0.0.1-SNAPSHOT:
+[INFO] 
+[INFO] scf-payment ........................................ SUCCESS [  0.001 s]
+[INFO] payment-common ..................................... FAILURE [  0.748 s]
+[INFO] payment-model ...................................... SKIPPED
+[INFO] payment-dao ........................................ SKIPPED
+[INFO] payment-api ........................................ SKIPPED
+[INFO] payment-service .................................... SKIPPED
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.145 s
+[INFO] Finished at: 2026-10-21T10:10:08+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal on project payment-common: Could not resolve dependencies for project com.amp.payment:payment-common:jar:0.0.1-SNAPSHOT
+[ERROR] dependency: com.bocom.cscs.utils:ipct_safety2:jar:2.1.0 (compile)
+[ERROR] 	Cannot access th-group (http://10.10.116.21:10003/repository/th-group/) in offline mode and the artifact com.bocom.cscs.utils:ipct_safety2:jar:2.1.0 has not been downloaded from it before.
+[ERROR] 	Cannot access maven-central (https://repo.maven.apache.org/maven2) in offline mode and the artifact com.bocom.cscs.utils:ipct_safety2:jar:2.1.0 has not been downloaded from it before.
+[ERROR] 	Cannot access central (https://repo.maven.apache.org/maven2) in offline mode and the artifact com.bocom.cscs.utils:ipct_safety2:jar:2.1.0 has not been downloaded from it before.
+[ERROR] 
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/DependencyResolutionException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :payment-common

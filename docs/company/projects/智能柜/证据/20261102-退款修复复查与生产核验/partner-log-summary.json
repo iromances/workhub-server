@@ -1,0 +1,21 @@
+{
+  "businessLine": "BL000005",
+  "environment": "prod",
+  "service": "ol-saps",
+  "sapsOrderId": 693113,
+  "queryTimeWindow": "2026-11-02 09:50:00 to 10:00:00 Asia/Shanghai",
+  "count": 5,
+  "truncated": true,
+  "summary": "日志中该成功退款向合作方通知链路携带 finishTime=2026-11-02 09:55:31，金额1.00，状态4，通知接口返回code200及syncStatus1。证明本次发送/受理，不证明合作方最终业务处理或历史更正通知完成。",
+  "events": [
+    {
+      "sourceEventId": "6c498311a19a31d7a47b9c534047521403579afce85671657645c585d75f74a2",
+      "occurredAt": "2026-11-02T01:55:35.003Z"
+    },
+    {
+      "sourceEventId": "99c3dabbecab089ee9ee699e0139c37a79e9e5314498acf70faed2ad12945f9d",
+      "occurredAt": "2026-11-02T01:55:34.998Z"
+    }
+  ],
+  "rawPayloadArchived": false
+}

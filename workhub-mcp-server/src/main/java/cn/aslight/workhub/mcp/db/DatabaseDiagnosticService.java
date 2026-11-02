@@ -11,11 +11,10 @@ import cn.aslight.workhub.mcp.ssh.SshTunnel;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
 import java.time.Instant;
@@ -49,8 +48,8 @@ public class DatabaseDiagnosticService {
         DatabaseProfile profile = catalog.requireDatabaseProfile(targetKey, profileKey);
         Instant startedAt = Instant.now();
         try (SshTunnel tunnel = SshTunnel.open(target);
-             Connection connection = connect(target, tunnel)) {
-            DatabaseMetaData metaData = connection.getMetaData();
+             JdbcConnectionLeaseCache.Lease lease = connection(target, tunnel)) {
+            DatabaseMetaData metaData = lease.connection().getMetaData();
             List<Map<String, Object>> tables = new ArrayList<>();
             try (ResultSet tableRs = metaData.getTables(target.schema(), null, "%", new String[]{"TABLE", "VIEW"})) {
                 int tableCount = 0;
@@ -85,46 +84,70 @@ public class DatabaseDiagnosticService {
         return runQuery("run_readonly_query", targetKey, profileKey, sql);
     }
 
+    /** 多条只读 SQL 复用同一个连接执行，返回与入参顺序一致的结果集。 */
+    public List<Map<String, Object>> runReadonlyQueries(String targetKey, String profileKey, List<String> rawSqls) {
+        DatabaseProfile profile = catalog.requireDatabaseProfile(targetKey, profileKey);
+        List<String> sqls = rawSqls.stream()
+                .map(rawSql -> sqlPolicyGuard.validateReadonly(rawSql, profile.maxRows()))
+                .toList();
+        return runStatements("run_readonly_query", targetKey, profileKey, sqls);
+    }
+
     private Map<String, Object> runQuery(String toolName, String targetKey, String profileKey, String sql) {
+        Map<String, Object> result = runStatements(toolName, targetKey, profileKey, List.of(sql)).getFirst();
+        return Map.of(
+                "targetKey", targetKey,
+                "profileKey", profileKey,
+                "sql", truncate(sensitiveDataMasker.maskSql(sql), 1000),
+                "dataMasked", true,
+                "result", result
+        );
+    }
+
+    private List<Map<String, Object>> runStatements(String toolName, String targetKey, String profileKey, List<String> sqls) {
         DatabaseTarget target = catalog.requireDatabaseTarget(targetKey);
         DatabaseProfile profile = catalog.requireDatabaseProfile(targetKey, profileKey);
         Instant startedAt = Instant.now();
         try (SshTunnel tunnel = SshTunnel.open(target);
-             Connection connection = connect(target, tunnel);
-             Statement statement = connection.createStatement()) {
-            statement.setMaxRows(profile.maxRows());
-            statement.setQueryTimeout(profile.queryTimeoutSeconds());
-            try (ResultSet resultSet = statement.executeQuery(sql)) {
-                Map<String, Object> result = resultSetToRows(resultSet, profile.maxRows(), profile.maxResultBytes());
-                int rowCount = ((List<?>) result.get("rows")).size();
-                audit(toolName, target, profile, "SUCCEEDED", sql, rowCount, startedAt, null);
-                return Map.of(
-                        "targetKey", targetKey,
-                        "profileKey", profileKey,
-                        "sql", truncate(sensitiveDataMasker.maskSql(sql), 1000),
-                        "dataMasked", true,
-                        "result", result
-                );
+             JdbcConnectionLeaseCache.Lease lease = connection(target, tunnel)) {
+            List<Map<String, Object>> results = new ArrayList<>();
+            for (String sql : sqls) {
+                Instant statementStartedAt = Instant.now();
+                try (Statement statement = lease.connection().createStatement()) {
+                    statement.setMaxRows(profile.maxRows());
+                    statement.setQueryTimeout(profile.queryTimeoutSeconds());
+                    try (ResultSet resultSet = statement.executeQuery(sql)) {
+                        Map<String, Object> result = resultSetToRows(resultSet, profile.maxRows(), profile.maxResultBytes());
+                        int rowCount = ((List<?>) result.get("rows")).size();
+                        audit(toolName, target, profile, "SUCCEEDED", sql, rowCount, statementStartedAt, null);
+                        results.add(result);
+                    }
+                } catch (Exception ex) {
+                    lease.discard();
+                    audit(toolName, target, profile, "FAILED", sql, 0, statementStartedAt, ex);
+                    throw new IllegalArgumentException("数据库查询失败：" + safeErrorMessage(ex), ex);
+                }
             }
+            return results;
+        } catch (IllegalArgumentException ex) {
+            throw ex;
         } catch (Exception ex) {
-            audit(toolName, target, profile, "FAILED", sql, 0, startedAt, ex);
+            audit(toolName, target, profile, "FAILED", sqls.getFirst(), 0, startedAt, ex);
             throw new IllegalArgumentException("数据库查询失败：" + safeErrorMessage(ex), ex);
         }
     }
 
-    private Connection connect(DatabaseTarget target, SshTunnel tunnel) throws Exception {
-        return DriverManager.getConnection(
-                jdbcUrl(tunnel.host(), tunnel.port(), target.schema()),
-                target.username(),
-                secretResolver.resolve(target.password())
-        );
+    private JdbcConnectionLeaseCache.Lease connection(DatabaseTarget target, SshTunnel tunnel) throws SQLException {
+        String password = secretResolver.resolve(target.password());
+        return JdbcConnectionLeaseCache.shared()
+                .acquire(jdbcUrl(tunnel.host(), tunnel.port(), target.schema()), target.username(), password);
     }
 
     static String jdbcUrl(String host, int port, String schema) {
         String databasePath = schema == null || schema.isBlank() ? "/" : "/" + schema;
         return "jdbc:mysql://" + host + ":" + port + databasePath
                 + "?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai"
-                + "&allowPublicKeyRetrieval=true&useSSL=false";
+                + "&allowPublicKeyRetrieval=true&useSSL=false&connectTimeout=10000&socketTimeout=60000";
     }
 
     private List<Map<String, Object>> columns(DatabaseMetaData metaData, String schema, String tableName) throws Exception {

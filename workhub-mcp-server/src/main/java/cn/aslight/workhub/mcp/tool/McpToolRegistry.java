@@ -176,10 +176,10 @@ public class McpToolRegistry {
 
     private Map<String, Object> knowledgeContext(McpResourceCatalog catalog, String businessLine) {
         Map<String, Object> context = new LinkedHashMap<>(catalog.knowledge());
-        Object vaultPath = context.get("projectVaultPath");
-        if (vaultPath != null) {
-            context.put("businessLineWikiRoot", vaultPath + "/wiki/projects/" + businessLine);
-            context.put("businessLineRawRoot", vaultPath + "/raw/requirements/" + businessLine);
+        Object documentPath = context.get("projectDocumentPath");
+        if (documentPath != null) {
+            context.put("businessLineWikiRoot", documentPath + "/requirements/" + businessLine);
+            context.put("businessLineRawRoot", documentPath + "/requirement-sources/" + businessLine);
         }
         return context;
     }

@@ -428,6 +428,41 @@ class XxlJobMonitorCollectorTest {
         assertEquals("XXL-JOB 区间内无失败日志", response.message());
     }
 
+    @Test
+    void collectLogs_shouldExecuteCountAndPageSqlInSingleBatch() {
+        FakeXxlJobDatabaseQueryClient queryClient = new FakeXxlJobDatabaseQueryClient();
+        queryClient.nextRows(List.of(Map.of("failedJobTotal", 3)));
+        queryClient.nextRows(List.of(failedJobRow()));
+        XxlJobMonitorCollector collector = new XxlJobMonitorCollector(queryClient);
+
+        collector.collectLogs(monitor(), LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 9), 1, 20, null, null, "FAILED");
+
+        assertEquals(1, queryClient.batchCount);
+        assertEquals(2, queryClient.sqls.size());
+    }
+
+    @Test
+    void collect_shouldExecuteSummaryCountAndPageSqlInSingleBatch() {
+        FakeXxlJobDatabaseQueryClient queryClient = new FakeXxlJobDatabaseQueryClient();
+        queryClient.nextRows(List.of(Map.of(
+                "executorRegistryList", "10.0.0.1:9999",
+                "jobCount", 1,
+                "enabledJobCount", 1,
+                "disabledJobCount", 0,
+                "triggerRunningCount", 0,
+                "triggerSuccessCount", 1,
+                "triggerFailedCount", 0
+        )));
+        queryClient.nextRows(List.of(Map.of("failedJobTotal", 0)));
+        queryClient.nextRows(List.of());
+        XxlJobMonitorCollector collector = new XxlJobMonitorCollector(queryClient);
+
+        collector.collect(monitor());
+
+        assertEquals(1, queryClient.batchCount);
+        assertEquals(3, queryClient.sqls.size());
+    }
+
     private OpsMonitorEntity monitor() {
         OpsMonitorEntity entity = new OpsMonitorEntity();
         entity.setId(7L);
@@ -480,6 +515,7 @@ class XxlJobMonitorCollectorTest {
         private final List<String> sqls = new ArrayList<>();
         private final List<String> businessLineCodes = new ArrayList<>();
         private final List<String> environmentCodes = new ArrayList<>();
+        private int batchCount;
 
         void nextRows(List<Map<String, Object>> rows) {
             queuedRows.add(rows);
@@ -491,6 +527,12 @@ class XxlJobMonitorCollectorTest {
             environmentCodes.add(environmentCode);
             sqls.add(sql);
             return queuedRows.removeFirst();
+        }
+
+        @Override
+        public List<List<Map<String, Object>>> runRowsBatch(String businessLineCode, String environmentCode, List<String> sqls) {
+            batchCount++;
+            return XxlJobDatabaseQueryClient.super.runRowsBatch(businessLineCode, environmentCode, sqls);
         }
     }
 }

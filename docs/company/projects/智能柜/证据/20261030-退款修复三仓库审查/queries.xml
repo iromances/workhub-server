@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ReviewQueries">
+<select id="selectUnCreatedFlowOrderPage" resultType="com.lease.saps.model.entity.CustomerOrderEntity">
+        SELECT o.*
+        FROM customer_order o
+        WHERE o.is_delete = 0
+          AND o.is_cancel = 0
+          AND o.project_no = #{projectNo}
+          AND o.create_time BETWEEN #{dayStart} AND #{dayEnd}
+          AND (o.transaction_type IS NULL OR o.transaction_type &lt;&gt; 3) <!-- 3=退款(TransactionTypeEnum.REFUND)，退款单不建流水 -->
+        <if test="orderNos != null and orderNos.size() > 0">
+            AND o.order_no IN
+            <foreach collection="orderNos" item="orderNo" open="(" separator="," close=")">
+                #{orderNo}
+            </foreach>
+        </if>
+          AND o.id &gt; #{startId}
+          AND NOT EXISTS (
+              SELECT 1
+              FROM replace_battery_device_flow f
+              WHERE f.order_no = o.order_no
+                AND f.is_delete = 0
+          )
+        ORDER BY o.id
+        LIMIT #{pageSize}
+    </select>
+<select id="selectRefundOrderSyncPage" resultType="com.lease.saps.model.entity.CustomerOrderEntity">
+        SELECT DISTINCT r.id,
+                        r.order_no
+        FROM customer_order r
+        JOIN replace_battery_device_flow f
+          ON f.order_no = r.source_order_no
+         AND f.is_delete = 0
+        WHERE r.is_delete = 0
+          AND r.is_cancel = 0
+          AND r.sub_type = 3001 <!-- 3001=账单退款(TransactionSubTypeEnum.REFUND_NORMAL) -->
+          AND r.status = 4 <!-- 4=退款成功(PaymentStatusEnum.SUCCESS) -->
+          AND f.create_time BETWEEN #{dayStart} AND #{dayEnd} <!-- 时间窗按流水创建时间（下单日），与其余步骤一致 -->
+          <!-- 支付单必须存在且有效：下游按 sourceOrderNo 反查支付单，缺失会抛错中断整批 -->
+          AND EXISTS (
+              SELECT 1
+              FROM customer_order p
+              WHERE p.order_no = r.source_order_no
+                AND p.is_delete = 0
+                AND p.is_cancel = 0
+          )
+        <if test="orderNos != null and orderNos.size() > 0">
+            AND r.source_order_no IN
+            <foreach collection="orderNos" item="orderNo" open="(" separator="," close=")">
+                #{orderNo}
+            </foreach>
+        </if>
+          AND r.id &gt; #{startId}
+          AND f.flow_status &gt;= 40 <!-- 分账成功后才允许退款 -->
+          AND f.flow_status &lt;&gt; 60 <!-- 60=验证失败(VERIFY_FAIL)，不参与退款 -->
+          AND (f.refund_order_no IS NULL OR FIND_IN_SET(r.order_no, f.refund_order_no) = 0) <!-- 已记入流水退款单号的不再处理 -->
+        ORDER BY r.id
+        LIMIT #{pageSize}
+    </select>
+<select id="selectPaySyncPage" resultType="com.lease.saps.model.dto.replacebattery.DeviceFlowPaySyncDto">
+        SELECT f.id,
+               f.order_no      AS orderNo,
+               o.status        AS orderStatus,
+               o.cserial_no    AS cserialNo
+        FROM replace_battery_device_flow f
+        JOIN customer_order o
+          ON o.order_no = f.order_no
+         AND o.is_delete = 0
+         AND o.is_cancel = 0
+        WHERE f.is_delete = 0
+          AND f.create_time BETWEEN #{dayStart} AND #{dayEnd}
+        <if test="orderNos != null and orderNos.size() > 0">
+            AND f.order_no IN
+            <foreach collection="orderNos" item="orderNo" open="(" separator="," close=")">
+                #{orderNo}
+            </foreach>
+        </if>
+          AND f.id &gt; #{startId}
+          AND o.status &lt;&gt; 1 <!-- 1=未支付(PaymentStatusEnum.UNPAID)，不推进 -->
+          <!-- 需要同步的两种情况：
+               1) 订单状态与流水快照(trade_status)不一致；
+               2) 流水状态落后于订单目标状态——覆盖快照相同但目标已变的异常（如失败订单的渠道流水号被清空，目标从30变为60） -->
+          AND (
+              o.status &lt;&gt; f.trade_status
+              OR f.flow_status &lt; CASE
+                  WHEN o.status = 2 THEN 20 <!-- 2=订单支付中 → 20=流水支付中(PAY_PROCESS) -->
+                  WHEN o.status = 3 AND (o.cserial_no IS NULL OR o.cserial_no = '') THEN 60 <!-- 3=订单失败且无渠道流水 → 60=验证失败(VERIFY_FAIL) -->
+                  ELSE 30 <!-- 其余 → 30=支付结束(PAY_SUCCESS) -->
+              END
+          )
+        ORDER BY f.id
+        LIMIT #{pageSize}
+    </select>
+<select id="selectSharingSyncPage" resultType="com.lease.saps.model.entity.replacebattery.ReplaceBatteryDeviceFlow">
+        SELECT f.*
+        FROM replace_battery_device_flow f
+        JOIN customer_order o
+          ON o.order_no = f.order_no
+         AND o.is_delete = 0
+         AND o.is_cancel = 0
+        WHERE f.is_delete = 0
+          AND f.flow_status = 30 <!-- 30=支付成功(PAY_SUCCESS)，待推进至分账 -->
+          AND f.create_time BETWEEN #{dayStart} AND #{dayEnd}
+          AND o.share_status = 4 <!-- 4=分账成功(PaymentStatusEnum.SUCCESS) -->
+        <if test="orderNos != null and orderNos.size() > 0">
+            AND f.order_no IN
+            <foreach collection="orderNos" item="orderNo" open="(" separator="," close=")">
+                #{orderNo}
+            </foreach>
+        </if>
+          AND f.id &gt; #{startId}
+          AND EXISTS (
+              SELECT 1
+              FROM customer_order_asinfo a
+              WHERE a.order_no = f.order_no
+                AND a.is_delete = 0
+                AND a.payment_status = 4 <!-- 4=分账成功 -->
+          )
+          AND NOT EXISTS (
+              SELECT 1
+              FROM customer_order_asinfo a
+              WHERE a.order_no = f.order_no
+                AND a.is_delete = 0
+                AND (a.payment_status IS NULL OR a.payment_status &lt;&gt; 4)
+          )
+        ORDER BY f.id
+        LIMIT #{pageSize}
+    </select>
+</mapper>

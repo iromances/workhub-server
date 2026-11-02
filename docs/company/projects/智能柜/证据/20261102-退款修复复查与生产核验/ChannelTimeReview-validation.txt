@@ -1,0 +1,11 @@
+PASS current paytime + 1970 chnlfintime -> 2026-10-27 11:44:49; xxt and SAPS parsers preserve value
+PASS valid paytime + absent chnlfintime -> normal finish time
+PASS failed refund notification also prefers paytime
+GAP malformed/missing required paytime: fallback 1970 survives channel -> xxt -> SAPS parsers
+GAP parseable but implausible paytime1970 wins over valid channel time
+GAP nonblank malformed paytime: no fallback, no business notification (synthetic invalid channel input)
+GAP both times absent: xxt substitutes local now as finish time
+PASS refund query common converter uses fintime yyyyMMddHHmmss
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.

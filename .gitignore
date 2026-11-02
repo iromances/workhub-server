@@ -9,3 +9,6 @@ data/
 *.iml
 config
 .workhub-secrets.properties
+__pycache__/
+*.pyc
+docs/.workhub-archive.lock

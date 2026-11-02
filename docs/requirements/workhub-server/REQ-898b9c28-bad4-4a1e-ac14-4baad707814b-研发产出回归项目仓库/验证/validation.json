@@ -1,0 +1,95 @@
+{
+  "date": "2026-10-30",
+  "tests": 85,
+  "failures": 0,
+  "errors": 0,
+  "classes": [
+    {
+      "name": "cn.aslight.workhub.service.intake.DevelopmentPlanFolderServiceTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "cn.aslight.workhub.service.intake.ProjectKnowledgeBaseServiceTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "cn.aslight.workhub.service.intake.KnowledgeArchiveIntegrationTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "cn.aslight.workhub.service.intake.IntakeClarificationAnalysisServiceTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "cn.aslight.workhub.service.intake.DevelopmentAnalysisServiceTest",
+      "tests": "14",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "cn.aslight.workhub.service.mcp.McpResourceServiceTest",
+      "tests": "13",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "cn.aslight.workhub.service.intake.RequirementMaterialExportServiceTest",
+      "tests": "11",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "cn.aslight.workhub.service.intake.RepositoryDocumentPathsTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "cn.aslight.workhub.service.mcp.McpRuntimeServiceTest",
+      "tests": "15",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "cn.aslight.workhub.service.intake.KnowledgeArchiveWorkflowTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "cn.aslight.workhub.mcp.tool.McpToolRegistryTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "migration": {
+    "workhubFiles": 275,
+    "assetFiles": 53,
+    "immutableFilesVerified": 247,
+    "snapshotManifests": 13,
+    "snapshotFilesVerified": 39,
+    "processJsonBlocksPreserved": 14,
+    "missingCurrentLocalDocumentLinks": 0
+  },
+  "runtimeReloaded": false
+}

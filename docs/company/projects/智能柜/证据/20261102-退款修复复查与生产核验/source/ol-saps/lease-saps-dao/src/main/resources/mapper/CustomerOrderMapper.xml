@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lease.saps.mapper.CustomerOrderMapper">
+
+    <select id="getOrder" resultType="CustomerOrderEntity">
+        select * from customer_order co
+        where co.is_delete = 0
+          and co.order_no = #{orderNo}
+          and co.customer_code = #{customerCode}
+    </select>
+
+    <select id="getOrderForUpdate" resultType="CustomerOrderEntity">
+        select * from customer_order co
+        where co.is_delete = 0
+          and co.order_no = #{orderNo}
+          and co.customer_code = #{customerCode}
+        for update
+    </select>
+
+    <select id="listOfflineOrder" parameterType="OfflineCustomerOrderQueryDto" resultType="CustomerOrderEntity">
+        select * from customer_order co
+        where co.is_delete = 0
+          and co.tenant_code = #{tenantCode}
+          and co.customer_code = #{customerCode}
+          and co.sub_mode = #{subMode}
+          and co.status = #{status}
+    </select>
+
+    <select id="listOfflineCancelOrder" parameterType="OfflineCancelOrderCriteria" resultType="CustomerOrderEntity">
+        select * from customer_order co
+        where co.order_time &lt;= #{orderTime}
+        and co.status = #{paymentStatus}
+        <if test="subMode != null">
+          and co.sub_mode = #{subMode}
+        </if>
+        <if test="customerCode != null and customerCode != ''">
+          and co.customer_code = #{customerCode}
+        </if>
+        and co.is_delete = 0
+        order by co.order_time asc, co.id asc
+        limit #{limit}
+    </select>
+
+    <select id="listFrozenOrderByApplicationNo" resultType="CustomerOrderEntity">
+        select * from customer_order co
+        where co.tenant_code = #{tenantCode}
+          and co.application_no = #{applicationNo}
+          and co.sub_type = #{subType}
+          and co.is_delete = 0
+    </select>
+
+
+    <select id="get" resultType="CustomerOrderManageRes">
+        select * from customer_order co
+        where co.is_delete = 0
+          and co.tenant_code = #{tenantCode}
+          and co.order_no = #{orderNo}
+    </select>
+
+    <select id="listByOrderNos" resultType="CustomerOrderEntity">
+        select * from customer_order co
+        where co.tenant_code = #{tenantCode}
+          and co.customer_code = #{customerCode}
+          and co.order_no in
+          <foreach collection="orderNoList" open="(" close=")" item="orderNo" separator=",">
+              #{orderNo}
+          </foreach>
+          and co.is_delete = 0
+    </select>
+
+    <select id="queryForPage" parameterType="CustomerOrderManageRequestVo" resultType="CustomerOrderManageRes">
+        select * from customer_order co
+        where co.is_delete = 0
+        <if test="orderNo != null and orderNo != ''">
+          and co.order_no = #{orderNo}
+        </if>
+        <if test="applicationNo != null and applicationNo != ''">
+          and co.application_no = #{applicationNo}
+        </if>
+        <if test="projectNo != null and projectNo != ''">
+          and co.project_no = #{projectNo}
+        </if>
+        <if test="customerCode != null and customerCode != ''">
+          and co.customer_code = #{customerCode}
+        </if>
+        <if test="customerName != null and customerName != ''">
+            and co.customer_name like concat(#{customerName}, '%')
+        </if>
+        <if test="transactionType != null">
+            and co.transaction_type = #{transactionType}
+        </if>
+        <if test="transactionSubType != null">
+            and co.sub_type = #{transactionSubType}
+        </if>
+        <if test="transactionSubMode != null">
+            and co.sub_mode = #{transactionSubMode}
+        </if>
+        <if test="channel != null">
+            and co.channel = #{channel}
+        </if>
+        <if test="status != null">
+            and co.status = #{status}
+        </if>
+        <if test="payerAccountNo != null and payerAccountNo != ''">
+            and co.payer_account_no = #{payerAccountNo}
+        </if>
+        <if test="payerAccountName != null and payerAccountName != ''">
+            and co.payer_account_name = #{remarkCode}
+        </if>
+        <if test="remarkCode != null and remarkCode != ''">
+            and co.remark_code = #{remarkCode}
+        </if>
+        <if test="orderStartTime != null">
+            and co.order_time >= #{orderStartTime}
+        </if>
+        <if test="orderEndTime != null">
+            and co.order_time <![CDATA[<]]> #{orderEndTime}
+        </if>
+        <if test="finishStartTime != null">
+            and co.finish_time >= #{finishStartTime}
+        </if>
+        <if test="finishEndTime != null">
+            and co.finish_time <![CDATA[<]]> #{finishEndTime}
+        </if>
+        order by co.order_time desc,id desc
+    </select>
+
+    <select id="queryForPageSum" resultType="com.alibaba.fastjson.JSONObject">
+        select
+            ifnull(sum(co.pay_amount), 0) as 'payAmount',
+            ifnull(sum(co.transaction_amount), 0) as 'transactionAmount',
+            ifnull(sum(co.recharge_amount), 0) as 'rechargeAmount',
+            ifnull(sum(co.settle_amount), 0) as 'settleAmount',
+            ifnull(sum(co.discount_amount), 0) as 'discountAmount',
+            ifnull(sum(co.platform_fee), 0) as 'platformFee',
+            ifnull(sum(co.channel_fee), 0) as 'channelFee',
+            ifnull(sum(co.advance_fee), 0) as 'advanceFee',
+            ifnull(sum(co.earn_fee), 0) as 'earnFee',
+            ifnull(sum(co.taxation_amount), 0) as 'taxationAmount'
+        from customer_order co
+        where co.is_delete = 0
+        <if test="orderNo != null and orderNo != ''">
+            and co.order_no = #{orderNo}
+        </if>
+        <if test="applicationNo != null and applicationNo != ''">
+            and co.application_no = #{applicationNo}
+        </if>
+        <if test="projectNo != null and projectNo != ''">
+            and co.project_no = #{projectNo}
+        </if>
+        <if test="customerCode != null and customerCode != ''">
+            and co.customer_code = #{customerCode}
+        </if>
+        <if test="customerName != null and customerName != ''">
+            and co.customer_name like concat(#{customerName}, '%')
+        </if>
+        <if test="transactionType != null">
+            and co.transaction_type = #{transactionType}
+        </if>
+        <if test="transactionSubType != null">
+            and co.sub_type = #{transactionSubType}
+        </if>
+        <if test="transactionSubMode != null">
+            and co.sub_mode = #{transactionSubMode}
+        </if>
+        <if test="channel != null">
+            and co.channel = #{channel}
+        </if>
+        <if test="status != null">
+            and co.status = #{status}
+        </if>
+        <if test="payerAccountNo != null and payerAccountNo != ''">
+            and co.payer_account_no = #{payerAccountNo}
+        </if>
+        <if test="payerAccountName != null and payerAccountName != ''">
+            and co.payer_account_name = #{remarkCode}
+        </if>
+        <if test="remarkCode != null and remarkCode != ''">
+            and co.remark_code = #{remarkCode}
+        </if>
+        <if test="orderStartTime != null">
+            and co.order_time >= #{orderStartTime}
+        </if>
+        <if test="orderEndTime != null">
+            and co.order_time <![CDATA[<]]> #{orderEndTime}
+        </if>
+        <if test="finishStartTime != null">
+            and co.finish_time >= #{finishStartTime}
+        </if>
+        <if test="finishEndTime != null">
+            and co.finish_time <![CDATA[<]]> #{finishEndTime}
+        </if>
+        order by co.order_time desc,id desc
+    </select>
+
+    <select id="listPayCheck" parameterType="customerOrderCriteria"
+            resultType="com.lease.saps.model.vo.check.PlateFormPayCheckVO">
+
+        SELECT
+        co.`customer_code`,
+        co.`order_no` AS 'bizSerialNo',
+        co.`pay_amount` AS 'orderAmount',
+        co.`transaction_amount`,
+        co.`platform_fee`,
+        co.`channel_fee`
+        FROM
+        customer_order co
+        where co.is_delete = 0
+
+        <if test="tenantCode != null and tenantCode != ''">
+            and co.tenant_code = #{tenantCode}
+        </if>
+
+        <if test="transactionMode != null ">
+            and co.transaction_mode = #{transactionMode}
+        </if>
+
+        <if test="channel != null">
+            and co.channel = #{channel}
+        </if>
+        <if test="status != null">
+            and co.status = #{status}
+        </if>
+
+        <if test="orderStartTime != null">
+            and co.order_time >= #{orderStartTime}
+        </if>
+        <if test="orderEndTime != null">
+            and co.order_time <![CDATA[<]]> #{orderEndTime}
+        </if>
+
+    </select>
+    <select id="getByOrderNo" resultType="com.lease.saps.model.entity.CustomerOrderEntity">
+        select * from customer_order where is_delete=0 and is_cancel=0 and order_no=#{orderNo}
+    </select>
+    <select id="queryBySourceNoAndType" resultType="com.lease.saps.model.entity.CustomerOrderEntity">
+        select * from customer_order where is_delete=0 and is_cancel=0 and source_order_no=#{originOrderNo}
+                                       and sub_type=#{subType}
+        and status in
+        <foreach collection="payStatus" open="(" close=")" separator="," item="status">
+            #{status}
+        </foreach>
+    </select>
+
+    <!-- 里易设备流水：时间窗内未创建流水的订单分页（可手动指定订单号） -->
+    <select id="selectUnCreatedFlowOrderPage" resultType="com.lease.saps.model.entity.CustomerOrderEntity">
+        SELECT o.*
+        FROM customer_order o
+        WHERE o.is_delete = 0
+          AND o.is_cancel = 0
+          AND o.project_no = #{projectNo}
+          AND o.create_time BETWEEN #{dayStart} AND #{dayEnd}
+          AND (o.transaction_type IS NULL OR o.transaction_type &lt;&gt; 3) <!-- 3=退款(TransactionTypeEnum.REFUND)，退款单不建流水 -->
+        <if test="orderNos != null and orderNos.size() > 0">
+            AND o.order_no IN
+            <foreach collection="orderNos" item="orderNo" open="(" separator="," close=")">
+                #{orderNo}
+            </foreach>
+        </if>
+          AND o.id &gt; #{startId}
+          AND NOT EXISTS (
+              SELECT 1
+              FROM replace_battery_device_flow f
+              WHERE f.order_no = o.order_no
+                AND f.is_delete = 0
+          )
+        ORDER BY o.id
+        LIMIT #{pageSize}
+    </select>
+
+    <!-- 里易设备流水-退款同步：以退款单为驱动，时间窗为退款单创建时间（可手动指定支付单号） -->
+    <select id="selectRefundOrderSyncPage" resultType="com.lease.saps.model.entity.CustomerOrderEntity">
+        SELECT DISTINCT r.id,
+                        r.order_no
+        FROM customer_order r
+        JOIN replace_battery_device_flow f
+          ON f.order_no = r.source_order_no
+         AND f.is_delete = 0
+        WHERE r.is_delete = 0
+          AND r.is_cancel = 0
+          AND r.sub_type = 3001 <!-- 3001=账单退款(TransactionSubTypeEnum.REFUND_NORMAL) -->
+          AND r.status = 4 <!-- 4=退款成功(PaymentStatusEnum.SUCCESS) -->
+          AND r.create_time BETWEEN #{dayStart} AND #{dayEnd} <!-- 时间窗按退款单创建时间：与支付日期解耦，避免老订单的退款漏扫 -->
+          <!-- 支付单必须存在且有效：下游按 sourceOrderNo 反查支付单，缺失会抛错中断整批 -->
+          AND EXISTS (
+              SELECT 1
+              FROM customer_order p
+              WHERE p.order_no = r.source_order_no
+                AND p.is_delete = 0
+                AND p.is_cancel = 0
+          )
+        <if test="orderNos != null and orderNos.size() > 0">
+            AND r.source_order_no IN
+            <foreach collection="orderNos" item="orderNo" open="(" separator="," close=")">
+                #{orderNo}
+            </foreach>
+        </if>
+          AND r.id &gt; #{startId}
+          AND f.flow_status &gt;= 40 <!-- 分账成功后才允许退款 -->
+          AND f.flow_status &lt;&gt; 60 <!-- 60=验证失败(VERIFY_FAIL)，不参与退款 -->
+          AND (f.refund_order_no IS NULL OR FIND_IN_SET(r.order_no, f.refund_order_no) = 0) <!-- 已记入流水退款单号的不再处理 -->
+        ORDER BY r.id
+        LIMIT #{pageSize}
+    </select>
+    <select id="queryRefundDetail" resultType="com.lease.saps.model.dto.replacebattery.RefundResp">
+        SELECT
+            r.biz_no  AS bizNo,     -- 退款申请流水
+            r.status  AS status,            -- 状态
+            SUM(CASE WHEN d.subject_no = '202'
+                         THEN d.amount ELSE 0 END)        AS refundDepositAmount,
+
+            SUM(CASE WHEN d.subject_no IN ('101','300')
+                         THEN d.amount ELSE 0 END)        AS refundBusinessIncomeAmount,
+            r.order_desc                    AS refundReason,      -- 退款原因
+            r.finish_time                      AS refundTime ,        -- 退款完成时间,
+            r.fail_msg                      AS failMsg         -- 退款完成时间
+
+        FROM customer_order r
+                 JOIN customer_order_detail d
+                      ON r.order_no = d.order_no
+        WHERE r.source_order_no = #{orderNo}
+          AND r.sub_type = 3001
+        GROUP BY d.trans_no
+        ORDER BY r.create_time DESC
+
+
+    </select>
+    <select id="getPayDetail" resultType="com.lease.saps.model.dto.provider.biz.PayDetailRes">
+        SELECT DISTINCT
+        co.biz_no AS payNo,
+        co.status,
+        co.order_no,
+        co.open_id AS openId,
+        co.sub_type AS payType,
+        co.pay_amount AS applyAmount,
+        co.transaction_amount AS transactionAmount,
+        -- 支付相关金额
+        COALESCE((
+        SELECT SUM(amount)
+        FROM customer_order_detail
+        WHERE order_no = co.order_no
+        AND subject_no = '202'
+        ), 0) AS payMargin,
+        COALESCE((
+        SELECT SUM(amount)
+        FROM customer_order_detail
+        WHERE order_no = co.order_no
+        AND subject_no IN ('101','300')
+        ), 0) AS payPrincipal,
+        -- 退款相关金额（优化后）
+        COALESCE((
+        SELECT SUM(cod.amount)
+        FROM customer_order co_refund
+        LEFT JOIN customer_order_detail cod ON co_refund.order_no = cod.order_no
+        WHERE co_refund.source_order_no = co.order_no
+        AND co_refund.sub_type = 3001
+        AND co_refund.is_delete = 0
+        AND co_refund.status = 4
+        AND cod.subject_no = '202'
+        ), 0) AS refundMargin,
+        COALESCE((
+        SELECT SUM(cod.amount)
+        FROM customer_order co_refund
+        LEFT JOIN customer_order_detail cod ON co_refund.order_no = cod.order_no
+        WHERE co_refund.source_order_no = co.order_no
+        AND co_refund.sub_type = 3001
+        AND co_refund.is_delete = 0
+        AND co_refund.status = 4
+        AND cod.subject_no IN ('101','300')
+        ), 0) AS refundPrincipal,
+        co.order_time AS payTime,
+        -- 退款时间（取最新或最旧的退款时间）
+        (
+        SELECT MAX(finish_time)
+        FROM customer_order
+        WHERE source_order_no = co.order_no
+        AND sub_type = 3001
+        AND is_delete = 0
+        AND status = 4
+        LIMIT 1
+        ) AS refundTime
+        FROM customer_order co
+        WHERE co.is_delete = 0
+          <if test = "payNo != null and payNo != ''">
+          and co.biz_no = #{payNo}
+          </if>
+        <if test = "orderNo != null">
+            and co.order_no = #{orderNo}
+        </if>
+        <if test = "status != null">
+            and co.status = #{status}
+        </if>
+        <if test = "payTimeStart != null">
+            and co.order_time >= #{payTimeStart}
+        </if>
+        <if test = "payTimeEnd != null">
+            and co.order_time <![CDATA[<]]> #{payTimeEnd}
+        </if>
+        <if test = "refundTimeStart != null">
+            and cbr.finish_time >= #{refundTimeStart}
+        </if>
+        <if test = "refundTimeEnd != null">
+            and cbr.finish_time <![CDATA[<]]> #{refundTimeEnd}
+        </if>
+    </select>
+    <select id="selectListByProjectNo" resultType="java.lang.String">
+        select distinct biz_no from customer_order where is_delete=0 and is_cancel=0 and project_no=#{projectNo} order by id desc
+    </select>
+</mapper>

@@ -1,0 +1,13 @@
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+ _ _   |_  _ _|_. ___ _ |    _ 
+| | |\/|_)(_| | |_\  |_)||_|_\ 
+     /               |         
+                        3.3.2 
+PASS creation query excludes existing flows and refund orders
+PASS refund query excludes pending/failed/deleted/cancelled/already recorded; result R1
+REPRO yesterday refund on Oct01 payment excluded even with manual orders=[Pold]
+PASS pay query / DTO mapping: lagging, status mismatch and failed-no-serial selected
+PASS sharing query / enum mapping: only all-success + parent share-success selected
+PASS ordered id cursor and pageSize bindings

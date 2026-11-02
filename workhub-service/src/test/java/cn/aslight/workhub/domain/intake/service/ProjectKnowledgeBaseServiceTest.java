@@ -39,6 +39,8 @@ class ProjectKnowledgeBaseServiceTest {
         SysConfigService sysConfigService = mock(SysConfigService.class);
         when(sysConfigService.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH))
                 .thenReturn(vault.toString());
+        Path repository = RepositoryDocumentPathsTest.repository(tempDir.resolve("workhub-server"));
+        when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
         ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
                 new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
 
@@ -67,6 +69,8 @@ class ProjectKnowledgeBaseServiceTest {
         SysConfigService sysConfigService = mock(SysConfigService.class);
         when(sysConfigService.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH))
                 .thenReturn(vault.toString());
+        Path repository = RepositoryDocumentPathsTest.repository(tempDir.resolve("workhub-server"));
+        when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
         ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
                 new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
 
@@ -97,6 +101,8 @@ class ProjectKnowledgeBaseServiceTest {
         SysConfigService sysConfigService = mock(SysConfigService.class);
         when(sysConfigService.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH))
                 .thenReturn(vault.toString());
+        Path repository = RepositoryDocumentPathsTest.repository(tempDir.resolve("workhub-server"));
+        when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
         ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
                 new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
 
@@ -114,6 +120,8 @@ class ProjectKnowledgeBaseServiceTest {
         SysConfigService sysConfigService = mock(SysConfigService.class);
         when(sysConfigService.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH))
                 .thenReturn(vault.toString());
+        Path repository = RepositoryDocumentPathsTest.repository(tempDir.resolve("workhub-server"));
+        when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
         ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
                 new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
 
@@ -126,16 +134,16 @@ class ProjectKnowledgeBaseServiceTest {
                 service.upsertRequirementIterationNote(intake, structuredData, billingProject());
 
         assertTrue(note.written());
-        assertTrue(note.rawRelativePath().contains("raw/公司项目/requirements/账单管理/趣学呗/2026/202604220007/历史版本/"));
+        assertTrue(note.rawRelativePath().contains("requirement-sources/账单管理/趣学呗/2026/202604220007/历史版本/"));
         org.junit.jupiter.api.Assertions.assertNull(note.wikiRelativePath());
         org.junit.jupiter.api.Assertions.assertNull(note.wikiObsidianUrl());
-        Path rawPath = vault.resolve(note.rawRelativePath());
+        Path rawPath = repository.resolve("docs").resolve(note.rawRelativePath());
         assertTrue(Files.exists(rawPath));
         assertFalse(Files.exists(vault.resolve("wiki")));
         String markdown = Files.readString(rawPath);
         assertTrue(markdown.contains("原始审批内容：趣学呗平台账户切换为新主体。"));
         assertFalse(markdown.contains("页面截图显示平台方账户字段需要切换。"));
-        assertTrue(note.asPromptContext().contains("知识库原始材料版本："));
+        assertTrue(note.asPromptContext().contains("项目文档原始材料版本："));
     }
 
     private IntakeStructuredData structuredData() {

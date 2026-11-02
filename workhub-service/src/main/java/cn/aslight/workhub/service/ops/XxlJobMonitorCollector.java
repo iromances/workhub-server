@@ -119,20 +119,31 @@ public class XxlJobMonitorCollector {
         int normalizedPage = normalizePage(page);
         int normalizedPageSize = normalizePageSize(pageSize);
         int offset = (normalizedPage - 1) * normalizedPageSize;
-        XxlJobDashboardResponse summary = collectSummary(monitor, normalizedStartDate, normalizedEndDate);
         String databaseName = quoteDatabaseName(monitor.getXxlJobDatabaseName());
         String detailFilter = detailFilterSql(author, executorAppName);
         String statusFilter = logStatusFilterSql(logStatus);
-        int failedJobCount = intValue(rowValue(firstRow(queryClient.runRows(
+        String summaryStatement = summarySql(databaseName, monitor.getExecutorAppName(), normalizedStartDate, normalizedEndDate);
+        List<List<Map<String, Object>>> batches = queryClient.runRowsBatch(
                 monitor.getBusinessLineCode(),
                 monitor.getEnvironmentCode(),
-                failedJobsCountSql(databaseName, normalizedStartDate, normalizedEndDate, monitor.getExecutorAppName(), detailFilter, statusFilter)
-        )), "failedJobTotal"));
-        List<XxlJobFailedJobResponse> failedJobs = queryClient.runRows(
-                        monitor.getBusinessLineCode(),
-                        monitor.getEnvironmentCode(),
+                List.of(
+                        summaryStatement,
+                        failedJobsCountSql(databaseName, normalizedStartDate, normalizedEndDate, monitor.getExecutorAppName(), detailFilter, statusFilter),
                         failedJobsSql(databaseName, normalizedStartDate, normalizedEndDate, monitor.getExecutorAppName(), detailFilter, statusFilter, normalizedPageSize, offset)
                 )
+        );
+        Map<String, Object> statistics = firstRow(batches.get(0));
+        int triggerRunningCount = intValue(rowValue(statistics, "triggerRunningCount"));
+        int triggerSuccessCount = intValue(rowValue(statistics, "triggerSuccessCount"));
+        int triggerFailedCount = intValue(rowValue(statistics, "triggerFailedCount"));
+        int triggerCount = triggerRunningCount + triggerSuccessCount + triggerFailedCount;
+        String reportUpdatedAt = stringValue(rowValue(statistics, "reportUpdatedAt"));
+        int executorCount = executorCount(rowValue(statistics, "executorRegistryList"));
+        int jobCount = intValue(rowValue(statistics, "jobCount"));
+        int enabledJobCount = intValue(rowValue(statistics, "enabledJobCount"));
+        int disabledJobCount = intValue(rowValue(statistics, "disabledJobCount"));
+        int failedJobCount = intValue(rowValue(firstRow(batches.get(1)), "failedJobTotal"));
+        List<XxlJobFailedJobResponse> failedJobs = batches.get(2)
                 .stream()
                 .map(this::toFailedJob)
                 .toList();
@@ -142,24 +153,24 @@ public class XxlJobMonitorCollector {
                 ? (failedJobCount > 0 ? "XXL-JOB 区间失败日志数：" + failedJobCount : "XXL-JOB 区间内无失败日志")
                 : "XXL-JOB 区间日志数：" + failedJobCount;
         return new XxlJobDashboardResponse(
-                summary.id(),
-                summary.monitorKey(),
-                summary.businessLineCode(),
-                summary.environmentCode(),
-                summary.name(),
-                summary.xxlJobDatabaseName(),
+                monitor.getId(),
+                monitor.getMonitorKey(),
+                monitor.getBusinessLineCode(),
+                monitor.getEnvironmentCode(),
+                monitor.getName(),
+                monitor.getXxlJobDatabaseName(),
                 status,
                 message,
                 LocalDateTime.now(),
-                summary.executorCount(),
-                summary.jobCount(),
-                summary.enabledJobCount(),
-                summary.disabledJobCount(),
-                summary.triggerCount(),
-                summary.triggerRunningCount(),
-                summary.triggerSuccessCount(),
-                summary.triggerFailedCount(),
-                summary.reportUpdatedAt(),
+                executorCount,
+                jobCount,
+                enabledJobCount,
+                disabledJobCount,
+                triggerCount,
+                triggerRunningCount,
+                triggerSuccessCount,
+                triggerFailedCount,
+                reportUpdatedAt,
                 failedJobCount,
                 normalizedPage,
                 normalizedPageSize,
@@ -186,16 +197,16 @@ public class XxlJobMonitorCollector {
         String databaseName = quoteDatabaseName(monitor.getXxlJobDatabaseName());
         String detailFilter = detailFilterSql(author, executorAppName);
         String statusFilter = logStatusFilterSql(logStatus);
-        int total = intValue(rowValue(firstRow(queryClient.runRows(
+        List<List<Map<String, Object>>> batches = queryClient.runRowsBatch(
                 monitor.getBusinessLineCode(),
                 monitor.getEnvironmentCode(),
-                failedJobsCountSql(databaseName, normalizedStartDate, normalizedEndDate, monitor.getExecutorAppName(), detailFilter, statusFilter)
-        )), "failedJobTotal"));
-        List<XxlJobFailedJobResponse> logs = queryClient.runRows(
-                        monitor.getBusinessLineCode(),
-                        monitor.getEnvironmentCode(),
+                List.of(
+                        failedJobsCountSql(databaseName, normalizedStartDate, normalizedEndDate, monitor.getExecutorAppName(), detailFilter, statusFilter),
                         failedJobsSql(databaseName, normalizedStartDate, normalizedEndDate, monitor.getExecutorAppName(), detailFilter, statusFilter, normalizedPageSize, offset)
                 )
+        );
+        int total = intValue(rowValue(firstRow(batches.get(0)), "failedJobTotal"));
+        List<XxlJobFailedJobResponse> logs = batches.get(1)
                 .stream()
                 .map(this::toFailedJob)
                 .toList();

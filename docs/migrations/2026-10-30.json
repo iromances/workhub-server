@@ -1,0 +1,1933 @@
+{
+  "date": "2026-10-30",
+  "sourceRoot": "/Users/aslight/Documents/ObsidianMapping/Asset Obsidian Vault",
+  "repositoryRoot": "/Users/aslight/IDEAWorkspace/workhub-server",
+  "files": [
+    {
+      "source": "wiki/公司项目/projects/workhub-server/AGENTS.md",
+      "target": "docs/system/AGENTS.md",
+      "originalSha256": "a9bfdf52b6edb930efb8f405cbcbc110035cc82b9afa52671b8e8b468e3b0857",
+      "migratedSha256": "daa651b68dd1a6c3329bc44fcbe190434976f0e754ebeaf33dbd520b71217fec",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/projects/workhub-server/业务线/.DS_Store",
+      "target": "docs/system/业务线/.DS_Store",
+      "originalSha256": "5d314bee36a07d67868c44694a843ef22e34e3728dee5bbea2682284ece214cf",
+      "migratedSha256": "5d314bee36a07d67868c44694a843ef22e34e3728dee5bbea2682284ece214cf",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/projects/workhub-server/业务线/.gitkeep",
+      "target": "docs/system/业务线/.gitkeep",
+      "originalSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "migratedSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/projects/workhub-server/业务线/BL000003-嘉泰消费分期/系统设计.md",
+      "target": "docs/system/业务线/BL000003-嘉泰消费分期/系统设计.md",
+      "originalSha256": "ccb94adda74b9275aa2835e44d880fbd37237833c7035d9c074dd9e8a47a5530",
+      "migratedSha256": "a550121ba6f20b8437d7abb6f97f483396036ff2d078860fd8eb25b16160d5c0",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/projects/workhub-server/业务线/BL000004-消费分期/系统设计.md",
+      "target": "docs/system/业务线/BL000004-消费分期/系统设计.md",
+      "originalSha256": "e8182acf37c6336cce135ba79bff48518711818caaa79083495cdf7965bd1481",
+      "migratedSha256": "e8182acf37c6336cce135ba79bff48518711818caaa79083495cdf7965bd1481",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/projects/workhub-server/业务线/BL000004-消费分期/迭代日志.md",
+      "target": "docs/system/业务线/BL000004-消费分期/迭代日志.md",
+      "originalSha256": "f55ca7792b62f4528d0e51c49ec7dbafffaf3548f84bdc32d790df229cce28ff",
+      "migratedSha256": "7b70c7706a99b7c68f95d9c66e381fe092fe135ff1f1b0e21515a0e931af0080",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/projects/workhub-server/业务线/BL000005-智能柜/系统设计.md",
+      "target": "docs/system/业务线/BL000005-智能柜/系统设计.md",
+      "originalSha256": "4aa6aa7f7e384a60bf6cccf3894c43c74c0e4bb8556b39c25fe8880f546d7502",
+      "migratedSha256": "4aa6aa7f7e384a60bf6cccf3894c43c74c0e4bb8556b39c25fe8880f546d7502",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/projects/workhub-server/系统设计.md",
+      "target": "docs/system/系统设计.md",
+      "originalSha256": "dfc95daf5d708458e26b12e16c008e6968f1d0faa1d93739ae4bfd8dc5a3bbe6",
+      "migratedSha256": "8425acde89e63c2328eb135711aa0822d6e00608af61997181006adabb0c95b6",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/projects/workhub-server/迭代日志.md",
+      "target": "docs/system/迭代日志.md",
+      "originalSha256": "52cfc2a2826bf55216d4b68760163b62c33ebabf32661950343f4ca6af9f0a80",
+      "migratedSha256": "3c19e6493cac3e101992a0fe2bc3b36fe10b3fc64889d8bcbab5441b21f59c06",
+      "bytePreserved": false
+    },
+    {
+      "source": "raw/公司项目/requirements/.workhub-analysis-sources/230-100-development.txt",
+      "target": "docs/requirement-sources/.workhub-analysis-sources/230-100-development.txt",
+      "originalSha256": "d49ee71d6597c32a2984349cd49c6bc0edad6c93fac990994eac751b84a558e0",
+      "migratedSha256": "d49ee71d6597c32a2984349cd49c6bc0edad6c93fac990994eac751b84a558e0",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/.workhub-analysis-sources/238-29-clarification.txt",
+      "target": "docs/requirement-sources/.workhub-analysis-sources/238-29-clarification.txt",
+      "originalSha256": "0471bef43f590720970389c706ceda09bff1bf20dc15d785541c30cf4c09658f",
+      "migratedSha256": "0471bef43f590720970389c706ceda09bff1bf20dc15d785541c30cf4c09658f",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/.workhub-analysis-sources/238-99-development.txt",
+      "target": "docs/requirement-sources/.workhub-analysis-sources/238-99-development.txt",
+      "originalSha256": "fb7882313a21217543e729d73b80f9a20b107276fccea9a9a31a33c3447c112a",
+      "migratedSha256": "fb7882313a21217543e729d73b80f9a20b107276fccea9a9a31a33c3447c112a",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/.workhub-analysis-sources/246-26-clarification.txt",
+      "target": "docs/requirement-sources/.workhub-analysis-sources/246-26-clarification.txt",
+      "originalSha256": "ed36d09de37d1753cd28381faf67b1eaef1e6e67191868553af0f45b22981d4d",
+      "migratedSha256": "ed36d09de37d1753cd28381faf67b1eaef1e6e67191868553af0f45b22981d4d",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/.workhub-analysis-sources/246-97-development.txt",
+      "target": "docs/requirement-sources/.workhub-analysis-sources/246-97-development.txt",
+      "originalSha256": "52247e7e617d8b65d21cd73c8e6f5f342bab7652e7fa8e88d8ff0b9e0ffed734",
+      "migratedSha256": "52247e7e617d8b65d21cd73c8e6f5f342bab7652e7fa8e88d8ff0b9e0ffed734",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/.workhub-analysis-sources/248-27-clarification.txt",
+      "target": "docs/requirement-sources/.workhub-analysis-sources/248-27-clarification.txt",
+      "originalSha256": "8cae234c8d6c9cd43795933fe6066a723faa4c13a779571b2c55f14ad77fd780",
+      "migratedSha256": "8cae234c8d6c9cd43795933fe6066a723faa4c13a779571b2c55f14ad77fd780",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/.workhub-analysis-sources/248-96-development.txt",
+      "target": "docs/requirement-sources/.workhub-analysis-sources/248-96-development.txt",
+      "originalSha256": "f7da73c513827b54e25b02cd0e69260bdde172cb76faa9b432a35a0834463575",
+      "migratedSha256": "f7da73c513827b54e25b02cd0e69260bdde172cb76faa9b432a35a0834463575",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/.workhub-analysis-sources/251-98-development.txt",
+      "target": "docs/requirement-sources/.workhub-analysis-sources/251-98-development.txt",
+      "originalSha256": "50dbb4d239aa6a17355567dce30de36d5ad9a8303558139ab7dd60d44d14fffa",
+      "migratedSha256": "50dbb4d239aa6a17355567dce30de36d5ad9a8303558139ab7dd60d44d14fffa",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/.workhub-analysis-sources/253-102-development.txt",
+      "target": "docs/requirement-sources/.workhub-analysis-sources/253-102-development.txt",
+      "originalSha256": "1cd321456d962d4d753f90b977eb9ac24347e3829a0a91b4fc200ecc9386bdca",
+      "migratedSha256": "1cd321456d962d4d753f90b977eb9ac24347e3829a0a91b4fc200ecc9386bdca",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/.workhub-analysis-sources/255-101-development.txt",
+      "target": "docs/requirement-sources/.workhub-analysis-sources/255-101-development.txt",
+      "originalSha256": "78fe5612f4634d911cc1402e62a195dde4b566298ee06198764f0e3252003191",
+      "migratedSha256": "78fe5612f4634d911cc1402e62a195dde4b566298ee06198764f0e3252003191",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/.workhub-analysis-sources/255-32-clarification.txt",
+      "target": "docs/requirement-sources/.workhub-analysis-sources/255-32-clarification.txt",
+      "originalSha256": "0f55288daae9a268c22c1b3b3573885f061d426a1c9e004817ea6e5e9db5d3c2",
+      "migratedSha256": "0f55288daae9a268c22c1b3b3573885f061d426a1c9e004817ea6e5e9db5d3c2",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/AGENTS.md",
+      "target": "docs/requirement-sources/AGENTS.md",
+      "originalSha256": "fae6236d6873eb5faeac5654fa953a03da2a8cb69533802bddc150075a296b0c",
+      "migratedSha256": "4009b8719965064199d912ae17805a0ea126f2c23cb8e2788a2e70ce895b79ef",
+      "bytePreserved": false
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202606260011/source.md",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202606260011/source.md",
+      "originalSha256": "4fd040ecc493a71d9ab04853aefaaac25e3645444e4b6d1b61bfe2a019350492",
+      "migratedSha256": "4fd040ecc493a71d9ab04853aefaaac25e3645444e4b6d1b61bfe2a019350492",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202606260011/历史版本/存量迁移-b92e895f214e6ea9/材料整理原件.md",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202606260011/历史版本/存量迁移-b92e895f214e6ea9/材料整理原件.md",
+      "originalSha256": "b92e895f214e6ea9d8d00c46c5ae086d8cddf026fa47dad613d4ee3661f30fb7",
+      "migratedSha256": "b92e895f214e6ea9d8d00c46c5ae086d8cddf026fa47dad613d4ee3661f30fb7",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202608250007/source.md",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202608250007/source.md",
+      "originalSha256": "35706e74bd4306e05d0fbc0dd6530ad793193d8f158600822125ab5cd6034ff9",
+      "migratedSha256": "35706e74bd4306e05d0fbc0dd6530ad793193d8f158600822125ab5cd6034ff9",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202608250007/历史版本/76bd8615-f68a-4015-815f-ad42b721d559/manifest.json",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202608250007/历史版本/76bd8615-f68a-4015-815f-ad42b721d559/manifest.json",
+      "originalSha256": "587509bffb67d8301dbea8d556aff9c985449edb589549797b95dfe6a3168388",
+      "migratedSha256": "587509bffb67d8301dbea8d556aff9c985449edb589549797b95dfe6a3168388",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202608250007/历史版本/76bd8615-f68a-4015-815f-ad42b721d559/source.md",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202608250007/历史版本/76bd8615-f68a-4015-815f-ad42b721d559/source.md",
+      "originalSha256": "35706e74bd4306e05d0fbc0dd6530ad793193d8f158600822125ab5cd6034ff9",
+      "migratedSha256": "35706e74bd4306e05d0fbc0dd6530ad793193d8f158600822125ab5cd6034ff9",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202608250007/历史版本/76bd8615-f68a-4015-815f-ad42b721d559/附件/431-image.png",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202608250007/历史版本/76bd8615-f68a-4015-815f-ad42b721d559/附件/431-image.png",
+      "originalSha256": "eb22b9699786cc782d5637ee4ae4d02926d960d15e7d810d31d9831ec5054aa0",
+      "migratedSha256": "eb22b9699786cc782d5637ee4ae4d02926d960d15e7d810d31d9831ec5054aa0",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202608250007/历史版本/76bd8615-f68a-4015-815f-ad42b721d559/附件/432-代收代付报表.docx",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202608250007/历史版本/76bd8615-f68a-4015-815f-ad42b721d559/附件/432-代收代付报表.docx",
+      "originalSha256": "b526d67dae57cac58220b9f5e92a5e09e27a694d4b480fad9dd2764ddb29d824",
+      "migratedSha256": "b526d67dae57cac58220b9f5e92a5e09e27a694d4b480fad9dd2764ddb29d824",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202608250007/历史版本/89dca1d3-fb65-4f83-b15a-2813927acce2/manifest.json",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202608250007/历史版本/89dca1d3-fb65-4f83-b15a-2813927acce2/manifest.json",
+      "originalSha256": "ca44fb5648b6447f3a7f68511b086ddbea687f049b038ab9cee221e9fadf3eea",
+      "migratedSha256": "ca44fb5648b6447f3a7f68511b086ddbea687f049b038ab9cee221e9fadf3eea",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202608250007/历史版本/89dca1d3-fb65-4f83-b15a-2813927acce2/source.md",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202608250007/历史版本/89dca1d3-fb65-4f83-b15a-2813927acce2/source.md",
+      "originalSha256": "35706e74bd4306e05d0fbc0dd6530ad793193d8f158600822125ab5cd6034ff9",
+      "migratedSha256": "35706e74bd4306e05d0fbc0dd6530ad793193d8f158600822125ab5cd6034ff9",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202608250007/历史版本/89dca1d3-fb65-4f83-b15a-2813927acce2/附件/431-image.png",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202608250007/历史版本/89dca1d3-fb65-4f83-b15a-2813927acce2/附件/431-image.png",
+      "originalSha256": "eb22b9699786cc782d5637ee4ae4d02926d960d15e7d810d31d9831ec5054aa0",
+      "migratedSha256": "eb22b9699786cc782d5637ee4ae4d02926d960d15e7d810d31d9831ec5054aa0",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202608250007/历史版本/89dca1d3-fb65-4f83-b15a-2813927acce2/附件/432-代收代付报表.docx",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202608250007/历史版本/89dca1d3-fb65-4f83-b15a-2813927acce2/附件/432-代收代付报表.docx",
+      "originalSha256": "b526d67dae57cac58220b9f5e92a5e09e27a694d4b480fad9dd2764ddb29d824",
+      "migratedSha256": "b526d67dae57cac58220b9f5e92a5e09e27a694d4b480fad9dd2764ddb29d824",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202608250007/历史版本/b79ce9e1-e5bc-43df-8e61-90a363913001/manifest.json",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202608250007/历史版本/b79ce9e1-e5bc-43df-8e61-90a363913001/manifest.json",
+      "originalSha256": "59ba5b8599311f4acd431cf940410d1ed7624579c3a04e8ddf242a2a957b8e8e",
+      "migratedSha256": "59ba5b8599311f4acd431cf940410d1ed7624579c3a04e8ddf242a2a957b8e8e",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202608250007/历史版本/b79ce9e1-e5bc-43df-8e61-90a363913001/source.md",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202608250007/历史版本/b79ce9e1-e5bc-43df-8e61-90a363913001/source.md",
+      "originalSha256": "35706e74bd4306e05d0fbc0dd6530ad793193d8f158600822125ab5cd6034ff9",
+      "migratedSha256": "35706e74bd4306e05d0fbc0dd6530ad793193d8f158600822125ab5cd6034ff9",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202608250007/历史版本/b79ce9e1-e5bc-43df-8e61-90a363913001/附件/431-image.png",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202608250007/历史版本/b79ce9e1-e5bc-43df-8e61-90a363913001/附件/431-image.png",
+      "originalSha256": "eb22b9699786cc782d5637ee4ae4d02926d960d15e7d810d31d9831ec5054aa0",
+      "migratedSha256": "eb22b9699786cc782d5637ee4ae4d02926d960d15e7d810d31d9831ec5054aa0",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202608250007/历史版本/b79ce9e1-e5bc-43df-8e61-90a363913001/附件/432-代收代付报表.docx",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202608250007/历史版本/b79ce9e1-e5bc-43df-8e61-90a363913001/附件/432-代收代付报表.docx",
+      "originalSha256": "b526d67dae57cac58220b9f5e92a5e09e27a694d4b480fad9dd2764ddb29d824",
+      "migratedSha256": "b526d67dae57cac58220b9f5e92a5e09e27a694d4b480fad9dd2764ddb29d824",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202608250007/附件/431-image.png",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202608250007/附件/431-image.png",
+      "originalSha256": "eb22b9699786cc782d5637ee4ae4d02926d960d15e7d810d31d9831ec5054aa0",
+      "migratedSha256": "eb22b9699786cc782d5637ee4ae4d02926d960d15e7d810d31d9831ec5054aa0",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202608250007/附件/432-代收代付报表.docx",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202608250007/附件/432-代收代付报表.docx",
+      "originalSha256": "b526d67dae57cac58220b9f5e92a5e09e27a694d4b480fad9dd2764ddb29d824",
+      "migratedSha256": "b526d67dae57cac58220b9f5e92a5e09e27a694d4b480fad9dd2764ddb29d824",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202609020003/source.md",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202609020003/source.md",
+      "originalSha256": "1f7fcdb57dc74724c86e615a2913e1f503efb7b36522fc1a95e09bb3a923fa83",
+      "migratedSha256": "1f7fcdb57dc74724c86e615a2913e1f503efb7b36522fc1a95e09bb3a923fa83",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000005/BL000005/2026/202609020003/历史版本/存量迁移-edf444be8fdc4d77/材料整理原件.md",
+      "target": "docs/requirement-sources/BL000005/BL000005/2026/202609020003/历史版本/存量迁移-edf444be8fdc4d77/材料整理原件.md",
+      "originalSha256": "edf444be8fdc4d775096bd1c1051f6adc8c36fafd4bdfe1cafeb39e14639b084",
+      "migratedSha256": "edf444be8fdc4d775096bd1c1051f6adc8c36fafd4bdfe1cafeb39e14639b084",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000008/BL000008/2026/202609110002/source.md",
+      "target": "docs/requirement-sources/BL000008/BL000008/2026/202609110002/source.md",
+      "originalSha256": "d64e1450f67419f4815c638dcad1bf825ba747c321f1a38442433d7b3777f90d",
+      "migratedSha256": "d64e1450f67419f4815c638dcad1bf825ba747c321f1a38442433d7b3777f90d",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000008/BL000008/2026/202609110002/历史版本/8348d809-2105-440e-89a6-f43039bcd0e3/manifest.json",
+      "target": "docs/requirement-sources/BL000008/BL000008/2026/202609110002/历史版本/8348d809-2105-440e-89a6-f43039bcd0e3/manifest.json",
+      "originalSha256": "d602b33cd5df0d70f5604e5e26fe07466cc8c6279101a223caed5b022a8cf717",
+      "migratedSha256": "d602b33cd5df0d70f5604e5e26fe07466cc8c6279101a223caed5b022a8cf717",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000008/BL000008/2026/202609110002/历史版本/8348d809-2105-440e-89a6-f43039bcd0e3/source.md",
+      "target": "docs/requirement-sources/BL000008/BL000008/2026/202609110002/历史版本/8348d809-2105-440e-89a6-f43039bcd0e3/source.md",
+      "originalSha256": "d64e1450f67419f4815c638dcad1bf825ba747c321f1a38442433d7b3777f90d",
+      "migratedSha256": "d64e1450f67419f4815c638dcad1bf825ba747c321f1a38442433d7b3777f90d",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000008/BL000008/2026/202609110002/历史版本/8348d809-2105-440e-89a6-f43039bcd0e3/附件/417-image.png",
+      "target": "docs/requirement-sources/BL000008/BL000008/2026/202609110002/历史版本/8348d809-2105-440e-89a6-f43039bcd0e3/附件/417-image.png",
+      "originalSha256": "3d05c90f9a0b83018e08a2e9fc6519030daf436db3d905f2fdb00fb49ccc7f8d",
+      "migratedSha256": "3d05c90f9a0b83018e08a2e9fc6519030daf436db3d905f2fdb00fb49ccc7f8d",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000008/BL000008/2026/202609110002/历史版本/8348d809-2105-440e-89a6-f43039bcd0e3/附件/419-PRD-叉车开票与账单保证金抵扣优化.docx",
+      "target": "docs/requirement-sources/BL000008/BL000008/2026/202609110002/历史版本/8348d809-2105-440e-89a6-f43039bcd0e3/附件/419-PRD-叉车开票与账单保证金抵扣优化.docx",
+      "originalSha256": "6a426763375f6e96988964421f0f7ed2055c276926190fbcfdea4db90ff09f15",
+      "migratedSha256": "6a426763375f6e96988964421f0f7ed2055c276926190fbcfdea4db90ff09f15",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000008/BL000008/2026/202609110002/附件/417-image.png",
+      "target": "docs/requirement-sources/BL000008/BL000008/2026/202609110002/附件/417-image.png",
+      "originalSha256": "3d05c90f9a0b83018e08a2e9fc6519030daf436db3d905f2fdb00fb49ccc7f8d",
+      "migratedSha256": "3d05c90f9a0b83018e08a2e9fc6519030daf436db3d905f2fdb00fb49ccc7f8d",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000008/BL000008/2026/202609110002/附件/419-PRD-叉车开票与账单保证金抵扣优化.docx",
+      "target": "docs/requirement-sources/BL000008/BL000008/2026/202609110002/附件/419-PRD-叉车开票与账单保证金抵扣优化.docx",
+      "originalSha256": "6a426763375f6e96988964421f0f7ed2055c276926190fbcfdea4db90ff09f15",
+      "migratedSha256": "6a426763375f6e96988964421f0f7ed2055c276926190fbcfdea4db90ff09f15",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000009/BL000009/2026/202606150006/source.md",
+      "target": "docs/requirement-sources/BL000009/BL000009/2026/202606150006/source.md",
+      "originalSha256": "1557c1e3b1940fa1bce3673d3b1cfbae3345267ccb6f14e5bc0dbd347551d670",
+      "migratedSha256": "1557c1e3b1940fa1bce3673d3b1cfbae3345267ccb6f14e5bc0dbd347551d670",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/BL000009/BL000009/2026/202606150006/历史版本/存量迁移-0c733a1bfc59fa34/材料整理原件.md",
+      "target": "docs/requirement-sources/BL000009/BL000009/2026/202606150006/历史版本/存量迁移-0c733a1bfc59fa34/材料整理原件.md",
+      "originalSha256": "0c733a1bfc59fa343cbc69abd10e6dc8028ce449c020103c185705f8a3078a55",
+      "migratedSha256": "0c733a1bfc59fa343cbc69abd10e6dc8028ce449c020103c185705f8a3078a55",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/index.md",
+      "target": "docs/requirement-sources/index.md",
+      "originalSha256": "601b04a1e5db22962a4ce4c00f016dc23a56a7077842d8fc5434b2a475b56ba5",
+      "migratedSha256": "0f4c377f4a96052424d33e006d96dd20569f40e634f31ba8d88f91fce9b5f1e1",
+      "bytePreserved": false
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/保费分期/2026/202607080002/source.md",
+      "target": "docs/requirement-sources/保费分期/保费分期/2026/202607080002/source.md",
+      "originalSha256": "2a1fc0d2ecde1cbf9b1f7fbd9b6dabd7ed123fbe957db0277f6628cc64955366",
+      "migratedSha256": "2a1fc0d2ecde1cbf9b1f7fbd9b6dabd7ed123fbe957db0277f6628cc64955366",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/保费分期/2026/202607080002/历史版本/存量迁移-618d67e31d535f16/材料整理原件.md",
+      "target": "docs/requirement-sources/保费分期/保费分期/2026/202607080002/历史版本/存量迁移-618d67e31d535f16/材料整理原件.md",
+      "originalSha256": "618d67e31d535f168639a0e1e53859b14438fd387932f8838f1c0e5d77c40472",
+      "migratedSha256": "618d67e31d535f168639a0e1e53859b14438fd387932f8838f1c0e5d77c40472",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202608060006/source.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202608060006/source.md",
+      "originalSha256": "1705d77b098ede1453004c01fa0cbace27825cb416701f10fcc6b0651a505f7b",
+      "migratedSha256": "1705d77b098ede1453004c01fa0cbace27825cb416701f10fcc6b0651a505f7b",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202608060006/历史版本/存量迁移-e12da2f44af11fba/材料整理原件.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202608060006/历史版本/存量迁移-e12da2f44af11fba/材料整理原件.md",
+      "originalSha256": "e12da2f44af11fba13bd58298b73c0691304847493a4fe0289dec0983a41f18b",
+      "migratedSha256": "e12da2f44af11fba13bd58298b73c0691304847493a4fe0289dec0983a41f18b",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202608070008/source.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202608070008/source.md",
+      "originalSha256": "36801d95beaa534148a3e730eb8e489e8173ac9378a44637c447b1faf05b2620",
+      "migratedSha256": "36801d95beaa534148a3e730eb8e489e8173ac9378a44637c447b1faf05b2620",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202608070008/历史版本/存量迁移-f8e1603b6bda3219/材料整理原件.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202608070008/历史版本/存量迁移-f8e1603b6bda3219/材料整理原件.md",
+      "originalSha256": "f8e1603b6bda3219d43d0e402150e92e4263deeb6fa69a8fb26cd1be97150fe1",
+      "migratedSha256": "f8e1603b6bda3219d43d0e402150e92e4263deeb6fa69a8fb26cd1be97150fe1",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202608140004/source.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202608140004/source.md",
+      "originalSha256": "e0d8d76d3a43de1119565712600d0f851de321a57b6f44af2d1269f097bd8896",
+      "migratedSha256": "e0d8d76d3a43de1119565712600d0f851de321a57b6f44af2d1269f097bd8896",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202608140004/历史版本/存量迁移-eadb93ac8229fd67/材料整理原件.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202608140004/历史版本/存量迁移-eadb93ac8229fd67/材料整理原件.md",
+      "originalSha256": "eadb93ac8229fd67fd39d0c5de2acdbfc75f2ec8d0e7bace6dffafb7705fb686",
+      "migratedSha256": "eadb93ac8229fd67fd39d0c5de2acdbfc75f2ec8d0e7bace6dffafb7705fb686",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202608210002/source.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202608210002/source.md",
+      "originalSha256": "2832e508a3e6f60df99685b5751dbd21eccbc8117518e5972dbcad185fa5caa5",
+      "migratedSha256": "2832e508a3e6f60df99685b5751dbd21eccbc8117518e5972dbcad185fa5caa5",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202608210002/历史版本/存量迁移-a7fff9c293638207/材料整理原件.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202608210002/历史版本/存量迁移-a7fff9c293638207/材料整理原件.md",
+      "originalSha256": "a7fff9c29363820715e02ebbb4761a30dec0291644a67ad3c072c3bc229259aa",
+      "migratedSha256": "a7fff9c29363820715e02ebbb4761a30dec0291644a67ad3c072c3bc229259aa",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202609040003/source.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202609040003/source.md",
+      "originalSha256": "98ead22e365c2b63dd7f5bf0b3dd3ec25dd3f9af49f48543644d03b658d2be4d",
+      "migratedSha256": "98ead22e365c2b63dd7f5bf0b3dd3ec25dd3f9af49f48543644d03b658d2be4d",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202609040003/历史版本/存量迁移-a1807ecc313db584/材料整理原件.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202609040003/历史版本/存量迁移-a1807ecc313db584/材料整理原件.md",
+      "originalSha256": "a1807ecc313db584922730e55dd9de9e76deaedbb017681f835a43a5c23541d6",
+      "migratedSha256": "a1807ecc313db584922730e55dd9de9e76deaedbb017681f835a43a5c23541d6",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202609140002/source.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202609140002/source.md",
+      "originalSha256": "74404a70a6d72663719971440397c14522b2c0c98411e5d3eb4e5c246d345774",
+      "migratedSha256": "74404a70a6d72663719971440397c14522b2c0c98411e5d3eb4e5c246d345774",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202609140002/历史版本/存量迁移-cdcc3765efffd60c/材料整理原件.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202609140002/历史版本/存量迁移-cdcc3765efffd60c/材料整理原件.md",
+      "originalSha256": "cdcc3765efffd60c20b3aed516385b8c656950278ef5121e71391f6e7d3f2b62",
+      "migratedSha256": "cdcc3765efffd60c20b3aed516385b8c656950278ef5121e71391f6e7d3f2b62",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202609230003/source.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202609230003/source.md",
+      "originalSha256": "403a3ea2c8f2ef5d0dc6deeac35b88eab8f8cad9a85fd56fcde1b86eb7d41791",
+      "migratedSha256": "403a3ea2c8f2ef5d0dc6deeac35b88eab8f8cad9a85fd56fcde1b86eb7d41791",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202609230003/历史版本/存量迁移-e18cad1cec23a6fb/材料整理原件.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202609230003/历史版本/存量迁移-e18cad1cec23a6fb/材料整理原件.md",
+      "originalSha256": "e18cad1cec23a6fbc6a94114a45e5bb8b9bb27ce57534a92d43aa985487f5a0e",
+      "migratedSha256": "e18cad1cec23a6fbc6a94114a45e5bb8b9bb27ce57534a92d43aa985487f5a0e",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202610120004/source.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610120004/source.md",
+      "originalSha256": "7a128043c1256e95f5191af6fecbb64ad61e199e7e713f2b008d33f0556f6ebc",
+      "migratedSha256": "7a128043c1256e95f5191af6fecbb64ad61e199e7e713f2b008d33f0556f6ebc",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/3f6e4c17-fd98-4cdd-a6c6-aec65918ce41/manifest.json",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/3f6e4c17-fd98-4cdd-a6c6-aec65918ce41/manifest.json",
+      "originalSha256": "341218ba87925ca280c252b163a055ec6dccaf904bd495e8b74ecb98c9111faa",
+      "migratedSha256": "341218ba87925ca280c252b163a055ec6dccaf904bd495e8b74ecb98c9111faa",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/3f6e4c17-fd98-4cdd-a6c6-aec65918ce41/source.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/3f6e4c17-fd98-4cdd-a6c6-aec65918ce41/source.md",
+      "originalSha256": "7a128043c1256e95f5191af6fecbb64ad61e199e7e713f2b008d33f0556f6ebc",
+      "migratedSha256": "7a128043c1256e95f5191af6fecbb64ad61e199e7e713f2b008d33f0556f6ebc",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/3f6e4c17-fd98-4cdd-a6c6-aec65918ce41/附件/446-image.png",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/3f6e4c17-fd98-4cdd-a6c6-aec65918ce41/附件/446-image.png",
+      "originalSha256": "2fdbd94bc59c505db1a13724c0e845477eb28114d783faf3cd6703ecb5fad89c",
+      "migratedSha256": "2fdbd94bc59c505db1a13724c0e845477eb28114d783faf3cd6703ecb5fad89c",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/3f6e4c17-fd98-4cdd-a6c6-aec65918ce41/附件/447-保费分期-新增挂靠公司线下签约的进件模式——自营项目调整20261013.pdf",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/3f6e4c17-fd98-4cdd-a6c6-aec65918ce41/附件/447-保费分期-新增挂靠公司线下签约的进件模式——自营项目调整20261013.pdf",
+      "originalSha256": "62f1c80176ebfbc4f11f577cf76c81866353ddfa8ded928fe34d00d4712afa83",
+      "migratedSha256": "62f1c80176ebfbc4f11f577cf76c81866353ddfa8ded928fe34d00d4712afa83",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/f2870855-e88d-4a22-93cf-a698cb06a658/manifest.json",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/f2870855-e88d-4a22-93cf-a698cb06a658/manifest.json",
+      "originalSha256": "298a40733b78dcc12960bf308f3a4f65d317933df8cad355c0b3cce87f27b4ef",
+      "migratedSha256": "298a40733b78dcc12960bf308f3a4f65d317933df8cad355c0b3cce87f27b4ef",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/f2870855-e88d-4a22-93cf-a698cb06a658/source.md",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/f2870855-e88d-4a22-93cf-a698cb06a658/source.md",
+      "originalSha256": "7a128043c1256e95f5191af6fecbb64ad61e199e7e713f2b008d33f0556f6ebc",
+      "migratedSha256": "7a128043c1256e95f5191af6fecbb64ad61e199e7e713f2b008d33f0556f6ebc",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/f2870855-e88d-4a22-93cf-a698cb06a658/附件/446-image.png",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/f2870855-e88d-4a22-93cf-a698cb06a658/附件/446-image.png",
+      "originalSha256": "2fdbd94bc59c505db1a13724c0e845477eb28114d783faf3cd6703ecb5fad89c",
+      "migratedSha256": "2fdbd94bc59c505db1a13724c0e845477eb28114d783faf3cd6703ecb5fad89c",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/f2870855-e88d-4a22-93cf-a698cb06a658/附件/447-保费分期-新增挂靠公司线下签约的进件模式——自营项目调整20261013.pdf",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610120004/历史版本/f2870855-e88d-4a22-93cf-a698cb06a658/附件/447-保费分期-新增挂靠公司线下签约的进件模式——自营项目调整20261013.pdf",
+      "originalSha256": "62f1c80176ebfbc4f11f577cf76c81866353ddfa8ded928fe34d00d4712afa83",
+      "migratedSha256": "62f1c80176ebfbc4f11f577cf76c81866353ddfa8ded928fe34d00d4712afa83",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202610120004/附件/446-image.png",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610120004/附件/446-image.png",
+      "originalSha256": "2fdbd94bc59c505db1a13724c0e845477eb28114d783faf3cd6703ecb5fad89c",
+      "migratedSha256": "2fdbd94bc59c505db1a13724c0e845477eb28114d783faf3cd6703ecb5fad89c",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/保费分期/聚保融保费分期项目/2026/202610120004/附件/447-保费分期-新增挂靠公司线下签约的进件模式——自营项目调整20261013.pdf",
+      "target": "docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610120004/附件/447-保费分期-新增挂靠公司线下签约的进件模式——自营项目调整20261013.pdf",
+      "originalSha256": "62f1c80176ebfbc4f11f577cf76c81866353ddfa8ded928fe34d00d4712afa83",
+      "migratedSha256": "62f1c80176ebfbc4f11f577cf76c81866353ddfa8ded928fe34d00d4712afa83",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/创新保理/创新保理/2026/202606150013/source.md",
+      "target": "docs/requirement-sources/创新保理/创新保理/2026/202606150013/source.md",
+      "originalSha256": "df2ed546c62238382820095566b6717cae266f7415c71a2917b75835328858bd",
+      "migratedSha256": "df2ed546c62238382820095566b6717cae266f7415c71a2917b75835328858bd",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/创新保理/创新保理/2026/202606150013/历史版本/存量迁移-f543e21fd3397e07/材料整理原件.md",
+      "target": "docs/requirement-sources/创新保理/创新保理/2026/202606150013/历史版本/存量迁移-f543e21fd3397e07/材料整理原件.md",
+      "originalSha256": "f543e21fd3397e079a35310c9b9d930e5c0a417841729fea71ce4cacebdfe93a",
+      "migratedSha256": "f543e21fd3397e079a35310c9b9d930e5c0a417841729fea71ce4cacebdfe93a",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/创新保理/创新保理/2026/202606230002/source.md",
+      "target": "docs/requirement-sources/创新保理/创新保理/2026/202606230002/source.md",
+      "originalSha256": "5082968cee0d1290531b6f7489d9baa6ec30dbfb848de5b02ba1bc2a1f989dad",
+      "migratedSha256": "5082968cee0d1290531b6f7489d9baa6ec30dbfb848de5b02ba1bc2a1f989dad",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/创新保理/创新保理/2026/202606230002/历史版本/存量迁移-713d5e303089bcfd/材料整理原件.md",
+      "target": "docs/requirement-sources/创新保理/创新保理/2026/202606230002/历史版本/存量迁移-713d5e303089bcfd/材料整理原件.md",
+      "originalSha256": "713d5e303089bcfdd9dfa6092b7af05836b16cbbcd577b8e69f1833c7bb1a01c",
+      "migratedSha256": "713d5e303089bcfdd9dfa6092b7af05836b16cbbcd577b8e69f1833c7bb1a01c",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/创新保理/创新保理/2026/202607060004/source.md",
+      "target": "docs/requirement-sources/创新保理/创新保理/2026/202607060004/source.md",
+      "originalSha256": "116f01a6faa534acb28e6a851752a04cbb7782deccac220e0db45dd1ebf79f5d",
+      "migratedSha256": "116f01a6faa534acb28e6a851752a04cbb7782deccac220e0db45dd1ebf79f5d",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/创新保理/创新保理/2026/202607060004/历史版本/存量迁移-b22f36968a33f9ff/材料整理原件.md",
+      "target": "docs/requirement-sources/创新保理/创新保理/2026/202607060004/历史版本/存量迁移-b22f36968a33f9ff/材料整理原件.md",
+      "originalSha256": "b22f36968a33f9ff66c2c79cf79ae03057db92e8ed1fad230faadd11f0c02114",
+      "migratedSha256": "b22f36968a33f9ff66c2c79cf79ae03057db92e8ed1fad230faadd11f0c02114",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰消费分期/鹿优选再保理/2026/202607280003/source.md",
+      "target": "docs/requirement-sources/嘉泰消费分期/鹿优选再保理/2026/202607280003/source.md",
+      "originalSha256": "f758494e3a737bd28643418036477d88db10d0f13c728306b856163ef15b3650",
+      "migratedSha256": "f758494e3a737bd28643418036477d88db10d0f13c728306b856163ef15b3650",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰消费分期/鹿优选再保理/2026/202607280003/历史版本/存量迁移-1a7ca63533983fcb/材料整理原件.md",
+      "target": "docs/requirement-sources/嘉泰消费分期/鹿优选再保理/2026/202607280003/历史版本/存量迁移-1a7ca63533983fcb/材料整理原件.md",
+      "originalSha256": "1a7ca63533983fcb8738831a393a57cbb9986080663868de1be9e790b7af3760",
+      "migratedSha256": "1a7ca63533983fcb8738831a393a57cbb9986080663868de1be9e790b7af3760",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202608250006/source.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202608250006/source.md",
+      "originalSha256": "bd9d7cb9f3201b74403bc198f78fe828edb3427a3afb2f72b0c744e4de4cc827",
+      "migratedSha256": "bd9d7cb9f3201b74403bc198f78fe828edb3427a3afb2f72b0c744e4de4cc827",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202608250006/历史版本/存量迁移-16483cac9c440be9/材料整理原件.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202608250006/历史版本/存量迁移-16483cac9c440be9/材料整理原件.md",
+      "originalSha256": "16483cac9c440be90bf14f4e086313cc6e7750313e50df9453a7a12df5845713",
+      "migratedSha256": "16483cac9c440be90bf14f4e086313cc6e7750313e50df9453a7a12df5845713",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609180002/source.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609180002/source.md",
+      "originalSha256": "08acfa84fa4778878bcf4bb9f2a29887935a05cc9623b90504e9d014493ee985",
+      "migratedSha256": "08acfa84fa4778878bcf4bb9f2a29887935a05cc9623b90504e9d014493ee985",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609180002/历史版本/存量迁移-f9fe982050df2251/材料整理原件.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609180002/历史版本/存量迁移-f9fe982050df2251/材料整理原件.md",
+      "originalSha256": "f9fe982050df2251cad2d27beccc788e1e3e8ec8171fd9cd53530a49cc0a102f",
+      "migratedSha256": "f9fe982050df2251cad2d27beccc788e1e3e8ec8171fd9cd53530a49cc0a102f",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609290001/source.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609290001/source.md",
+      "originalSha256": "d3438e311549e9b824d07e5b86c14698aa3a188a69d57058d112c73d919670ac",
+      "migratedSha256": "d3438e311549e9b824d07e5b86c14698aa3a188a69d57058d112c73d919670ac",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609290001/历史版本/3139dabf-24a8-46bc-a5d1-3036e7fb14da/manifest.json",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609290001/历史版本/3139dabf-24a8-46bc-a5d1-3036e7fb14da/manifest.json",
+      "originalSha256": "ac14e199b15885b01f107326734129dc5e86a510ba936d7869b75520cb1f82a4",
+      "migratedSha256": "ac14e199b15885b01f107326734129dc5e86a510ba936d7869b75520cb1f82a4",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609290001/历史版本/3139dabf-24a8-46bc-a5d1-3036e7fb14da/source.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609290001/历史版本/3139dabf-24a8-46bc-a5d1-3036e7fb14da/source.md",
+      "originalSha256": "d3438e311549e9b824d07e5b86c14698aa3a188a69d57058d112c73d919670ac",
+      "migratedSha256": "d3438e311549e9b824d07e5b86c14698aa3a188a69d57058d112c73d919670ac",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609290001/历史版本/3139dabf-24a8-46bc-a5d1-3036e7fb14da/附件/408-image.png",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609290001/历史版本/3139dabf-24a8-46bc-a5d1-3036e7fb14da/附件/408-image.png",
+      "originalSha256": "a4e6e08fe268054c3dc840835506c6bf5b5e4ed297b8ca3a055854c87be1c25e",
+      "migratedSha256": "a4e6e08fe268054c3dc840835506c6bf5b5e4ed297b8ca3a055854c87be1c25e",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609290001/历史版本/3139dabf-24a8-46bc-a5d1-3036e7fb14da/附件/409-先行通-客户账单优化需求.docx",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609290001/历史版本/3139dabf-24a8-46bc-a5d1-3036e7fb14da/附件/409-先行通-客户账单优化需求.docx",
+      "originalSha256": "c6af4772e0a7e6581dfc31ad909f3715a4ac4b2140b1ff4f957c15ed1629ef95",
+      "migratedSha256": "c6af4772e0a7e6581dfc31ad909f3715a4ac4b2140b1ff4f957c15ed1629ef95",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609290001/附件/408-image.png",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609290001/附件/408-image.png",
+      "originalSha256": "a4e6e08fe268054c3dc840835506c6bf5b5e4ed297b8ca3a055854c87be1c25e",
+      "migratedSha256": "a4e6e08fe268054c3dc840835506c6bf5b5e4ed297b8ca3a055854c87be1c25e",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609290001/附件/409-先行通-客户账单优化需求.docx",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202609290001/附件/409-先行通-客户账单优化需求.docx",
+      "originalSha256": "c6af4772e0a7e6581dfc31ad909f3715a4ac4b2140b1ff4f957c15ed1629ef95",
+      "migratedSha256": "c6af4772e0a7e6581dfc31ad909f3715a4ac4b2140b1ff4f957c15ed1629ef95",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130002/source.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130002/source.md",
+      "originalSha256": "03e7133aec4d9c00b7384a2a781982ca925b9f32d624f0e774de34fefcd945c0",
+      "migratedSha256": "03e7133aec4d9c00b7384a2a781982ca925b9f32d624f0e774de34fefcd945c0",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130002/历史版本/85ab2fba-a619-43ab-9435-a6cf88b1159d/manifest.json",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130002/历史版本/85ab2fba-a619-43ab-9435-a6cf88b1159d/manifest.json",
+      "originalSha256": "6f9bd0d48d9577e5e8d39b130fe7af9f680de8d4d4723eca720dca3e29c3481f",
+      "migratedSha256": "6f9bd0d48d9577e5e8d39b130fe7af9f680de8d4d4723eca720dca3e29c3481f",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130002/历史版本/85ab2fba-a619-43ab-9435-a6cf88b1159d/source.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130002/历史版本/85ab2fba-a619-43ab-9435-a6cf88b1159d/source.md",
+      "originalSha256": "03e7133aec4d9c00b7384a2a781982ca925b9f32d624f0e774de34fefcd945c0",
+      "migratedSha256": "03e7133aec4d9c00b7384a2a781982ca925b9f32d624f0e774de34fefcd945c0",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130002/历史版本/85ab2fba-a619-43ab-9435-a6cf88b1159d/附件/455-image.png",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130002/历史版本/85ab2fba-a619-43ab-9435-a6cf88b1159d/附件/455-image.png",
+      "originalSha256": "2272a0be643e5f5875db4867dd10905bdb6a5777ee64c5015e6d1a07fe3df621",
+      "migratedSha256": "2272a0be643e5f5875db4867dd10905bdb6a5777ee64c5015e6d1a07fe3df621",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130002/历史版本/85ab2fba-a619-43ab-9435-a6cf88b1159d/附件/456-先行通-中恒二维码支付标识.docx",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130002/历史版本/85ab2fba-a619-43ab-9435-a6cf88b1159d/附件/456-先行通-中恒二维码支付标识.docx",
+      "originalSha256": "93b22433094d7ccac3e0bf9763db2bc6c29a50d563210081a40341014b4ed1d5",
+      "migratedSha256": "93b22433094d7ccac3e0bf9763db2bc6c29a50d563210081a40341014b4ed1d5",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130002/附件/455-image.png",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130002/附件/455-image.png",
+      "originalSha256": "2272a0be643e5f5875db4867dd10905bdb6a5777ee64c5015e6d1a07fe3df621",
+      "migratedSha256": "2272a0be643e5f5875db4867dd10905bdb6a5777ee64c5015e6d1a07fe3df621",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130002/附件/456-先行通-中恒二维码支付标识.docx",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130002/附件/456-先行通-中恒二维码支付标识.docx",
+      "originalSha256": "93b22433094d7ccac3e0bf9763db2bc6c29a50d563210081a40341014b4ed1d5",
+      "migratedSha256": "93b22433094d7ccac3e0bf9763db2bc6c29a50d563210081a40341014b4ed1d5",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/source.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/source.md",
+      "originalSha256": "3ab7f1b6f3369bb010f4fe6cd221a37432cbb33e716c3f4cf802a7738b55db36",
+      "migratedSha256": "3ab7f1b6f3369bb010f4fe6cd221a37432cbb33e716c3f4cf802a7738b55db36",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/242f8400-e261-4fd5-9659-7139f3bbb1c6/manifest.json",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/242f8400-e261-4fd5-9659-7139f3bbb1c6/manifest.json",
+      "originalSha256": "be1faadf98b384f77a1b90f803b9131ac3e12c394eccd5e9bc03b740f2225be4",
+      "migratedSha256": "be1faadf98b384f77a1b90f803b9131ac3e12c394eccd5e9bc03b740f2225be4",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/242f8400-e261-4fd5-9659-7139f3bbb1c6/source.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/242f8400-e261-4fd5-9659-7139f3bbb1c6/source.md",
+      "originalSha256": "3ab7f1b6f3369bb010f4fe6cd221a37432cbb33e716c3f4cf802a7738b55db36",
+      "migratedSha256": "3ab7f1b6f3369bb010f4fe6cd221a37432cbb33e716c3f4cf802a7738b55db36",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/242f8400-e261-4fd5-9659-7139f3bbb1c6/附件/450-image.png",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/242f8400-e261-4fd5-9659-7139f3bbb1c6/附件/450-image.png",
+      "originalSha256": "dfc14008beb923906a6dd5fc99999d080071f4143e86e3590ab15ce8931a344b",
+      "migratedSha256": "dfc14008beb923906a6dd5fc99999d080071f4143e86e3590ab15ce8931a344b",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/242f8400-e261-4fd5-9659-7139f3bbb1c6/附件/451-中恒-正常还款_提前结清对账单优化.docx",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/242f8400-e261-4fd5-9659-7139f3bbb1c6/附件/451-中恒-正常还款_提前结清对账单优化.docx",
+      "originalSha256": "c840304bea6574d64a4446b7691fa750f2982b5608a83d293321006eb010c055",
+      "migratedSha256": "c840304bea6574d64a4446b7691fa750f2982b5608a83d293321006eb010c055",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/794e1ef7-e09c-4137-8d12-1c011a13a118/manifest.json",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/794e1ef7-e09c-4137-8d12-1c011a13a118/manifest.json",
+      "originalSha256": "cbad43fc3da46e128b134b8a25a9c55bc74c1f41c91dd5fd401248729a0c4a87",
+      "migratedSha256": "cbad43fc3da46e128b134b8a25a9c55bc74c1f41c91dd5fd401248729a0c4a87",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/794e1ef7-e09c-4137-8d12-1c011a13a118/source.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/794e1ef7-e09c-4137-8d12-1c011a13a118/source.md",
+      "originalSha256": "3ab7f1b6f3369bb010f4fe6cd221a37432cbb33e716c3f4cf802a7738b55db36",
+      "migratedSha256": "3ab7f1b6f3369bb010f4fe6cd221a37432cbb33e716c3f4cf802a7738b55db36",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/794e1ef7-e09c-4137-8d12-1c011a13a118/附件/450-image.png",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/794e1ef7-e09c-4137-8d12-1c011a13a118/附件/450-image.png",
+      "originalSha256": "dfc14008beb923906a6dd5fc99999d080071f4143e86e3590ab15ce8931a344b",
+      "migratedSha256": "dfc14008beb923906a6dd5fc99999d080071f4143e86e3590ab15ce8931a344b",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/794e1ef7-e09c-4137-8d12-1c011a13a118/附件/451-中恒-正常还款_提前结清对账单优化.docx",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/历史版本/794e1ef7-e09c-4137-8d12-1c011a13a118/附件/451-中恒-正常还款_提前结清对账单优化.docx",
+      "originalSha256": "c840304bea6574d64a4446b7691fa750f2982b5608a83d293321006eb010c055",
+      "migratedSha256": "c840304bea6574d64a4446b7691fa750f2982b5608a83d293321006eb010c055",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/附件/450-image.png",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/附件/450-image.png",
+      "originalSha256": "dfc14008beb923906a6dd5fc99999d080071f4143e86e3590ab15ce8931a344b",
+      "migratedSha256": "dfc14008beb923906a6dd5fc99999d080071f4143e86e3590ab15ce8931a344b",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/附件/451-中恒-正常还款_提前结清对账单优化.docx",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610130003/附件/451-中恒-正常还款_提前结清对账单优化.docx",
+      "originalSha256": "c840304bea6574d64a4446b7691fa750f2982b5608a83d293321006eb010c055",
+      "migratedSha256": "c840304bea6574d64a4446b7691fa750f2982b5608a83d293321006eb010c055",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610220003/source.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610220003/source.md",
+      "originalSha256": "3f0acff27f582dd1685b53e3f84d0ca7276b461e5131a4a912079130b59c7692",
+      "migratedSha256": "3f0acff27f582dd1685b53e3f84d0ca7276b461e5131a4a912079130b59c7692",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610220003/历史版本/0cd418eb-61b2-4865-9d74-63be8112b416/manifest.json",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610220003/历史版本/0cd418eb-61b2-4865-9d74-63be8112b416/manifest.json",
+      "originalSha256": "cc2535048562d85a484d69bc08023ba7747b8aca83bfd19f184d240f287979d3",
+      "migratedSha256": "cc2535048562d85a484d69bc08023ba7747b8aca83bfd19f184d240f287979d3",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610220003/历史版本/0cd418eb-61b2-4865-9d74-63be8112b416/source.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610220003/历史版本/0cd418eb-61b2-4865-9d74-63be8112b416/source.md",
+      "originalSha256": "3f0acff27f582dd1685b53e3f84d0ca7276b461e5131a4a912079130b59c7692",
+      "migratedSha256": "3f0acff27f582dd1685b53e3f84d0ca7276b461e5131a4a912079130b59c7692",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610220003/历史版本/0cd418eb-61b2-4865-9d74-63be8112b416/附件/458-image.png",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610220003/历史版本/0cd418eb-61b2-4865-9d74-63be8112b416/附件/458-image.png",
+      "originalSha256": "a27d7830615a46e4d5f49865421037633b784ac263c5752e66609edb62d9e6de",
+      "migratedSha256": "a27d7830615a46e4d5f49865421037633b784ac263c5752e66609edb62d9e6de",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610220003/历史版本/0cd418eb-61b2-4865-9d74-63be8112b416/附件/459-中恒-保理资产交接国胜需求.docx",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610220003/历史版本/0cd418eb-61b2-4865-9d74-63be8112b416/附件/459-中恒-保理资产交接国胜需求.docx",
+      "originalSha256": "3af3c3b0dc123943170183179ae3f1f14e035229b3a619533f96b0c6e892f77d",
+      "migratedSha256": "3af3c3b0dc123943170183179ae3f1f14e035229b3a619533f96b0c6e892f77d",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610220003/附件/458-image.png",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610220003/附件/458-image.png",
+      "originalSha256": "a27d7830615a46e4d5f49865421037633b784ac263c5752e66609edb62d9e6de",
+      "migratedSha256": "a27d7830615a46e4d5f49865421037633b784ac263c5752e66609edb62d9e6de",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610220003/附件/459-中恒-保理资产交接国胜需求.docx",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610220003/附件/459-中恒-保理资产交接国胜需求.docx",
+      "originalSha256": "3af3c3b0dc123943170183179ae3f1f14e035229b3a619533f96b0c6e892f77d",
+      "migratedSha256": "3af3c3b0dc123943170183179ae3f1f14e035229b3a619533f96b0c6e892f77d",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/source.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/source.md",
+      "originalSha256": "bbd80d0f62b1c4843fc957615fd5c9c40cf01131ace6e36542a37109011d7ac6",
+      "migratedSha256": "bbd80d0f62b1c4843fc957615fd5c9c40cf01131ace6e36542a37109011d7ac6",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/8a970181-17e9-4603-a6c6-2db39052b58e/manifest.json",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/8a970181-17e9-4603-a6c6-2db39052b58e/manifest.json",
+      "originalSha256": "b7e763043054851cb5e7e7615375b3e54d3937742556fd89c3446ce4eef91fb5",
+      "migratedSha256": "b7e763043054851cb5e7e7615375b3e54d3937742556fd89c3446ce4eef91fb5",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/8a970181-17e9-4603-a6c6-2db39052b58e/source.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/8a970181-17e9-4603-a6c6-2db39052b58e/source.md",
+      "originalSha256": "bbd80d0f62b1c4843fc957615fd5c9c40cf01131ace6e36542a37109011d7ac6",
+      "migratedSha256": "bbd80d0f62b1c4843fc957615fd5c9c40cf01131ace6e36542a37109011d7ac6",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/8a970181-17e9-4603-a6c6-2db39052b58e/附件/461-image.png",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/8a970181-17e9-4603-a6c6-2db39052b58e/附件/461-image.png",
+      "originalSha256": "9e58fea4f912b698eb73853fc28680d1d176a580924aea239fa8bb2339a93d91",
+      "migratedSha256": "9e58fea4f912b698eb73853fc28680d1d176a580924aea239fa8bb2339a93d91",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/8a970181-17e9-4603-a6c6-2db39052b58e/附件/462-中恒保理项目-切换嘉泰保理扣款.docx",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/8a970181-17e9-4603-a6c6-2db39052b58e/附件/462-中恒保理项目-切换嘉泰保理扣款.docx",
+      "originalSha256": "98c4ccbf00e8188bf8c2275c140abfbf55f4cfdd207b759927bccfa810a2c4c5",
+      "migratedSha256": "98c4ccbf00e8188bf8c2275c140abfbf55f4cfdd207b759927bccfa810a2c4c5",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/c9dec90f-c664-4e2a-8282-561dcb41c0c7/manifest.json",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/c9dec90f-c664-4e2a-8282-561dcb41c0c7/manifest.json",
+      "originalSha256": "78bfe700756f3c6639615458324f3baca7500d56aa912cfe69cde9f307902f3e",
+      "migratedSha256": "78bfe700756f3c6639615458324f3baca7500d56aa912cfe69cde9f307902f3e",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/c9dec90f-c664-4e2a-8282-561dcb41c0c7/source.md",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/c9dec90f-c664-4e2a-8282-561dcb41c0c7/source.md",
+      "originalSha256": "bbd80d0f62b1c4843fc957615fd5c9c40cf01131ace6e36542a37109011d7ac6",
+      "migratedSha256": "bbd80d0f62b1c4843fc957615fd5c9c40cf01131ace6e36542a37109011d7ac6",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/c9dec90f-c664-4e2a-8282-561dcb41c0c7/附件/461-image.png",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/c9dec90f-c664-4e2a-8282-561dcb41c0c7/附件/461-image.png",
+      "originalSha256": "9e58fea4f912b698eb73853fc28680d1d176a580924aea239fa8bb2339a93d91",
+      "migratedSha256": "9e58fea4f912b698eb73853fc28680d1d176a580924aea239fa8bb2339a93d91",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/c9dec90f-c664-4e2a-8282-561dcb41c0c7/附件/462-中恒保理项目-切换嘉泰保理扣款.docx",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/历史版本/c9dec90f-c664-4e2a-8282-561dcb41c0c7/附件/462-中恒保理项目-切换嘉泰保理扣款.docx",
+      "originalSha256": "98c4ccbf00e8188bf8c2275c140abfbf55f4cfdd207b759927bccfa810a2c4c5",
+      "migratedSha256": "98c4ccbf00e8188bf8c2275c140abfbf55f4cfdd207b759927bccfa810a2c4c5",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/附件/461-image.png",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/附件/461-image.png",
+      "originalSha256": "9e58fea4f912b698eb73853fc28680d1d176a580924aea239fa8bb2339a93d91",
+      "migratedSha256": "9e58fea4f912b698eb73853fc28680d1d176a580924aea239fa8bb2339a93d91",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/附件/462-中恒保理项目-切换嘉泰保理扣款.docx",
+      "target": "docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230006/附件/462-中恒保理项目-切换嘉泰保理扣款.docx",
+      "originalSha256": "98c4ccbf00e8188bf8c2275c140abfbf55f4cfdd207b759927bccfa810a2c4c5",
+      "migratedSha256": "98c4ccbf00e8188bf8c2275c140abfbf55f4cfdd207b759927bccfa810a2c4c5",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰资产平台/嘉泰资产平台/2026/202606220001/source.md",
+      "target": "docs/requirement-sources/嘉泰资产平台/嘉泰资产平台/2026/202606220001/source.md",
+      "originalSha256": "3f2e938e7ec4fc9272d4aec3ef76cd07083b9e1283c1f54d1ff098cdb9bf435b",
+      "migratedSha256": "3f2e938e7ec4fc9272d4aec3ef76cd07083b9e1283c1f54d1ff098cdb9bf435b",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰资产平台/嘉泰资产平台/2026/202606220001/历史版本/存量迁移-e6b2fae054895079/材料整理原件.md",
+      "target": "docs/requirement-sources/嘉泰资产平台/嘉泰资产平台/2026/202606220001/历史版本/存量迁移-e6b2fae054895079/材料整理原件.md",
+      "originalSha256": "e6b2fae0548950799b49c0e2ef3681bb2fe13d9a90e6f87998ece195b84daac7",
+      "migratedSha256": "e6b2fae0548950799b49c0e2ef3681bb2fe13d9a90e6f87998ece195b84daac7",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰资产平台/嘉泰资产平台/2026/202606290003/source.md",
+      "target": "docs/requirement-sources/嘉泰资产平台/嘉泰资产平台/2026/202606290003/source.md",
+      "originalSha256": "6f61263e0c885cececce30c7bd55028145fe9f5657a3613e18030d4325f3f861",
+      "migratedSha256": "6f61263e0c885cececce30c7bd55028145fe9f5657a3613e18030d4325f3f861",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰资产平台/嘉泰资产平台/2026/202606290003/历史版本/存量迁移-cf238dbfc09269fb/材料整理原件.md",
+      "target": "docs/requirement-sources/嘉泰资产平台/嘉泰资产平台/2026/202606290003/历史版本/存量迁移-cf238dbfc09269fb/材料整理原件.md",
+      "originalSha256": "cf238dbfc09269fb31c2e74751870cb6a6bb31830c07ca635b872c79b82c56fe",
+      "migratedSha256": "cf238dbfc09269fb31c2e74751870cb6a6bb31830c07ca635b872c79b82c56fe",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰资产平台/嘉泰资产平台/2026/202607160001/source.md",
+      "target": "docs/requirement-sources/嘉泰资产平台/嘉泰资产平台/2026/202607160001/source.md",
+      "originalSha256": "4570e21b80132d078f1b1ce2949c595c3e30cc211b2f94efea45e0f77f93f2a0",
+      "migratedSha256": "4570e21b80132d078f1b1ce2949c595c3e30cc211b2f94efea45e0f77f93f2a0",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰资产平台/嘉泰资产平台/2026/202607160001/历史版本/存量迁移-f0dd98c52d80d984/材料整理原件.md",
+      "target": "docs/requirement-sources/嘉泰资产平台/嘉泰资产平台/2026/202607160001/历史版本/存量迁移-f0dd98c52d80d984/材料整理原件.md",
+      "originalSha256": "f0dd98c52d80d984dfe736d1c7a11256c8a4fc224bbdc557c66af7c05e8d4137",
+      "migratedSha256": "f0dd98c52d80d984dfe736d1c7a11256c8a4fc224bbdc557c66af7c05e8d4137",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰资产平台/鹿优选再保理/2026/202604270002/source.md",
+      "target": "docs/requirement-sources/嘉泰资产平台/鹿优选再保理/2026/202604270002/source.md",
+      "originalSha256": "31023d9f3f3a9e4749121f66d4dedeaa311486f0ff81f4a78fddc8cbff3b4b98",
+      "migratedSha256": "31023d9f3f3a9e4749121f66d4dedeaa311486f0ff81f4a78fddc8cbff3b4b98",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/嘉泰资产平台/鹿优选再保理/2026/202604270002/历史版本/存量迁移-3d45c4aaa70bd7c7/材料整理原件.md",
+      "target": "docs/requirement-sources/嘉泰资产平台/鹿优选再保理/2026/202604270002/历史版本/存量迁移-3d45c4aaa70bd7c7/材料整理原件.md",
+      "originalSha256": "3d45c4aaa70bd7c77c4810f89fc20fec8e5255e5b309aa6e1a368ce5abfc9907",
+      "migratedSha256": "3d45c4aaa70bd7c77c4810f89fc20fec8e5255e5b309aa6e1a368ce5abfc9907",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/新消费分期/申城-医美-诚泰保理/2026/202610090005/source.md",
+      "target": "docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202610090005/source.md",
+      "originalSha256": "08f3bc7c55858d1bdc9ab17f6d13389d36a0e21e149ca17cb7d52f5634d42e5a",
+      "migratedSha256": "08f3bc7c55858d1bdc9ab17f6d13389d36a0e21e149ca17cb7d52f5634d42e5a",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/新消费分期/申城-医美-诚泰保理/2026/202610090005/历史版本/存量迁移-30c79f2ff475150c/材料整理原件.md",
+      "target": "docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202610090005/历史版本/存量迁移-30c79f2ff475150c/材料整理原件.md",
+      "originalSha256": "30c79f2ff475150c1e965bc18b7caabac87eef72be794f94e72f54ba8a6ecfd0",
+      "migratedSha256": "30c79f2ff475150c1e965bc18b7caabac87eef72be794f94e72f54ba8a6ecfd0",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/汇浦/汇浦/2026/202607080006/source.md",
+      "target": "docs/requirement-sources/汇浦/汇浦/2026/202607080006/source.md",
+      "originalSha256": "f824f03bbe21751275234f2a454ea3eff0f50447c1a284c06e689f4c185041d2",
+      "migratedSha256": "f824f03bbe21751275234f2a454ea3eff0f50447c1a284c06e689f4c185041d2",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/汇浦/汇浦/2026/202607080006/历史版本/存量迁移-90745eeca3adace7/材料整理原件.md",
+      "target": "docs/requirement-sources/汇浦/汇浦/2026/202607080006/历史版本/存量迁移-90745eeca3adace7/材料整理原件.md",
+      "originalSha256": "90745eeca3adace7b63a55a3a42d2e79b416d801a42b2e5a1b6118c7eddd86b2",
+      "migratedSha256": "90745eeca3adace7b63a55a3a42d2e79b416d801a42b2e5a1b6118c7eddd86b2",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/消费分期/即科医美通汇诚泰保理/2026/202607240001/source.md",
+      "target": "docs/requirement-sources/消费分期/即科医美通汇诚泰保理/2026/202607240001/source.md",
+      "originalSha256": "701685c7b6bcb5db033ae60df63b8da99ec94e3de62e7971db86c4ed8f9bfe25",
+      "migratedSha256": "701685c7b6bcb5db033ae60df63b8da99ec94e3de62e7971db86c4ed8f9bfe25",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/消费分期/即科医美通汇诚泰保理/2026/202607240001/历史版本/存量迁移-ab569b8750926efd/材料整理原件.md",
+      "target": "docs/requirement-sources/消费分期/即科医美通汇诚泰保理/2026/202607240001/历史版本/存量迁移-ab569b8750926efd/材料整理原件.md",
+      "originalSha256": "ab569b8750926efd9414c1e074c2e3fcf470adbadc4744199fce57ae56396720",
+      "migratedSha256": "ab569b8750926efd9414c1e074c2e3fcf470adbadc4744199fce57ae56396720",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/消费分期/即科医美通汇诚泰保理/2026/202609210002/source.md",
+      "target": "docs/requirement-sources/消费分期/即科医美通汇诚泰保理/2026/202609210002/source.md",
+      "originalSha256": "7eef63942f5df4b6f637eb1eede26b8feac86493fefa3c10f1bb1043290488d6",
+      "migratedSha256": "7eef63942f5df4b6f637eb1eede26b8feac86493fefa3c10f1bb1043290488d6",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/消费分期/即科医美通汇诚泰保理/2026/202609210002/历史版本/存量迁移-7ff3301777568a35/材料整理原件.md",
+      "target": "docs/requirement-sources/消费分期/即科医美通汇诚泰保理/2026/202609210002/历史版本/存量迁移-7ff3301777568a35/材料整理原件.md",
+      "originalSha256": "7ff3301777568a351f0406c031cf154b4a8467ec5465d7ac390594358cb69501",
+      "migratedSha256": "7ff3301777568a351f0406c031cf154b4a8467ec5465d7ac390594358cb69501",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/物流平台/物流平台/2026/202606030002/source.md",
+      "target": "docs/requirement-sources/物流平台/物流平台/2026/202606030002/source.md",
+      "originalSha256": "61bfd495c986797930a073a78efd1627629df4bc4abd48ef0f2b7dd21ac68921",
+      "migratedSha256": "61bfd495c986797930a073a78efd1627629df4bc4abd48ef0f2b7dd21ac68921",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/物流平台/物流平台/2026/202606030002/历史版本/存量迁移-9c960b7167923599/材料整理原件.md",
+      "target": "docs/requirement-sources/物流平台/物流平台/2026/202606030002/历史版本/存量迁移-9c960b7167923599/材料整理原件.md",
+      "originalSha256": "9c960b71679235994e7ba2e84589b4b677954f30683e8abccd806fed1c8aef08",
+      "migratedSha256": "9c960b71679235994e7ba2e84589b4b677954f30683e8abccd806fed1c8aef08",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/物流平台/物流平台/2026/202606090004/source.md",
+      "target": "docs/requirement-sources/物流平台/物流平台/2026/202606090004/source.md",
+      "originalSha256": "2ad23b433cf853eefd3873a8d6ab88855b594548e5722ba32ab130625f472c9b",
+      "migratedSha256": "2ad23b433cf853eefd3873a8d6ab88855b594548e5722ba32ab130625f472c9b",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/物流平台/物流平台/2026/202606090004/历史版本/存量迁移-a199d23acb159c47/材料整理原件.md",
+      "target": "docs/requirement-sources/物流平台/物流平台/2026/202606090004/历史版本/存量迁移-a199d23acb159c47/材料整理原件.md",
+      "originalSha256": "a199d23acb159c474e97a5327831ad0a4a516b214d736caf11db0fbc80064550",
+      "migratedSha256": "a199d23acb159c474e97a5327831ad0a4a516b214d736caf11db0fbc80064550",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/账单管理/物流平台-账务系统/2026/202606080002/source.md",
+      "target": "docs/requirement-sources/账单管理/物流平台-账务系统/2026/202606080002/source.md",
+      "originalSha256": "517644060d8c5317794284dcb2047964f28ac7bb98eb33439da14708bdef0e2a",
+      "migratedSha256": "517644060d8c5317794284dcb2047964f28ac7bb98eb33439da14708bdef0e2a",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/账单管理/账单管理/2026/202607080004/source.md",
+      "target": "docs/requirement-sources/账单管理/账单管理/2026/202607080004/source.md",
+      "originalSha256": "4cf806d173933aef9f8e6dbdab5ff5750f6d05fe09c12c870875998b9c10562c",
+      "migratedSha256": "4cf806d173933aef9f8e6dbdab5ff5750f6d05fe09c12c870875998b9c10562c",
+      "bytePreserved": true
+    },
+    {
+      "source": "raw/公司项目/requirements/账单管理/账单管理/2026/202607080004/历史版本/存量迁移-4f868e4db7c70ac7/材料整理原件.md",
+      "target": "docs/requirement-sources/账单管理/账单管理/2026/202607080004/历史版本/存量迁移-4f868e4db7c70ac7/材料整理原件.md",
+      "originalSha256": "4f868e4db7c70ac78d4f760d39d7d32f13ec3208cb0d5c2e0c4d697998ccbf61",
+      "migratedSha256": "4f868e4db7c70ac78d4f760d39d7d32f13ec3208cb0d5c2e0c4d697998ccbf61",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/AGENTS.md",
+      "target": "docs/requirements/AGENTS.md",
+      "originalSha256": "ff8ea75cdd09b0b10f65e49547ecd2edc89d7eecb12cbff1904d365620ed4b3b",
+      "migratedSha256": "0f22cbd7d15ab0bc9a2c83b00768984098861ff1feed9a8faac3b85c423b3579",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/index.md",
+      "target": "docs/requirements/index.md",
+      "originalSha256": "81ad4f00b938d9e84b886c10249f80a3473d209ecfe11eae0d727c12f79dba78",
+      "migratedSha256": "1ca75ad90f45ce4756001772f3d8ac544e6be2080d01e632ab81bbc04914ecea",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/.gitkeep",
+      "target": "docs/requirements/workhub-server/.gitkeep",
+      "originalSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "migratedSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-0655b868-e6da-48ae-8751-0a21725b820d-需求详情类型修改与实时保存/design.md",
+      "target": "docs/requirements/workhub-server/REQ-0655b868-e6da-48ae-8751-0a21725b820d-需求详情类型修改与实时保存/design.md",
+      "originalSha256": "fc4af3a723dd879cb53d43ec6743deb8931da9645d936261d815e371450682c5",
+      "migratedSha256": "fc4af3a723dd879cb53d43ec6743deb8931da9645d936261d815e371450682c5",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-0655b868-e6da-48ae-8751-0a21725b820d-需求详情类型修改与实时保存/proposal.md",
+      "target": "docs/requirements/workhub-server/REQ-0655b868-e6da-48ae-8751-0a21725b820d-需求详情类型修改与实时保存/proposal.md",
+      "originalSha256": "17138cc1e14e97b951a4aa424a4367cb922fd59a49a18ff8d360932e32f188a3",
+      "migratedSha256": "0ff39b9c456e4528227d29767364a00248dc34b7389eb01d6cb18b89ceb9133b",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-0655b868-e6da-48ae-8751-0a21725b820d-需求详情类型修改与实时保存/tasks.md",
+      "target": "docs/requirements/workhub-server/REQ-0655b868-e6da-48ae-8751-0a21725b820d-需求详情类型修改与实时保存/tasks.md",
+      "originalSha256": "ad21b697391fc2b2a23e58241cc70690ad8fa02e7e000ba60ae825295d9d99fc",
+      "migratedSha256": "d76b41f1f8147a98822237e4ee3cc4f7b32cf238d12c06053d7e0d707370a221",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-3d7414a7-fbae-493a-bf08-705d7eb95c2a-WorkHub工具菜单与Excel水印加密及ZIP工具/design.md",
+      "target": "docs/requirements/workhub-server/REQ-3d7414a7-fbae-493a-bf08-705d7eb95c2a-WorkHub工具菜单与Excel水印加密及ZIP工具/design.md",
+      "originalSha256": "2481b2d74b2fe64f698643c3a7bd2015172ecb0f9d28101a5bbe28a5cfcbc50f",
+      "migratedSha256": "e9930b7db4dfa65e1ea38e30848b6fda59a9852eb70f811a0e61b5fa79abe8d7",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-3d7414a7-fbae-493a-bf08-705d7eb95c2a-WorkHub工具菜单与Excel水印加密及ZIP工具/proposal.md",
+      "target": "docs/requirements/workhub-server/REQ-3d7414a7-fbae-493a-bf08-705d7eb95c2a-WorkHub工具菜单与Excel水印加密及ZIP工具/proposal.md",
+      "originalSha256": "3999011077110cbba15b033231c885b10faa562f23229b57b29b0b9c3e848216",
+      "migratedSha256": "86e1220dab51c6f9aef4bb7117fcaa12a7d37adbefaa5f14246b1de39e36f688",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-3d7414a7-fbae-493a-bf08-705d7eb95c2a-WorkHub工具菜单与Excel水印加密及ZIP工具/tasks.md",
+      "target": "docs/requirements/workhub-server/REQ-3d7414a7-fbae-493a-bf08-705d7eb95c2a-WorkHub工具菜单与Excel水印加密及ZIP工具/tasks.md",
+      "originalSha256": "45a8ecca75f895a472fd32cce6c33b8febf32e2a6c599e42f377274d8401b2ec",
+      "migratedSha256": "3c0c622cd62da59e2b467ad84fe5279f4e03547e6cfa625507a41ffc0cfff420",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-718a4a66-bdd6-492d-9fe5-c771ca94b2a3-堡垒机共享连接按配置隔离/design.md",
+      "target": "docs/requirements/workhub-server/REQ-718a4a66-bdd6-492d-9fe5-c771ca94b2a3-堡垒机共享连接按配置隔离/design.md",
+      "originalSha256": "8b48cd57752c9c256220c66147af96f21d07eef1acb53d01bcf191d44681b9a3",
+      "migratedSha256": "156fbac4e46b37a5df68a0e40a05bd95be96ffcd7b9dde0dc6e6be1ba2fa6cc2",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-718a4a66-bdd6-492d-9fe5-c771ca94b2a3-堡垒机共享连接按配置隔离/proposal.md",
+      "target": "docs/requirements/workhub-server/REQ-718a4a66-bdd6-492d-9fe5-c771ca94b2a3-堡垒机共享连接按配置隔离/proposal.md",
+      "originalSha256": "cf470eb1756dff6d457d24c59171ab4b05a632f250d378480a5d402d43e3782c",
+      "migratedSha256": "11134d9e9bbff7d6056ecc5add3bf5d7ad9b74539ab58fdc547663b0ecc4eb4f",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-718a4a66-bdd6-492d-9fe5-c771ca94b2a3-堡垒机共享连接按配置隔离/tasks.md",
+      "target": "docs/requirements/workhub-server/REQ-718a4a66-bdd6-492d-9fe5-c771ca94b2a3-堡垒机共享连接按配置隔离/tasks.md",
+      "originalSha256": "b19ea614faed34e623be18360f4191574efd897ac1ecbc54648750b875aa1698",
+      "migratedSha256": "7d4e1effe89f68e736d655482bd21a8a16dbcfb0af21661e684e387fbd8c042a",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-896192ba-730a-481f-bc8d-c3c03ff2ab2e-统一知识库分层归档与重评历史保留/design.md",
+      "target": "docs/requirements/workhub-server/REQ-896192ba-730a-481f-bc8d-c3c03ff2ab2e-统一知识库分层归档与重评历史保留/design.md",
+      "originalSha256": "9c5381d4d7aba186087ff7ad55e5f2dcc803ed1b985cdecad5e692c39275a59b",
+      "migratedSha256": "cd7712db69af8fd0056a19ca5fd408a5b9da75bf0fa330d204f90b4948a38aae",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-896192ba-730a-481f-bc8d-c3c03ff2ab2e-统一知识库分层归档与重评历史保留/proposal.md",
+      "target": "docs/requirements/workhub-server/REQ-896192ba-730a-481f-bc8d-c3c03ff2ab2e-统一知识库分层归档与重评历史保留/proposal.md",
+      "originalSha256": "b1767d51d2b5755cc90eacbd0c5b4e4c48e75d6d71257a04802ad6c8b207dbca",
+      "migratedSha256": "b1767d51d2b5755cc90eacbd0c5b4e4c48e75d6d71257a04802ad6c8b207dbca",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-896192ba-730a-481f-bc8d-c3c03ff2ab2e-统一知识库分层归档与重评历史保留/tasks.md",
+      "target": "docs/requirements/workhub-server/REQ-896192ba-730a-481f-bc8d-c3c03ff2ab2e-统一知识库分层归档与重评历史保留/tasks.md",
+      "originalSha256": "94880b0d4d3cacbf1311f07cb0ddeb0917835aa2591212f5c6ed757f201e9a6f",
+      "migratedSha256": "94880b0d4d3cacbf1311f07cb0ddeb0917835aa2591212f5c6ed757f201e9a6f",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-9209b10e-c3f9-41ac-b2fe-79f9b2cdd442-Codex模型能力动态加载/design.md",
+      "target": "docs/requirements/workhub-server/REQ-9209b10e-c3f9-41ac-b2fe-79f9b2cdd442-Codex模型能力动态加载/design.md",
+      "originalSha256": "dda6c009e1357bd23e23d68d2b3fb46b2b7894f66015364aa6a136b5619f5418",
+      "migratedSha256": "e3d1cc55309f7ecb5dedda5b6f1658682ad49961d9900baf91b9eba22fc60699",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-9209b10e-c3f9-41ac-b2fe-79f9b2cdd442-Codex模型能力动态加载/proposal.md",
+      "target": "docs/requirements/workhub-server/REQ-9209b10e-c3f9-41ac-b2fe-79f9b2cdd442-Codex模型能力动态加载/proposal.md",
+      "originalSha256": "52c167bd09fe8319584fcf9bc01dddc9f96fb50cff7c5e3238812a02d4322aea",
+      "migratedSha256": "f34174742cda55c03200254a447914570cd13161339c60c161ee105c32b5964d",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-9209b10e-c3f9-41ac-b2fe-79f9b2cdd442-Codex模型能力动态加载/tasks.md",
+      "target": "docs/requirements/workhub-server/REQ-9209b10e-c3f9-41ac-b2fe-79f9b2cdd442-Codex模型能力动态加载/tasks.md",
+      "originalSha256": "53e6999e57db4a0f18995ddc16022a3825d79597c2076c68d7f9484ccb23730e",
+      "migratedSha256": "f2259953c5809067b6b7ba529473be87c5c52b5a9916f034202bedf21cae58fa",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-b6f5532c-e901-42f8-9d00-4ad0bd4f78cd-需求录入保存与AI识别解耦/design.md",
+      "target": "docs/requirements/workhub-server/REQ-b6f5532c-e901-42f8-9d00-4ad0bd4f78cd-需求录入保存与AI识别解耦/design.md",
+      "originalSha256": "fb8f14ddc682ec6c0f7cbe65ebf0d56a3b66a141f1f58ce796c68e5c6a033079",
+      "migratedSha256": "fb8f14ddc682ec6c0f7cbe65ebf0d56a3b66a141f1f58ce796c68e5c6a033079",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-b6f5532c-e901-42f8-9d00-4ad0bd4f78cd-需求录入保存与AI识别解耦/proposal.md",
+      "target": "docs/requirements/workhub-server/REQ-b6f5532c-e901-42f8-9d00-4ad0bd4f78cd-需求录入保存与AI识别解耦/proposal.md",
+      "originalSha256": "a0fcaea0d1c59eb8abea278412d9a3dd1ed545de41735b41180f6668e2bc4037",
+      "migratedSha256": "a0fcaea0d1c59eb8abea278412d9a3dd1ed545de41735b41180f6668e2bc4037",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/workhub-server/REQ-b6f5532c-e901-42f8-9d00-4ad0bd4f78cd-需求录入保存与AI识别解耦/tasks.md",
+      "target": "docs/requirements/workhub-server/REQ-b6f5532c-e901-42f8-9d00-4ad0bd4f78cd-需求录入保存与AI识别解耦/tasks.md",
+      "originalSha256": "ac42bfc63e079a67677cca98cdfacf358cd261ee1697b849d2049b2fcf2391fc",
+      "migratedSha256": "20b35f79c836d21e52ca2747c85a4097613e1297a9379a5f83a4decf8fc35058",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/design.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/design.md",
+      "originalSha256": "ecfdc88cb0b619e887a34717ae69ac597ed1001136bc920fd1c1dc9636d75095",
+      "migratedSha256": "ecfdc88cb0b619e887a34717ae69ac597ed1001136bc920fd1c1dc9636d75095",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/proposal.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/proposal.md",
+      "originalSha256": "cce73d845e1d7d34f1f3d97dc22ba2bd2584c03735c21ad8fd3fc73825c0f5c1",
+      "migratedSha256": "cce73d845e1d7d34f1f3d97dc22ba2bd2584c03735c21ad8fd3fc73825c0f5c1",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/tasks.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/tasks.md",
+      "originalSha256": "cc64e73e68b72ef4edcf869b2a6b44fc516cca5b4ca295802b0b2405586cc03c",
+      "migratedSha256": "b5834496caaa6a3494022b3672b674a31e4652d760dd2e8cfbab405699f75aaa",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/design.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/design.md",
+      "originalSha256": "48cdaf94a4b62a39965ba77609b36c7379f77d5e57b5296714307b87e66eba98",
+      "migratedSha256": "48cdaf94a4b62a39965ba77609b36c7379f77d5e57b5296714307b87e66eba98",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/proposal.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/proposal.md",
+      "originalSha256": "9b0688d6f868d44452d0ada323dd3210f9158f0a3bf8040e2b98efe739da878e",
+      "migratedSha256": "9b0688d6f868d44452d0ada323dd3210f9158f0a3bf8040e2b98efe739da878e",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/tasks.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/tasks.md",
+      "originalSha256": "6fdf98f0371fe8223b12d1b0b93cea71ffa7e600465c22c96751995617ce7b2a",
+      "migratedSha256": "6fdf98f0371fe8223b12d1b0b93cea71ffa7e600465c22c96751995617ce7b2a",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/payment-isolated-classpath.txt",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/payment-isolated-classpath.txt",
+      "originalSha256": "cf7b005ae460b7a44e904b2ad3d7c9a728a97e36eb264c01c894a9398daacc5c",
+      "migratedSha256": "cf7b005ae460b7a44e904b2ad3d7c9a728a97e36eb264c01c894a9398daacc5c",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/payment-isolated-compile.log",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/payment-isolated-compile.log",
+      "originalSha256": "b5d767584a350877b5e1e0c20b0583f8e008d39faac2d1deb565e398805f725f",
+      "migratedSha256": "b5d767584a350877b5e1e0c20b0583f8e008d39faac2d1deb565e398805f725f",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/payment-isolated-junit.log",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/payment-isolated-junit.log",
+      "originalSha256": "136a2be7bb91e9cc25c873aabfb15f0f2d13aab8650455837902a04ba7181bfd",
+      "migratedSha256": "136a2be7bb91e9cc25c873aabfb15f0f2d13aab8650455837902a04ba7181bfd",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/payment-isolated-sources.txt",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/payment-isolated-sources.txt",
+      "originalSha256": "c76cfad2213a41b75e80542b4cf1ca0d0763d7e1913f7f78a6b2bdcf9a691d6c",
+      "migratedSha256": "c76cfad2213a41b75e80542b4cf1ca0d0763d7e1913f7f78a6b2bdcf9a691d6c",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/payment-maven-blocked.log",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/payment-maven-blocked.log",
+      "originalSha256": "7f2545af70449819b0a7e8f344bb5cf2d7923c5a6373c77bd922f0c9eff4f38c",
+      "migratedSha256": "7f2545af70449819b0a7e8f344bb5cf2d7923c5a6373c77bd922f0c9eff4f38c",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/saps-junit-summary.json",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/saps-junit-summary.json",
+      "originalSha256": "6343a3bf561b43bf423ed609a816a5179b0b8f404a420d8c762b90fde40e0ff9",
+      "migratedSha256": "6343a3bf561b43bf423ed609a816a5179b0b8f404a420d8c762b90fde40e0ff9",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/saps-maven-test.log",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/saps-maven-test.log",
+      "originalSha256": "0cd8e1958e405e0038d5e00443aa61e9391b620da30cc1dd3df54aa50b4b27ed",
+      "migratedSha256": "0cd8e1958e405e0038d5e00443aa61e9391b620da30cc1dd3df54aa50b4b27ed",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/source-sha256.txt",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/source-sha256.txt",
+      "originalSha256": "52347d76b66571e504fb1e6b09d6875ff9794582ef25700ed2024f86498cd32e",
+      "migratedSha256": "52347d76b66571e504fb1e6b09d6875ff9794582ef25700ed2024f86498cd32e",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/验证记录.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v1-空响应异常处理/验证证据/验证记录.md",
+      "originalSha256": "9bdba2d4d5ef6467efde4c5d6fc27c3a8bc999f461b545f63780d3c3231acb3f",
+      "migratedSha256": "9bdba2d4d5ef6467efde4c5d6fc27c3a8bc999f461b545f63780d3c3231acb3f",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/design.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/design.md",
+      "originalSha256": "9e714dbedb983d1279726910565eb310c9d05b2fc069182755d2a135fb88d711",
+      "migratedSha256": "9e714dbedb983d1279726910565eb310c9d05b2fc069182755d2a135fb88d711",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/proposal.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/proposal.md",
+      "originalSha256": "b577a5fc75171d46b552bf0746ebbaf6a4d17f3537f229cd5d05b085db4eecfd",
+      "migratedSha256": "b577a5fc75171d46b552bf0746ebbaf6a4d17f3537f229cd5d05b085db4eecfd",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/tasks.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/tasks.md",
+      "originalSha256": "e4692a37039548e9020804ce7143c657f485af4de9d2a3d50db1a05eecc59c38",
+      "migratedSha256": "e4692a37039548e9020804ce7143c657f485af4de9d2a3d50db1a05eecc59c38",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/payment-isolated-classpath.txt",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/payment-isolated-classpath.txt",
+      "originalSha256": "cf7b005ae460b7a44e904b2ad3d7c9a728a97e36eb264c01c894a9398daacc5c",
+      "migratedSha256": "cf7b005ae460b7a44e904b2ad3d7c9a728a97e36eb264c01c894a9398daacc5c",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/payment-isolated-compile.log",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/payment-isolated-compile.log",
+      "originalSha256": "b5d767584a350877b5e1e0c20b0583f8e008d39faac2d1deb565e398805f725f",
+      "migratedSha256": "b5d767584a350877b5e1e0c20b0583f8e008d39faac2d1deb565e398805f725f",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/payment-isolated-junit.log",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/payment-isolated-junit.log",
+      "originalSha256": "136a2be7bb91e9cc25c873aabfb15f0f2d13aab8650455837902a04ba7181bfd",
+      "migratedSha256": "136a2be7bb91e9cc25c873aabfb15f0f2d13aab8650455837902a04ba7181bfd",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/payment-isolated-sources.txt",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/payment-isolated-sources.txt",
+      "originalSha256": "c76cfad2213a41b75e80542b4cf1ca0d0763d7e1913f7f78a6b2bdcf9a691d6c",
+      "migratedSha256": "c76cfad2213a41b75e80542b4cf1ca0d0763d7e1913f7f78a6b2bdcf9a691d6c",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/payment-maven-blocked.log",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/payment-maven-blocked.log",
+      "originalSha256": "7f2545af70449819b0a7e8f344bb5cf2d7923c5a6373c77bd922f0c9eff4f38c",
+      "migratedSha256": "7f2545af70449819b0a7e8f344bb5cf2d7923c5a6373c77bd922f0c9eff4f38c",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/saps-junit-summary.json",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/saps-junit-summary.json",
+      "originalSha256": "7306aabe93dc3ce67bd264a85f4c86ac3b711e54b043b2fa304a4e63f258f566",
+      "migratedSha256": "7306aabe93dc3ce67bd264a85f4c86ac3b711e54b043b2fa304a4e63f258f566",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/saps-maven-test.log",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/saps-maven-test.log",
+      "originalSha256": "5c4b50bd76fcfc091efc9304057b255b8d08f6289f9452224640936b037e56bc",
+      "migratedSha256": "5c4b50bd76fcfc091efc9304057b255b8d08f6289f9452224640936b037e56bc",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/source-sha256.txt",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/source-sha256.txt",
+      "originalSha256": "61bf7140caee4fab0b157f1d6113d1529f61680d57ade492b6e166730ff08e39",
+      "migratedSha256": "61bf7140caee4fab0b157f1d6113d1529f61680d57ade492b6e166730ff08e39",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/验证记录.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v2-双仓库空流水处理/验证证据/验证记录.md",
+      "originalSha256": "c5635aa7d58f028a3708c9cf99e4ea814fc8ced297a6b0a3845abf40b7c098a8",
+      "migratedSha256": "c5635aa7d58f028a3708c9cf99e4ea814fc8ced297a6b0a3845abf40b7c098a8",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v3-Payment撤回与源码待确认/design.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v3-Payment撤回与源码待确认/design.md",
+      "originalSha256": "ca55e6fabe00f310cab60b688425c87345f9663c40024d45100509f93656a9fc",
+      "migratedSha256": "ca55e6fabe00f310cab60b688425c87345f9663c40024d45100509f93656a9fc",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v3-Payment撤回与源码待确认/proposal.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v3-Payment撤回与源码待确认/proposal.md",
+      "originalSha256": "47f1dc94b6d3e7a8cf888d77adeb2c1d90e38acca3f19b64deddd721a3c400ba",
+      "migratedSha256": "47f1dc94b6d3e7a8cf888d77adeb2c1d90e38acca3f19b64deddd721a3c400ba",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v3-Payment撤回与源码待确认/tasks.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v3-Payment撤回与源码待确认/tasks.md",
+      "originalSha256": "7fba4783185f0446628a317464940cc07304efd91f02eb345bca6053a3173e25",
+      "migratedSha256": "7fba4783185f0446628a317464940cc07304efd91f02eb345bca6053a3173e25",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v3-Payment撤回与源码待确认/验证证据/current-source-unverified-sha256.txt",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v3-Payment撤回与源码待确认/验证证据/current-source-unverified-sha256.txt",
+      "originalSha256": "47ab12f8bfd3179bd5d65aacc79591aa254fb8a12ca66bd39060ef721354147f",
+      "migratedSha256": "47ab12f8bfd3179bd5d65aacc79591aa254fb8a12ca66bd39060ef721354147f",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v3-Payment撤回与源码待确认/验证证据/saps-junit-summary.json",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v3-Payment撤回与源码待确认/验证证据/saps-junit-summary.json",
+      "originalSha256": "c27cf87a9707740ef5c08cb6343564d75f6369a423023939a2d56aa669fe2624",
+      "migratedSha256": "c27cf87a9707740ef5c08cb6343564d75f6369a423023939a2d56aa669fe2624",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v3-Payment撤回与源码待确认/验证证据/saps-maven-test.log",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v3-Payment撤回与源码待确认/验证证据/saps-maven-test.log",
+      "originalSha256": "826972267610ec9fb0156518dcb10b0094111c42cb90362e6f5fb666c368666d",
+      "migratedSha256": "826972267610ec9fb0156518dcb10b0094111c42cb90362e6f5fb666c368666d",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v3-Payment撤回与源码待确认/验证证据/验证记录.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/历史版本/v3-Payment撤回与源码待确认/验证证据/验证记录.md",
+      "originalSha256": "5df11d2f2ca0b12384719035176ab711206cb55916882a72a0db88f68e9a6e54",
+      "migratedSha256": "5df11d2f2ca0b12384719035176ab711206cb55916882a72a0db88f68e9a6e54",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/验证证据/saps-junit-summary.json",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/验证证据/saps-junit-summary.json",
+      "originalSha256": "fc58b0368e6803c877787c4e833a29abd1481e4c1fcca11f14309a9f0201fad2",
+      "migratedSha256": "fc58b0368e6803c877787c4e833a29abd1481e4c1fcca11f14309a9f0201fad2",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/验证证据/saps-maven-test.log",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/验证证据/saps-maven-test.log",
+      "originalSha256": "d78250b3d636ed25b248dd669febcfc700aa0f3149a682a4397bb3d1693984ae",
+      "migratedSha256": "d78250b3d636ed25b248dd669febcfc700aa0f3149a682a4397bb3d1693984ae",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/验证证据/source-sha256.txt",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/验证证据/source-sha256.txt",
+      "originalSha256": "725e5a6af8fb391ca3263a21cd47f176883e9a7ec0933071bd5159845e93d5f9",
+      "migratedSha256": "725e5a6af8fb391ca3263a21cd47f176883e9a7ec0933071bd5159845e93d5f9",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/验证证据/验证记录.md",
+      "target": "docs/requirements/业务线/BL000001-保费分期/REQ-c15a7da7-8d88-4b2d-b4f2-6d4e22ed7848-保费分期入金空流水异常修复/验证证据/验证记录.md",
+      "originalSha256": "d0c205bd9f0733e1942a7ae58801f7a23a3993159e8486b2d68da6867fdbca7c",
+      "migratedSha256": "d0c205bd9f0733e1942a7ae58801f7a23a3993159e8486b2d68da6867fdbca7c",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/design.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/design.md",
+      "originalSha256": "6ba6457498c12358b3514b337e86ee9b1ce1d67b271107325e3337bd80ce16fc",
+      "migratedSha256": "eb17b8ccdff6b5e26f3cb53fa8f73b41c6fe5cd4fd1492c16bfc5d7ed6f306ae",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/proposal.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/proposal.md",
+      "originalSha256": "b48307bde21c7b1b14b751a9c9ce113c544cd8261488f70b49423b20ad9590af",
+      "migratedSha256": "b48307bde21c7b1b14b751a9c9ce113c544cd8261488f70b49423b20ad9590af",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/tasks.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/tasks.md",
+      "originalSha256": "7d6587a30649c293adbc9a22165ecdf80135d7f684b3a62655a82974993669a6",
+      "migratedSha256": "7d6587a30649c293adbc9a22165ecdf80135d7f684b3a62655a82974993669a6",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-20261022删除安全与日志配置前/消费分期Nacos升级迁移方案_20261022.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-20261022删除安全与日志配置前/消费分期Nacos升级迁移方案_20261022.md",
+      "originalSha256": "85a03a44beee400a924a9bcdecd6c9e7984edcebd4aaf375f306329051c9358d",
+      "migratedSha256": "85a03a44beee400a924a9bcdecd6c9e7984edcebd4aaf375f306329051c9358d",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.0-20261022安全日志移至末节前/消费分期Nacos升级迁移方案_20261022.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.0-20261022安全日志移至末节前/消费分期Nacos升级迁移方案_20261022.md",
+      "originalSha256": "a4205eb9888ea71adbbae6b5a869b12b1145f5c03e6e131b13150d6c703ae202",
+      "migratedSha256": "a4205eb9888ea71adbbae6b5a869b12b1145f5c03e6e131b13150d6c703ae202",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.0-20261022明确新增客户端版本管理前/消费分期Nacos升级迁移方案_20261022.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.0-20261022明确新增客户端版本管理前/消费分期Nacos升级迁移方案_20261022.md",
+      "originalSha256": "a16fcc8d4addc35c0eab403830fd9b7ac051ad2937fa8478d48c50158d75ecfc",
+      "migratedSha256": "a16fcc8d4addc35c0eab403830fd9b7ac051ad2937fa8478d48c50158d75ecfc",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.0-20261022补充数据SQL前/消费分期Nacos升级迁移方案_20261022.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.0-20261022补充数据SQL前/消费分期Nacos升级迁移方案_20261022.md",
+      "originalSha256": "6fd304285f3803231501188d53eecf50a9577f9411e9c2cd9e8c50c6c56ac468",
+      "migratedSha256": "6fd304285f3803231501188d53eecf50a9577f9411e9c2cd9e8c50c6c56ac468",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.1-20261022合并应用改造步骤前/消费分期Nacos升级迁移方案_20261022.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.1-20261022合并应用改造步骤前/消费分期Nacos升级迁移方案_20261022.md",
+      "originalSha256": "2ebf52237b203a816e3b0aac573722c7632511f7ca976d2bd756f35db8435c0c",
+      "migratedSha256": "2ebf52237b203a816e3b0aac573722c7632511f7ca976d2bd756f35db8435c0c",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.2-20261022精简应用清单前/消费分期Nacos升级迁移方案_20261022.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.2-20261022精简应用清单前/消费分期Nacos升级迁移方案_20261022.md",
+      "originalSha256": "f1747e388981f3fce70f40632e52bd7c6412ca4f6d221e4cc58f893e054bc883",
+      "migratedSha256": "f1747e388981f3fce70f40632e52bd7c6412ca4f6d221e4cc58f893e054bc883",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.3-20261022删除配置服务迁移节前/消费分期Nacos升级迁移方案_20261022.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.3-20261022删除配置服务迁移节前/消费分期Nacos升级迁移方案_20261022.md",
+      "originalSha256": "c8babe680efa42880e31c9a6c2be3ba0df87c579133a36950c9ae68fedd0537b",
+      "migratedSha256": "c8babe680efa42880e31c9a6c2be3ba0df87c579133a36950c9ae68fedd0537b",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.4-20261022删除步骤345前/消费分期Nacos升级迁移方案_20261022.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.4-20261022删除步骤345前/消费分期Nacos升级迁移方案_20261022.md",
+      "originalSha256": "502f939962cc2217dd52e6fe16c0cd9daafcdb57368c98a0a9157b494e930288",
+      "migratedSha256": "502f939962cc2217dd52e6fe16c0cd9daafcdb57368c98a0a9157b494e930288",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.5-20261022删除待落实事项前/消费分期Nacos升级迁移方案_20261022.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.5-20261022删除待落实事项前/消费分期Nacos升级迁移方案_20261022.md",
+      "originalSha256": "ecd47ab629b6a9ff5ba30599223f9da9988b447f09a97d8d4a3e82ae2b300cfe",
+      "migratedSha256": "ecd47ab629b6a9ff5ba30599223f9da9988b447f09a97d8d4a3e82ae2b300cfe",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.6-20261022删除修订记录前/消费分期Nacos升级迁移方案_20261022.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/Nacos-v1.6-20261022删除修订记录前/消费分期Nacos升级迁移方案_20261022.md",
+      "originalSha256": "cfffc28af02e0ce51216d65e2f24d46aa6c185a649287b326343bd035fca9339",
+      "migratedSha256": "cfffc28af02e0ce51216d65e2f24d46aa6c185a649287b326343bd035fca9339",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/XXLJOB-v1.0-20261022同步Nacos迁移引用前/消费分期XXLJOB升级迁移方案_20261022.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/XXLJOB-v1.0-20261022同步Nacos迁移引用前/消费分期XXLJOB升级迁移方案_20261022.md",
+      "originalSha256": "252bb6ae1d8ffdf47d946a213ba74e6a03f2d64eb4ba3704925838ca3fd69cc0",
+      "migratedSha256": "252bb6ae1d8ffdf47d946a213ba74e6a03f2d64eb4ba3704925838ca3fd69cc0",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.0-20261019/消费分期Nacos和XXLJOB升级实施方案_20261019.docx",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.0-20261019/消费分期Nacos和XXLJOB升级实施方案_20261019.docx",
+      "originalSha256": "c32f6dc185a3dfe3cd6105b417d7b4d8f2958e2338883ec6ad379b0e95024c90",
+      "migratedSha256": "c32f6dc185a3dfe3cd6105b417d7b4d8f2958e2338883ec6ad379b0e95024c90",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.1-20261019/消费分期Nacos和XXLJOB升级实施方案_20261019.docx",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.1-20261019/消费分期Nacos和XXLJOB升级实施方案_20261019.docx",
+      "originalSha256": "cb5179aee931e091f26c0e66be35fe97f1321fa5ac54e153b73aff592ea55e6a",
+      "migratedSha256": "cb5179aee931e091f26c0e66be35fe97f1321fa5ac54e153b73aff592ea55e6a",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.2-20261022修订前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.2-20261022修订前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "692fb25b675b1087ac6456a2d59b96162c57fe8532199f5d1da9b1cd361c4cf4",
+      "migratedSha256": "692fb25b675b1087ac6456a2d59b96162c57fe8532199f5d1da9b1cd361c4cf4",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.3-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.3-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "3f4be2b325ddb3f6f8ef24ec877e7b4c81e8f1d26d89f5033731f1214d59c04e",
+      "migratedSha256": "3f4be2b325ddb3f6f8ef24ec877e7b4c81e8f1d26d89f5033731f1214d59c04e",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.4-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.4-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "5013ec66c68b47c16dc8d90ebc91c05411db3cc631ccbf599aa72d118a0a554d",
+      "migratedSha256": "5013ec66c68b47c16dc8d90ebc91c05411db3cc631ccbf599aa72d118a0a554d",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.5-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.5-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "a29ee68dce93338b2673c12b19180e66623bdb34ed4f4feabede34297192faaa",
+      "migratedSha256": "a29ee68dce93338b2673c12b19180e66623bdb34ed4f4feabede34297192faaa",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.6-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.6-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "632ec00ece01ea223ffbb1feb87e32bba0aab8b766850f01a67b8843cd0958b1",
+      "migratedSha256": "632ec00ece01ea223ffbb1feb87e32bba0aab8b766850f01a67b8843cd0958b1",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.7-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.7-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "f89c9be97030a0fb367beb1bc23e176dd0353811811fd78b2749723278e0a91c",
+      "migratedSha256": "f89c9be97030a0fb367beb1bc23e176dd0353811811fd78b2749723278e0a91c",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.8-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.8-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "c036589a3915136064733afd2fa4e892df8b23f2086c25ee6a4cbff0fabed9ed",
+      "migratedSha256": "c036589a3915136064733afd2fa4e892df8b23f2086c25ee6a4cbff0fabed9ed",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.8-20261022删除生产依赖基线行前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.8-20261022删除生产依赖基线行前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "3f67559078ce2a901cfce68fdb61ad54f65a874c3af6c2d2a9bc09b4f83badff",
+      "migratedSha256": "3f67559078ce2a901cfce68fdb61ad54f65a874c3af6c2d2a9bc09b4f83badff",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.8-20261022删除资源归属行前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.8-20261022删除资源归属行前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "adcdedbac0e65d7fb47bce55bb4f9b1e6144dd89ec6d98fbd88b06a95c711b36",
+      "migratedSha256": "adcdedbac0e65d7fb47bce55bb4f9b1e6144dd89ec6d98fbd88b06a95c711b36",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.8-20261022融合范围配置任务安全项前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.8-20261022融合范围配置任务安全项前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "763737d13d8f2afb634fba40884692da6f02d4e76364ef44f7bf6d7364bb9859",
+      "migratedSha256": "763737d13d8f2afb634fba40884692da6f02d4e76364ef44f7bf6d7364bb9859",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.9-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v2.9-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "2a4b94ec7f1293d07d896a5676a3c0468248d92dcc83a31f641147c7692914e9",
+      "migratedSha256": "2a4b94ec7f1293d07d896a5676a3c0468248d92dcc83a31f641147c7692914e9",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.0-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.0-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "21253b3a303288b7d30c0ed9b35b0ff4887c45e5e88ae4513c81cd3f834abaf8",
+      "migratedSha256": "21253b3a303288b7d30c0ed9b35b0ff4887c45e5e88ae4513c81cd3f834abaf8",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.1-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.1-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "be38bb99dae7bf2909e5785b60a9291f4faa0187927d7983aa2279bfc34a9bf3",
+      "migratedSha256": "be38bb99dae7bf2909e5785b60a9291f4faa0187927d7983aa2279bfc34a9bf3",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.1-20261022删除步骤负责说明前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.1-20261022删除步骤负责说明前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "6c3012eed50b5048e945755b7363d9d595cd9c5b712576e2d817a87d2f12b8fb",
+      "migratedSha256": "6c3012eed50b5048e945755b7363d9d595cd9c5b712576e2d817a87d2f12b8fb",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.2-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.2-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "69fc54ff041239bd6960e90b492c40b379a67c95cc9e48eb59ba87c20648bdcc",
+      "migratedSha256": "69fc54ff041239bd6960e90b492c40b379a67c95cc9e48eb59ba87c20648bdcc",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.3-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.3-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "77307dd93f718374d730b417ee90eac3e6b79ba22535b58ea19d31a87b06edcc",
+      "migratedSha256": "77307dd93f718374d730b417ee90eac3e6b79ba22535b58ea19d31a87b06edcc",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.3-20261022合并部署与鉴权小节前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.3-20261022合并部署与鉴权小节前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "b5890c87586cb5b093a00a41fcfcb03d5d8f1956239a886dd1769d0770a9a4e6",
+      "migratedSha256": "b5890c87586cb5b093a00a41fcfcb03d5d8f1956239a886dd1769d0770a9a4e6",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.4-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.4-20261022/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "c46644900116dc67c1e440cc9cccd059b89a876f79cba4fc9dd9c212c9189763",
+      "migratedSha256": "c46644900116dc67c1e440cc9cccd059b89a876f79cba4fc9dd9c212c9189763",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.4-20261022修正glue_remark说明前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.4-20261022修正glue_remark说明前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "2f25279b47cd9f9d3b287ec61ed70072450b8efbe6db1d1cafa81b26bb59df94",
+      "migratedSha256": "2f25279b47cd9f9d3b287ec61ed70072450b8efbe6db1d1cafa81b26bb59df94",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.5-20261022拆分前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/历史版本/v3.5-20261022拆分前/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "e323c82656d6123a2dce7697803de58bc48f468099627123aa2aef60a54e7c20",
+      "migratedSha256": "e323c82656d6123a2dce7697803de58bc48f468099627123aa2aef60a54e7c20",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/消费分期Nacos升级迁移方案_20261022.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/消费分期Nacos升级迁移方案_20261022.md",
+      "originalSha256": "bb5a7a8999d36102bcee297ed3fccf3849e06bd1034657e0722336b433f70940",
+      "migratedSha256": "bb5a7a8999d36102bcee297ed3fccf3849e06bd1034657e0722336b433f70940",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/消费分期Nacos和XXLJOB升级实施方案_20261019.md",
+      "originalSha256": "0b5aed18284633d88ceba9a6e8b1a5a05964198d19a6ec5494d645471eae759c",
+      "migratedSha256": "b353e7c43709a3266ac7f5add2258442c060556913333107d128bac383d70411",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000004-消费分期/20261019-中间件升级准备/消费分期XXLJOB升级迁移方案_20261022.md",
+      "target": "docs/requirements/业务线/BL000004-消费分期/20261019-中间件升级准备/消费分期XXLJOB升级迁移方案_20261022.md",
+      "originalSha256": "372cc463e97163c63d1a691a82ff614fbc331c5f48c5882659be86a93cf5faa0",
+      "migratedSha256": "f1115fd0a99b032ad656988633e5886d8ee86dc701a94b2f51c9ff92a229d60b",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/业务线/BL000011-新消费分期/20261014-中间件升级准备/公司业务线中间件升级方案_新消费分期示例_20261014.docx",
+      "target": "docs/requirements/业务线/BL000011-新消费分期/20261014-中间件升级准备/公司业务线中间件升级方案_新消费分期示例_20261014.docx",
+      "originalSha256": "c06a24664271ed1d7b235431e9b51ef2a55accd602701a6532fe74e46f9813ec",
+      "migratedSha256": "c06a24664271ed1d7b235431e9b51ef2a55accd602701a6532fe74e46f9813ec",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/保费分期/需求迭代/聚保融保费分期项目/2026/.DS_Store",
+      "target": "docs/requirements/保费分期/需求迭代/聚保融保费分期项目/2026/.DS_Store",
+      "originalSha256": "96916ce545a0cb5c9e3c921b5409f3b528ade34e63a24c35e05e2ce097cef43c",
+      "migratedSha256": "96916ce545a0cb5c9e3c921b5409f3b528ade34e63a24c35e05e2ce097cef43c",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/保费分期/需求迭代/聚保融保费分期项目/2026/202610120004-【保费分期】新增自营项目线下模式及【运营端】全局页面优化/代码审查-20261023.md",
+      "target": "docs/requirements/保费分期/需求迭代/聚保融保费分期项目/2026/202610120004-【保费分期】新增自营项目线下模式及【运营端】全局页面优化/代码审查-20261023.md",
+      "originalSha256": "6eca572aef7fcc2c85da9b311b8e59c397d5ea335759c5098cbf36e3b6e79860",
+      "migratedSha256": "722ff912fc71f77d7bf2568ec84cc12ce1e5f24e9bbf3de338a4099118984036",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/保费分期/需求迭代/聚保融保费分期项目/2026/202610120004-【保费分期】新增自营项目线下模式及【运营端】全局页面优化/研发评估.md",
+      "target": "docs/requirements/保费分期/需求迭代/聚保融保费分期项目/2026/202610120004-【保费分期】新增自营项目线下模式及【运营端】全局页面优化/研发评估.md",
+      "originalSha256": "2ed88fc836119433cdf7bb26e047ef3f65ac19ea07787d895196ef19194d6968",
+      "migratedSha256": "a974d82d7935cfb3881cc78d468bfbed333f457193417e3b5972e683168ec67e",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/共享支付系统/20261019-代码审查与预警归类/xxt-pay与intf-paychannel代码审查及预警归类.md",
+      "target": "docs/requirements/共享支付系统/20261019-代码审查与预警归类/xxt-pay与intf-paychannel代码审查及预警归类.md",
+      "originalSha256": "0b3cb819d0580e456aa41f91b0feab19e2028a46e958e10b417bc33758d788aa",
+      "migratedSha256": "eef1d31bfb175be05b14e3001e952d18729557af5f24751f8983cc92062f38fc",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/共享支付系统/20261019-代码审查与预警归类/上线以来代付交易全量复核-20261019.md",
+      "target": "docs/requirements/共享支付系统/20261019-代码审查与预警归类/上线以来代付交易全量复核-20261019.md",
+      "originalSha256": "704f46f70890aab06f1172f6c22817933d2ce7f8a19bd4397ef844399f010809",
+      "migratedSha256": "928f237baaf4bebb2de9bc1a2ffbc526145d7040dcd3f0d93547f112a8197700",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/共享支付系统/20261019-代码审查与预警归类/历史版本/20261019-区分申请与查单前-154508/xxt-pay与intf-paychannel代码审查及预警归类.md",
+      "target": "docs/requirements/共享支付系统/20261019-代码审查与预警归类/历史版本/20261019-区分申请与查单前-154508/xxt-pay与intf-paychannel代码审查及预警归类.md",
+      "originalSha256": "2a0421a0736051b17aa64e2494329a50b4939af28592b41bd8c42ae1ce98670a",
+      "migratedSha256": "2a0421a0736051b17aa64e2494329a50b4939af28592b41bd8c42ae1ce98670a",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/共享支付系统/20261019-代码审查与预警归类/历史版本/20261019-区分申请与查单前-154508/上线以来代付交易全量复核-20261019.md",
+      "target": "docs/requirements/共享支付系统/20261019-代码审查与预警归类/历史版本/20261019-区分申请与查单前-154508/上线以来代付交易全量复核-20261019.md",
+      "originalSha256": "5ea808fae4972efb9d809a621d286c7b9ebeccfd76adce8deb7703f6dc08d63a",
+      "migratedSha256": "5ea808fae4972efb9d809a621d286c7b9ebeccfd76adce8deb7703f6dc08d63a",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/共享支付系统/20261019-代码审查与预警归类/历史版本/20261019-补充交易时间前-150412/上线以来代付交易全量复核-20261019.md",
+      "target": "docs/requirements/共享支付系统/20261019-代码审查与预警归类/历史版本/20261019-补充交易时间前-150412/上线以来代付交易全量复核-20261019.md",
+      "originalSha256": "7ae2e98d39158ae5f7786365e172897e3091e673b8d1c8069c45e1c43c5c3b00",
+      "migratedSha256": "7ae2e98d39158ae5f7786365e172897e3091e673b8d1c8069c45e1c43c5c3b00",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/共享支付系统/20261019-代码审查与预警归类/历史版本/20261019-补充收款对象前-150628/上线以来代付交易全量复核-20261019.md",
+      "target": "docs/requirements/共享支付系统/20261019-代码审查与预警归类/历史版本/20261019-补充收款对象前-150628/上线以来代付交易全量复核-20261019.md",
+      "originalSha256": "8da8753ba8a5635f3be2b6de43e676865aaf810d981cc04abd866d29a5c28e23",
+      "migratedSha256": "8da8753ba8a5635f3be2b6de43e676865aaf810d981cc04abd866d29a5c28e23",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/共享支付系统/20261019-代码审查与预警归类/历史版本/20261019-补充最新修复状态前-154950/xxt-pay与intf-paychannel代码审查及预警归类.md",
+      "target": "docs/requirements/共享支付系统/20261019-代码审查与预警归类/历史版本/20261019-补充最新修复状态前-154950/xxt-pay与intf-paychannel代码审查及预警归类.md",
+      "originalSha256": "0c8a2b3ce5831389601b105203d9a8dd20d471189f518112acfdc253e8422eaa",
+      "migratedSha256": "0c8a2b3ce5831389601b105203d9a8dd20d471189f518112acfdc253e8422eaa",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/共享支付系统/20261019-代码审查与预警归类/历史版本/20261019-补充最新修复状态前-154950/上线以来代付交易全量复核-20261019.md",
+      "target": "docs/requirements/共享支付系统/20261019-代码审查与预警归类/历史版本/20261019-补充最新修复状态前-154950/上线以来代付交易全量复核-20261019.md",
+      "originalSha256": "cb2db90da719a4463028ae9f28dc29d1f4106ca43bcb825a518075d5be266ebe",
+      "migratedSha256": "cb2db90da719a4463028ae9f28dc29d1f4106ca43bcb825a518075d5be266ebe",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/共享支付系统/20261019-代码审查与预警归类/历史版本/20261019-补充首次判失败接口前-151733/上线以来代付交易全量复核-20261019.md",
+      "target": "docs/requirements/共享支付系统/20261019-代码审查与预警归类/历史版本/20261019-补充首次判失败接口前-151733/上线以来代付交易全量复核-20261019.md",
+      "originalSha256": "52292e2a6b4fa7a4ce59e7827aec92f41888679e00fd9af003931c1f008c9467",
+      "migratedSha256": "52292e2a6b4fa7a4ce59e7827aec92f41888679e00fd9af003931c1f008c9467",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/共享支付系统/20261019-代码审查与预警归类/生产影响复核-20261019.md",
+      "target": "docs/requirements/共享支付系统/20261019-代码审查与预警归类/生产影响复核-20261019.md",
+      "originalSha256": "870423007bacd52c9e7ff700bd0d302a695010bd7ed670c235a5314a9f41d59b",
+      "migratedSha256": "ae50fbb27521d0762afb689d284bc6326971d77ad92b17b52dbb3db742760129",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/叉车/需求迭代/叉车/2026/202609110002-叉车租售及叉车租赁相关系统需求/研发评估.md",
+      "target": "docs/requirements/叉车/需求迭代/叉车/2026/202609110002-叉车租售及叉车租赁相关系统需求/研发评估.md",
+      "originalSha256": "4c4d1daeeb2daa785719927b3524d8ceddee6ee551fbefbc5ed6ce8f7eacae29",
+      "migratedSha256": "59536c1ee688f77374b0f6928e9768d4d335ff50e6b70987d5ee7f868300bd61",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/嘉泰租赁资产保理/需求迭代/中恒信合乘用车保理项目/2026/202609290001-先行通-车辆租赁保理业务客户账单优化需求/研发评估.md",
+      "target": "docs/requirements/嘉泰租赁资产保理/需求迭代/中恒信合乘用车保理项目/2026/202609290001-先行通-车辆租赁保理业务客户账单优化需求/研发评估.md",
+      "originalSha256": "b81df8fdbc59def13a02b1f89443c09be2593828c27b77a6cf25cab1c083fe4f",
+      "migratedSha256": "d600e32b8e534ce5b170f26639e7992eab2275a70252ba8d02a89f2e0e6e29e8",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/嘉泰租赁资产保理/需求迭代/中恒信合乘用车保理项目/2026/202610130002-先行通-中恒二维码支付标识/研发评估.md",
+      "target": "docs/requirements/嘉泰租赁资产保理/需求迭代/中恒信合乘用车保理项目/2026/202610130002-先行通-中恒二维码支付标识/研发评估.md",
+      "originalSha256": "85d907caa0b2c769577cb2dab9a56fd477390ba445e80506eacef6c495575412",
+      "migratedSha256": "5e3f8d9c4c4e155552f23d00ef89581974f3169a84a7b74d93c8c117ed77c97b",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/嘉泰租赁资产保理/需求迭代/中恒信合乘用车保理项目/2026/202610130003-中恒-正常还款_提前结清对账单优化/研发评估.md",
+      "target": "docs/requirements/嘉泰租赁资产保理/需求迭代/中恒信合乘用车保理项目/2026/202610130003-中恒-正常还款_提前结清对账单优化/研发评估.md",
+      "originalSha256": "a98cf07c62c9179e47af59a1024d06ab1438df0ff73d926bd17505a5e96cce60",
+      "migratedSha256": "26b3483563b49ba522f33bed0d55780c516245c314141810a7b02af7054d76a0",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/嘉泰租赁资产保理/需求迭代/中恒信合乘用车保理项目/2026/202610220003-中恒-保理资产交接国胜需求/历史版本/e5ec9ee3ef82fb53a64247a6dabc7db31933dd32c25b15298683d74155fdd16d/研发评估.md",
+      "target": "docs/requirements/嘉泰租赁资产保理/需求迭代/中恒信合乘用车保理项目/2026/202610220003-中恒-保理资产交接国胜需求/历史版本/e5ec9ee3ef82fb53a64247a6dabc7db31933dd32c25b15298683d74155fdd16d/研发评估.md",
+      "originalSha256": "e5ec9ee3ef82fb53a64247a6dabc7db31933dd32c25b15298683d74155fdd16d",
+      "migratedSha256": "e5ec9ee3ef82fb53a64247a6dabc7db31933dd32c25b15298683d74155fdd16d",
+      "bytePreserved": true
+    },
+    {
+      "source": "wiki/公司项目/研发需求/嘉泰租赁资产保理/需求迭代/中恒信合乘用车保理项目/2026/202610220003-中恒-保理资产交接国胜需求/研发评估.md",
+      "target": "docs/requirements/嘉泰租赁资产保理/需求迭代/中恒信合乘用车保理项目/2026/202610220003-中恒-保理资产交接国胜需求/研发评估.md",
+      "originalSha256": "19591f98e073fdf9e639f7a2fe3dd390f1601faae8faaf52317ab2172cf0e8e4",
+      "migratedSha256": "5c735c508cebb544210eb389c4e7f0c00b07993610beea869cd21d892523e372",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/嘉泰租赁资产保理/需求迭代/中恒信合乘用车保理项目/2026/202610230006-中恒保理项目-切换嘉泰保理扣款/研发评估.md",
+      "target": "docs/requirements/嘉泰租赁资产保理/需求迭代/中恒信合乘用车保理项目/2026/202610230006-中恒保理项目-切换嘉泰保理扣款/研发评估.md",
+      "originalSha256": "e8e2dfcb6ce9a754e33763ddcc9aea92b9c8fcd9e0988953ce4832fff3eb0442",
+      "migratedSha256": "6d38a5e312d8640925fbfdd34eb6ce75e4cc520dc231316b745bb5a57506e0bc",
+      "bytePreserved": false
+    },
+    {
+      "source": "wiki/公司项目/研发需求/智能柜/需求迭代/智能柜/2026/202608250007-优利卡项目-新增“代收代付报表”/研发评估.md",
+      "target": "docs/requirements/智能柜/需求迭代/智能柜/2026/202608250007-优利卡项目-新增“代收代付报表”/研发评估.md",
+      "originalSha256": "323508711a0b9d4a6566f5fd578a72dfaf0708d45edff4e6cba877f6ef583c4b",
+      "migratedSha256": "34f1aa07b4285efa4e5801692b95bdaeb051c5b54c38fe4243ead8c4d5c37954",
+      "bytePreserved": false
+    }
+  ],
+  "hashScope": "SHA-256 records the migration result before subsequent system-document updates; original attachments and historical snapshots remain byte-identical."
+}

@@ -26,6 +26,12 @@ public class McpXxlJobDatabaseQueryClient implements XxlJobDatabaseQueryClient {
     @Override
     @SuppressWarnings("unchecked")
     public List<Map<String, Object>> runRows(String businessLineCode, String environmentCode, String sql) {
+        return runRowsBatch(businessLineCode, environmentCode, List.of(sql)).getFirst();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<List<Map<String, Object>>> runRowsBatch(String businessLineCode, String environmentCode, List<String> sqls) {
         McpResourceCatalog catalog = objectMapper.convertValue(mcpResourceService.catalog(), McpResourceCatalog.class);
         McpResourceCatalog.DatabaseTarget target = resolveDatabaseTarget(catalog, businessLineCode, environmentCode);
         String profileKey = target.profiles().isEmpty() ? "readonly" : target.profiles().getFirst().key();
@@ -35,13 +41,12 @@ public class McpXxlJobDatabaseQueryClient implements XxlJobDatabaseQueryClient {
                 new SecretResolver(),
                 McpAuditLogger.defaultLogger(objectMapper)
         );
-        Map<String, Object> queryResult = databaseService.runReadonlyQuery(target.key(), profileKey, sql);
-        Object result = queryResult.get("result");
-        if (!(result instanceof Map<?, ?> resultMap)) {
-            return List.of();
-        }
-        Object rows = resultMap.get("rows");
-        return rows instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
+        return databaseService.runReadonlyQueries(target.key(), profileKey, sqls).stream()
+                .map(result -> {
+                    Object rows = result.get("rows");
+                    return rows instanceof List<?> list ? (List<Map<String, Object>>) list : List.<Map<String, Object>>of();
+                })
+                .toList();
     }
 
     private McpResourceCatalog.DatabaseTarget resolveDatabaseTarget(McpResourceCatalog catalog,

@@ -1,0 +1,27 @@
+ _ _   |_  _ _|_. ___ _ |    _ 
+| | |\/|_)(_| | |_\  |_)||_|_\ 
+     /               |         
+                        3.3.2 
+PASS deposit only -> income 0 / deposit 1
+PASS cumulative 1+259 / paid260 -> FULL_REFUND
+PASS duplicate refund -> no new update
+PASS R3: newest-first compensation R2,R1 -> refund_time 11:00, latest success 11:00
+REPRO legacy orderNo -> [] (order restriction omitted)
+PASS R1: refundAmt50/detail100 rejected by current checkParams
+PASS valid refundAmt50/detail50 accepted
+PASS subject400 -> income5 / deposit0 per new convention
+REPRO historical full amount with PARTIAL status stays PARTIAL when replaying recorded refund
+REPRO concurrent non-refund update wins version; refund update affects0, method returns normally, DB refund remains0
+PASS two refund writers without outer transaction, same mutex -> both persisted
+OBSERVE afterCommit + job with same mutex: recorded=R1, income=0.00, deposit=1.00
+REPRO lock released before afterCommit JDBC cleanup commits; job reads stale version, refund R2 lost with update0
+PASS income-only refund does not increment deposit
+PASS single full refund -> FULL_REFUND
+PASS pageSize1 compensation retains max finishTime
+PASS orders parameter trims whitespace
+PASS malformed / non-object / all-blank orders rejected
+REPRO historical polluted amounts and 1970 time unchanged on duplicate replay
+REPRO 1970 time accepted by unchanged callback parser
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.

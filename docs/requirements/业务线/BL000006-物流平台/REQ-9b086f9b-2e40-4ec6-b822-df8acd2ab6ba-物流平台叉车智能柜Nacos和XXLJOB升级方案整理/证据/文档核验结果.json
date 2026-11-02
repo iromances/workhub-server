@@ -1,0 +1,48 @@
+{
+  "date": "2026-10-30",
+  "markdownFiles": 10,
+  "verifiedCommitFileLinks": 852,
+  "counts": {
+    "xxt-plateform": {
+      "sourceAnnotationLines": 256,
+      "documentCount": 256,
+      "independentLexicalCount": 256,
+      "excludedCommentLines": 0
+    },
+    "lease-saas": {
+      "sourceAnnotationLines": 71,
+      "documentCount": 71,
+      "independentLexicalCount": 71,
+      "excludedCommentLines": 0
+    },
+    "ol": {
+      "sourceAnnotationLines": 70,
+      "documentCount": 67,
+      "independentLexicalCount": 67,
+      "excludedCommentLines": 3
+    }
+  },
+  "referenceHashesUnchanged": true,
+  "errors": [],
+  "validationScope": "文档与静态源码；未构建、未联调、未部署",
+  "commentExclusions": [
+    {
+      "repo": "ol-saps",
+      "path": "lease-saps-business/src/main/java/com/lease/saps/business/schedule/notify/CustomerBillNotifySchedule.java",
+      "line": 130,
+      "reason": "Java block comment"
+    },
+    {
+      "repo": "ol-saps",
+      "path": "lease-saps-business/src/main/java/com/lease/saps/business/schedule/notify/CustomerBillNotifySchedule.java",
+      "line": 109,
+      "reason": "Java block comment"
+    },
+    {
+      "repo": "ol-saps",
+      "path": "lease-saps-business/src/main/java/com/lease/saps/business/schedule/notify/CustomerBillNotifySchedule.java",
+      "line": 151,
+      "reason": "Java block comment"
+    }
+  ]
+}

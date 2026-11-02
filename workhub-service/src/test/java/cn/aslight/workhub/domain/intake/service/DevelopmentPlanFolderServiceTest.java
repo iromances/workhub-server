@@ -27,7 +27,7 @@ class DevelopmentPlanFolderServiceTest {
     Path tempDir;
 
     @Test
-    void open_shouldCreateDedicatedRequirementFolderInKnowledgeVault() throws Exception {
+    void open_shouldCreateDedicatedRequirementFolderInRepository() throws Exception {
         Path vault = tempDir.resolve("project-knowledge");
         ObjectMapper objectMapper = new ObjectMapper();
         IntakeRecordEntity intake = new IntakeRecordEntity();
@@ -43,6 +43,8 @@ class DevelopmentPlanFolderServiceTest {
         SysConfigService sysConfigService = mock(SysConfigService.class);
         when(sysConfigService.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH))
                 .thenReturn(vault.toString());
+        Path repository = RepositoryDocumentPathsTest.repository(tempDir.resolve("workhub-server"));
+        when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
 
         RecordingPathOpener opener = new RecordingPathOpener();
         ProjectKnowledgeBaseService knowledgeBaseService = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
@@ -57,9 +59,7 @@ class DevelopmentPlanFolderServiceTest {
 
         IntakeRequirementFolderResponse response = service.open(101L);
 
-        Path expectedFolder = vault.resolve("wiki")
-                .resolve("公司项目")
-                .resolve("研发需求")
+        Path expectedFolder = repository.resolve("docs/requirements")
                 .resolve("账单管理")
                 .resolve("需求迭代")
                 .resolve("趣学呗")
@@ -68,7 +68,7 @@ class DevelopmentPlanFolderServiceTest {
         assertTrue(Files.isDirectory(expectedFolder));
         assertEquals(expectedFolder, opener.openedPath);
         assertEquals(101L, response.intakeId());
-        assertEquals(vault.toString(), response.basePath());
+        assertEquals(repository.resolve("docs").toString(), response.basePath());
         assertEquals("202604220007-趣学呗平台账户展示切换", response.folderName());
         assertEquals(expectedFolder.toString(), response.folderPath());
         assertTrue(response.opened());

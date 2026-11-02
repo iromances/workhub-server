@@ -1,0 +1,14 @@
+ _ _   |_  _ _|_. ___ _ |    _ 
+| | |\/|_)(_| | |_\  |_)||_|_\ 
+     /               |         
+                        3.3.2 
+PASS creation query excludes existing flows and refund orders
+PASS refund query excludes pending/failed/deleted/cancelled/already recorded; results R1 and old-payment Rold
+PASS U2 old Oct01 payment / Oct29 refund selected with orders=[Pold]
+LIMIT refund created Oct28 and completed after its next-day scan is excluded from Oct29 creation window
+PASS pay query / DTO mapping: lagging, status mismatch and failed-no-serial selected
+PASS sharing query / enum mapping: only all-success + parent share-success selected
+PASS ordered id cursor and pageSize bindings
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.

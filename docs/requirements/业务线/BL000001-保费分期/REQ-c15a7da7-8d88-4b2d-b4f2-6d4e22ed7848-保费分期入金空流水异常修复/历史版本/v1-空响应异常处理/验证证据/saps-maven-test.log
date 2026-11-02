@@ -1,0 +1,363 @@
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.amp.saps:saps-model:jar:0.0.1-SNAPSHOT
+[WARNING] 'build.plugins.plugin.version' for org.apache.maven.plugins:maven-compiler-plugin is missing. @ line 16, column 21
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.amp.saps:scf-saps:pom:0.0.1-SNAPSHOT
+[WARNING] 'dependencyManagement.dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.apache.poi:poi:jar -> duplicate declaration of version 3.17 @ com.thchengtay:thctay-dependencies:0.0.1-SNAPSHOT, /Users/aslight/.m2/repository/com/thchengtay/thctay-dependencies/0.0.1-SNAPSHOT/thctay-dependencies-0.0.1-SNAPSHOT.pom, line 337, column 19
+[WARNING] 'dependencyManagement.dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.apache.poi:poi-ooxml:jar -> duplicate declaration of version 3.17 @ com.thchengtay:thctay-dependencies:0.0.1-SNAPSHOT, /Users/aslight/.m2/repository/com/thchengtay/thctay-dependencies/0.0.1-SNAPSHOT/thctay-dependencies-0.0.1-SNAPSHOT.pom, line 343, column 19
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] scf-saps                                                           [pom]
+[INFO] saps-common                                                        [jar]
+[INFO] saps-model                                                         [jar]
+[INFO] saps-api                                                           [jar]
+[INFO] saps-dao                                                           [jar]
+[INFO] bpmn-flow                                                          [jar]
+[INFO] saps-service                                                       [jar]
+[INFO] saps-business                                                      [jar]
+[INFO] 
+[INFO] -----------------------< com.amp.saps:scf-saps >------------------------
+[INFO] Building scf-saps 0.0.1-SNAPSHOT                                   [1/8]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] ----------------------< com.amp.saps:saps-common >----------------------
+[INFO] Building saps-common 0.0.1-SNAPSHOT                                [2/8]
+[INFO]   from saps-common/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] The POM for com.alibaba:druid:jar:1.2.6 is invalid, transitive dependencies (if any) will not be available: 2 problems were encountered while building the effective model for com.alibaba:druid:1.2.6
+[ERROR] 'dependencies.dependency.systemPath' for com.sun:tools:jar must specify an absolute path but is ${project.basedir}/lib/openjdk-1.8-tools.jar @ 
+[ERROR] 'dependencies.dependency.systemPath' for com.sun:jconsole:jar must specify an absolute path but is ${project.basedir}/lib/openjdk-1.8-jconsole.jar @ 
+
+[INFO] 
+[INFO] --- resources:3.1.0:resources (default-resources) @ saps-common ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-common/src/main/resources
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-common/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ saps-common ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- resources:3.1.0:testResources (default-testResources) @ saps-common ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-common/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:testCompile (default-testCompile) @ saps-common ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:2.22.2:test (default-test) @ saps-common ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ----------------------< com.amp.saps:saps-model >-----------------------
+[INFO] Building saps-model 0.0.1-SNAPSHOT                                 [3/8]
+[INFO]   from saps-model/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.4.0:resources (default-resources) @ saps-model ---
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ saps-model ---
+[WARNING]  Parameter 'compilerVersion' (user property 'maven.compiler.compilerVersion') is deprecated: This parameter is no longer evaluated by the underlying compilers, instead the actual version of the javac binary is automatically retrieved.
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 644 source files with javac [debug target 8] to target/classes
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/APIs/pay/PayTrialCalcRspDto.java:[13,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/statement/StatementResourceResp.java:[20,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/management/repaymentplan/RepaymentPlanManagePageQueryDTO.java:[12,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/FunderBillSnapshotParam.java:[14,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/pay/CustomerOrderDetailDto.java:[16,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/FunderBillMigrateBatchEntity.java:[15,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/AttachmentEntity.java:[13,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/bill/OperatorBillOrderPayDetailVo.java:[14,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/StatementApproveEntity.java:[15,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/StatementDto.java:[17,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/StatementFeeDetailEntity.java:[17,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/pay/CustomerOrderDetailQuery.java:[14,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/AccountBalanceRecordResponseVo.java:[14,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/DownLoadHistoryQueryDto.java:[15,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/PlateformFilterEntity.java:[17,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/PayableStatementResourceQueryVo.java:[14,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/FunderBillSubjectEntity.java:[12,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/statement/PayableStatementQueryDto.java:[16,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/CustomerBillFeeDetailSubEntity.java:[12,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/StatementSceneRule.java:[18,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/bill/CustomerBillOrderPayDetailVo.java:[13,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/receivable/ReceivableAccountPageDTO.java:[12,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/FunderBillPaySubjectDetailEntity.java:[13,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/CustomerBillSubEntity.java:[14,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/schedule/StatementOverdueScheduleCriteria.java:[12,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/CustomerBillPayDetailEntity.java:[15,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/FunderBillFeeDetailSubEntity.java:[10,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/bill/ChannelCustomerOfflineRepayQueryDto.java:[9,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/StatementFeeRecordEntity.java:[18,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/statement/v2/StatementChannelShareVO.java:[10,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/criteria/FunderBillSyncScheduleCriteria.java:[13,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/RepaymentPlanDownLoadVo.java:[18,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/RefundStatementResourceEntity.java:[20,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/StatementResponseVo.java:[16,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/FunderBillFeeDetailEntity.java:[10,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/FinancingApplicationEntity.java:[17,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/RefundStatementResponse.java:[16,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/CustomerBillPayDetailSubEntity.java:[14,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/StatementApproveRecordEntity.java:[22,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/RefundStatementEntity.java:[20,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/enums/PaymentNodeEnum.java:[21,5] Not generating getValue(): A method with that name already exists
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/BillFeeDetailCriteria.java:[14,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/bill/FunderBillQueryListDto.java:[11,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/statement/FunderStatementEntity.java:[18,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/AccountPayableEntity.java:[24,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/AccountBalanceRecordEntity.java:[19,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/bill/CustomerBillQueryDto.java:[11,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/StatementCriteria.java:[20,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/CustomerOrderVo.java:[18,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/criteria/OrderBillPayCriteria.java:[14,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/ReverseRecordEntity.java:[21,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/StatementPaySubjectDetailEntity.java:[19,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/OnLoanBalanceMonthlyIndexReq.java:[13,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/management/CustomerTransactionPageQueryDTO.java:[10,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/CustomerBillPaySubjectDetailEntity.java:[14,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/StatementTpVo.java:[10,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/statement/v2/ReceivableFunderPageParamVO.java:[11,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/management/repaymentplan/MonthLoaningQueryDTO.java:[11,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/statement/GenerateStatementDetailDto.java:[15,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/StatementScene.java:[15,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/RepaymentPlanPaySubjectDetailEntity.java:[17,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/bill/RepaymentPlanSubQueryDto.java:[11,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/PaymentRequestLog.java:[22,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/StatementResourceRedRecordEntity.java:[19,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/statement/v2/ChannelCollectionPaymentReportVO.java:[12,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/management/pend/PendHandSourcePageQuery.java:[13,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/FunderBillSubEntity.java:[13,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/AccountDealDetailVo.java:[17,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/FunderBillEntity.java:[13,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/AssetTransferHistoryEntity.java:[13,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/ReconciliationDetailEntity.java:[17,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/StatementResourceRedRecordDto.java:[19,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/management/pend/PendTransPageQuery.java:[16,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/management/repaymentplan/RepaymentPlanPayDetailPageQueryDTO.java:[10,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/FinancingApplicationTradingPartyEntity.java:[12,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/management/BasePageQueryCriteria.java:[11,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/statement/CancelInsurancePageParamVO.java:[7,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/ReconciliationEntity.java:[18,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/StatementResourceEntity.java:[20,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/pay/CancelAccountDetailDto.java:[11,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/bill/RepaymentPlanQueryListDto.java:[11,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/StatementPayDetailEntity.java:[20,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/statement/TechFeePageParamVO.java:[7,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/PaymentPageDto.java:[6,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/channel/ChannelReceivableDetailQueryDto.java:[12,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/OnLoanBalanceMonthlyEntity.java:[16,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/AccountQueryVo.java:[18,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/management/repaymentplan/RepaymentPlanQueryDTO.java:[14,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/HolidayEntity.java:[21,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/TransferTransactionEntity.java:[239,9] Not generating getValue(): A method with that name already exists
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/FunderBillPayDetailEntity.java:[17,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/management/RefundTransManagePageQueryDTO.java:[13,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/AccountResponseVo.java:[13,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/BillFeeDetailVo.java:[14,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/management/report/OrderPayPageQry.java:[13,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/vo/statement/OfflineRepaymentPageParamVO.java:[10,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/bcm/BcmHistoryDetail.java:[14,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/dto/channel/ChannelReceivableStatementQueryDto.java:[13,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/StatementEntity.java:[22,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/FunderBillPaySubjectDetailSubEntity.java:[10,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[INFO] 
+[INFO] --- resources:3.4.0:testResources (default-testResources) @ saps-model ---
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-model/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ saps-model ---
+[WARNING]  Parameter 'compilerVersion' (user property 'maven.compiler.compilerVersion') is deprecated: This parameter is no longer evaluated by the underlying compilers, instead the actual version of the javac binary is automatically retrieved.
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 1 source file with javac [debug target 8] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.5.4:test (default-test) @ saps-model ---
+[INFO] 
+[INFO] -----------------------< com.amp.saps:saps-api >------------------------
+[INFO] Building saps-api 0.0.1-SNAPSHOT                                   [4/8]
+[INFO]   from saps-api/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.1.0:resources (default-resources) @ saps-api ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-api/src/main/resources
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-api/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ saps-api ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 75 source files to /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-api/target/classes
+[INFO] 
+[INFO] --- resources:3.1.0:testResources (default-testResources) @ saps-api ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-api/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:testCompile (default-testCompile) @ saps-api ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:2.22.2:test (default-test) @ saps-api ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] -----------------------< com.amp.saps:saps-dao >------------------------
+[INFO] Building saps-dao 0.0.1-SNAPSHOT                                   [5/8]
+[INFO]   from saps-dao/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.4.0:resources (default-resources) @ saps-dao ---
+[WARNING] Using platform encoding (UTF-8 actually) to copy filtered resources, i.e. build is platform dependent!
+[INFO] Copying 68 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ saps-dao ---
+[WARNING]  Parameter 'compilerVersion' (user property 'maven.compiler.compilerVersion') is deprecated: This parameter is no longer evaluated by the underlying compilers, instead the actual version of the javac binary is automatically retrieved.
+[INFO] Recompiling the module because of changed dependency.
+[WARNING] File encoding has not been set, using platform encoding UTF-8, i.e. build is platform dependent!
+[INFO] Compiling 106 source files with javac [debug target 1.8] to target/classes
+[INFO] 
+[INFO] --- resources:3.4.0:testResources (default-testResources) @ saps-dao ---
+[WARNING] Using platform encoding (UTF-8 actually) to copy filtered resources, i.e. build is platform dependent!
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-dao/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ saps-dao ---
+[WARNING]  Parameter 'compilerVersion' (user property 'maven.compiler.compilerVersion') is deprecated: This parameter is no longer evaluated by the underlying compilers, instead the actual version of the javac binary is automatically retrieved.
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.4:test (default-test) @ saps-dao ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] -----------------------< com.amp.saps:bpmn-flow >-----------------------
+[INFO] Building bpmn-flow 0.0.1-SNAPSHOT                                  [6/8]
+[INFO]   from bpmn-flow/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.1.0:resources (default-resources) @ bpmn-flow ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 0 resource
+[INFO] Copying 4 resources
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ bpmn-flow ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 26 source files to /Users/aslight/IDEAWorkspace/scf/scf-saps/bpmn-flow/target/classes
+[INFO] /Users/aslight/IDEAWorkspace/scf/scf-saps/bpmn-flow/src/main/java/com/bpmn/parse/ObjectToListDeserializer.java: /Users/aslight/IDEAWorkspace/scf/scf-saps/bpmn-flow/src/main/java/com/bpmn/parse/ObjectToListDeserializer.java使用了未经检查或不安全的操作。
+[INFO] /Users/aslight/IDEAWorkspace/scf/scf-saps/bpmn-flow/src/main/java/com/bpmn/parse/ObjectToListDeserializer.java: 有关详细信息, 请使用 -Xlint:unchecked 重新编译。
+[INFO] 
+[INFO] --- resources:3.1.0:testResources (default-testResources) @ bpmn-flow ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/bpmn-flow/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:testCompile (default-testCompile) @ bpmn-flow ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:2.22.2:test (default-test) @ bpmn-flow ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ---------------------< com.amp.saps:saps-service >----------------------
+[INFO] Building saps-service 0.0.1-SNAPSHOT                               [7/8]
+[INFO]   from saps-service/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.1.0:resources (default-resources) @ saps-service ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-service/src/main/resources
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-service/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ saps-service ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 226 source files to /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-service/target/classes
+[INFO] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/BillFeeDetailServiceImpl.java: 某些输入文件使用或覆盖了已过时的 API。
+[INFO] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/BillFeeDetailServiceImpl.java: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+[INFO] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/DownLoanUtil.java: 某些输入文件使用了未经检查或不安全的操作。
+[INFO] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/DownLoanUtil.java: 有关详细信息, 请使用 -Xlint:unchecked 重新编译。
+[INFO] 
+[INFO] --- resources:3.1.0:testResources (default-testResources) @ saps-service ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-service/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:testCompile (default-testCompile) @ saps-service ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:2.22.2:test (default-test) @ saps-service ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] ---------------------< com.amp.saps:saps-business >---------------------
+[INFO] Building saps-business 0.0.1-SNAPSHOT                              [8/8]
+[INFO]   from saps-business/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.1.0:resources (default-resources) @ saps-business ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-business/src/main/resources
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-business/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:compile (default-compile) @ saps-business ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 224 source files to /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-business/target/classes
+[INFO] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-business/src/main/java/com/amp/saps/business/impl/StatementChargeResourceBizServiceImpl.java: 某些输入文件使用或覆盖了已过时的 API。
+[INFO] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-business/src/main/java/com/amp/saps/business/impl/StatementChargeResourceBizServiceImpl.java: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+[INFO] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-business/src/main/java/com/amp/saps/business/impl/StatementChargeResourceBizServiceImpl.java: 某些输入文件使用了未经检查或不安全的操作。
+[INFO] /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-business/src/main/java/com/amp/saps/business/impl/StatementChargeResourceBizServiceImpl.java: 有关详细信息, 请使用 -Xlint:unchecked 重新编译。
+[INFO] 
+[INFO] --- resources:3.1.0:testResources (default-testResources) @ saps-business ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-business/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.8.1:testCompile (default-testCompile) @ saps-business ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 3 source files to /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-business/target/test-classes
+[INFO] 
+[INFO] --- surefire:2.22.2:test (default-test) @ saps-business ---
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.amp.saps.business.pend.impl.PendEntryBizImplTest
+10:10:23.169 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'paymentApiService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@4690f583] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for PaymentApiService, hashCode: 1217089772]
+10:10:23.170 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'pendTransactionService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@4690f583] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for PendTransactionService, hashCode: 1137667747]
+10:10:23.170 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'wechatMessageService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@4690f583] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for WechatMessageService, hashCode: 29369803]
+10:10:23.170 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'sequenceService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@4690f583] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for SequenceService, hashCode: 1753259207]
+10:10:23.190 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'paymentApiService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@444548a0] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for PaymentApiService, hashCode: 929482343]
+10:10:23.190 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'pendTransactionService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@444548a0] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for PendTransactionService, hashCode: 2000421523]
+10:10:23.190 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'wechatMessageService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@444548a0] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for WechatMessageService, hashCode: 1438178266]
+10:10:23.190 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'sequenceService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@444548a0] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for SequenceService, hashCode: 995531141]
+10:10:23.193 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'paymentApiService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@566d0c69] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for PaymentApiService, hashCode: 948650013]
+10:10:23.193 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'pendTransactionService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@566d0c69] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for PendTransactionService, hashCode: 734971558]
+10:10:23.193 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'wechatMessageService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@566d0c69] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for WechatMessageService, hashCode: 2007138812]
+10:10:23.193 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'sequenceService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@566d0c69] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for SequenceService, hashCode: 1225970981]
+10:10:23.194 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'paymentApiService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@5ac7aa18] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for PaymentApiService, hashCode: 1289563251]
+10:10:23.194 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'pendTransactionService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@5ac7aa18] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for PendTransactionService, hashCode: 78377968]
+10:10:23.194 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'wechatMessageService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@5ac7aa18] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for WechatMessageService, hashCode: 1313618488]
+10:10:23.194 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'sequenceService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@5ac7aa18] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for SequenceService, hashCode: 691854979]
+10:10:23.195 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'paymentApiService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@c27d163] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for PaymentApiService, hashCode: 1472759652]
+10:10:23.195 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'pendTransactionService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@c27d163] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for PendTransactionService, hashCode: 2029709919]
+10:10:23.195 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'wechatMessageService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@c27d163] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for WechatMessageService, hashCode: 939391749]
+10:10:23.195 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'sequenceService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@c27d163] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for SequenceService, hashCode: 98801744]
+10:10:23.195 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'paymentApiService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@1603dc2f] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for PaymentApiService, hashCode: 964981922]
+10:10:23.195 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'pendTransactionService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@1603dc2f] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for PendTransactionService, hashCode: 1635358020]
+10:10:23.196 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'wechatMessageService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@1603dc2f] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for WechatMessageService, hashCode: 2025955363]
+10:10:23.196 [main] DEBUG org.springframework.test.util.ReflectionTestUtils - Setting field 'sequenceService' of type [null] on target object [com.amp.saps.business.pend.impl.PendEntryBizImpl@1603dc2f] or target class [class com.amp.saps.business.pend.impl.PendEntryBizImpl] to value [Mock for SequenceService, hashCode: 1890318768]
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.352 s - in com.amp.saps.business.pend.impl.PendEntryBizImplTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for scf-saps 0.0.1-SNAPSHOT:
+[INFO] 
+[INFO] scf-saps ........................................... SUCCESS [  0.002 s]
+[INFO] saps-common ........................................ SUCCESS [  0.867 s]
+[INFO] saps-model ......................................... SUCCESS [  8.090 s]
+[INFO] saps-api ........................................... SUCCESS [  1.286 s]
+[INFO] saps-dao ........................................... SUCCESS [  0.533 s]
+[INFO] bpmn-flow .......................................... SUCCESS [  0.665 s]
+[INFO] saps-service ....................................... SUCCESS [  1.787 s]
+[INFO] saps-business ...................................... SUCCESS [  4.239 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  17.727 s
+[INFO] Finished at: 2026-10-21T10:10:23+08:00
+[INFO] ------------------------------------------------------------------------

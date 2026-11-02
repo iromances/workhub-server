@@ -1,0 +1,9 @@
+/private/tmp/refund-review-20261030/source/ol-saps/lease-saps-model/src/main/java/com/lease/saps/model/vo/schedule/DeviceFlowScheduleReq.java:8: 警告: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+@Data
+^
+/private/tmp/refund-review-20261030/source/ol-saps/lease-saps-model/src/main/java/com/lease/saps/model/entity/replacebattery/ReplaceBatteryDeviceFlow.java:17: 警告: Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+@Data
+^
+注: /private/tmp/refund-review-20261030/source/ol-saps/lease-saps-model/src/main/java/com/lease/saps/model/enums/TransactionSubModeEnum.java使用了未经检查或不安全的操作。
+注: 有关详细信息, 请使用 -Xlint:unchecked 重新编译。
+2 个警告

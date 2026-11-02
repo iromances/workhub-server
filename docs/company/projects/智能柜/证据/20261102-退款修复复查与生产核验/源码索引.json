@@ -1,0 +1,104 @@
+{
+  "S1": {
+    "repository": "ol-saps",
+    "path": "lease-saps-service/src/main/java/com/lease/saps/service/replacebattery/impl/ReplaceBatteryDeviceServiceImpl.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/ol-saps/lease-saps-service/src/main/java/com/lease/saps/service/replacebattery/impl/ReplaceBatteryDeviceServiceImpl.java",
+    "sha256": "839892a2167ea38ad950546e0fdc9204a666c0d0153194ec2a4a03acc76df0da"
+  },
+  "S2": {
+    "repository": "ol-saps",
+    "path": "lease-saps-business/src/main/java/com/lease/saps/business/service/refund/impl/RefundOrderSaveBizImpl.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/ol-saps/lease-saps-business/src/main/java/com/lease/saps/business/service/refund/impl/RefundOrderSaveBizImpl.java",
+    "sha256": "cb706ed46d3b092e0452feeed9d538378be4f0b6fcddcf31f1061b84b7037df2"
+  },
+  "S3": {
+    "repository": "ol-saps",
+    "path": "lease-saps-business/src/main/java/com/lease/saps/business/service/order/impl/CustomerOrderNotifyBizImpl.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/ol-saps/lease-saps-business/src/main/java/com/lease/saps/business/service/order/impl/CustomerOrderNotifyBizImpl.java",
+    "sha256": "a4dfb44bdb39e4ef1feafc3fefe95bf3e8c6cfec00eee781b7d3bb419cb81f16"
+  },
+  "S4": {
+    "repository": "ol-saps",
+    "path": "lease-saps-business/src/main/java/com/lease/saps/business/service/refund/impl/RefundCallbackBizImpl.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/ol-saps/lease-saps-business/src/main/java/com/lease/saps/business/service/refund/impl/RefundCallbackBizImpl.java",
+    "sha256": "d08d6dea59c0a435d7c64a9d04b12465757f3d137a487a3c7861867786d3afda"
+  },
+  "S5": {
+    "repository": "ol-saps",
+    "path": "lease-saps-business/src/main/java/com/lease/saps/business/impl/DeviceFlowLYBizServiceImpl.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/ol-saps/lease-saps-business/src/main/java/com/lease/saps/business/impl/DeviceFlowLYBizServiceImpl.java",
+    "sha256": "424c2541b1f903b1751e2e30d5ca1551b3851d4a9618477916974bb6305fdaee"
+  },
+  "S6": {
+    "repository": "ol-saps",
+    "path": "lease-saps-dao/src/main/resources/mapper/CustomerOrderMapper.xml",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/ol-saps/lease-saps-dao/src/main/resources/mapper/CustomerOrderMapper.xml",
+    "sha256": "7a522223e371cb5d60fad87bb2e978190767c3378ac6af67ab0c9caadd3c33dc"
+  },
+  "S7": {
+    "repository": "ol-saps",
+    "path": "lease-saps-model/src/main/java/com/lease/saps/model/entity/BaseEntity.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/ol-saps/lease-saps-model/src/main/java/com/lease/saps/model/entity/BaseEntity.java",
+    "sha256": "2e782e9ef06b6b73679bd2d01637783812237b59cecd4d32872e60196f04e2b8"
+  },
+  "S8": {
+    "repository": "ol-saps",
+    "path": "lease-saps-business/src/main/java/com/lease/saps/business/service/api/impl/RefundApplyBizImpl.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/ol-saps/lease-saps-business/src/main/java/com/lease/saps/business/service/api/impl/RefundApplyBizImpl.java",
+    "sha256": "650aef0be052bbd3040154b4b6cf212590d8d8180ff8dd779acbbd4c32307650"
+  },
+  "C1": {
+    "repository": "intf-paychannel",
+    "path": "intf-paychannel-adapter/intf-paychannel-adapter-allinpay/src/main/java/com/intf/paychannel/adapter/allinpay/service/RefundNotifyService.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/intf-paychannel/intf-paychannel-adapter/intf-paychannel-adapter-allinpay/src/main/java/com/intf/paychannel/adapter/allinpay/service/RefundNotifyService.java",
+    "sha256": "8190ddcc66a2d37bb1246ed75ef11e5f7dbec78b551743d5281a989abd9a4411"
+  },
+  "C2": {
+    "repository": "intf-paychannel",
+    "path": "intf-paychannel-adapter/intf-paychannel-adapter-allinpay/src/main/java/com/intf/paychannel/adapter/allinpay/service/AllinpayUnifyPaymentService.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/intf-paychannel/intf-paychannel-adapter/intf-paychannel-adapter-allinpay/src/main/java/com/intf/paychannel/adapter/allinpay/service/AllinpayUnifyPaymentService.java",
+    "sha256": "4f7ff17dd4c084fadde158728095075f2600b7c2598dd6c848a31126c96b1c1f"
+  },
+  "C3": {
+    "repository": "intf-paychannel",
+    "path": "intf-paychannel-adapter/intf-paychannel-adapter-allinpay/src/main/java/com/intf/paychannel/adapter/allinpay/support/convter/CommonResponseConverter.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/intf-paychannel/intf-paychannel-adapter/intf-paychannel-adapter-allinpay/src/main/java/com/intf/paychannel/adapter/allinpay/support/convter/CommonResponseConverter.java",
+    "sha256": "b796c7598cc4552d7598fa81c8b1dc08c93ffe9d5611bc457649e3cf8a97d9cd"
+  },
+  "P1": {
+    "repository": "xxt-pay",
+    "path": "xxt-pay-business/src/main/java/com/lease/xxt/pay/business/refund/impl/RefundResultCallBackBizImpl.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/xxt-pay/xxt-pay-business/src/main/java/com/lease/xxt/pay/business/refund/impl/RefundResultCallBackBizImpl.java",
+    "sha256": "b9982c1c888246da8ae62da0221d878d7e967a0c62b1d11b96acf71bd8cbed39"
+  },
+  "P2": {
+    "repository": "xxt-pay",
+    "path": "xxt-pay-business/src/main/java/com/lease/xxt/pay/business/refund/impl/RefundOrderUpdateBizImpl.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/xxt-pay/xxt-pay-business/src/main/java/com/lease/xxt/pay/business/refund/impl/RefundOrderUpdateBizImpl.java",
+    "sha256": "5091b8cd772c3f5e3242d47cfc5d491259a522867cd41d3cfbbfb93456cf5c26"
+  },
+  "P3": {
+    "repository": "xxt-pay",
+    "path": "xxt-pay-business/src/main/java/com/lease/xxt/pay/business/service/notify/builder/RefundNotifyBuilder.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/xxt-pay/xxt-pay-business/src/main/java/com/lease/xxt/pay/business/service/notify/builder/RefundNotifyBuilder.java",
+    "sha256": "a95946b0ef6e2fef98f0634b95f680166a693859ebef337a9ea2503135851385"
+  },
+  "P4": {
+    "repository": "xxt-pay",
+    "path": "xxt-pay-business/src/main/java/com/lease/xxt/pay/business/refund/impl/RefundResultConsumeBizImpl.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/xxt-pay/xxt-pay-business/src/main/java/com/lease/xxt/pay/business/refund/impl/RefundResultConsumeBizImpl.java",
+    "sha256": "75138a946e1bbd0af546031bd142835f1fcd1b8a4067aa1c6bad5c570707e273"
+  },
+  "S9": {
+    "repository": "ol-saps",
+    "path": "lease-saps-business/src/main/java/com/lease/saps/business/schedule/bill/DeviceFlowPullSchedule.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/ol-saps/lease-saps-business/src/main/java/com/lease/saps/business/schedule/bill/DeviceFlowPullSchedule.java",
+    "sha256": "86a45289985f244ddc04963bb1558b905396c5d2f632bcdaa7c00bc1ef8e037d"
+  },
+  "C4": {
+    "repository": "intf-paychannel",
+    "path": "intf-paychannel-adapter/intf-paychannel-adapter-bcm/src/main/java/com/intf/paychannel/adapter/bcm/service/BcmEventServer.java",
+    "archive_path": "/Users/aslight/IDEAWorkspace/workhub-server/docs/company/projects/智能柜/证据/20261102-退款修复复查与生产核验/source/intf-paychannel/intf-paychannel-adapter/intf-paychannel-adapter-bcm/src/main/java/com/intf/paychannel/adapter/bcm/service/BcmEventServer.java",
+    "sha256": "91d8c7d99eb826e8c5e0d32cff6dae67109b0dfdd550bf6cd06f0f76b59e726b"
+  }
+}

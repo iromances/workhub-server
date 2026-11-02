@@ -14,6 +14,7 @@ import cn.aslight.workhub.model.mcp.McpResourceSaveRequest;
 import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.model.project.ProjectInvolvedSystemEntity;
 import cn.aslight.workhub.service.intake.ProjectKnowledgeBaseService;
+import cn.aslight.workhub.service.intake.RepositoryDocumentPaths;
 import cn.aslight.workhub.service.system.SysConfigService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -268,11 +269,16 @@ public class McpResourceService {
                 ProjectKnowledgeBaseService.CONFIG_GROUP,
                 ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH
         ));
-        knowledge.put("requirementRawPathPattern", "raw/公司项目/requirements/{业务线}/{项目名称}/{年份}/{审批编号}/source.md");
-        knowledge.put("requirementWikiPathPattern", "wiki/公司项目/研发需求/{业务线}/需求迭代/{项目名称}/{年份}/{审批编号}-{需求名称}/研发评估.md");
+        try {
+            knowledge.put("projectDocumentPath", RepositoryDocumentPaths.resolve(sysConfigService).toString());
+        } catch (IllegalStateException ex) {
+            knowledge.put("projectDocumentPathError", ex.getMessage());
+        }
+        knowledge.put("requirementRawPathPattern", "requirement-sources/{业务线}/{项目名称}/{年份}/{审批编号}/source.md");
+        knowledge.put("requirementWikiPathPattern", "requirements/{业务线}/需求迭代/{项目名称}/{年份}/{审批编号}-{需求名称}/研发评估.md");
         knowledge.put("temporaryAnalysisPath", "notes.md#公司项目");
         knowledge.put("historyDirectory", "历史版本/{版本ID}/");
-        knowledge.put("wikiPublishRule", "用户确认后发布；原始材料仅 raw，未确认分析追加 notes");
+        knowledge.put("wikiPublishRule", "用户确认后发布到项目 docs/requirements；原始材料与过程记录同样保存在项目 docs，知识库只读");
         return knowledge;
     }
 

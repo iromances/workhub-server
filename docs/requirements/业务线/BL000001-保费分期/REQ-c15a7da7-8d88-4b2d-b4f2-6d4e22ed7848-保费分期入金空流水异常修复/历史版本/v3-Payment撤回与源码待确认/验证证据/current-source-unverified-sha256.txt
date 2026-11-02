@@ -1,0 +1,3 @@
+当前未验证源码；不代表 10:20:53 测试对象。
+cbb7adf8f030c70d591e39c2ee74233be644482b387cb374bc9f1b2c09b63c54  /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendEntryBizImpl.java
+e9f311f4c19e84fcd3f668bfe02ca16e6cf946aad88b3913c5abfcc6bbd391c8  /Users/aslight/IDEAWorkspace/scf/scf-saps/saps-business/src/test/java/com/amp/saps/business/pend/impl/PendEntryBizImplTest.java

@@ -510,6 +510,8 @@ class McpResourceServiceTest {
         assertEquals(List.of("authing"), businessLineSummary.get("globalSystems"));
         assertEquals("/mnt/workhub/project-knowledge", catalog.knowledge().get("projectVaultPath"));
         assertEquals("notes.md#公司项目", catalog.knowledge().get("temporaryAnalysisPath"));
+        assertTrue(catalog.knowledge().get("projectDocumentPath").toString().endsWith("/docs"));
+        assertEquals("requirement-sources/{业务线}/{项目名称}/{年份}/{审批编号}/source.md", catalog.knowledge().get("requirementRawPathPattern"));
         assertTrue(catalog.knowledge().get("requirementWikiPathPattern").toString().endsWith("/研发评估.md"));
         assertTrue(catalog.knowledge().get("wikiPublishRule").toString().contains("用户确认后"));
         assertEquals("http://gitlab.example.com", catalog.gitlab().get("webApiUrl"));

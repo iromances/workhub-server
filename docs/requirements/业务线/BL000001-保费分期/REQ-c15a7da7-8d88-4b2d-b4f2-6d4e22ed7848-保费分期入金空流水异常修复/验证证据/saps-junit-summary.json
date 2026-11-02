@@ -1,0 +1,17 @@
+{
+  "name": "com.amp.saps.business.pend.impl.PendEntryBizImplTest",
+  "tests": "7",
+  "failures": "0",
+  "errors": "0",
+  "skipped": "0",
+  "finished_at": "2026-10-21T10:28:31+08:00",
+  "cases": [
+    "shouldSkipPersistenceForNullDetails",
+    "shouldRejectMissingResponseWithBusinessException",
+    "shouldRejectMissingDataWithBusinessException",
+    "shouldIgnoreOutgoingDetail",
+    "shouldKeepExistingWarningForFailedQuery",
+    "shouldSkipPersistenceForEmptyDetails",
+    "shouldSaveIncomingDetailWithOriginalAmountAndSerialNo"
+  ]
+}
