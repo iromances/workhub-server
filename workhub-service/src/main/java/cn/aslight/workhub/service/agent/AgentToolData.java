@@ -49,6 +49,9 @@ public class AgentToolData {
         String fieldMasked = String.valueOf(fields.mask(key, key, original));
         if (!original.equals(fieldMasked)) return StringNode.valueOf(fieldMasked);
         if (!node.isString()) return node;
+        // 平台摘要可能恰好含手机号形状的数字段；保持64位摘要协议，正文和敏感字段仍正常脱敏。
+        if ((key.endsWith("Hash") || java.util.Set.of("sourceVersion", "workItemVersion", "latestEventId", "sourceEventId").contains(key))
+                && original.matches("[a-f0-9]{64}")) return node;
         // sampleJson 等历史文本列也要按字段脱敏，避免嵌套样本的银行卡等字段漏过。
         if (key.toLowerCase(java.util.Locale.ROOT).endsWith("json") && (original.startsWith("{") || original.startsWith("["))) {
             try {

@@ -403,7 +403,8 @@ class ElasticsearchSystemAlertClientTest {
         server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
         server.createContext("/workhub-logs-*/_pit",e->{open.incrementAndGet();respond(e,200,"{\"id\":\"pit-1\"}");});
         String hit=oneHit("2026-08-22T23:59:00Z",true);
-        server.createContext("/_search",e->{requests.add(json.readTree(e.getRequestBody()));respond(e,200,calls.getAndIncrement()==0?hit:completeEmpty());});
+        String discovered=discoveredActivity("2026-08-22T23:59:00Z");
+        server.createContext("/_search",e->{var body=json.readTree(e.getRequestBody());requests.add(body);respond(e,200,body.has("aggs")?discovered:calls.getAndIncrement()==0?hit:completeEmpty());});
         server.createContext("/_pit",e->{close.incrementAndGet();respond(e,200,"{}");});server.start();
         var properties=properties();properties.setPageSize(1);
         Instant from=Instant.parse("2026-08-22T23:50:00Z"),to=Instant.parse("2026-08-23T00:00:00Z");
@@ -415,6 +416,31 @@ class ElasticsearchSystemAlertClientTest {
         assertEquals("pit-2",requests.get(1).at("/pit/id").asText());assertEquals(json.readTree(saved.searchAfterJson()),requests.get(1).path("search_after"));
         assertTrue(requests.get(1).toString().contains("2026-08-23T00:00:00Z"));
         assertEquals(first.execution().targetBindingHash(),second.execution().targetBindingHash());
+    }
+
+    @Test
+    void allModeActivityUsesSamePitAndInvalidBucketsRemainUnprovenWithoutLosingErrors() throws Exception {
+        var json=new com.fasterxml.jackson.databind.ObjectMapper();var requests=new ArrayList<com.fasterxml.jackson.databind.JsonNode>();
+        var response=new java.util.concurrent.atomic.AtomicReference<>(discoveredActivity("2026-08-22T23:59:00Z"));
+        server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
+        server.createContext("/workhub-logs-*/_pit",e->respond(e,200,"{\"id\":\"pit-1\"}"));
+        server.createContext("/_search",e->{var body=json.readTree(e.getRequestBody());requests.add(body);respond(e,200,body.has("aggs")?response.get():completeEmpty());});
+        server.createContext("/_pit",e->respond(e,200,"{}"));server.start();
+        var client=new ElasticsearchSystemAlertClient(properties());var from=Instant.parse("2026-08-22T23:50:00Z");var to=Instant.parse("2026-08-23T00:00:00Z");
+        var page=client.readErrorPage(null,List.of(),"TEST",from,to,null);assertTrue(page.complete());assertEquals("a",page.execution().activities().getFirst().serviceName());
+        assertEquals("pit-2",requests.get(1).at("/pit/id").asText());assertEquals(1000,requests.get(1).at("/aggs/activity/composite/size").asInt());
+        assertEquals("service.name",requests.get(1).at("/aggs/activity/composite/sources/0/service/terms/field").asText());
+        assertFalse(requests.get(1).path("query").toString().contains("log.level"));assertTrue(requests.get(1).path("query").toString().contains("service.environment"));
+        var malformed=(com.fasterxml.jackson.databind.node.ObjectNode)json.readTree(response.get());var buckets=(com.fasterxml.jackson.databind.node.ArrayNode)malformed.at("/aggregations/activity/buckets");buckets.add(buckets.get(0).deepCopy());response.set(malformed.toString());
+        assertEquals("SERVICE_ACTIVITY_QUERY_FAILED",client.readErrorPage(null,List.of(),"TEST",from,to,null).execution().activityIssue());
+        response.set(discoveredActivity("2026-08-23T00:01:00Z"));assertEquals("SERVICE_ACTIVITY_QUERY_FAILED",client.readErrorPage(null,List.of(),"TEST",from,to,null).execution().activityIssue());
+        response.set(completeEmpty());assertEquals("SERVICE_ACTIVITY_QUERY_FAILED",client.readErrorPage(null,List.of(),"TEST",from,to,null).execution().activityIssue());
+    }
+    private String discoveredActivity(String at) throws IOException {
+        var json=new com.fasterxml.jackson.databind.ObjectMapper();var root=(com.fasterxml.jackson.databind.node.ObjectNode)json.readTree(completeEmpty());
+        var bucket=root.putObject("aggregations").putObject("activity").putArray("buckets").addObject().put("doc_count",2);bucket.putObject("key").put("service","a");
+        bucket.putObject("latest").putObject("hits").putArray("hits").addObject().put("_index","logs").put("_id","latest").putObject("_source").put("@timestamp",at);
+        return root.toString();
     }
 
     @Test

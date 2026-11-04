@@ -88,6 +88,18 @@ public interface SystemAlertScopeIngestionMapper {
                        @Param("occurredAt") LocalDateTime occurredAt,
                        @Param("eventCategory") String eventCategory);
 
+    @Select("""
+            SELECT id, business_line_code AS businessLineCode, environment_code AS environmentCode,
+                   service_name AS serviceName, log_level AS level, event_category AS eventCategory,
+                   title, message, error_type AS errorType, stack_trace AS stackTrace, trace_id AS traceId,
+                   request_id AS requestId, occurred_at AS occurredAt, source_type AS sourceType, source_event_id AS sourceEventId
+            FROM ops_system_alert_event
+            WHERE business_line_code=#{line} AND environment_code=#{environment} AND service_name=#{service}
+              AND source_type='ELK' AND source_event_id=#{sourceId}
+            """)
+    cn.aslight.workhub.model.ops.SystemAlertStoredEvent findStoredEvent(@Param("line") String line,
+            @Param("environment") String environment, @Param("service") String service, @Param("sourceId") String sourceId);
+
     @Insert("""
             INSERT INTO ops_system_alert_scope_sync_state (
                 scope_id, last_occurred_at, last_status, last_message, last_synced_at

@@ -1,0 +1,66 @@
+[
+  {
+    "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/ops/SystemAlertCollectionMapper.java",
+    "sha256": "99c4a93767f8b6aaf7920508f21b190f2e0767d2436d4976ff7f22269dc5175b"
+  },
+  {
+    "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/ops/SystemAlertScopeIngestionMapper.java",
+    "sha256": "9ada429525dcca2ba220f25a0f8a576b7ecf0a80e642962f5dca35ad93a85c40"
+  },
+  {
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/ops/SystemAlertDashboardResponse.java",
+    "sha256": "067eb3048676a8b900e39444247f22e15f86c18bdf9d246d023a35c548e28a79"
+  },
+  {
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/ops/SystemAlertQueryEvidence.java",
+    "sha256": "61ee5657cc58337fb9a42cdbf1b54f8aac3febcc2ccece0e9ddad1ffa79df807"
+  },
+  {
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/ops/SystemAlertStoredEvent.java",
+    "sha256": "489d6f4aaf8e018dc70c26a095e2c40ea682cd481135080815027cd68788449d"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentMonitoringTools.java",
+    "sha256": "48be552a0b473b67ac4f7dc3ab3ef1d1b9a197027e3ecd2e44b3e70873212e19"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentToolData.java",
+    "sha256": "5517fda8dccfbcb60a815eafaf3916d78a2416bafe476667adf167994dcf3cbb"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentVerificationEvidence.java",
+    "sha256": "a27ebf51cdaf0bdcca209c98d124bec44e1195e5ec5be44f87f7c3137f81b0d3"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ops/ElasticsearchSystemAlertClient.java",
+    "sha256": "7fd9bac3a469880627e5b4e102d95ee2ed94532bc69349a7ba0a33f360ce269f"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ops/SystemAlertCollectionStore.java",
+    "sha256": "2fc40b87472fd033614093926d5fa780266ac9c1d5546193cc3d9c53bdca7067"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ops/SystemAlertEventProof.java",
+    "sha256": "41e3d6fd91e21189e20cc88091ffbe01a1a75e64bed5c145f91d6e3487b24f20"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ops/SystemAlertVerificationQueryService.java",
+    "sha256": "7854177a3a68f08a73a72d1084d75abd4d4ade334cd297763b213da054f834c0"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentMonitoringToolsTest.java",
+    "sha256": "d435f871960daef4f2e36a363e4f45719c80f899de660edb1d93237f77f40020"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentVerificationServiceTest.java",
+    "sha256": "414a20c05b416d98217dbbc36acd1f390d84e6932f3e6f5921ad73ae0c585a5d"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/ops/ElasticsearchSystemAlertClientTest.java",
+    "sha256": "acc0e1c581d282b497fbdecf722ea39bf84a552d025e0794ecf57010d53c53a4"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/ops/SystemAlertVerificationQueryServiceTest.java",
+    "sha256": "8f70333aa5d0e02369f981a31099d3e51a55cce58986f8d94c79677348a3609e"
+  }
+]

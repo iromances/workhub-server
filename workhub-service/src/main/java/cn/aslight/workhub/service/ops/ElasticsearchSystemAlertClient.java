@@ -126,9 +126,7 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
         var config = configService.current(null, indexPattern);
         validateConfiguration(config);
         if (from == null || to == null || !from.isBefore(to)) throw new IllegalArgumentException("采集区间无效");
-        final String targetHash;
-        try { targetHash = sha256(objectMapper.writeValueAsString(config)); }
-        catch (com.fasterxml.jackson.core.JsonProcessingException ex) { throw new IllegalStateException("无法固定ELK目标"); }
+        final String targetHash = targetBinding(config);
         if (position != null && !targetHash.equals(position.targetHash())) throw new RestartRequired("ELK目标已变化，重新扫描原区间");
         var http = clientFor(config);
         String pitId = position == null ? null : position.pitId();
@@ -147,15 +145,20 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
             boolean complete = page.hitCount() < size;
             if (!complete && (page.searchAfter() == null || page.searchAfter().equals(after)))
                 throw new IllegalStateException("ELK响应缺少或重复分页游标");
-            List<Activity> activities = List.of();
-            if (complete && services != null && !services.isEmpty() && services.size() <= 100) {
-                var activity = searchActivity(config,http,pitId,services,environment,from,to);
-                pitId = activity.pitId(); activities = activity.activities();
-            }
+            List<Activity> activities = List.of(); String activityIssue=null;
+            if (complete && (services == null || services.size() <= 100)) {
+                try {
+                    var activity = services == null || services.isEmpty()
+                            ? discoverActivity(config,http,pitId,environment,from,to)
+                            : searchActivity(config,http,pitId,services,environment,from,to);
+                    pitId = activity.pitId(); activities = activity.activities();
+                } catch (InterruptedException ex) { throw ex; }
+                catch (Exception ex) { activityIssue="SERVICE_ACTIVITY_QUERY_FAILED"; }
+            } else if (complete) activityIssue="SERVICE_ACTIVITY_LIMIT_EXCEEDED";
             Position next = complete ? null : new Position(pitId,objectMapper.writeValueAsString(page.searchAfter()),targetHash);
             retain = !complete;
             return new ErrorPage(page.events(),next,complete,page.contentTruncated(),
-                    new QueryReceipt(targetHash,started,Instant.now(),sha256(pitId),activities));
+                    new QueryReceipt(targetHash,started,Instant.now(),sha256(pitId),activities,activityIssue));
         } catch (RequestFailure ex) {
             if (ex.status == 404 && position != null) throw new RestartRequired("ELK分页快照失效，重新扫描原区间");
             throw ex;
@@ -432,6 +435,43 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
         return new ActivityPage(defaultText(text(response, "pit_id"), pitId), List.copyOf(activities));
     }
 
+    /** ALL模式只提供已出现服务的活动，不推断预期服务全集。最多读取1000个桶。 */
+    private ActivityPage discoverActivity(ElkAlertRuntimeConfig config,HttpClient http,String pitId,
+            String environment,Instant from,Instant to) throws Exception {
+        var body=objectMapper.createObjectNode(); body.put("size",0); body.put("track_total_hits",false);
+        body.putObject("pit").put("id",pitId).put("keep_alive",config.pitKeepAlive());
+        var filters=body.putObject("query").putObject("bool").putArray("filter");
+        if(config.environmentQueryField()!=null && trim(environment)!=null) filters.add(term(config.environmentQueryField(),environment));
+        filters.addObject().putObject("range").putObject(config.timestampField()).put("gte",from.toString()).put("lte",to.toString());
+        var aggregation=body.putObject("aggs").putObject("activity");
+        var composite=aggregation.putObject("composite"); composite.put("size",1000);
+        composite.putArray("sources").addObject().putObject("service").putObject("terms").put("field",config.serviceQueryField());
+        var latest=aggregation.putObject("aggs").putObject("latest").putObject("top_hits"); latest.put("size",1);
+        latest.putArray("sort").addObject().putObject(config.timestampField()).put("order","desc");
+        latest.putObject("_source").putArray("includes").add(config.timestampField());
+        var request=request(config,endpoint(config,"/_search?allow_partial_search_results=false"))
+                .header("Content-Type","application/json").POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body))).build();
+        var response=send(http,request,"核对已出现服务活动"); requireCompleteSearch(response);
+        var buckets=response.path("aggregations").path("activity").path("buckets");
+        if(!buckets.isArray() || buckets.size()>1000) throw new IllegalStateException("ELK服务活动回执不完整");
+        var activities=new java.util.ArrayList<Activity>(); var seen=new java.util.HashSet<String>();
+        for(var bucket:buckets) {
+            String service=trim(text(bucket.path("key"),"service")); long count=count(bucket.path("doc_count"));
+            var hits=bucket.path("latest").path("hits").path("hits");
+            if(service==null || !seen.add(service) || count<=0 || !hits.isArray() || hits.size()!=1)
+                throw new IllegalStateException("ELK服务活动桶无效");
+            var hit=hits.get(0); var at=eventTime(config,hit);
+            if(at.isBefore(from) || at.isAfter(to)) throw new IllegalStateException("ELK活动时间超出查询区间");
+            activities.add(new Activity(service,count,at,sha256(text(hit,"_index")+":"+text(hit,"_id"))));
+        }
+        return new ActivityPage(defaultText(text(response,"pit_id"),pitId),List.copyOf(activities));
+    }
+
+    static String targetBinding(ElkAlertRuntimeConfig config) {
+        try { return sha256(new ObjectMapper().writeValueAsString(config)); }
+        catch(com.fasterxml.jackson.core.JsonProcessingException ex) { throw new IllegalStateException("无法固定ELK目标",ex); }
+    }
+
     private boolean tooLong(String value, int maximum) { return value != null && value.length() > maximum; }
 
     private ObjectNode term(String field, String value) {
@@ -635,7 +675,7 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
         return value == null ? fallback : value;
     }
 
-    private String sha256(String value) {
+    private static String sha256(String value) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
                     .digest(value.getBytes(StandardCharsets.UTF_8)));
@@ -652,7 +692,11 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
     private record SearchPage(String pitId, int hitCount, java.util.List<ElkSystemAlertLog> events,
                               JsonNode searchAfter, boolean contentTruncated) { }
     private record ActivityPage(String pitId, List<Activity> activities) { }
-    public record QueryReceipt(String targetBindingHash, Instant startedAt, Instant finishedAt, String snapshotHash, List<Activity> activities) { }
+    public record QueryReceipt(String targetBindingHash, Instant startedAt, Instant finishedAt, String snapshotHash, List<Activity> activities, String activityIssue) {
+        public QueryReceipt(String targetBindingHash,Instant startedAt,Instant finishedAt,String snapshotHash,List<Activity> activities) {
+            this(targetBindingHash,startedAt,finishedAt,snapshotHash,activities,null);
+        }
+    }
     public record LogSearchResult(List<ElkSystemAlertLog> items, boolean truncated, QueryReceipt receipt) {
         public LogSearchResult(List<ElkSystemAlertLog> items, boolean truncated) { this(items, truncated, null); }
     }

@@ -34,6 +34,19 @@ public interface SystemAlertCollectionMapper {
         """) int insertPage(Page value);
     @Select("SELECT * FROM ops_system_alert_collection_page WHERE window_id=#{id} ORDER BY page_number")
     List<Page> pages(String id);
+    @Select("""
+        SELECT * FROM ops_system_alert_collection_page WHERE scope_id=#{scopeId} AND complete=1
+          AND from_time<=#{from} AND to_time>=#{to}
+        ORDER BY CASE WHEN window_id=#{preferredWindow} THEN 0 ELSE 1 END,to_time DESC,created_at DESC,id DESC LIMIT 1
+        """)
+    Page covering(@Param("scopeId") Long scopeId,@Param("from") LocalDateTime from,@Param("to") LocalDateTime to,
+            @Param("preferredWindow") String preferredWindow);
+    @Select("SELECT * FROM ops_system_alert_collection_page WHERE scope_id=#{id} AND complete=1 ORDER BY to_time DESC,created_at DESC,id DESC LIMIT 1")
+    Page latestComplete(Long id);
+    @Select("SELECT COALESCE(SUM(OCTET_LENGTH(receipt_json)),0) FROM ops_system_alert_collection_page WHERE window_id=#{id}")
+    long receiptBytes(String id);
+    @Select("SELECT * FROM ops_system_alert_collection_page WHERE window_id=#{id} ORDER BY page_number LIMIT #{limit}")
+    List<Page> boundedPages(@Param("id") String id,@Param("limit") int limit);
     record Page(String id, Long scopeId, String windowId, long pageNumber, String definitionHash, LocalDateTime fromTime,
         LocalDateTime toTime, boolean complete, String receiptJson, String receiptHash, LocalDateTime createdAt) { }
 }

@@ -172,9 +172,55 @@ public class AgentVerificationEvidence {
                     }
                 }
                 case "monitor.system.alerts" -> {
-                    // 当前来源只有失败/匹配记录，没有查询范围内连续采集健康证明；空列表不能自动通过。
-                    problems.add("COLLECTION_COVERAGE_UNPROVEN");
-                    if (root.at("/data/truncated").asBoolean() || root.at("/data/hasMore").asBoolean()) problems.add("TRUNCATED_EVIDENCE");
+                    var raw=selected.path("executionEvidence");
+                    if(!raw.isObject()) problems.add("COLLECTION_COVERAGE_UNPROVEN");
+                    else {
+                        var proof=json.treeToValue(raw,cn.aslight.workhub.model.ops.SystemAlertQueryEvidence.class);
+                        var definition=proof.definition();
+                        if(proof.schemaVersion()!=1 || definition==null
+                                || !AgentCodePolicy.hash(json.writeValueAsString(definition)).equals(proof.definitionHash())
+                                || !check.scope().businessLineCode().equals(definition.businessLineCode())
+                                || !check.scope().environmentCode().equals(definition.environmentCode())
+                                || !Objects.equals(definition.recordTimeZone(),root.path("recordTimeZone").asText()))
+                            throw new IllegalArgumentException("预警查询凭据的范围或摘要不一致");
+                        if(!proof.complete() || proof.problems()==null || !proof.problems().isEmpty()) {
+                            problems.add("COLLECTION_COVERAGE_UNPROVEN");
+                            if(proof.problems()!=null) problems.addAll(proof.problems());
+                        }
+                        if(definition.scopeId()==null || !digest(definition.collectionDefinitionHash()) || !digest(proof.targetBindingHash())
+                                || !digest(proof.receiptChainHash()) || proof.pageCount()<1 || proof.windowId()==null || proof.windowId().isBlank())
+                            problems.add("COLLECTION_PROOF_INVALID");
+                        if(proof.startedAt()==null || proof.finishedAt()==null || proof.collectionStartedAt()==null || proof.collectionFinishedAt()==null
+                                || proof.startedAt().isBefore(deployedAt) || proof.finishedAt().isBefore(proof.startedAt()) || proof.finishedAt().isAfter(observedAt)
+                                || proof.collectionStartedAt().isBefore(deployedAt) || proof.collectionFinishedAt().isBefore(proof.collectionStartedAt())
+                                || proof.collectionFinishedAt().isAfter(proof.startedAt())) problems.add("EXECUTION_NOT_AFTER_DEPLOYMENT");
+                        if(selected.path("page").asInt(-1)!=1 || !selected.path("events").isArray()
+                                || selected.path("totalCount").asInt(-1)!=selected.path("events").size()
+                                || proof.ignoredCount()<0 || proof.ignoredEvents()==null || proof.ignoredCount()!=proof.ignoredEvents().size()
+                                || selected.path("totalCount").asInt()+proof.ignoredCount()>selected.path("pageSize").asInt(-1))
+                            problems.add("QUERY_RESULTS_INCOMPLETE");
+                        var expected=definition.serviceNames()==null?Set.<String>of():new HashSet<>(definition.serviceNames());
+                        var activities=proof.activities()==null?List.<cn.aslight.workhub.model.ops.BusinessLogQueryEvidence.Activity>of():proof.activities();
+                        if(expected.isEmpty() || activities.size()!=expected.size()
+                                || !expected.equals(new HashSet<>(activities.stream().map(cn.aslight.workhub.model.ops.BusinessLogQueryEvidence.Activity::serviceName).toList())))
+                            problems.add("SERVICE_ACTIVITY_COVERAGE_UNPROVEN");
+                        for(var activity:activities) {
+                            if(activity.count()<=0 || activity.latestAt()==null || !digest(activity.latestEventId())) problems.add("NO_SERVICE_ACTIVITY");
+                            else {
+                                if(proof.from()==null || proof.to()==null || activity.latestAt().isBefore(proof.from()) || activity.latestAt().isAfter(proof.to()))
+                                    problems.add("DATA_OUTSIDE_QUERY_WINDOW");
+                                if(dataAt==null || activity.latestAt().isBefore(dataAt)) dataAt=activity.latestAt();
+                            }
+                        }
+                        coverageFrom=proof.from();coverageThrough=proof.to();
+                        if(coverageFrom==null || coverageThrough==null || !coverageFrom.isBefore(coverageThrough)
+                                || proof.collectionStartedAt()==null || coverageThrough.isAfter(proof.collectionStartedAt())
+                                || !Objects.equals(coverageFrom,instant(root.at("/query/from"),null))
+                                || !Objects.equals(coverageThrough,instant(root.at("/query/to"),null))) problems.add("QUERY_WINDOW_UNVERIFIED");
+                        sourceKey+=":"+proof.definitionHash()+":"+proof.targetBindingHash();
+                        eventKey=sourceKey+":"+proof.windowId();
+                    }
+                    if (selected.path("truncated").asBoolean() || selected.path("hasMore").asBoolean()) problems.add("TRUNCATED_EVIDENCE");
                 }
                 default -> throw new IllegalArgumentException("尚未接入此复查来源");
             }

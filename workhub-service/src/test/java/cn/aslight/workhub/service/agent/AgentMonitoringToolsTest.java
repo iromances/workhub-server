@@ -33,7 +33,7 @@ class AgentMonitoringToolsTest {
     private final AgentMonitorReadMapper history = mock(AgentMonitorReadMapper.class);
     private final AccountingExecutionEvidenceMapper evidenceMapper = mock(AccountingExecutionEvidenceMapper.class);
     private final AccountingExecutionEvidenceService executionEvidence = new AccountingExecutionEvidenceService(evidenceMapper, json);
-    private final SystemAlertService alerts = mock(SystemAlertService.class);
+    private final SystemAlertVerificationQueryService alerts = mock(SystemAlertVerificationQueryService.class);
     private final AgentMonitoringTools tools = new AgentMonitoringTools(access, mock(AgentMapper.class), business, monitors,
             accounting, configs, runs, alerts, mock(BusinessLogSearchService.class), json, new AgentToolData(json), observations, history, executionEvidence);
     private final AgentScope scope = new AgentScope("BL000012", "TEST");
@@ -96,6 +96,15 @@ class AgentMonitoringToolsTest {
                 json.readTree("{\"businessLineCode\":\"BL000012\",\"environmentCode\":\"TEST\",\"sql\":\"select 1\"}")));
         assertThrows(IllegalArgumentException.class, () -> tools.agentAccountingDetailTool().execute(context, json.readTree("{\"runId\":\"8\"}")));
         verifyNoInteractions(business, accounting, runs);
+    }
+
+    @Test
+    void protocolDigestsSurvivePhoneShapedDigitsWhileActualSensitiveTextRemainsMasked() {
+        String digest="a".repeat(20)+"13812345678"+"b".repeat(33);
+        var result=new AgentToolData(json).sanitize(Map.of("sourceVersion",digest,"definitionHash",digest,"latestEventId",digest,
+                "message",digest,"apiKey",digest,"passwordHash",digest));
+        for(String key:List.of("sourceVersion","definitionHash","latestEventId")) assertEquals(digest,result.path(key).asText());
+        for(String key:List.of("message","apiKey","passwordHash")) assertNotEquals(digest,result.path(key).asText());
     }
 
     @Test
@@ -212,13 +221,13 @@ class AgentMonitoringToolsTest {
     void alertPaginationCanReuseTheExactReturnedTimeWindow() {
         var from = java.time.LocalDateTime.ofInstant(java.time.Instant.parse("2026-10-01T00:00:00Z"), java.time.ZoneId.systemDefault());
         var to = from.plusDays(2);
-        when(alerts.dashboard(eq("BL000012"), eq("TEST"), isNull(), isNull(), isNull(), isNull(), eq(from), eq(to), anyInt(), eq(2)))
+        when(alerts.query(eq("BL000012"), eq("TEST"), isNull(), eq(from), eq(to), anyInt(), eq(2)))
                 .thenReturn(new SystemAlertDashboardResponse(0, 1, 2, List.of(), List.of(), List.of()));
         var args = (tools.jackson.databind.node.ObjectNode) scopeArguments(); args.put("from", "2026-10-01T00:00:00Z").put("to", "2026-10-03T00:00:00Z").put("pageSize", 2);
         var first = (JsonNode) tools.agentSystemAlertsTool().execute(context, args);
         args.put("from", first.at("/query/from").asText()).put("to", first.at("/query/to").asText()).put("page", 2);
         tools.agentSystemAlertsTool().execute(context, args);
-        verify(alerts).dashboard("BL000012", "TEST", null, null, null, null, from, to, 2, 2);
+        verify(alerts).query("BL000012", "TEST", null, from, to, 2, 2);
     }
 
     @Test

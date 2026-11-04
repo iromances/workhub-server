@@ -77,14 +77,14 @@ public class SystemAlertCollectionStore {
             throw new IllegalArgumentException("分页执行目标变化，不能拼接区间");
         var batches=new LinkedHashMap<String,NotificationBatch>(); var records=new ArrayList<EventReference>();
         var names=new HashMap<String,SystemAlertScopeServiceEntity>(); scope.getServices().forEach(item->names.put(item.serviceName(),item));
-        var allowed=selected(scope); long issues=row.issueCount()+(page.contentTruncated()?1:0); int ignored=0,missing=0;
-        LocalDateTime latest=row.latestOccurredAt();
+        var allowed=selected(scope); long issues=row.issueCount()+(page.contentTruncated()?1:0)+(execution.activityIssue()==null?0:1); int ignored=0,missing=0;
+        LocalDateTime latest=row.latestOccurredAt(); int ignoredBytes=0; boolean truncated=page.contentTruncated();
         for(var event:page.events()) {
             if(event.occurredAt().isBefore(row.fromTime().toInstant(ZoneOffset.UTC)) || event.occurredAt().isAfter(row.toTime().toInstant(ZoneOffset.UTC)))
                 throw new IllegalArgumentException("日志不属于固定采集区间");
             var utc=LocalDateTime.ofInstant(event.occurredAt(),ZoneOffset.UTC);
             if(latest==null || utc.isAfter(latest)) latest=utc;
-            String action;
+            String action; SystemAlertStoredEvent stored=null; boolean matched=false;
             if(event.serviceName()==null || event.serviceName().isBlank()) { action="UNRESOLVED_SERVICE"; missing++; issues++; }
             else {
                 if("SELECTED".equals(scope.getWatchMode()) && !allowed.contains(event.serviceName())) throw new IllegalArgumentException("日志服务超出采集范围");
@@ -96,19 +96,30 @@ public class SystemAlertCollectionStore {
                     int inserted;
                     try { inserted=ingestionMapper.insertElkEvent(scope,name,event,LocalDateTime.ofInstant(event.occurredAt(),zoneId),category.name()); }
                     catch (org.springframework.dao.DuplicateKeyException duplicate) { inserted=0; }
+                    stored=ingestionMapper.findStoredEvent(scope.getBusinessLineCode(),scope.getEnvironmentCode(),event.serviceName(),event.sourceEventId());
+                    matched=SystemAlertEventProof.matches(stored,scope,event,category.name(),zoneId);
+                    if (!matched) issues++;
                     // 只忽略已核实唯一键的重复，其他入库错误必须使整页回滚。
                     if(inserted>0) batches.computeIfAbsent(event.serviceName(),key->new NotificationBatch()).record(event,category);
                 }
             }
-            records.add(new EventReference(event.sourceEventId(),event.serviceName(),event.occurredAt(),hash(json.writeValueAsString(event)),action));
+            String eventJson=json.writeValueAsString(event); ElkSystemAlertLog ignoredEvent=null;
+            if("IGNORE".equals(action)) {
+                int bytes=eventJson.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+                if(bytes<=16_384 && ignoredBytes+bytes<=524_288) { ignoredEvent=event; ignoredBytes+=bytes; }
+                else { truncated=true; issues++; }
+            }
+            records.add(new EventReference(event.sourceEventId(),event.serviceName(),event.occurredAt(),hash(eventJson),action,
+                    stored==null?null:stored.id(),stored==null?null:stored.occurredAt(),stored==null?null:SystemAlertEventProof.hash(json,stored),matched,
+                    ignoredEvent));
         }
         for(var entry:batches.entrySet()) {
             var configured=names.get(entry.getKey());
             notifyRecipients(scope,configured==null?entry.getKey():configured.subsystemName(),entry.getValue(),recipients(scope.getBusinessLineCode()));
         }
         String nextPosition=page.next()==null?null:json.writeValueAsString(page.next());
-        String receipt=json.writeValueAsString(new Receipt(definition,execution,List.copyOf(records),page.complete(),page.contentTruncated(),
-                row.positionJson()==null?null:hash(row.positionJson()),nextPosition==null?null:hash(nextPosition)));
+        String receipt=json.writeValueAsString(new Receipt(definition,execution,List.copyOf(records),page.complete(),truncated,
+                row.positionJson()==null?null:hash(row.positionJson()),nextPosition==null?null:hash(nextPosition),zoneId.getId()));
         mapper.insertPage(new SystemAlertCollectionMapper.Page(UUID.randomUUID().toString(),row.scopeId(),row.windowId(),row.pageNumber()+1,
                 row.definitionHash(),row.fromTime(),row.toTime(),page.complete(),receipt,hash(receipt),now()));
         update(new SystemAlertCollectionState(row.scopeId(),row.windowId(),row.definitionJson(),row.definitionHash(),row.fromTime(),row.toTime(),nextPosition,
@@ -144,9 +155,10 @@ public class SystemAlertCollectionStore {
     private String hash(String value) { return AccountingExecutionEvidenceService.hash(value); }
     public record Definition(SystemAlertScopeEntity scope,List<SystemAlertRuleEntity> rules) { }
     public record Claim(SystemAlertCollectionState state,Definition definition) { }
-    public record EventReference(String sourceEventId,String serviceName,Instant occurredAt,String payloadHash,String action) { }
+    public record EventReference(String sourceEventId,String serviceName,Instant occurredAt,String payloadHash,String action,
+            Long storedId,LocalDateTime storedOccurredAt,String storedHash,boolean sourceMatchesStored,ElkSystemAlertLog ignoredEvent) { }
     public record Receipt(Definition definition,ElasticsearchSystemAlertClient.QueryReceipt execution,List<EventReference> events,
-                          boolean complete,boolean contentTruncated,String previousPositionHash,String nextPositionHash) { }
+                          boolean complete,boolean contentTruncated,String previousPositionHash,String nextPositionHash,String recordTimeZone) { }
 
     private List<String> recipients(String businessLineCode) {
         List<String> users = userMapper.findBusinessLineMembers(businessLineCode).stream()

@@ -469,6 +469,36 @@ class AgentVerificationServiceTest {
         for(int i=0;i<3;i++) { if(i>0) clock.advance(10); recordLog(id,"filter"+i,clock.instant(),clock.instant().minusSeconds(60),false,false,i==0?null:"a".repeat(64)); }
         assertEquals(2,finish(id,"PASS",false).at("/checks/0/distinctSamples").asInt());
     }
+    @Test void completeAlertCollectionWindowsCanSupportAgentPassingJudgment() {
+        useSource("monitor.system.alerts");String id=start();
+        for(int i=0;i<3;i++) {if(i>0)clock.advance(10);recordAlert(id,"alert"+i,clock.instant(),"window"+i,"a".repeat(64),false);}
+        var result=finish(id,"PASS",false);assertEquals("PASSED",result.path("status").asText());assertEquals(20,result.at("/checks/0/observedSeconds").asLong());
+    }
+    @Test void repeatedAlertWindowAndOldActivityCannotCreateExtraSamples() {
+        useSource("monitor.system.alerts");String id=start();Instant first=clock.instant();
+        for(int i=0;i<3;i++){if(i>0)clock.advance(10);recordAlert(id,"repeat"+i,first,"same-window","a".repeat(64),false);}
+        assertEquals(1,finish(id,"PASS",false).at("/checks/0/distinctSamples").asInt());
+    }
+    @Test void changedAlertRulesRestartObservationAndMissingRowsCannotCertify() {
+        useSource("monitor.system.alerts");String id=start();
+        recordAlert(id,"first",clock.instant(),"one","a".repeat(64),false);clock.advance(10);
+        var changed=recordAlert(id,"changed",clock.instant(),"two","b".repeat(64),false);assertEquals(1,changed.at("/checks/0/distinctSamples").asInt());
+        clock.advance(10);var missing=recordAlert(id,"missing",clock.instant(),"three","b".repeat(64),true);
+        assertTrue(missing.at("/checks/0/constraints").toString().contains("QUERY_CONTENT_DIFFERS_FROM_COLLECTION"));assertNotEquals("PASSED",finish(id,"PASS",false).path("status").asText());
+    }
+    private JsonNode recordAlert(String id,String request,Instant activity,String window,String rules,boolean invalid) {
+        var definition=new cn.aslight.workhub.model.ops.SystemAlertQueryEvidence.Definition(1L,"BL000012","TEST","ALL",List.of("workhub-*"),List.of("a"),rules,"UTC");
+        var from=clock.instant().minusSeconds(60);var to=clock.instant();
+        var proof=new cn.aslight.workhub.model.ops.SystemAlertQueryEvidence(1,UUID.randomUUID().toString(),definition,AgentCodePolicy.hash(json.writeValueAsString(definition)),
+                window,"c".repeat(64),"d".repeat(64),1,to,to,to,to,from,to,from,to,!invalid,invalid?List.of("QUERY_CONTENT_DIFFERS_FROM_COLLECTION"):List.of(),
+                List.of(new cn.aslight.workhub.model.ops.BusinessLogQueryEvidence.Activity("a",1,activity,"e".repeat(64))),0,List.of(),List.of());
+        var result=new cn.aslight.workhub.model.ops.SystemAlertDashboardResponse(0,1,30,List.of(),List.of(),List.of(),proof);
+        String key=UUID.randomUUID().toString(),tool="monitor.system.alerts";
+        String payload=json.writeValueAsString(new AgentToolData(json).sanitize(Map.of("scope",scope,"observedAt",to.toString(),"recordTimeZone","UTC","query",Map.of("from",from.toString(),"to",to.toString()),"data",result)));
+        observations.insertObservation(new AgentObservationEntity(key,"run","agent",key,tool,AgentObservationService.sourceType(tool,scope.businessLineCode()),scope.businessLineCode(),scope.environmentCode(),payload,AgentCodePolicy.hash(payload),now()));
+        var args=recordArgs(id,request,key,"PASS",false);((ObjectNode)args.at("/evidence/0")).put("pointer","/data");return invoke("verification.record",args);
+    }
+
     private JsonNode recordLog(String id,String request,Instant activity,Instant from,boolean silent,boolean truncated,String phraseHash) {
         var definition=new cn.aslight.workhub.model.ops.BusinessLogQueryEvidence.Definition(1L,"BL000012","TEST","SELECTED",List.of("workhub-*"),List.of("a","b"),List.of("ERROR","WARN"),phraseHash,null,null,30);
         var activities=List.of(new cn.aslight.workhub.model.ops.BusinessLogQueryEvidence.Activity("a",1,clock.instant(),"a".repeat(64)),

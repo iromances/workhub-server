@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: cn.aslight.workhub.dao.ops.SystemAlertMapperSqlTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.022 s -- in cn.aslight.workhub.dao.ops.SystemAlertMapperSqlTest

@@ -29,7 +29,7 @@ public class AgentMonitoringTools {
     private final AccountingMonitorService accounting;
     private final AccountingMonitorMapper accountingConfigs;
     private final AccountingRunMapper accountingRuns;
-    private final SystemAlertService alerts;
+    private final SystemAlertVerificationQueryService alerts;
     private final BusinessLogSearchService logs;
     private final ObjectMapper json;
     private final AgentToolData data;
@@ -40,7 +40,7 @@ public class AgentMonitoringTools {
     public AgentMonitoringTools(AgentAccessService access, AgentMapper agents, OpsMonitorService business,
                                 OpsMonitorMapper businessMapper, AccountingMonitorService accounting,
                                 AccountingMonitorMapper accountingConfigs, AccountingRunMapper accountingRuns,
-                                SystemAlertService alerts, BusinessLogSearchService logs,
+                                SystemAlertVerificationQueryService alerts, BusinessLogSearchService logs,
                                 ObjectMapper json, AgentToolData data, AgentObservationService observations, AgentMonitorReadMapper history, AccountingExecutionEvidenceService executionEvidence) {
         this.access = access;
         this.agents = agents;
@@ -196,13 +196,13 @@ public class AgentMonitoringTools {
         properties.put("page", integer(1, 10000));
         properties.put("pageSize", integer(1, 30));
         properties.put("from", string()); properties.put("to", string());
-        return tool("monitor.system.alerts", "查询系统异常与慢 SQL；可固定 from/to 时间范围（ISO时间，最多31天），分页复用返回范围。无记录不证明采集健康。",
+        return tool("monitor.system.alerts", "查询系统异常、慢 SQL、过滤记录与采集凭据；复查需明确 serviceName（SELECTED可查全部启用服务），固定 from/to（ISO时间，最多31天）。executionEvidence.availableFrom/availableThrough提示最近完成区间；须完整结果及新鲜服务活动，空告警本身不证明恢复。",
                 Set.of("ops:system-alert:view", "ops:system-alert:manage"), properties, scopeRequired(), (context, args) -> {
                     AgentScope scope = scope(context, args);
                     var window = timeWindow(args);
                     int page = args.bounded("page", 1, 1, 10000), size = args.bounded("pageSize", 10, 1, 30);
-                    var value = observation("系统预警", scope, alerts.dashboard(scope.businessLineCode(), scope.environmentCode(),
-                            args.optional("serviceName"), null, null, null,
+                    var value = observation("系统预警", scope, alerts.query(scope.businessLineCode(), scope.environmentCode(),
+                            args.optional("serviceName"),
                             window.from(), window.to(), page, size));
                     value.put("query", Map.of("from", window.from().atZone(ZoneId.systemDefault()).toOffsetDateTime().toString(),
                             "to", window.to().atZone(ZoneId.systemDefault()).toOffsetDateTime().toString(), "page", page, "pageSize", size));
