@@ -143,7 +143,7 @@ public class AgentReleasePlanService {
     }
     public List<Map<String, Object>> bindings(String changeId, String user) {
         var change = changes.detailForUser(changeId, user); var context = runs.context(runs.get(change.runId()));
-        return policies.current().bindings().stream().filter(AgentJenkinsPolicy.JobBinding::enabled).filter(binding -> {
+        return policies.current().bindings().stream().filter(AgentJenkinsPolicy.JobBinding::enabled).filter(binding -> !"BUILD_TEST".equals(binding.stage())).filter(binding -> {
             try { access.requireScope(context, binding.scope()); policies.binding(binding.id()); return true; }
             catch (AccessDeniedException | IllegalArgumentException ex) { return false; }
         }).map(binding -> Map.<String, Object>of("id", binding.id(), "name", binding.name(), "stage", binding.stage(), "scope", binding.scope(),

@@ -596,7 +596,7 @@ class AgentWorkbenchServiceTest {
         var items = json.readTree(checked.payloadJson()).path("items");
         assertEquals("SATISFIED", items.get(0).path("status").asText());
         assertNotEquals("SATISFIED", items.get(1).path("status").asText());
-        assertEquals("UNAVAILABLE", items.get(2).path("status").asText());
+        assertEquals("BLOCKED", items.get(2).path("status").asText(), "未授予代码权限时不得验收测试产物");
         assertNotNull(mapper.findEventByKey(run.id(), "cli:acceptance:handled"));
     }
 

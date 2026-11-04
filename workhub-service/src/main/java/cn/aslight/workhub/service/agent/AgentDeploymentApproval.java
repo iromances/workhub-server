@@ -47,7 +47,9 @@ public class AgentDeploymentApproval {
         var run = runs.get(change.runId());
         if (run.cancelRequested() || "CANCELLED".equals(run.status())) throw new IllegalArgumentException("原任务已请求停止，不能开始发布");
         var context = runs.context(run); access.requireRunAuthorization(context);
-        var binding = policies.binding(bindingId); access.requireScope(context, binding.binding().scope());
+        var binding = policies.binding(bindingId);
+        if ("BUILD_TEST".equals(binding.binding().stage())) throw new IllegalArgumentException("独立测试 Job 不能进入发布审核");
+        access.requireScope(context, binding.binding().scope());
         var commits = new TreeMap<String, String>();
         for (var repository : change.manifest().repositories()) if (binding.binding().commitParameters().containsKey(repository.repositoryId())) {
             if (!repository.scope().businessLineCode().equals(binding.binding().scope().businessLineCode())) throw new IllegalArgumentException("发布仓库不属于目标业务线");

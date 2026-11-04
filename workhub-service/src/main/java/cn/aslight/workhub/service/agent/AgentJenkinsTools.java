@@ -23,7 +23,7 @@ public class AgentJenkinsTools {
         return tool("release.jenkins.targets", "列出本任务范围内配置的 Jenkins 发布目标；不会触发构建，不返回地址或凭据。", Map.of(), List.of(), (context, args) -> {
             var result = new ArrayList<Object>();
             for (var binding : policy.current().bindings()) {
-                if (!binding.enabled() || !context.specification().scopes().contains(binding.scope())) continue;
+                if (!binding.enabled() || "BUILD_TEST".equals(binding.stage()) || !context.specification().scopes().contains(binding.scope())) continue;
                 access.requireScope(context, binding.scope());
                 var snapshot = policy.binding(binding.id());
                 result.add(Map.of("bindingId", binding.id(), "name", binding.name(), "scope", binding.scope(),

@@ -167,13 +167,14 @@ public class AgentRunReconciliationService {
         String toolCode = text(handle, "tool");
         var intent = mapper.findEventByKey(run.id(), key + ":request");
         boolean inspection = Set.of("inspection.next", "inspection.ack").contains(Objects.toString(toolCode, ""));
-        if (!actualReceipt && "TOOL".equals(kind) && (inspection || AgentVerificationService.MUTATIONS.contains(Objects.toString(toolCode, "")))
+        boolean buildTest = AgentBuildTestStore.START.equals(toolCode);
+        if (!actualReceipt && "TOOL".equals(kind) && (inspection || buildTest || AgentVerificationService.MUTATIONS.contains(Objects.toString(toolCode, "")))
                 && intent != null && "TOOL_REQUEST".equals(intent.kind())
                 && toolCode.equals(json.readTree(intent.payloadJson()).path("tool").asText())) {
-            String committed = inspection ? mapper.findInspectionCallResult(run.id(), key) : mapper.findVerificationCallResult(run.id(), key, toolCode);
+            String committed = inspection ? mapper.findInspectionCallResult(run.id(), key) : buildTest ? mapper.findBuildTestCallResult(run.id(),key,toolCode) : mapper.findVerificationCallResult(run.id(), key, toolCode);
             if (committed != null) {
                 if (!json.readTree(committed).isObject()) throw new IllegalStateException("已提交工具结果格式无效，请核对原记录");
-                receiptSource = inspection ? "COMMITTED_INSPECTION_TRANSACTION" : "COMMITTED_VERIFICATION_TRANSACTION";
+                receiptSource = inspection ? "COMMITTED_INSPECTION_TRANSACTION" : buildTest ? "COMMITTED_BUILD_TEST_TRANSACTION" : "COMMITTED_VERIFICATION_TRANSACTION";
                 proofs.add(key + ":committed:" + digest(committed));
             }
         }

@@ -38,7 +38,9 @@ public class AgentJenkinsPolicy {
             new AgentJenkinsClient.Target(URI.create(instance.baseUrl()), binding.jobSegments(), instance.userName(), "validation-placeholder");
             if (binding.scope() == null) throw new IllegalArgumentException("Jenkins Job 必须绑定业务线及环境");
             text(binding.scope().businessLineCode(), 32); text(binding.scope().environmentCode(), 64);
-            if (!Set.of("TEST_DEPLOY", "PROD_DEPLOY").contains(binding.stage())) throw new IllegalArgumentException("发布阶段必须为 TEST_DEPLOY 或 PROD_DEPLOY");
+            if (!Set.of("BUILD_TEST", "TEST_DEPLOY", "PROD_DEPLOY").contains(binding.stage())) throw new IllegalArgumentException("Jenkins 阶段须为 BUILD_TEST、TEST_DEPLOY 或 PROD_DEPLOY");
+            if ("BUILD_TEST".equals(binding.stage()) && !"TEST".equals(binding.scope().environmentCode()))
+                throw new IllegalArgumentException("独立构建测试只允许 TEST 环境，不能绑定生产");
             if (binding.commitParameters() == null || binding.commitParameters().isEmpty() || binding.commitParameters().size() > 20) throw new IllegalArgumentException("Jenkins Job 必须明确1到20个仓库的精确提交参数");
             var names = new HashSet<String>();
             for (String parameter : Arrays.asList(binding.correlationParameter(), binding.manifestParameter(), binding.environmentParameter())) {

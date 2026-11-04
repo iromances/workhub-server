@@ -1,0 +1,83 @@
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[ERROR] Tests run: 40, Failures: 0, Errors: 5, Skipped: 0, Time elapsed: 1.873 s <<< FAILURE! -- in cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest
+[ERROR] cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest.revokedPrerequisiteDuringProbeBlocksPost(String)[1] -- Time elapsed: 0.012 s <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "cn.aslight.workhub.service.agent.AgentJenkinsClient$Target.jobSegments()" because "target" is null
+	at cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest.lambda$setup$5(AgentBuildTestDispatcherTest.java:99)
+	at org.mockito.internal.stubbing.StubbedInvocationMatcher.answer(StubbedInvocationMatcher.java:42)
+	at org.mockito.internal.handler.MockHandlerImpl.handle(MockHandlerImpl.java:103)
+	at org.mockito.internal.handler.NullResultGuardian.handle(NullResultGuardian.java:29)
+	at org.mockito.internal.handler.InvocationNotifierHandler.handle(InvocationNotifierHandler.java:34)
+	at org.mockito.internal.creation.bytebuddy.access.MockMethodInterceptor.doIntercept(MockMethodInterceptor.java:84)
+	at org.mockito.internal.creation.bytebuddy.MockMethodAdvice.handle(MockMethodAdvice.java:136)
+	at cn.aslight.workhub.service.agent.AgentJenkinsClient.probe(AgentJenkinsClient.java:39)
+	at cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest.revokedPrerequisiteDuringProbeBlocksPost(AgentBuildTestDispatcherTest.java:227)
+
+[ERROR] cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest.revokedPrerequisiteDuringProbeBlocksPost(String)[2] -- Time elapsed: 0.011 s <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "cn.aslight.workhub.service.agent.AgentJenkinsClient$Target.jobSegments()" because "target" is null
+	at cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest.lambda$setup$5(AgentBuildTestDispatcherTest.java:99)
+	at org.mockito.internal.stubbing.StubbedInvocationMatcher.answer(StubbedInvocationMatcher.java:42)
+	at org.mockito.internal.handler.MockHandlerImpl.handle(MockHandlerImpl.java:103)
+	at org.mockito.internal.handler.NullResultGuardian.handle(NullResultGuardian.java:29)
+	at org.mockito.internal.handler.InvocationNotifierHandler.handle(InvocationNotifierHandler.java:34)
+	at org.mockito.internal.creation.bytebuddy.access.MockMethodInterceptor.doIntercept(MockMethodInterceptor.java:84)
+	at org.mockito.internal.creation.bytebuddy.MockMethodAdvice.handle(MockMethodAdvice.java:136)
+	at cn.aslight.workhub.service.agent.AgentJenkinsClient.probe(AgentJenkinsClient.java:39)
+	at cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest.revokedPrerequisiteDuringProbeBlocksPost(AgentBuildTestDispatcherTest.java:227)
+
+[ERROR] cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest.revokedPrerequisiteDuringProbeBlocksPost(String)[3] -- Time elapsed: 0.009 s <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "cn.aslight.workhub.service.agent.AgentJenkinsClient$Target.jobSegments()" because "target" is null
+	at cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest.lambda$setup$5(AgentBuildTestDispatcherTest.java:99)
+	at org.mockito.internal.stubbing.StubbedInvocationMatcher.answer(StubbedInvocationMatcher.java:42)
+	at org.mockito.internal.handler.MockHandlerImpl.handle(MockHandlerImpl.java:103)
+	at org.mockito.internal.handler.NullResultGuardian.handle(NullResultGuardian.java:29)
+	at org.mockito.internal.handler.InvocationNotifierHandler.handle(InvocationNotifierHandler.java:34)
+	at org.mockito.internal.creation.bytebuddy.access.MockMethodInterceptor.doIntercept(MockMethodInterceptor.java:84)
+	at org.mockito.internal.creation.bytebuddy.MockMethodAdvice.handle(MockMethodAdvice.java:136)
+	at cn.aslight.workhub.service.agent.AgentJenkinsClient.probe(AgentJenkinsClient.java:39)
+	at cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest.revokedPrerequisiteDuringProbeBlocksPost(AgentBuildTestDispatcherTest.java:227)
+
+[ERROR] cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest.revokedPrerequisiteDuringProbeBlocksPost(String)[4] -- Time elapsed: 0.009 s <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "cn.aslight.workhub.service.agent.AgentJenkinsClient$Target.jobSegments()" because "target" is null
+	at cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest.lambda$setup$5(AgentBuildTestDispatcherTest.java:99)
+	at org.mockito.internal.stubbing.StubbedInvocationMatcher.answer(StubbedInvocationMatcher.java:42)
+	at org.mockito.internal.handler.MockHandlerImpl.handle(MockHandlerImpl.java:103)
+	at org.mockito.internal.handler.NullResultGuardian.handle(NullResultGuardian.java:29)
+	at org.mockito.internal.handler.InvocationNotifierHandler.handle(InvocationNotifierHandler.java:34)
+	at org.mockito.internal.creation.bytebuddy.access.MockMethodInterceptor.doIntercept(MockMethodInterceptor.java:84)
+	at org.mockito.internal.creation.bytebuddy.MockMethodAdvice.handle(MockMethodAdvice.java:136)
+	at cn.aslight.workhub.service.agent.AgentJenkinsClient.probe(AgentJenkinsClient.java:39)
+	at cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest.revokedPrerequisiteDuringProbeBlocksPost(AgentBuildTestDispatcherTest.java:227)
+
+[ERROR] cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest.revokedPrerequisiteDuringProbeBlocksPost(String)[5] -- Time elapsed: 0.009 s <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "cn.aslight.workhub.service.agent.AgentJenkinsClient$Target.jobSegments()" because "target" is null
+	at cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest.lambda$setup$5(AgentBuildTestDispatcherTest.java:99)
+	at org.mockito.internal.stubbing.StubbedInvocationMatcher.answer(StubbedInvocationMatcher.java:42)
+	at org.mockito.internal.handler.MockHandlerImpl.handle(MockHandlerImpl.java:103)
+	at org.mockito.internal.handler.NullResultGuardian.handle(NullResultGuardian.java:29)
+	at org.mockito.internal.handler.InvocationNotifierHandler.handle(InvocationNotifierHandler.java:34)
+	at org.mockito.internal.creation.bytebuddy.access.MockMethodInterceptor.doIntercept(MockMethodInterceptor.java:84)
+	at org.mockito.internal.creation.bytebuddy.MockMethodAdvice.handle(MockMethodAdvice.java:136)
+	at cn.aslight.workhub.service.agent.AgentJenkinsClient.probe(AgentJenkinsClient.java:39)
+	at cn.aslight.workhub.service.agent.AgentBuildTestDispatcherTest.revokedPrerequisiteDuringProbeBlocksPost(AgentBuildTestDispatcherTest.java:227)
+
+[ERROR] Errors:
+[ERROR]   AgentBuildTestDispatcherTest.revokedPrerequisiteDuringProbeBlocksPost:227->lambda$setup$5:99 NullPointer Cannot invoke "cn.aslight.workhub.service.agent.AgentJenkinsClient$Target.jobSegments()" because "target" is null
+[ERROR]   AgentBuildTestDispatcherTest.revokedPrerequisiteDuringProbeBlocksPost:227->lambda$setup$5:99 NullPointer Cannot invoke "cn.aslight.workhub.service.agent.AgentJenkinsClient$Target.jobSegments()" because "target" is null
+[ERROR]   AgentBuildTestDispatcherTest.revokedPrerequisiteDuringProbeBlocksPost:227->lambda$setup$5:99 NullPointer Cannot invoke "cn.aslight.workhub.service.agent.AgentJenkinsClient$Target.jobSegments()" because "target" is null
+[ERROR]   AgentBuildTestDispatcherTest.revokedPrerequisiteDuringProbeBlocksPost:227->lambda$setup$5:99 NullPointer Cannot invoke "cn.aslight.workhub.service.agent.AgentJenkinsClient$Target.jobSegments()" because "target" is null
+[ERROR]   AgentBuildTestDispatcherTest.revokedPrerequisiteDuringProbeBlocksPost:227->lambda$setup$5:99 NullPointer Cannot invoke "cn.aslight.workhub.service.agent.AgentJenkinsClient$Target.jobSegments()" because "target" is null
+[ERROR] Tests run: 40, Failures: 0, Errors: 5, Skipped: 0
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.5:test (default-test) on project workhub-service:
+[ERROR]
+[ERROR] See /Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-server/workhub-service/target/surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR]
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :workhub-service

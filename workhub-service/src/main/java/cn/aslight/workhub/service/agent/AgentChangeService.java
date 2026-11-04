@@ -29,15 +29,16 @@ public class AgentChangeService {
     private final Validator validator;
     private final AgentDeliveryMapper deliveries;
     private final AgentGitLabPolicy gitLab;
+    private final AgentBuildTestEvidence testEvidence;
 
     public AgentChangeService(AgentChangeMapper mapper, AgentCodeMapper workspaces, AgentMapper agents, AutonomyMapper autonomy,
                                AgentChangeStore store, AgentCodeWorkspaceService code, AgentCodePolicy policies, AgentRunStore runs,
                                AgentAccessService access, AutonomyCaseService cases, AgentToolData data, ObjectMapper json, Validator validator,
-                               AgentDeliveryMapper deliveries, AgentGitLabPolicy gitLab) {
+                               AgentDeliveryMapper deliveries, AgentGitLabPolicy gitLab, AgentBuildTestEvidence testEvidence) {
         this.mapper = mapper; this.workspaces = workspaces; this.agents = agents; this.autonomy = autonomy;
         this.store = store; this.code = code; this.policies = policies; this.runs = runs; this.access = access; this.cases = cases;
         this.data = data; this.json = json; this.validator = validator;
-        this.deliveries = deliveries; this.gitLab = gitLab;
+        this.deliveries = deliveries; this.gitLab = gitLab; this.testEvidence = testEvidence;
     }
 
     public AgentChangeView prepare(AgentToolContext context, String key, String caseId, AgentChangePlan plan) {
@@ -158,7 +159,7 @@ public class AgentChangeService {
             if (problem != null && cases.bugContextChanged(problem)) blockers.add("BUG_CONTEXT_CHANGED");
         } else if (autonomy.activeCaseCount(value.runId()) > 0) blockers.add("CASE_REFERENCE_REQUIRED");
         boolean currentVersion = blockers.isEmpty();
-        blockers.add("PLATFORM_TEST_EVIDENCE_MISSING");
+        if (!testEvidence.check(value,manifest).satisfied()) blockers.add("PLATFORM_TEST_EVIDENCE_MISSING");
         var remote = deliveries.list(value.id());
         boolean allDelivered = remote.size() == manifest.repositories().size();
         for (var repo : manifest.repositories()) {
@@ -168,7 +169,7 @@ public class AgentChangeService {
             catch (AgentCodePolicy.Unavailable ex) { allDelivered = false; }
         }
         if (!allDelivered) blockers.add("REMOTE_DELIVERY_EVIDENCE_MISSING");
-        return new AgentChangeView(value.id(), value.runId(), value.taskId(), value.revision(), value.manifestHash(), value.createdAt(), currentVersion, false, List.copyOf(blockers), manifest);
+        return new AgentChangeView(value.id(), value.runId(), value.taskId(), value.revision(), value.manifestHash(), value.createdAt(), currentVersion, blockers.isEmpty(), List.copyOf(blockers), manifest);
     }
 
     public static Map<String, Object> summary(AgentChangeView value) {

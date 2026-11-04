@@ -355,12 +355,13 @@ public class AgentRunStore {
     private void restoreCommittedToolResult(AgentRunEntity run, JsonNode handle, boolean nativeProtocol) {
         String key = handle.path("key").asText(), tool = handle.path("tool").asText();
         boolean inspection = Set.of("inspection.next", "inspection.ack").contains(tool);
-        if (key.isBlank() || (!inspection && !AgentVerificationService.MUTATIONS.contains(tool))
+        boolean buildTest = AgentBuildTestStore.START.equals(tool);
+        if (key.isBlank() || (!inspection && !buildTest && !AgentVerificationService.MUTATIONS.contains(tool))
                 || mapper.findEventByKey(run.id(), key + ":result") != null) return;
         var intent = mapper.findEventByKey(run.id(), key + ":request");
         if (intent == null || !"TOOL_REQUEST".equals(intent.kind()) || !tool.equals(json.readTree(intent.payloadJson()).path("tool").asText())) return;
         // 生产者已在同一事务验证当前运行/owner/工具键并保存结果；缺失记录不是“没有执行”的证明。
-        String committed = inspection ? mapper.findInspectionCallResult(run.id(), key) : mapper.findVerificationCallResult(run.id(), key, tool);
+        String committed = inspection ? mapper.findInspectionCallResult(run.id(), key) : buildTest ? mapper.findBuildTestCallResult(run.id(),key,tool) : mapper.findVerificationCallResult(run.id(), key, tool);
         if (committed == null) return;
         var value = json.readTree(committed);
         if (!value.isObject()) throw new IllegalStateException("已持久化的工具结果格式无效，保留原调用等待核对");
@@ -369,7 +370,7 @@ public class AgentRunStore {
                     .filter(event -> "HUMAN_INPUT".equals(event.kind())).map(event -> json.readTree(event.payloadJson())).toList())
                 : AgentToolReplies.apiSuccess(data, value);
         appendReceipt(run.id(), key + ":result", "TOOL_RESULT", receipt);
-        append(run.id(), key + ":receipt-recovered", "TOOL_RECEIPT_RECOVERED", Map.of("tool", tool, "source", inspection ? "COMMITTED_INSPECTION_TRANSACTION" : "COMMITTED_VERIFICATION_TRANSACTION"));
+        append(run.id(), key + ":receipt-recovered", "TOOL_RECEIPT_RECOVERED", Map.of("tool", tool, "source", inspection ? "COMMITTED_INSPECTION_TRANSACTION" : buildTest ? "COMMITTED_BUILD_TEST_TRANSACTION" : "COMMITTED_VERIFICATION_TRANSACTION"));
     }
 
     private boolean hasReceipt(String runId, String key, String kind) {

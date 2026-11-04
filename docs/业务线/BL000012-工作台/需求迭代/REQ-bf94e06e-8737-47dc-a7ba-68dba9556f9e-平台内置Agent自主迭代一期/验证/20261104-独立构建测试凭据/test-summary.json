@@ -1,0 +1,73 @@
+{
+  "command": "mvn -o -q -pl workhub-controller,workhub-job -am -Dtest=AgentBuildTestDispatcherTest,AgentChangeServiceTest,AgentWorkbenchServiceTest,AgentDeploymentDispatcherTest,AgentReleasePlanServiceTest,AgentJenkinsClientTest,AgentJenkinsPolicyTest -Dsurefire.failIfNoSpecifiedTests=false -DargLine=-javaagent:/Users/aslight/.m2/repository/org/mockito/mockito-core/5.20.0/mockito-core-5.20.0.jar test",
+  "exitCode": 0,
+  "totals": {
+    "tests": 221,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "suites": [
+    {
+      "suite": "AgentBuildTestDispatcherTest",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedTests": []
+    },
+    {
+      "suite": "AgentChangeServiceTest",
+      "tests": 42,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedTests": []
+    },
+    {
+      "suite": "AgentWorkbenchServiceTest",
+      "tests": 61,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "skippedTests": [
+        {
+          "name": "installedZcodeCompletesTaskThroughProductionMcpAndStoresObservedResult(Path)",
+          "reason": "System property [workhub.test.zcode.command] does not exist"
+        }
+      ]
+    },
+    {
+      "suite": "AgentDeploymentDispatcherTest",
+      "tests": 29,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedTests": []
+    },
+    {
+      "suite": "AgentReleasePlanServiceTest",
+      "tests": 29,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedTests": []
+    },
+    {
+      "suite": "AgentJenkinsClientTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedTests": []
+    },
+    {
+      "suite": "AgentJenkinsPolicyTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedTests": []
+    }
+  ]
+}

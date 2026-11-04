@@ -14,6 +14,8 @@ import org.apache.ibatis.session.Configuration;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.aop.framework.ProxyFactory;
@@ -53,6 +55,11 @@ class AgentChangeServiceTest {
     private AgentCodeMapper workspaces;
     private AgentChangeMapper mapper;
     private AgentDeliveryMapper deliveries;
+    private AgentBuildTestMapper testMapper;
+    private AgentDeploymentMapper testResources;
+    private AgentJenkinsPolicy testJenkins;
+    private AgentBuildTestEvidence testEvidence;
+    private SysConfigService configs;
     private AgentGitLabPolicy gitLabPolicies;
     private AgentGitLabClient gitLab;
     private AgentCodeGit publishing;
@@ -86,15 +93,16 @@ class AgentChangeServiceTest {
         jdbc.execute("CREATE TABLE sys_permission(permission_code VARCHAR(100) PRIMARY KEY,permission_name VARCHAR(100),permission_type VARCHAR(30),parent_code VARCHAR(100),route_path VARCHAR(200),sort_order INT,enabled INT,remark VARCHAR(500))");
         jdbc.execute("CREATE TABLE sys_role(id BIGINT PRIMARY KEY,role_code VARCHAR(100))");
         jdbc.execute("CREATE TABLE sys_role_permission(role_id BIGINT,permission_code VARCHAR(100),UNIQUE(role_id,permission_code))");
-        for (String file : List.of("V20261104_014200__add_agent_workbench.sql", "V20261104_031917__add_agent_code_workspaces.sql", "V20261104_035107__add_agent_observations_and_cases.sql", "V20261104_174329__add_autonomy_case_resolution.sql", "V20261104_043000__add_agent_change_sets.sql", "V20261104_045500__add_agent_gitlab_delivery.sql")) {
+        for (String file : List.of("V20261104_014200__add_agent_workbench.sql", "V20261104_031917__add_agent_code_workspaces.sql", "V20261104_035107__add_agent_observations_and_cases.sql", "V20261104_174329__add_autonomy_case_resolution.sql", "V20261104_043000__add_agent_change_sets.sql", "V20261104_045500__add_agent_gitlab_delivery.sql", "V20261104_054000__add_agent_deployment_outbox.sql", "V20261104_203039__add_agent_build_test_outbox.sql")) {
             ScriptUtils.executeSqlScript(keepAlive, new FileSystemResource("../workhub-bootstrap/src/main/resources/db/schema/mysql/" + file));
         }
         var configuration = new Configuration(); configuration.setMapUnderscoreToCamelCase(true);
-        for (Class<?> type : List.of(AgentMapper.class, AgentCodeMapper.class, AgentChangeMapper.class, AgentDeliveryMapper.class, AutonomyMapper.class)) configuration.addMapper(type);
+        for (Class<?> type : List.of(AgentMapper.class, AgentCodeMapper.class, AgentChangeMapper.class, AgentDeliveryMapper.class, AutonomyMapper.class, AgentBuildTestMapper.class, AgentDeploymentMapper.class)) configuration.addMapper(type);
         var factory = new SqlSessionFactoryBean(); factory.setDataSource(source); factory.setConfiguration(configuration);
         var sessions = new SqlSessionTemplate(factory.getObject()); agents = sessions.getMapper(AgentMapper.class); workspaces = sessions.getMapper(AgentCodeMapper.class);
         mapper = sessions.getMapper(AgentChangeMapper.class); autonomy = sessions.getMapper(AutonomyMapper.class);
         deliveries = sessions.getMapper(AgentDeliveryMapper.class);
+        testMapper = sessions.getMapper(AgentBuildTestMapper.class); testResources = sessions.getMapper(AgentDeploymentMapper.class);
         transactions = new TransactionInterceptor(); transactions.setTransactionManager(new DataSourceTransactionManager(source)); transactions.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
         access = mock(AgentAccessService.class);
         when(access.actor(anyString())).thenAnswer(invocation -> new AgentAccessService.Actor(invocation.getArgument(0), Set.copyOf(userPermissions)));
@@ -106,7 +114,7 @@ class AgentChangeServiceTest {
             var ctx = (AgentToolContext) invocation.getArgument(0);
             if (!ctx.specification().scopes().contains(invocation.getArgument(1))) throw new AccessDeniedException("scope"); return null;
         }).when(access).requireScope(any(), any());
-        var configs = mock(SysConfigService.class); when(configs.findPlainValue("agent.code", "policy")).thenAnswer(invocation -> policyText.get());
+        configs = mock(SysConfigService.class); when(configs.findPlainValue("agent.code", "policy")).thenAnswer(invocation -> policyText.get());
         gitLabPolicyText.set(json.writeValueAsString(new AgentGitLabPolicy.Policy(List.of(new AgentGitLabPolicy.Instance("instance", "GitLab", "https://gitlab.example.invalid", "gitlab.credentials", "token", true)),
                 List.of(new AgentGitLabPolicy.Binding("server", "instance", 1, "group/server", "development", true), new AgentGitLabPolicy.Binding("web", "instance", 2, "group/web", "development", true)))));
         when(configs.findPlainValue("agent.gitlab", "policy")).thenAnswer(invocation -> gitLabPolicyText.get());
@@ -117,9 +125,11 @@ class AgentChangeServiceTest {
         var providers = mock(AiProviderConfigService.class); var provider = new AiProviderConfigEntity(); provider.setId(1L); provider.setEnabled(true); provider.setChannelType("API");
         when(providers.getEnabledById(1L)).thenReturn(provider);
         var data = new AgentToolData(json);
+        testJenkins=new AgentJenkinsPolicy(configs,json);
+        testEvidence=new AgentBuildTestEvidence(testMapper,agents,new AgentBuildTestPolicy(testJenkins),testJenkins,json,clock);
         acceptance = new AgentRunAcceptanceService(agents, mapper, deliveries, new org.springframework.beans.factory.ObjectProvider<AgentChangeService>() {
             @Override public AgentChangeService getObject() { return service; }
-        }, access, json, clock);
+        }, testEvidence, access, json, clock);
         runs = proxy(new AgentRunStore(agents, json, access, data, providers, clock, acceptance));
         var config = new AgentConfiguration("Code", "修复", 1L, "fixture", List.of(scope), List.of(), 100, 3600, 2);
         var specification = new AgentTaskSpecification("修复代码", "输入", "实际测试后交付", List.of("CHANGE_SET", "TEST_REPORT"), List.of(scope), List.of());
@@ -137,7 +147,7 @@ class AgentChangeServiceTest {
         var referencePolicy = new AutonomyCaseService(autonomy,agents,runs,access,
                 new cn.aslight.workhub.service.autonomy.AutonomyEvidence(json),data,json,validation.getValidator(),mock(AgentMonitorReadMapper.class));
         when(cases.matchesReference(any(),any(),any())).thenAnswer(call -> referencePolicy.matchesReference(call.getArgument(0),call.getArgument(1),call.getArgument(2)));
-        service = new AgentChangeService(mapper, workspaces, agents, autonomy, store, code, policies, runs, access, cases, data, json, validation.getValidator(), deliveries, gitLabPolicies);
+        service = new AgentChangeService(mapper, workspaces, agents, autonomy, store, code, policies, runs, access, cases, data, json, validation.getValidator(), deliveries, gitLabPolicies, testEvidence);
     }
     @AfterEach void close() throws Exception { if (validation != null) validation.close(); if (keepAlive != null) keepAlive.close(); }
 
@@ -470,7 +480,7 @@ class AgentChangeServiceTest {
         assertTrue(runs.get("run").errorMessage().contains("实际构建测试证据"));
         var result = acceptance.preview("task", "run", "owner");
         assertEquals("SATISFIED", result.items().getFirst().status());
-        assertEquals("UNAVAILABLE", result.items().get(1).status());
+        assertEquals("MISSING", result.items().get(1).status());
         assertEquals(1, agents.listArtifacts("run").stream().filter(a -> "CHANGE_SET".equals(a.kind())).count());
         assertFalse(service.detailForUser(change.id(), "owner").readyForReview());
     }
@@ -564,6 +574,90 @@ class AgentChangeServiceTest {
         assertFalse(acceptance.preview("task", "run", "owner").satisfied());
         runs.finish("run", "lease", "COMPLETED", "完成", null);
         assertEquals("WAITING_INPUT", runs.get("run").status());
+    }
+
+    @Test void actualIndependentTestProducerUnlocksCodeReviewAndTaskAcceptance() {
+        var change = delivered();
+        assertFalse(service.detail(context, change.id()).readyForReview());
+        var row = producePassingTest(change);
+        var ready = service.detail(context, change.id());
+        assertTrue(ready.readyForReview()); assertTrue(ready.blockers().isEmpty());
+        var result = acceptance.preview("task", "run", "owner");
+        assertTrue(result.satisfied()); assertEquals(List.of("SATISFIED", "SATISFIED"), result.items().stream().map(AgentRunAcceptance.Item::status).toList());
+        var proof = agents.findArtifact("run", "test:" + row.id());
+        assertEquals(proof.id(), result.items().get(1).evidence().getFirst().id());
+        runs.finish("run", "lease", "COMPLETED", "已交付准确提交并完成独立测试", null);
+        assertEquals("COMPLETED", runs.get("run").status());
+        assertEquals("SUCCEEDED", testMapper.find(row.id()).status());
+        assertTrue(service.detailForUser(change.id(), "owner").readyForReview());
+    }
+
+    @Test void codeEditedAfterPassingTestsRequiresNewCandidateAndTestProof() {
+        var original = delivered(); producePassingTest(original);
+        assertTrue(acceptance.preview("task", "run", "owner").satisfied());
+        change(workspaces.list("run").stream().filter(value -> "server".equals(value.repositoryId())).findFirst().orElseThrow().id(), "next", "new code after tests\n");
+        assertFalse(service.detail(context, original.id()).readyForReview());
+        assertEquals("BLOCKED", acceptance.preview("task", "run", "owner").items().get(1).status());
+        var next = service.prepare(context, "new-candidate", null, plan());
+        assertFalse(service.detail(context, next.id()).readyForReview());
+        assertEquals("MISSING", acceptance.preview("task", "run", "owner").items().get(1).status());
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void committedTestStartRecoversApiOrCliResultAfterLostToolResponse(boolean nativeProtocol) {
+        var change = delivered(); var tests = independentTests(); var tool = new AgentBuildTestTools(tests, json).agentBuildTestStartTool();
+        if (nativeProtocol) runs.beginNative("run", "lease", "native:test", "local-fixture");
+        var arguments = json.createObjectNode().put("changeSetId", change.id()).put("bindingId", "test").put("requestKey", "recovery");
+        runs.beginTool("run", "lease", "test:start", tool, arguments, true);
+        var result = tool.execute(context, arguments);
+        String request = json.valueToTree(result).path("id").asText();
+        assertEquals("PREPARED", testMapper.find(request).status()); assertNull(agents.findEventByKey("run", "test:start:result"));
+        jdbc.update("UPDATE pm_agent_run SET lease_until=? WHERE id='run'", LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC).minusSeconds(1));
+        runs.recoverExpired("run");
+        var receipt = agents.findEventByKey("run", "test:start:result"); assertNotNull(receipt); assertTrue(receipt.payloadJson().contains(request));
+        assertTrue(agents.findEventByKey("run", "test:start:receipt-recovered").payloadJson().contains("COMMITTED_BUILD_TEST_TRANSACTION"));
+        if (nativeProtocol) {
+            assertEquals("WAITING_RESOURCE", runs.get("run").status());
+            assertFalse(json.readTree(runs.get("run").externalHandle()).has("activeTool"));
+            runs.endNative("run", "lease", "native:test", Map.of("processTreeStopped", true)); runs.recoverExpired("run");
+        }
+        assertEquals("QUEUED", runs.get("run").status()); assertNull(runs.get("run").externalHandle());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM pm_agent_build_test", Integer.class));
+        assertEquals("PREPARED", testMapper.find(request).status());
+    }
+
+    private AgentBuildTestStore independentTests() {
+        var instance = new AgentJenkinsPolicy.Instance("instance", "Jenkins fixture", "https://jenkins.example.invalid/", "fixture", "jenkins", "token", true);
+        var binding = new AgentJenkinsPolicy.JobBinding("test", "Independent test", "instance", scope, "workhub", "BUILD_TEST", List.of("team", "test"),
+                Map.of("server", "SERVER_SHA", "web", "WEB_SHA"), "REQUEST_ID", "MANIFEST", "ENVIRONMENT", Map.of(), "workhub/test.json", true);
+        when(configs.findPlainValue("agent.jenkins", "policy")).thenReturn(json.writeValueAsString(new AgentJenkinsPolicy.Policy(List.of(instance), List.of(binding))));
+        when(configs.requireSecretValue("jenkins", "token")).thenReturn("fixture-token");
+        return proxy(new AgentBuildTestStore(testMapper, testResources, agents, runs, service, access, new AgentBuildTestPolicy(testJenkins), testJenkins, new AgentToolData(json), json, clock));
+    }
+    private AgentBuildTestEntity producePassingTest(AgentChangeView change) {
+        var tests = independentTests(); var tool = new AgentBuildTestTools(tests, json).agentBuildTestStartTool();
+        var arguments = json.createObjectNode().put("changeSetId", change.id()).put("bindingId", "test").put("requestKey", "test");
+        runs.beginTool("run", "lease", "test:start", tool, arguments, true);
+        var result = tool.execute(context, arguments); String request = json.valueToTree(result).path("id").asText();
+        runs.endTool("run", "lease", "test:start", result);
+        var client = mock(AgentJenkinsClient.class);
+        var probe = new AgentJenkinsClient.Probe("team/test", true, testJenkins.requiredParameters(testJenkins.binding("test").binding()));
+        when(client.probe(any())).thenReturn(probe);
+        when(client.submit(any(), any())).thenAnswer(invocation -> { outsideTransaction(); assertEquals("SUBMITTING", testMapper.find(request).status()); return 11L; });
+        when(client.queue(any(), eq(11L), any())).thenReturn(new AgentJenkinsClient.QueueState("STARTED", 11, 22L, true));
+        when(client.build(any(), eq(22L), any())).thenReturn(new AgentJenkinsClient.BuildState("FINISHED", 22, "SUCCESS", true, 11L));
+        var receipt = json.createObjectNode(); receipt.put("schemaVersion", 1).put("type", "WORKHUB_BUILD_TEST").put("requestId", request).put("manifestHash", change.manifestHash());
+        receipt.set("scope", json.valueToTree(scope)); receipt.put("jobFullName", "team/test").put("buildNumber", 22);
+        var commits = receipt.putObject("testedCommits"); change.manifest().repositories().forEach(repository -> commits.put(repository.repositoryId(), repository.resultSha()));
+        receipt.put("buildExitCode", 0).put("testExitCode", 0).put("tests", 12).put("failures", 0).put("errors", 0).put("skipped", 0);
+        receipt.put("startedAt", clock.instant().toString()).put("finishedAt", clock.instant().toString()).put("summary", "local fixture reports 12 tests for exact candidate commits");
+        when(client.receipt(any(), eq(22L), anyString())).thenReturn(receipt);
+        var dispatcher = new AgentBuildTestDispatcher(testMapper, tests, testJenkins, client, new AgentToolData(json), json, clock);
+        assertEquals("QUEUED", dispatcher.advance(request).status());
+        jdbc.update("UPDATE pm_agent_build_test SET next_check_at=? WHERE id=?", LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC), request);
+        assertEquals("BUILDING", dispatcher.advance(request).status());
+        jdbc.update("UPDATE pm_agent_build_test SET next_check_at=? WHERE id=?", LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC), request);
+        var row = dispatcher.advance(request); assertEquals("SUCCEEDED", row.status()); verify(client, times(1)).submit(any(), any()); return row;
     }
 
     private void expected(String... kinds) {

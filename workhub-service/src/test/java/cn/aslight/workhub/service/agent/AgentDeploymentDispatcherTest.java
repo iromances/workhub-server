@@ -114,6 +114,13 @@ class AgentDeploymentDispatcherTest {
         String events = json.writeValueAsString(agents.listEvents("run")); assertTrue(events.contains("SUBMITTING")); assertTrue(events.contains("SUCCEEDED")); assertFalse(events.contains("fixture-secret"));
     }
 
+    @Test void independentTestJobCannotEnterHumanReleaseApprovalOrDeploymentOutbox() {
+        configure("https://jenkins.example.invalid/", "BUILD_TEST", scope);
+        assertThrows(IllegalArgumentException.class, () -> approvalGate.material("change", "deploy", "request", "reviewer"));
+        assertThrows(IllegalArgumentException.class, () -> enqueue(approved()));
+        assertEquals(0, locks()); verifyNoInteractions(client);
+    }
+
     @Test void approvalAndOutboxMustShareTransactionAndRollbackTogether() {
         var accepted = approved();
         assertThrows(IllegalTransactionStateException.class, () -> store.enqueue(accepted.id()));
