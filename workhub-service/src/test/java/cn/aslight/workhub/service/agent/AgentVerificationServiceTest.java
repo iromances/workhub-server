@@ -94,7 +94,7 @@ class AgentVerificationServiceTest {
         var tools = new AgentVerificationTools(service, json);
         catalog = new AgentToolCatalog(List.of(tools.agentVerificationStartTool(), tools.agentVerificationRecordTool(), tools.agentVerificationFinishTool(), tools.agentVerificationStatusTool(), tools.agentVerificationWaitTool(), tools.agentVerificationResolveCaseTool()));
         var codes = new ArrayList<>(catalog.all().stream().map(AgentTool::code).toList()); codes.addAll(AgentReleaseVerificationPlan.TOOL_CODES);
-        var specification = new AgentTaskSpecification("修复", "夹具", "复查", List.of("REPORT"), List.of(scope, new AgentScope("BL000012", "PROD")), codes);
+        var specification = new AgentTaskSpecification("修复", "夹具", "复查", List.of("VERIFICATION"), List.of(scope, new AgentScope("BL000012", "PROD")), codes, List.of(scope, new AgentScope("BL000012", "PROD")));
         var configuration = new AgentConfiguration("Agent", "复查", 1L, "fixture", specification.scopes(), codes, 200, 3600, 2);
         agents.insertAgent(new AgentDefinitionEntity("agent", "Agent", json.writeValueAsString(configuration), true, "owner", 0, now(), now()));
         agents.insertRun(new AgentRunEntity("run", "task", "agent", "fixture", "owner", json.writeValueAsString(configuration), json.writeValueAsString(specification),

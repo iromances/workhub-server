@@ -48,7 +48,7 @@ public class AgentDeploymentApproval {
         if (run.cancelRequested() || "CANCELLED".equals(run.status())) throw new IllegalArgumentException("原任务已请求停止，不能开始发布");
         var context = runs.context(run); access.requireRunAuthorization(context);
         var binding = policies.binding(bindingId);
-        if ("BUILD_TEST".equals(binding.binding().stage())) throw new IllegalArgumentException("独立测试 Job 不能进入发布审核");
+        AgentReleaseTargets.requireAllowed(context.specification(), binding.binding());
         access.requireScope(context, binding.binding().scope());
         var commits = new TreeMap<String, String>();
         for (var repository : change.manifest().repositories()) if (binding.binding().commitParameters().containsKey(repository.repositoryId())) {
@@ -64,7 +64,7 @@ public class AgentDeploymentApproval {
         if (!change.current()) blockers.add("MANIFEST_NOT_CURRENT");
         if (!change.readyForReview()) blockers.add("MANIFEST_NOT_READY");
         if (evidence.stream().noneMatch(value -> "TEST_REPORT".equals(value.kind()))) blockers.add("PLATFORM_TEST_EVIDENCE_MISSING");
-        if ("PROD_DEPLOY".equals(binding.binding().stage()) && !hasTestEnvironmentVerification(change, evidence)) blockers.add("TEST_ENVIRONMENT_VERIFICATION_MISSING");
+        if ("PROD_DEPLOY".equals(binding.binding().stage()) && !hasTestEnvironmentVerification(change, evidence, AgentReleaseTargets.repositories(context.specification(), change.manifest(), "TEST_DEPLOY"))) blockers.add("TEST_ENVIRONMENT_VERIFICATION_MISSING");
         return new Material(change, evidence, binding, parameters, List.copyOf(blockers));
     }
     public void requireReady(Material material) {
@@ -77,7 +77,7 @@ public class AgentDeploymentApproval {
         }
     }
 
-    private boolean hasTestEnvironmentVerification(AgentChangeView change, List<AgentArtifactEntity> evidence) {
+    private boolean hasTestEnvironmentVerification(AgentChangeView change, List<AgentArtifactEntity> evidence, Set<String> expectedRepositories) {
         for (var artifact : evidence) {
             if (!"VERIFICATION".equals(artifact.kind()) || !"PLATFORM_VERIFICATION".equals(artifact.provenance())) continue;
             var certificate = verifications.forArtifact(artifact.id());
@@ -100,7 +100,7 @@ public class AgentDeploymentApproval {
                 if (!"TEST_DEPLOY".equals(target.binding().stage())) { valid = false; break; }
                 covered.addAll(target.binding().commitParameters().keySet());
             }
-            if (valid && covered.equals(new HashSet<>(change.manifest().repositories().stream().map(AgentRepositoryChange::repositoryId).toList()))) return true;
+            if (valid && covered.equals(expectedRepositories)) return true;
         }
         return false;
     }

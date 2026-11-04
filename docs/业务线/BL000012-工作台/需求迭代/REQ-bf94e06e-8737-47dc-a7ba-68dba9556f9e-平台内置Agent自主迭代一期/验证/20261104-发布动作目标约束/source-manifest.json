@@ -1,0 +1,49 @@
+{
+  "baseCommit": "7ef3b57909b684e827cc887ca02aa99aa1d15c5f",
+  "files": [
+    {
+      "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentDeploymentApproval.java",
+      "sha256": "098e62086d11eaaeaf8a40ecf66cca62286926982a896c482efde1852e6bf8da"
+    },
+    {
+      "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentJenkinsPolicy.java",
+      "sha256": "3a8c6706f6fadcc90e5e08804392153a9f4afae7287fff8321272c8227846dae"
+    },
+    {
+      "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentReleasePlanGate.java",
+      "sha256": "8c352bb1ec5ce1d1f5537e50196e7808ce0962f512a3108c553ac20b5e3fdd82"
+    },
+    {
+      "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentReleasePlanGraph.java",
+      "sha256": "88cbe8ce725263d553a8d76308e48d48f70d4ef3a32361b6e5d9c8633b3eff20"
+    },
+    {
+      "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentReleasePlanService.java",
+      "sha256": "897f0599c4a4ac29800bae2cfcf8fd4a321802104bd4513131e944c67494c5e3"
+    },
+    {
+      "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentReleaseTargets.java",
+      "sha256": "6c04c69992c5e607c54db3ae8373525679b6118913b82479ca3683fa0e33acdf"
+    },
+    {
+      "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentDeploymentDispatcherTest.java",
+      "sha256": "28c05011990ae7b4fc4a8d93095c005cd865c05c20d7bb862fe8260df2b1838c"
+    },
+    {
+      "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentJenkinsPolicyTest.java",
+      "sha256": "c715d47bae9fe36f74c7dadf4c4aba5774a67a8477d88cc30af003974d2a7eab"
+    },
+    {
+      "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentReleasePlanServiceTest.java",
+      "sha256": "b0bf225d1aa8ddba8bc308d9356970252926c3b83d07da108ab1b30e6baa3bef"
+    },
+    {
+      "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentReleaseTargetsTest.java",
+      "sha256": "775ba93fd5c6c62a1cce40b5002a98c65f5315ad72d008a05f0651f8590bd21a"
+    },
+    {
+      "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentVerificationServiceTest.java",
+      "sha256": "ed622f9ef8582f21694449bcd33e012dcd2899778ea356400a0fd6ca91d80d4a"
+    }
+  ]
+}

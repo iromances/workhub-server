@@ -72,12 +72,15 @@ class AgentDeploymentDispatcherTest {
         when(configs.findPlainValue("agent.jenkins", "policy")).thenAnswer(invocation -> policyText.get());
         when(configs.requireSecretValue("jenkins", "token")).thenReturn("fixture-secret");
         policies = new AgentJenkinsPolicy(configs, json); configure("https://jenkins.example.invalid/", "TEST_DEPLOY", scope);
-        var task = new AgentTaskSpecification("修复测试问题", "", "实际测试与人工审核", List.of("DEPLOYMENT"), List.of(scope, new AgentScope("BL000012", "PROD")), List.of());
+        var task = new AgentTaskSpecification("修复测试问题", "", "实际测试与人工审核", List.of("DEPLOYMENT"), List.of(scope, new AgentScope("BL000012", "PROD")), List.of(), List.of(scope, new AgentScope("BL000012", "PROD")));
         var config = new AgentConfiguration("Agent", "repair", 1L, "fixture", task.scopes(), List.of(), 50, 600, 1);
         var context = new AgentToolContext("run", "task", "agent", "owner", null, config, task);
         agents.insertRun(new AgentRunEntity("run", "task", "agent", "manual", "owner", json.writeValueAsString(config), json.writeValueAsString(task), "{}",
                 "WAITING_INPUT", 1, 0, false, null, null, null, null, null, 0, now(), now()));
-        var runs = mock(AgentRunStore.class); when(runs.get("run")).thenAnswer(invocation -> agents.findRun("run")); when(runs.context(any())).thenReturn(context);
+        var runs = mock(AgentRunStore.class); when(runs.get("run")).thenAnswer(invocation -> agents.findRun("run")); when(runs.context(any())).thenAnswer(invocation -> {
+            var row = (AgentRunEntity) invocation.getArgument(0);
+            return new AgentToolContext(row.id(), row.taskId(), row.agentId(), row.requestedBy(), row.ownerToken(), config, json.readValue(row.specificationJson(), AgentTaskSpecification.class));
+        });
         access = mock(AgentAccessService.class);
         when(access.actor(anyString())).thenAnswer(invocation -> new AgentAccessService.Actor(invocation.getArgument(0), Set.copyOf(reviewerPermissions)));
         doAnswer(invocation -> { if (!task.scopes().contains(invocation.getArgument(1))) throw new AccessDeniedException("scope"); return null; }).when(access).requireScope(any(), any());
@@ -118,6 +121,15 @@ class AgentDeploymentDispatcherTest {
         configure("https://jenkins.example.invalid/", "BUILD_TEST", scope);
         assertThrows(IllegalArgumentException.class, () -> approvalGate.material("change", "deploy", "request", "reviewer"));
         assertThrows(IllegalArgumentException.class, () -> enqueue(approved()));
+        assertEquals(0, locks()); verifyNoInteractions(client);
+    }
+
+    @Test void legacySingleRequestWithoutCompletionTargetsBlocksBeforeAnyJenkinsCall() {
+        var row = enqueue(approved());
+        var task = (tools.jackson.databind.node.ObjectNode) json.readTree(agents.findRun("run").specificationJson());
+        task.set("completionTargets", json.createArrayNode());
+        jdbc.update("UPDATE pm_agent_run SET specification_json=? WHERE id='run'", json.writeValueAsString(task));
+        assertEquals("BLOCKED", dispatcher.advance(row.id()).status());
         assertEquals(0, locks()); verifyNoInteractions(client);
     }
 

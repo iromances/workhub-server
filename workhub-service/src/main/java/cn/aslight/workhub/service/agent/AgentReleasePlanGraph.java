@@ -6,7 +6,7 @@ import java.util.*;
 /** Job 依赖包含清单仓库依赖；同一部署资源必须明确先后，不能隐式并发。 */
 final class AgentReleasePlanGraph {
     static List<AgentReleasePlanSnapshot.Step> order(AgentChangeView change, List<AgentReleasePlanSnapshot.Step> steps,
-                                                    List<AgentReleasePlanRequest.Dependency> explicit) {
+                                                    List<AgentReleasePlanRequest.Dependency> explicit, Set<String> requiredRepositories) {
         var byId = new TreeMap<String, AgentReleasePlanSnapshot.Step>();
         var dependencies = new TreeMap<String, Set<String>>();
         var repositories = new HashSet<String>();
@@ -15,8 +15,8 @@ final class AgentReleasePlanGraph {
             dependencies.put(step.bindingId(), new TreeSet<>());
             repositories.addAll(step.binding().binding().commitParameters().keySet());
         }
-        if (!repositories.equals(new HashSet<>(change.manifest().repositories().stream().map(AgentRepositoryChange::repositoryId).toList()))) {
-            throw new IllegalArgumentException("发布计划必须覆盖同一候选清单的全部仓库");
+        if (!repositories.equals(requiredRepositories)) {
+            throw new IllegalArgumentException("发布计划必须覆盖本阶段目标的全部候选仓库");
         }
         for (var edge : explicit) {
             if (!byId.containsKey(edge.bindingId()) || !byId.containsKey(edge.dependsOn()) || edge.bindingId().equals(edge.dependsOn())) throw new IllegalArgumentException("Job 依赖引用不存在或引用自身");

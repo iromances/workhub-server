@@ -46,6 +46,7 @@ class AgentReleasePlanServiceTest {
     private AgentDeploymentStore outbox;
     private AgentReleasePlanService service;
     private AgentAccessService access;
+    private AgentRunStore runs;
     private TransactionTemplate tx;
     private AgentConfiguration configuration;
 
@@ -67,15 +68,19 @@ class AgentReleasePlanServiceTest {
         var interceptor = new TransactionInterceptor(); interceptor.setTransactionManager(manager); interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
         var configs = mock(SysConfigService.class); when(configs.findPlainValue("agent.jenkins", "policy")).thenAnswer(i -> policyText.get());
         policies = new AgentJenkinsPolicy(configs, json); setBindings(List.of(binding("server", "server", "server"), binding("web", "web", "web")));
-        var task = new AgentTaskSpecification("修复", "", "真实验证", List.of("DEPLOYMENT"), List.of(scope, new AgentScope("BL000012", "PROD")), List.of());
+        var task = new AgentTaskSpecification("修复", "", "真实验证", List.of("DEPLOYMENT"), List.of(scope, new AgentScope("BL000012", "PROD")), List.of(), List.of(scope, new AgentScope("BL000012", "PROD")));
         configuration = new AgentConfiguration("Agent", "repair", 1L, "fixture", task.scopes(), List.of(), 50, 600, 1);
         agents.insertAgent(new AgentDefinitionEntity("agent", "Agent", json.writeValueAsString(configuration), true, "owner", 0, now(), now()));
         agents.insertRun(new AgentRunEntity("run", "task", "agent", "manual", "owner", json.writeValueAsString(configuration), json.writeValueAsString(task), "{}", "WAITING_INPUT", 1, 0,
                 false, null, null, null, null, null, 0, now(), now()));
         var context = new AgentToolContext("run", "task", "agent", "owner", null, configuration, task);
-        var runs = mock(AgentRunStore.class); when(runs.get("run")).thenAnswer(i -> agents.findRun("run")); when(runs.context(any())).thenReturn(context);
+        runs = mock(AgentRunStore.class); when(runs.get("run")).thenAnswer(i -> agents.findRun("run"));
+        when(runs.context(any())).thenAnswer(i -> {
+            var row = (AgentRunEntity) i.getArgument(0);
+            return new AgentToolContext(row.id(), row.taskId(), row.agentId(), row.requestedBy(), row.ownerToken(), configuration, json.readValue(row.specificationJson(), AgentTaskSpecification.class));
+        });
         access = mock(AgentAccessService.class); when(access.actor(anyString())).thenAnswer(i -> new AgentAccessService.Actor(i.getArgument(0), Set.copyOf(permissions)));
-        doAnswer(i -> { if (!task.scopes().contains(i.getArgument(1))) throw new AccessDeniedException("scope"); return null; }).when(access).requireScope(any(), any());
+        doAnswer(i -> { if (!((AgentToolContext) i.getArgument(0)).specification().scopes().contains(i.getArgument(1))) throw new AccessDeniedException("scope"); return null; }).when(access).requireScope(any(), any());
         var manifest = new AgentChangeManifest(1, "run", "task", task, new AgentChangePlan("fix", "API", "regression", "restore", List.of(new AgentChangePlan.Dependency("web", "server"))),
                 null, List.of(repo("server"), repo("web")), List.of("server", "web"));
         current.set(new AgentChangeView("change", "run", "task", 1, hash, now(), true, true, List.of(), manifest));
@@ -326,6 +331,55 @@ class AgentReleasePlanServiceTest {
             assertThrows(IllegalArgumentException.class, () -> service.prepare(request, "owner"));
             assertEquals(0, count("pm_agent_release_plan"));
         }
+    }
+
+    @Test void testCompletionTargetHidesProductionDespiteProductionAccess() {
+        taskTargets(List.of(scope), true);
+        var production = new AgentJenkinsPolicy.JobBinding("prod", "Production", "main", new AgentScope("BL000012", "PROD"), "production", "PROD_DEPLOY", List.of("prod"),
+                Map.of("server", "SERVER", "web", "WEB"), "REQUEST", "MANIFEST", "ENV", Map.of(), "receipt.json", true);
+        setBindings(List.of(binding("server", "server", "server"), binding("web", "web", "web"), production));
+        assertEquals(Set.of("server", "web"), service.bindings("change", "owner").stream().map(value -> value.get("id")).collect(java.util.stream.Collectors.toSet()));
+        assertThrows(IllegalArgumentException.class, () -> service.prepare(new AgentReleasePlanRequest("prod-attempt", "change", "PROD_DEPLOY", List.of("prod"), List.of(), verification(production.scope(), 3600)), "owner"));
+        assertEquals(0, count("pm_agent_release_plan")); assertEquals(0, count("pm_agent_deployment"));
+        approve(prepare("test-only")); assertEquals(2, count("pm_agent_deployment"));
+    }
+    @Test void productionOnlyCompletionRetainsAuthorizedTestPrerequisite() {
+        taskTargets(List.of(new AgentScope("BL000012", "PROD")), true);
+        assertEquals(2, service.bindings("change", "owner").size());
+        var id = prepare("prerequisite"); assertEquals("TEST_DEPLOY", plans.find(id).stage());
+        approve(id); assertEquals(2, count("pm_agent_deployment"));
+    }
+    @Test void testPrerequisiteDoesNotInventMissingTestAuthorization() {
+        taskTargets(List.of(new AgentScope("BL000012", "PROD")), false);
+        assertTrue(service.bindings("change", "owner").isEmpty());
+        assertThrows(AccessDeniedException.class, () -> prepare("no-test-permission")); assertEquals(0, count("pm_agent_deployment"));
+    }
+    @Test void legacyMissingTargetsCannotApproveButHistoricalDraftRemainsVisible() {
+        var id = prepare("before-target-check"); taskTargets(List.of(), true);
+        assertEquals(false, service.detail(id, "owner").get("readyForReview"));
+        assertThrows(IllegalArgumentException.class, () -> approve(id));
+        assertThrows(IllegalArgumentException.class, () -> prepare("new"));
+        assertEquals(0, count("pm_agent_release_review")); assertEquals(0, count("pm_agent_deployment"));
+    }
+    @Test void legacyMissingTargetsBlocksQueuedPlanWithoutLeavingResourcesStuck() {
+        var id = prepare("before-target-check"); approve(id); taskTargets(List.of(), true);
+        assertNull(outbox.claim(step(id, "server")));
+        assertEquals("BLOCKED", deployments.find(step(id, "server")).status()); assertEquals("BLOCKED", deployments.find(step(id, "web")).status());
+        assertEquals("FAILED", plans.find(id).status()); assertEquals(0, count("pm_agent_release_resource"));
+    }
+    @Test void targetViolationStopsUnsentStepsWhilePreservingOriginalInFlightRequest() {
+        var id = prepare("before-target-check"); approve(id); var sent = outbox.intent(outbox.claim(step(id, "server")));
+        taskTargets(List.of(), true); assertNull(outbox.claim(step(id, "web")));
+        assertEquals("BLOCKED", deployments.find(step(id, "web")).status()); assertEquals("SUBMITTING", deployments.find(sent.id()).status());
+        assertEquals("STOPPING", plans.find(id).status()); assertTrue(count("pm_agent_release_resource") > 0);
+        outbox.finish(sent, "UNKNOWN", null, null, null, null, "继续核对原请求");
+        assertEquals("NEEDS_ATTENTION", plans.find(id).status()); assertTrue(count("pm_agent_release_resource") > 0);
+    }
+    private void taskTargets(List<AgentScope> targets, boolean testAuthorized) {
+        var old = json.readValue(agents.findRun("run").specificationJson(), AgentTaskSpecification.class);
+        var scopes = testAuthorized ? old.scopes() : List.of(new AgentScope("BL000012", "PROD"));
+        var next = new AgentTaskSpecification(old.objective(), old.context(), old.acceptanceCriteria(), old.expectedArtifacts(), scopes, old.toolCodes(), targets);
+        jdbc.update("UPDATE pm_agent_run SET specification_json=? WHERE id='run'", json.writeValueAsString(next));
     }
 
     private AgentReleaseVerificationPlan verification(AgentScope target, long window) {

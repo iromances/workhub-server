@@ -116,6 +116,17 @@ class AgentJenkinsPolicyTest {
         raw.set(null); assertThrows(AgentCodePolicy.Unavailable.class, () -> tools.agentJenkinsTargetsTool().execute(context, json.createObjectNode()));
     }
 
+    @Test void deploymentStageCannotMislabelTheConfiguredEnvironment() {
+        var original = service.binding("test-deploy").binding();
+        for (var pair : List.of(Map.entry("PROD_DEPLOY", "TEST"), Map.entry("TEST_DEPLOY", "PROD"), Map.entry("TEST_DEPLOY", "UAT"))) {
+            save(new AgentJenkinsPolicy.JobBinding(original.id(), original.name(), original.instanceId(), new AgentScope("BL000012", pair.getValue()),
+                    original.systemName(), pair.getKey(), original.jobSegments(), original.commitParameters(), original.correlationParameter(), original.manifestParameter(),
+                    original.environmentParameter(), original.fixedParameters(), original.receiptPath(), true));
+            assertThrows(IllegalArgumentException.class, service::current);
+        }
+        verifyNoInteractions(client); verify(configs, never()).requireSecretValue(anyString(), anyString());
+    }
+
     private AgentJenkinsPolicy.JobBinding binding(Map<String, String> commits, Map<String, String> fixed) {
         return new AgentJenkinsPolicy.JobBinding("test-deploy", "Test deploy", "main", scope, "example", "TEST_DEPLOY",
                 List.of("team", "app"), commits, "REQUEST_ID", "MANIFEST_HASH", "ENVIRONMENT", fixed, "reports/workhub-release.json", true);

@@ -45,6 +45,8 @@ public class AgentReleasePlanService {
         valid(request); deployments.lockDispatcher();
         access.actor(user).require("agent:code:deliver");
         var change = changes.detailForUser(request.changeSetId(), user); agents.lockRun(change.runId());
+        var specification = runs.context(runs.get(change.runId())).specification();
+        var requiredRepositories = AgentReleaseTargets.repositories(specification, change.manifest(), request.stage());
         if (new HashSet<>(request.bindingIds()).size() != request.bindingIds().size()) throw new IllegalArgumentException("发布 Job 绑定重复");
         var definitionValue = new TreeMap<String, Object>(Map.of("changeSetId", request.changeSetId(), "stage", request.stage(),
                 "bindings", request.bindingIds().stream().sorted().toList(), "dependencies", request.dependencies().stream()
@@ -66,9 +68,10 @@ public class AgentReleasePlanService {
             evidence = material.evidence(); blockers.addAll(material.blockers());
             steps.add(new AgentReleasePlanSnapshot.Step(requestId, id(), material.binding(), material.parameters(), List.of()));
         }
+        AgentReleaseTargets.requireCoverage(specification, change.manifest(), request.stage(), steps);
         if (request.verificationPlan() == null) blockers.add("VERIFICATION_PLAN_MISSING");
         else validateVerification(request.verificationPlan(), steps);
-        var snapshot = new AgentReleasePlanSnapshot(2, change, evidence, List.copyOf(blockers), AgentReleasePlanGraph.order(change, steps, request.dependencies()), request.verificationPlan());
+        var snapshot = new AgentReleasePlanSnapshot(2, change, evidence, List.copyOf(blockers), AgentReleasePlanGraph.order(change, steps, request.dependencies(), requiredRepositories), request.verificationPlan());
         String payload = json.writeValueAsString(snapshot);
         if (payload.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 4 * 1024 * 1024) throw new IllegalArgumentException("整组审核材料超过4 MiB，请减少本次变更规模");
         var plan = new AgentReleasePlanEntity(id(), change.runId(), change.id(), request.requestKey(), definition, change.manifestHash(), request.stage(), payload,
@@ -95,6 +98,7 @@ public class AgentReleasePlanService {
         if (!"WAITING_REVIEW".equals(plan.status()) || plan.version() != request.expectedVersion() || !plan.snapshotHash().equals(request.snapshotHash())) throw new IllegalStateException("审核材料或状态已变化，请重新打开当前计划");
         var snapshot = gate.snapshot(plan);
         if ("APPROVED".equals(request.decision())) {
+            AgentReleaseTargets.requireCoverage(runs.context(runs.get(plan.runId())).specification(), snapshot.change().manifest(), plan.stage(), snapshot.steps());
             validateVerification(snapshot.verificationPlan(), snapshot.steps());
             for (var step : snapshot.steps()) {
                 var current = approval.material(plan.changeSetId(), step.bindingId(), step.requestId(), user); approval.requireReady(current);
@@ -143,7 +147,8 @@ public class AgentReleasePlanService {
     }
     public List<Map<String, Object>> bindings(String changeId, String user) {
         var change = changes.detailForUser(changeId, user); var context = runs.context(runs.get(change.runId()));
-        return policies.current().bindings().stream().filter(AgentJenkinsPolicy.JobBinding::enabled).filter(binding -> !"BUILD_TEST".equals(binding.stage())).filter(binding -> {
+        AgentReleaseTargets.requireSpecification(context.specification());
+        return policies.current().bindings().stream().filter(AgentJenkinsPolicy.JobBinding::enabled).filter(binding -> AgentReleaseTargets.allows(context.specification(), binding)).filter(binding -> {
             try { access.requireScope(context, binding.scope()); policies.binding(binding.id()); return true; }
             catch (AccessDeniedException | IllegalArgumentException ex) { return false; }
         }).map(binding -> Map.<String, Object>of("id", binding.id(), "name", binding.name(), "stage", binding.stage(), "scope", binding.scope(),

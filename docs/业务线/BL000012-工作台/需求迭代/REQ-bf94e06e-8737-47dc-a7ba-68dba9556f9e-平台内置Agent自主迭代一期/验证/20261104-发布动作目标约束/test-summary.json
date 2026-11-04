@@ -1,0 +1,61 @@
+{
+  "command": "mvn -o -q -pl workhub-controller,workhub-job -am -Dtest=AgentReleaseTargetsTest,AgentReleasePlanServiceTest,AgentDeploymentDispatcherTest,AgentJenkinsPolicyTest,AgentVerificationServiceTest,AgentBuildTestDispatcherTest,AgentWorkbenchServiceTest -Dsurefire.failIfNoSpecifiedTests=false -DargLine=-javaagent:/Users/aslight/.m2/repository/org/mockito/mockito-core/5.20.0/mockito-core-5.20.0.jar test",
+  "exitCode": 0,
+  "total": {
+    "tests": 248,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "suites": [
+    {
+      "suite": "AgentReleaseTargetsTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "AgentReleasePlanServiceTest",
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "AgentDeploymentDispatcherTest",
+      "tests": 30,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "AgentJenkinsPolicyTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "AgentVerificationServiceTest",
+      "tests": 65,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "AgentBuildTestDispatcherTest",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "AgentWorkbenchServiceTest",
+      "tests": 61,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    }
+  ]
+}
