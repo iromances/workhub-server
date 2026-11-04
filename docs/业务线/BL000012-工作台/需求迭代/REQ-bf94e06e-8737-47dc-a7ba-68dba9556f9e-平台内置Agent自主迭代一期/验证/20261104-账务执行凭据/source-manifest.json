@@ -1,0 +1,82 @@
+[
+  {
+    "path": "workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_132500__add_accounting_execution_evidence.sql",
+    "sha256": "55edcff1efa90c678c8def475b2d989e986a70aa3f61244187c24cd16c67f29a"
+  },
+  {
+    "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/agent/AgentMonitorReadMapper.java",
+    "sha256": "e660bcb8f405fe9631663affcbc55a3f5335a2319fc81323eff8d251eb644fd1"
+  },
+  {
+    "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/ops/AccountingExecutionEvidenceMapper.java",
+    "sha256": "629575ec1220f7c5c2e7cf9949dfa5765545150d82d69b32d45d05ba709faa4e"
+  },
+  {
+    "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/ops/AccountingRunMapper.java",
+    "sha256": "8d732f5c0c3858479d742b6632ef2aeac2814599cb5605d39e48da201e569747"
+  },
+  {
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/ops/AccountingExecutionEvidenceEntity.java",
+    "sha256": "857a7b14a59b285df210b0dd865bbffb9caeb987a5ee406ce9900f16676a8283"
+  },
+  {
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/ops/AccountingExecutionSnapshot.java",
+    "sha256": "236857ff3b6e350de0d7ef7a014be2f93f3a8f9c2a6e2e09a712285341d69460"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentInspectionService.java",
+    "sha256": "27625c521dc814d868bea031d4d4227f1156a25f98fef8207e61ebdae1e552f6"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentMonitoringTools.java",
+    "sha256": "c2a5960e3096ac3eae387617d4cc3f539e7bb0b7914556a2371bf913fe5d62e2"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/autonomy/AutonomyEvidence.java",
+    "sha256": "6d0be1355281a50b96a5915def1dab463ab36fc6f22a9b2696b4a725f4683b71"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ops/AccountingDatabaseQueryClient.java",
+    "sha256": "4ec57e51c2f5a8c03b86adbeb31ec0c686f449b00e5943291b0881c66fa7f678"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ops/AccountingExecutionEvidenceService.java",
+    "sha256": "f1ee5394edade5d8725207f381cfaf0c412fb9f3a1f9127569dd4a1468184abd"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ops/AccountingMonitorService.java",
+    "sha256": "88cf1cdd7a651eb5885ce21ed61b29cacc310129bc85808183a1f5231b22703a"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ops/AccountingReconcileExecutor.java",
+    "sha256": "c9d615992c785f2acd3c2d6fd46977c6d172ccf195f7b173fa3ea29cb8fc5cdf"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ops/McpAccountingDatabaseQueryClient.java",
+    "sha256": "bf31366c171bee34ec9f7b5c1b8dfcfe58cf300169a5bea3a1051272ce28b8aa"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentInspectionServiceTest.java",
+    "sha256": "fd0b747ee03a9c14d62ceccd7e1e0016caaa27c8caa8c65624520c5e7db2d816"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentMonitorReadMapperTest.java",
+    "sha256": "0b422532cd8de8f0d4f3dc381d2e40b0917354ea11f458bcb38827b24e1e62ee"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentMonitoringToolsTest.java",
+    "sha256": "638e1bb96393f87ba422a2b0a828d3e29d5267befdd6fa83b3918b6c89cc21d5"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/ops/AccountingExecutionEvidenceServiceTest.java",
+    "sha256": "17bdfb6166e3667b1a62fc2745dada698a283507f769d9f7a397d3442c960297"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/ops/AccountingReconcileExecutorTest.java",
+    "sha256": "2294fe35f9ba86c1d3715c7a3b3192a0ac094f9841c655408f9f073f45564701"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/ops/McpAccountingDatabaseQueryClientTest.java",
+    "sha256": "43d5ca326819801881815ad1b82170773847335e7584a0552d6f1e3b85663efa"
+  }
+]

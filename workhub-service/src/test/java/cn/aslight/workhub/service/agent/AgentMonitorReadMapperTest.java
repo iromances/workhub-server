@@ -28,6 +28,7 @@ class AgentMonitorReadMapperTest {
         String accounting = Files.readString(Path.of("../workhub-bootstrap/src/main/resources/db/schema/mysql/V20260723_210000__add_accounting_monitoring.sql"));
         for (String table : List.of("pm_business_line", "pm_project", "pm_work_item")) createTable(baseline, table);
         for (String table : List.of("ops_account_monitor_config", "ops_account_reconcile_run", "ops_account_reconcile_result")) createTable(accounting, table);
+        jdbc.execute(Files.readString(Path.of("../workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_132500__add_accounting_execution_evidence.sql")));
         var configuration = new Configuration(); configuration.setMapUnderscoreToCamelCase(true); configuration.addMapper(AgentMonitorReadMapper.class);
         var factory = new SqlSessionFactoryBean(); factory.setDataSource(ds); factory.setConfiguration(configuration);
         mapper = new SqlSessionTemplate(factory.getObject()).getMapper(AgentMonitorReadMapper.class);

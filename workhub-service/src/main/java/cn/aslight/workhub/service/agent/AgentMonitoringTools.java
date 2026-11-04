@@ -35,12 +35,13 @@ public class AgentMonitoringTools {
     private final AgentToolData data;
     private final AgentObservationService observations;
     private final AgentMonitorReadMapper history;
+    private final AccountingExecutionEvidenceService executionEvidence;
 
     public AgentMonitoringTools(AgentAccessService access, AgentMapper agents, OpsMonitorService business,
                                 OpsMonitorMapper businessMapper, AccountingMonitorService accounting,
                                 AccountingMonitorMapper accountingConfigs, AccountingRunMapper accountingRuns,
                                 SystemAlertService alerts, BusinessLogSearchService logs,
-                                ObjectMapper json, AgentToolData data, AgentObservationService observations, AgentMonitorReadMapper history) {
+                                ObjectMapper json, AgentToolData data, AgentObservationService observations, AgentMonitorReadMapper history, AccountingExecutionEvidenceService executionEvidence) {
         this.access = access;
         this.agents = agents;
         this.business = business;
@@ -54,6 +55,7 @@ public class AgentMonitoringTools {
         this.data = data;
         this.observations = observations;
         this.history = history;
+        this.executionEvidence = executionEvidence;
     }
 
     @Bean
@@ -118,7 +120,7 @@ public class AgentMonitoringTools {
                             .sorted(Comparator.comparing(item -> item.config().id()))
                             .map(item -> new AccountingFact(item.config().id(), item.config().displayName(), item.config().systemName(),
                                     item.config().enabled(), accountingState(item.config().enabled(), item.latestRun()),
-                                    item.latestRun(), age(item.latestRun() == null ? null : item.latestRun().finishedAt()), item.config().updatedAt()))
+                                    item.latestRun() == null ? null : executionEvidence.describe(item.latestRun()), accountingAge(item.latestRun()), item.config().updatedAt()))
                             .toList();
                     return statusPage("账务监测", scope, facts, page, size, configId != null);
                 });
@@ -139,11 +141,13 @@ public class AgentMonitoringTools {
                     var rows = history.accountingRuns(scope.businessLineCode(), scope.environmentCode(), configId, before, size + 1);
                     boolean more = rows.size() > size;
                     var page = List.copyOf(rows.subList(0, Math.min(rows.size(), size)));
-                    var value = observation("账务历史运行", scope, Map.of("runs", page, "hasMore", more,
+                    var described = page.stream().map(executionEvidence::describe).toList();
+                    var value = observation("账务历史运行", scope, Map.of("runs", described, "hasMore", more,
                             "nextBeforeRunId", more ? page.getLast().id() : 0L, "pageSize", size,
                             "coverageMeaning", "仅表示当前历史页；没有记录不代表监测配置、采集或账务健康"));
-                    value.put("scopeBasis", "CURRENT_MONITOR_CONFIGURATION");
-                    value.put("historicalEnvironmentVerified", false);
+                    boolean verified = !described.isEmpty() && described.stream().allMatch(AccountingExecutionEvidenceService::scopeVerified);
+                    value.put("scopeBasis", verified ? "RUN_EXECUTION_SNAPSHOT" : described.stream().anyMatch(AccountingExecutionEvidenceService::scopeVerified) ? "MIXED_EXECUTION_EVIDENCE" : "CURRENT_MONITOR_CONFIGURATION");
+                    value.put("historicalEnvironmentVerified", verified);
                     return value;
                 });
     }
@@ -158,18 +162,26 @@ public class AgentMonitoringTools {
                     int size = args.bounded("pageSize", 5, 1, 10);
                     var run = accountingRuns.findById(id);
                     if (run == null) throw new IllegalArgumentException("账务运行不存在");
-                    var config = accountingConfigs.findById(run.configId());
-                    if (config == null) throw new IllegalStateException("账务运行配置已不存在，需核实原始范围");
-                    AgentScope scope = new AgentScope(config.businessLineCode(), config.environmentCode());
+                    var saved = executionEvidence.read(run);
+                    AgentScope scope;
+                    if (saved != null) {
+                        var config = saved.snapshot().configuration();
+                        scope = new AgentScope(config.businessLineCode(), config.environmentCode());
+                    } else {
+                        var config = accountingConfigs.findById(run.configId());
+                        if (config == null) throw new IllegalStateException("账务运行配置已不存在，需核实原始范围");
+                        scope = new AgentScope(config.businessLineCode(), config.environmentCode());
+                    }
                     access.requireScope(context, scope);
                     var rows = history.accountingResults(id, after, size + 1);
                     boolean more = rows.size() > size;
                     var page = List.copyOf(rows.subList(0, Math.min(rows.size(), size)));
-                    var value = observation("账务规则结果", scope, Map.of("run", run, "results", page, "hasMore", more,
+                    var value = observation("账务规则结果", scope, Map.of("run", executionEvidence.describe(run), "results", page, "hasMore", more,
                             "nextAfterResultId", page.isEmpty() ? after : page.getLast().id(), "pageSize", size,
                             "runFinished", run.finishedAt() != null && !Set.of("PENDING", "RUNNING").contains(run.status())));
-                    value.put("scopeBasis", "CURRENT_MONITOR_CONFIGURATION");
-                    value.put("historicalEnvironmentVerified", false);
+                    value.put("scopeBasis", saved == null ? "CURRENT_MONITOR_CONFIGURATION" : "RUN_EXECUTION_SNAPSHOT");
+                    value.put("historicalEnvironmentVerified", saved != null);
+                    if (saved != null) value.put("recordTimeZone", saved.snapshot().recordTimeZone());
                     return value;
                 });
     }
@@ -296,7 +308,14 @@ public class AgentMonitoringTools {
         if (Set.of("PENDING", "RUNNING").contains(run.status())) return "IN_PROGRESS";
         if ("FAILED".equals(run.status())) return "EXECUTION_FAILED";
         if (run.ruleTotal() != null && run.ruleTotal() > 0 && run.ruleTotal().equals(run.skippedCount())) return "NOT_EVALUATED";
-        return state(enabled, run.finishedAt());
+        if (run.finishedAt() == null) return "NEVER_RUN";
+        return accountingAge(run) < 0 ? "FUTURE_TIMESTAMP" : "HAS_RESULT";
+    }
+    private Long accountingAge(AccountingRunEntity run) {
+        if (run == null || run.finishedAt() == null) return null;
+        var saved = executionEvidence.read(run);
+        ZoneId zone = saved == null ? AccountingExecutionEvidenceService.RECORD_ZONE : ZoneId.of(saved.snapshot().recordTimeZone());
+        return Duration.between(run.finishedAt().atZone(zone).toInstant(), Instant.now()).getSeconds();
     }
     private Long age(LocalDateTime value) {
         return value == null ? null : Duration.between(value.atZone(ZoneId.systemDefault()).toInstant(), Instant.now()).getSeconds();
@@ -305,5 +324,5 @@ public class AgentMonitoringTools {
     record BusinessFact(Long id, String name, String type, Boolean enabled, String dataState,
                          String status, String message, LocalDateTime lastCheckedAt, Long dataAgeSeconds, LocalDateTime configurationUpdatedAt) { }
     record AccountingFact(Long configId, String name, String systemName, Boolean enabled, String dataState,
-                           AccountingRunEntity latestRun, Long dataAgeSeconds, LocalDateTime configurationUpdatedAt) { }
+                           JsonNode latestRun, Long dataAgeSeconds, LocalDateTime configurationUpdatedAt) { }
 }

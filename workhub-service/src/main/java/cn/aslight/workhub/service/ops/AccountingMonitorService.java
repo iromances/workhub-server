@@ -33,7 +33,7 @@ import java.util.UUID;
 @Service
 public class AccountingMonitorService {
 
-    private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
+    private static final ZoneId ZONE = AccountingExecutionEvidenceService.RECORD_ZONE;
     private static final Duration MAX_MANUAL_RANGE = Duration.ofDays(31);
     private static final DateTimeFormatter RUN_TIME = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 

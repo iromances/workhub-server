@@ -29,25 +29,27 @@ public class AccountingReconcileExecutor {
     private final AccountingRuleCatalog ruleCatalog;
     private final AccountingDatabaseQueryClient queryClient;
     private final ObjectMapper objectMapper;
+    private final AccountingExecutionEvidenceService evidence;
 
     @Autowired
     public AccountingReconcileExecutor(AccountingMonitorMapper monitorMapper,
                                        AccountingRunMapper runMapper,
                                        AccountingRuleCatalog ruleCatalog,
-                                       AccountingDatabaseQueryClient queryClient) {
-        this(monitorMapper, runMapper, ruleCatalog, queryClient, new ObjectMapper());
+                                       AccountingDatabaseQueryClient queryClient, AccountingExecutionEvidenceService evidence) {
+        this(monitorMapper, runMapper, ruleCatalog, queryClient, evidence, new ObjectMapper());
     }
 
     AccountingReconcileExecutor(AccountingMonitorMapper monitorMapper,
                                 AccountingRunMapper runMapper,
                                 AccountingRuleCatalog ruleCatalog,
                                 AccountingDatabaseQueryClient queryClient,
-                                ObjectMapper objectMapper) {
+                                AccountingExecutionEvidenceService evidence, ObjectMapper objectMapper) {
         this.monitorMapper = monitorMapper;
         this.runMapper = runMapper;
         this.ruleCatalog = ruleCatalog;
         this.queryClient = queryClient;
         this.objectMapper = objectMapper;
+        this.evidence = evidence;
     }
 
     public void execute(Long runId) {
@@ -66,10 +68,12 @@ public class AccountingReconcileExecutor {
 
         try {
             List<AccountingRuleDefinition> rules = selectedRules(config, run.ruleCodes());
-            Set<String> existingTables = loadExistingTables(config, rules);
+            var session = queryClient.open(config);
+            var prepared = evidence.capture(run, config, rules, session.targetHash());
+            Set<String> existingTables = loadExistingTables(session, config, rules);
             List<AccountingResultEntity> results = new ArrayList<>();
-            for (AccountingRuleDefinition rule : rules) {
-                AccountingResultEntity result = executeRule(config, run, rule, existingTables);
+            for (var rule : prepared) {
+                AccountingResultEntity result = executeRule(session, run, rule, existingTables);
                 runMapper.insertResult(result);
                 results.add(result);
             }
@@ -79,10 +83,11 @@ public class AccountingReconcileExecutor {
         }
     }
 
-    private AccountingResultEntity executeRule(AccountingMonitorConfigEntity config,
+    private AccountingResultEntity executeRule(AccountingDatabaseQueryClient.Session session,
                                                AccountingRunEntity run,
-                                               AccountingRuleDefinition rule,
+                                               AccountingExecutionEvidenceService.PreparedRule prepared,
                                                Set<String> existingTables) {
+        var rule = prepared.rule();
         long started = System.nanoTime();
         if (AccountingRuleCatalog.DAILY.equals(rule.granularity())
                 && !AccountingRuleCatalog.isWholeDayWindow(run.startTime(), run.endTime())) {
@@ -97,14 +102,15 @@ public class AccountingReconcileExecutor {
         }
 
         try {
-            AccountingRuleSql sql = rule.buildSql(config.schemaName(), run.startTime(), run.endTime());
-            List<Map<String, Object>> rows = queryClient.runRows(config, sql.summarySql());
-            Map<String, Object> summary = rows.isEmpty() ? Map.of() : rows.getFirst();
+            AccountingRuleSql sql = prepared.sql();
+            List<Map<String, Object>> rows = session.runRows(sql.summarySql());
+            if (rows == null || rows.size() != 1 || rows.getFirst() == null) throw new IllegalArgumentException("规则汇总必须返回一条完整记录");
+            Map<String, Object> summary = rows.getFirst();
             int anomalyCount = intValue(value(summary, "anomaly_count"));
             BigDecimal differenceAmount = decimalValue(value(summary, "difference_amount"));
             String sampleJson = "[]";
             if (anomalyCount > 0) {
-                sampleJson = writeSamples(queryClient.runRows(config, sql.sampleSql()));
+                sampleJson = writeSamples(session.runRows(sql.sampleSql()));
             }
             String status = anomalyCount == 0
                     ? "PASS"
@@ -120,7 +126,7 @@ public class AccountingReconcileExecutor {
         }
     }
 
-    private Set<String> loadExistingTables(AccountingMonitorConfigEntity config,
+    private Set<String> loadExistingTables(AccountingDatabaseQueryClient.Session session, AccountingMonitorConfigEntity config,
                                            List<AccountingRuleDefinition> rules) {
         String schema = AccountingRuleCatalog.validateSchema(config.schemaName());
         Set<String> requiredTables = rules.stream()
@@ -142,7 +148,7 @@ public class AccountingReconcileExecutor {
                 LIMIT 100
                 """.formatted(schema, tableNames);
         Set<String> tables = new LinkedHashSet<>();
-        for (Map<String, Object> row : queryClient.runRows(config, sql)) {
+        for (Map<String, Object> row : session.runRows(sql)) {
             Object value = value(row, "table_name");
             if (value != null) {
                 tables.add(String.valueOf(value));
@@ -185,6 +191,9 @@ public class AccountingReconcileExecutor {
         } else if (failedRules > 0) {
             status = "PARTIAL";
             errorMessage = failedRules + " 条规则执行失败";
+        } else if (skipped > 0) {
+            status = "PARTIAL";
+            errorMessage = skipped + " 条规则未评估";
         } else if (errors > 0 || warnings > 0) {
             status = "WARNING";
         } else {
@@ -254,30 +263,23 @@ public class AccountingReconcileExecutor {
     }
 
     private int intValue(Object value) {
-        if (value == null) {
-            return 0;
-        }
-        if (value instanceof Number number) {
-            return number.intValue();
-        }
-        return new BigDecimal(String.valueOf(value)).intValue();
+        int result = decimalValue(value).intValueExact();
+        if (result < 0) throw new IllegalArgumentException("异常数量不能为负数");
+        return result;
     }
 
     private BigDecimal decimalValue(Object value) {
-        if (value == null) {
-            return BigDecimal.ZERO;
-        }
-        if (value instanceof BigDecimal decimal) {
-            return decimal;
-        }
-        return new BigDecimal(String.valueOf(value));
+        if (value == null) throw new IllegalArgumentException("规则汇总缺少必要数值");
+        var result = value instanceof BigDecimal decimal ? decimal : new BigDecimal(String.valueOf(value));
+        if (result.signum() < 0) throw new IllegalArgumentException("规则汇总数值不能为负数");
+        return result;
     }
 
     private String writeSamples(List<Map<String, Object>> samples) {
         try {
             return objectMapper.writeValueAsString(samples);
         } catch (JsonProcessingException ex) {
-            return "[]";
+            throw new IllegalArgumentException("异常样本无法保存", ex);
         }
     }
 

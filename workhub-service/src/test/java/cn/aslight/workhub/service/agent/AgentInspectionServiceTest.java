@@ -4,6 +4,9 @@ import cn.aslight.workhub.dao.agent.*;
 import cn.aslight.workhub.dao.autonomy.AutonomyMapper;
 import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.model.agent.*;
+import cn.aslight.workhub.model.ops.AccountingExecutionSnapshot;
+import cn.aslight.workhub.dao.ops.AccountingExecutionEvidenceMapper;
+import cn.aslight.workhub.service.ops.AccountingExecutionEvidenceService;
 import cn.aslight.workhub.model.ai.AiProviderConfigEntity;
 import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.model.system.SysUserEntity;
@@ -63,6 +66,7 @@ class AgentInspectionServiceTest {
     private AgentObservationService observations;
     private AutonomyCaseService cases;
     private AgentInspectionService inspections;
+    private AccountingExecutionEvidenceService executionEvidence;
     private AgentAccessService access;
     private AgentToolCatalog catalog;
     private AgentDefinitionResponse agent;
@@ -83,17 +87,18 @@ class AgentInspectionServiceTest {
         jdbc.execute(category.substring(0, category.indexOf(",\n  ADD KEY")));
         for (String file : List.of("V20261104_014200__add_agent_workbench.sql",
                 "V20261104_035107__add_agent_observations_and_cases.sql", "V20261104_094232__add_agent_inspection_progress.sql",
-                "V20261104_103540__add_autonomy_bug_links.sql"))
+                "V20261104_103540__add_autonomy_bug_links.sql", "V20261104_132500__add_accounting_execution_evidence.sql"))
             ScriptUtils.executeSqlScript(keepAlive, new FileSystemResource(SCHEMA + file));
         jdbc.update("INSERT INTO pm_business_line(business_line_code,business_line_name) VALUES ('BL000012','工作台'),('BL000001','其他业务线')");
         jdbc.update("INSERT INTO pm_project(id,project_code,project_name,project_type,business_line_code,project_status,owner_user_name) VALUES (1,'test','测试','SYSTEM','BL000012','ACTIVE','owner'),(2,'other','其他','SYSTEM','BL000001','ACTIVE','owner')");
         jdbc.update("INSERT INTO ops_account_monitor_config(id,business_line_code,environment_code,system_name,display_name,schema_name,rule_profile) VALUES (1,'BL000012','TEST','test','测试','fixture','fixture'),(2,'BL000012','PROD','prod','生产','fixture','fixture')");
         var configuration = new Configuration(); configuration.setMapUnderscoreToCamelCase(true);
-        for (var type : List.of(AgentMapper.class, AgentInspectionMapper.class, AgentMonitorReadMapper.class, AutonomyMapper.class)) configuration.addMapper(type);
+        for (var type : List.of(AgentMapper.class, AgentInspectionMapper.class, AgentMonitorReadMapper.class, AutonomyMapper.class, AccountingExecutionEvidenceMapper.class)) configuration.addMapper(type);
         var factory = new SqlSessionFactoryBean(); factory.setDataSource(ds); factory.setConfiguration(configuration);
         var sessions = new SqlSessionTemplate(factory.getObject());
         agents = sessions.getMapper(AgentMapper.class); mapper = sessions.getMapper(AgentInspectionMapper.class);
         sources = sessions.getMapper(AgentMonitorReadMapper.class); autonomy = sessions.getMapper(AutonomyMapper.class);
+        executionEvidence = new AccountingExecutionEvidenceService(sessions.getMapper(AccountingExecutionEvidenceMapper.class), json);
         transactions = new TransactionInterceptor(); transactions.setTransactionManager(new DataSourceTransactionManager(ds));
         transactions.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
         var permissions = mock(PermissionContextService.class); var user = new SysUserEntity(); user.setId(1L); user.setUserName("owner");
@@ -268,6 +273,31 @@ class AgentInspectionServiceTest {
         jdbc.update("UPDATE ops_account_reconcile_run SET finished_at=CURRENT_TIMESTAMP,status='WARNING' WHERE id=1");
         var late = next(run, ACCOUNTING_RUN); assertEquals(1, late.path("sourceId").asInt());
         assertEquals(2, count("pm_agent_inspection_item"));
+    }
+
+    @Test void inspectionUsesRecordedScopeAndTimeZoneAfterConfigurationMoves() {
+        accountRun(1, 1, true);
+        jdbc.update("UPDATE ops_account_reconcile_run SET status='FAILED',finished_at=? WHERE id=1", LocalDateTime.of(2026, 11, 4, 10, 0));
+        var source = sources.scanAccounting("BL000012", "TEST", 0, 1, 20).getFirst();
+        var config = new AccountingExecutionSnapshot.Configuration(1L, "BL000012", "TEST", "test", "测试", "db-test", "fixture", "fixture", true);
+        var snapshot = new AccountingExecutionSnapshot(1, 1L, config, AccountingExecutionEvidenceService.hash(json.writeValueAsString(config)),
+                List.of(), AccountingExecutionEvidenceService.hash("[]"), source.startTime(), source.endTime(), "Asia/Shanghai", "a".repeat(64));
+        String payload = json.writeValueAsString(snapshot);
+        jdbc.update("INSERT INTO ops_account_execution_evidence(run_id,business_line_code,environment_code,system_name,display_name,snapshot_json,content_hash,captured_at) VALUES (1,'BL000012','TEST','test','测试',?,?,CURRENT_TIMESTAMP)",
+                payload, AccountingExecutionEvidenceService.hash(payload));
+        jdbc.update("UPDATE ops_account_monitor_config SET business_line_code='BL000001',environment_code='PROD' WHERE id=1");
+
+        var context = run(null); var item = next(context, ACCOUNTING_RUN);
+        assertEquals(1, item.path("sourceId").asInt());
+        assertTrue(item.at("/observation/historicalEnvironmentVerified").asBoolean());
+        assertEquals("RUN_EXECUTION_SNAPSHOT", item.at("/observation/scopeBasis").asText());
+        assertEquals("Asia/Shanghai", item.at("/observation/recordTimeZone").asText());
+        assertEquals("TEST", item.at("/observation/data/runs/0/executionEvidence/snapshot/configuration/environmentCode").asText());
+        String caseId = record(context, item.at("/observation/observationId").asText(), "/data/runs/0", "EXECUTION_FAILURE");
+        assertEquals("TEST", autonomy.find(caseId).environmentCode());
+        var args = ackArgs(item, "FINDING"); args.put("caseId", caseId);
+        assertEquals("FINDING", invoke(context, "inspection.ack", args).at("/analysis/outcome").asText());
+        assertEquals("DISCOVERED", autonomy.find(caseId).status());
     }
 
     @Test void accountingFindingCanReferenceSameRunsRealRuleEvidence() {
@@ -621,7 +651,7 @@ class AgentInspectionServiceTest {
     }
 
     private AgentInspectionService service(AgentInspectionMapper repository) {
-        return proxy(new AgentInspectionService(repository, sources, agents, autonomy, runs, access, observations, new AutonomyEvidence(json), new AgentToolData(json), json, cases));
+        return proxy(new AgentInspectionService(repository, sources, agents, autonomy, runs, access, observations, new AutonomyEvidence(json), new AgentToolData(json), json, cases, executionEvidence));
     }
     private JsonNode next(AgentToolContext run, AgentInspectionService.Source source) { return invoke(run, "inspection.next", nextArgs(source)); }
     private tools.jackson.databind.node.ObjectNode nextArgs(AgentInspectionService.Source source) {

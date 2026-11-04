@@ -88,6 +88,7 @@ public class AutonomyEvidence {
     private Extracted accounting(JsonNode item, ZoneId zone, String category, Long threshold, AgentObservationEntity observation) {
         String config = required(item, "configId"), state = item.path("dataState").asText();
         JsonNode run = item.path("latestRun");
+        zone = runZone(run, zone);
         if ("EXECUTION_FAILURE".equals(category)) return accountingRunFailure(run, zone, category);
         LocalDateTime occurred = time(run, "finishedAt", zone);
         switch (category) {
@@ -101,6 +102,7 @@ public class AutonomyEvidence {
     }
 
     private Extracted accountingRunFailure(JsonNode run, ZoneId zone, String category) {
+        zone = runZone(run, zone);
         require("EXECUTION_FAILURE".equals(category) && "FAILED".equals(run.path("status").asText()),
                 "历史运行只可凭 FAILED 登记执行失败；账务差异需引用具体规则结果");
         return extracted("config:" + required(run, "configId"), "run:" + required(run, "id"), run, time(run, "finishedAt", zone), run);
@@ -108,6 +110,7 @@ public class AutonomyEvidence {
 
     private Extracted accountingResult(JsonNode root, JsonNode item, ZoneId zone, String category) {
         JsonNode run = root.path("data").path("run");
+        zone = runZone(run, zone);
         String config = required(run, "configId"), runId = required(run, "id"), rule = required(item, "ruleCode");
         String status = item.path("status").asText();
         require(runId.equals(required(item, "runId")), "规则记录与查询运行不匹配");
@@ -119,6 +122,11 @@ public class AutonomyEvidence {
         }
         return extracted("config:" + config + ":rule:" + rule, "run:" + runId + ":result:" + required(item, "id"), item,
                 time(item, "createdAt", zone), item);
+    }
+
+    private ZoneId runZone(JsonNode run, ZoneId fallback) {
+        var evidence = run.path("executionEvidence");
+        return evidence.path("scopeVerified").asBoolean() ? ZoneId.of(evidence.path("snapshot").path("recordTimeZone").asText()) : fallback;
     }
 
     private Extracted error(JsonNode item, ZoneId zone, String category, String code) {

@@ -32,8 +32,7 @@ public class McpAccountingDatabaseQueryClient implements AccountingDatabaseQuery
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public List<Map<String, Object>> runRows(AccountingMonitorConfigEntity config, String sql) {
+    public Session open(AccountingMonitorConfigEntity config) {
         String targetKey = trimToNull(config.databaseTargetKey());
         if (targetKey == null) {
             throw new IllegalArgumentException("未配置生产数据库目标");
@@ -61,13 +60,25 @@ public class McpAccountingDatabaseQueryClient implements AccountingDatabaseQuery
                 new SecretResolver(),
                 McpAuditLogger.defaultLogger(objectMapper)
         );
-        Map<String, Object> queryResult = service.runReadonlyQuery(target.key(), profileKey, sql);
-        Object result = queryResult.get("result");
-        if (!(result instanceof Map<?, ?> resultMap)) {
-            return List.of();
+        final String bindingHash;
+        try { bindingHash = AccountingExecutionEvidenceService.hash(objectMapper.writeValueAsString(target)); }
+        catch (com.fasterxml.jackson.core.JsonProcessingException ex) { throw new IllegalStateException("数据库目标无法固定", ex); }
+        return new Session() {
+            @Override public String targetHash() { return bindingHash; }
+            @Override public List<Map<String, Object>> runRows(String sql) {
+                return rows(service.runReadonlyQuery(target.key(), profileKey, sql));
+            }
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    static List<Map<String, Object>> rows(Map<String, Object> response) {
+        if (response == null || !(response.get("result") instanceof Map<?, ?> result)
+                || !Boolean.FALSE.equals(result.get("truncatedByBytes")) || !(result.get("rows") instanceof List<?> rows)
+                || rows.stream().anyMatch(row -> !(row instanceof Map<?, ?> cells) || cells.keySet().stream().anyMatch(key -> !(key instanceof String)))) {
+            throw new IllegalArgumentException("数据库查询回执缺失、格式不完整或已截断");
         }
-        Object rows = resultMap.get("rows");
-        return rows instanceof List<?> list ? (List<Map<String, Object>>) list : List.of();
+        return (List<Map<String, Object>>) rows;
     }
 
     private String trimToNull(String value) {

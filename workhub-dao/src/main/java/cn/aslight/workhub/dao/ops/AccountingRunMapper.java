@@ -19,10 +19,10 @@ public interface AccountingRunMapper {
             r.run_no AS runNo,
             r.idempotency_key AS idempotencyKey,
             r.monitor_config_id AS configId,
-            c.business_line_code AS businessLineCode,
+            COALESCE(e.business_line_code,c.business_line_code) AS businessLineCode,
             bl.business_line_name AS businessLineName,
-            c.system_name AS systemName,
-            c.display_name AS displayName,
+            COALESCE(e.system_name,c.system_name) AS systemName,
+            COALESCE(e.display_name,c.display_name) AS displayName,
             r.trigger_type AS triggerType,
             r.start_time AS startTime,
             r.end_time AS endTime,
@@ -65,25 +65,29 @@ public interface AccountingRunMapper {
 
     @Select("SELECT " + RUN_COLUMNS + """
             FROM ops_account_reconcile_run r
-            JOIN ops_account_monitor_config c ON c.id = r.monitor_config_id
-            LEFT JOIN pm_business_line bl ON bl.business_line_code = c.business_line_code
+            LEFT JOIN ops_account_monitor_config c ON c.id = r.monitor_config_id
+            LEFT JOIN ops_account_execution_evidence e ON e.run_id=r.id
+            LEFT JOIN pm_business_line bl ON bl.business_line_code=COALESCE(e.business_line_code,c.business_line_code)
             WHERE r.id = #{id}
             """)
     AccountingRunEntity findById(Long id);
 
     @Select("SELECT " + RUN_COLUMNS + """
             FROM ops_account_reconcile_run r
-            JOIN ops_account_monitor_config c ON c.id = r.monitor_config_id
-            LEFT JOIN pm_business_line bl ON bl.business_line_code = c.business_line_code
+            LEFT JOIN ops_account_monitor_config c ON c.id = r.monitor_config_id
+            LEFT JOIN ops_account_execution_evidence e ON e.run_id=r.id
+            LEFT JOIN pm_business_line bl ON bl.business_line_code=COALESCE(e.business_line_code,c.business_line_code)
             WHERE r.idempotency_key = #{idempotencyKey}
             """)
     AccountingRunEntity findByIdempotencyKey(String idempotencyKey);
 
     @Select("SELECT " + RUN_COLUMNS + """
             FROM ops_account_reconcile_run r
-            JOIN ops_account_monitor_config c ON c.id = r.monitor_config_id
-            LEFT JOIN pm_business_line bl ON bl.business_line_code = c.business_line_code
+            LEFT JOIN ops_account_monitor_config c ON c.id = r.monitor_config_id
+            LEFT JOIN ops_account_execution_evidence e ON e.run_id=r.id
+            LEFT JOIN pm_business_line bl ON bl.business_line_code=COALESCE(e.business_line_code,c.business_line_code)
             WHERE r.monitor_config_id = #{configId}
+              AND (e.run_id IS NULL OR (e.business_line_code=c.business_line_code AND e.environment_code=c.environment_code))
             ORDER BY r.id DESC
             LIMIT 1
             """)
@@ -91,11 +95,12 @@ public interface AccountingRunMapper {
 
     @Select("<script>SELECT " + RUN_COLUMNS + """
             FROM ops_account_reconcile_run r
-            JOIN ops_account_monitor_config c ON c.id = r.monitor_config_id
-            LEFT JOIN pm_business_line bl ON bl.business_line_code = c.business_line_code
+            LEFT JOIN ops_account_monitor_config c ON c.id = r.monitor_config_id
+            LEFT JOIN ops_account_execution_evidence e ON e.run_id=r.id
+            LEFT JOIN pm_business_line bl ON bl.business_line_code=COALESCE(e.business_line_code,c.business_line_code)
             WHERE 1 = 1
             <if test="businessLineCode != null and businessLineCode != ''">
-              AND c.business_line_code = #{businessLineCode}
+              AND COALESCE(e.business_line_code,c.business_line_code) = #{businessLineCode}
             </if>
             <if test="status != null and status != ''">
               AND r.status = #{status}
@@ -113,10 +118,11 @@ public interface AccountingRunMapper {
             <script>
             SELECT COUNT(1)
             FROM ops_account_reconcile_run r
-            JOIN ops_account_monitor_config c ON c.id = r.monitor_config_id
+            LEFT JOIN ops_account_monitor_config c ON c.id = r.monitor_config_id
+            LEFT JOIN ops_account_execution_evidence e ON e.run_id=r.id
             WHERE 1 = 1
             <if test="businessLineCode != null and businessLineCode != ''">
-              AND c.business_line_code = #{businessLineCode}
+              AND COALESCE(e.business_line_code,c.business_line_code) = #{businessLineCode}
             </if>
             <if test="status != null and status != ''">
               AND r.status = #{status}

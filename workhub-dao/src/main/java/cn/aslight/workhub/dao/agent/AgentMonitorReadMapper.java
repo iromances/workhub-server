@@ -36,10 +36,11 @@ public interface AgentMonitorReadMapper {
 
     @Select("SELECT " + AccountingRunMapper.RUN_COLUMNS + """
             FROM ops_account_reconcile_run r
-            JOIN ops_account_monitor_config c ON c.id = r.monitor_config_id
-            LEFT JOIN pm_business_line bl ON bl.business_line_code = c.business_line_code
-            WHERE c.business_line_code=#{line} AND c.environment_code=#{environment}
-              AND (#{configId} IS NULL OR c.id=#{configId})
+            LEFT JOIN ops_account_monitor_config c ON c.id = r.monitor_config_id
+            LEFT JOIN ops_account_execution_evidence e ON e.run_id=r.id
+            LEFT JOIN pm_business_line bl ON bl.business_line_code=COALESCE(e.business_line_code,c.business_line_code)
+            WHERE COALESCE(e.business_line_code,c.business_line_code)=#{line} AND COALESCE(e.environment_code,c.environment_code)=#{environment}
+              AND (#{configId} IS NULL OR r.monitor_config_id=#{configId})
               AND (#{beforeId}=0 OR r.id < #{beforeId})
             ORDER BY r.id DESC LIMIT #{limit}
             """)
@@ -68,9 +69,10 @@ public interface AgentMonitorReadMapper {
     List<SystemAlertEventResponse> scanAlerts(@Param("line") String line, @Param("environment") String environment,
             @Param("after") long after, @Param("upper") long upper, @Param("limit") int limit);
 
-    String ACCOUNT_SCOPE = " FROM ops_account_reconcile_run r JOIN ops_account_monitor_config c ON c.id=r.monitor_config_id "
-            + "LEFT JOIN pm_business_line bl ON bl.business_line_code=c.business_line_code "
-            + "WHERE c.business_line_code=#{line} AND c.environment_code=#{environment}";
+    String ACCOUNT_SCOPE = " FROM ops_account_reconcile_run r LEFT JOIN ops_account_monitor_config c ON c.id=r.monitor_config_id "
+            + "LEFT JOIN ops_account_execution_evidence e ON e.run_id=r.id "
+            + "LEFT JOIN pm_business_line bl ON bl.business_line_code=COALESCE(e.business_line_code,c.business_line_code) "
+            + "WHERE COALESCE(e.business_line_code,c.business_line_code)=#{line} AND COALESCE(e.environment_code,c.environment_code)=#{environment}";
     @Select("SELECT COALESCE(MAX(r.id),0)" + ACCOUNT_SCOPE)
     long accountingUpper(@Param("line") String line, @Param("environment") String environment);
     @Select("SELECT " + AccountingRunMapper.RUN_COLUMNS + ACCOUNT_SCOPE

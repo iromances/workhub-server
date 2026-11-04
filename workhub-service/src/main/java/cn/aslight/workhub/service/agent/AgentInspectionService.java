@@ -3,6 +3,8 @@ package cn.aslight.workhub.service.agent;
 import cn.aslight.workhub.dao.agent.*;
 import cn.aslight.workhub.dao.autonomy.AutonomyMapper;
 import cn.aslight.workhub.model.agent.*;
+import cn.aslight.workhub.model.ops.AccountingRunEntity;
+import cn.aslight.workhub.service.ops.AccountingExecutionEvidenceService;
 import cn.aslight.workhub.service.autonomy.AgentObservationService;
 import cn.aslight.workhub.service.autonomy.AutonomyEvidence;
 import cn.aslight.workhub.service.autonomy.AutonomyCaseService;
@@ -40,13 +42,16 @@ public class AgentInspectionService {
     private final AgentToolData data;
     private final ObjectMapper json;
     private final AutonomyCaseService cases;
+    private final AccountingExecutionEvidenceService executionEvidence;
 
     public AgentInspectionService(AgentInspectionMapper mapper, AgentMonitorReadMapper sources, AgentMapper agents,
             AutonomyMapper autonomy, AgentRunStore runs, AgentAccessService access, AgentObservationService observations,
-            AutonomyEvidence evidence, AgentToolData data, ObjectMapper json, AutonomyCaseService cases) {
+            AutonomyEvidence evidence, AgentToolData data, ObjectMapper json, AutonomyCaseService cases,
+            AccountingExecutionEvidenceService executionEvidence) {
         this.mapper = mapper; this.sources = sources; this.agents = agents; this.autonomy = autonomy; this.runs = runs;
         this.access = access; this.observations = observations; this.evidence = evidence; this.data = data; this.json = json;
         this.cases = cases;
+        this.executionEvidence = executionEvidence;
     }
 
     // 授权读取发生在行锁之前；等待其他扫描提交后必须看到新队列，不能沿用 MySQL 默认的旧一致性快照。
@@ -151,9 +156,9 @@ public class AgentInspectionService {
         };
         long after = stream.afterId();
         for (Object row : rows) {
-            var raw = json.valueToTree(row);
+            var raw = row instanceof AccountingRunEntity accountRun ? executionEvidence.describe(accountRun) : json.valueToTree(row);
             after = raw.path("id").asLong();
-            var masked = data.sanitize(row);
+            var masked = data.sanitize(raw);
             var payload = json.createObjectNode().put("observedAt", Instant.now().toString()).put("recordTimeZone", ZoneId.systemDefault().getId());
             payload.put("truncated", masked.path("truncated").asBoolean());
             if (source == Source.BUG) {
@@ -162,7 +167,11 @@ public class AgentInspectionService {
             } else {
                 payload.set("scope", json.valueToTree(new AgentScope(line, env)));
                 payload.set("data", json.createObjectNode().set(source == Source.SYSTEM_ALERT ? "events" : "runs", json.createArrayNode().add(masked)));
-                if (source == Source.ACCOUNTING_RUN) payload.put("scopeBasis", "CURRENT_MONITOR_CONFIGURATION").put("historicalEnvironmentVerified", false);
+                if (source == Source.ACCOUNTING_RUN) {
+                    boolean verified = AccountingExecutionEvidenceService.scopeVerified(raw);
+                    payload.put("scopeBasis", verified ? "RUN_EXECUTION_SNAPSHOT" : "CURRENT_MONITOR_CONFIGURATION").put("historicalEnvironmentVerified", verified);
+                    if (verified) payload.set("recordTimeZone", raw.at("/executionEvidence/snapshot/recordTimeZone"));
+                }
             }
             if (json.writeValueAsString(payload).length() > 40_000) {
                 String preview = json.writeValueAsString(payload).substring(0, 16_000);

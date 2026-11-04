@@ -31,9 +31,11 @@ class AgentMonitoringToolsTest {
     private final AccountingRunMapper runs = mock(AccountingRunMapper.class);
     private final AgentObservationService observations = mock(AgentObservationService.class);
     private final AgentMonitorReadMapper history = mock(AgentMonitorReadMapper.class);
+    private final AccountingExecutionEvidenceMapper evidenceMapper = mock(AccountingExecutionEvidenceMapper.class);
+    private final AccountingExecutionEvidenceService executionEvidence = new AccountingExecutionEvidenceService(evidenceMapper, json);
     private final SystemAlertService alerts = mock(SystemAlertService.class);
     private final AgentMonitoringTools tools = new AgentMonitoringTools(access, mock(AgentMapper.class), business, monitors,
-            accounting, configs, runs, alerts, mock(BusinessLogSearchService.class), json, new AgentToolData(json), observations, history);
+            accounting, configs, runs, alerts, mock(BusinessLogSearchService.class), json, new AgentToolData(json), observations, history, executionEvidence);
     private final AgentScope scope = new AgentScope("BL000012", "TEST");
     private final AgentToolContext context = new AgentToolContext("run", "task", "agent", "owner",
             new AgentConfiguration("巡检", "巡检", 1L, null, List.of(scope), List.of(), 20, 60, 1),
@@ -219,6 +221,51 @@ class AgentMonitoringToolsTest {
         args.remove("page"); args.put("from", "2026-10-01T00:00:00Z").put("to", "2026-10-02T00:00:00Z").put("minutes", 10);
         assertThrows(IllegalArgumentException.class, () -> tools.agentSystemAlertsTool().execute(context, args));
         verifyNoInteractions(business, monitors, history, accounting, runs, alerts);
+    }
+
+
+    @Test
+    void recordedScopeSurvivesConfigMoveAndStillRequiresOriginalEnvironmentPermission() {
+        var run = timedRun();
+        recorded(run);
+        when(runs.findById(8L)).thenReturn(run);
+        when(history.accountingResults(8L, 0L, 6)).thenReturn(List.of());
+        JsonNode result = (JsonNode) tools.agentAccountingDetailTool().execute(context, json.readTree("{\"runId\":8}"));
+        assertEquals("TEST", result.path("scope").path("environmentCode").asText());
+        assertTrue(result.path("historicalEnvironmentVerified").asBoolean());
+        assertEquals("RUN_EXECUTION_SNAPSHOT", result.path("scopeBasis").asText());
+        assertEquals("Asia/Shanghai", result.path("recordTimeZone").asText());
+        verifyNoInteractions(configs);
+        doThrow(new AccessDeniedException("原环境授权撤销")).when(access).requireScope(context, scope);
+        assertThrows(AccessDeniedException.class, () -> tools.agentAccountingDetailTool().execute(context, json.readTree("{\"runId\":8}")));
+        verify(history, times(1)).accountingResults(8L, 0L, 6);
+    }
+
+    @Test
+    void historicalFailureUsesRecordedTimeZoneAndMixedRowsKeepUnverifiedMeaning() {
+        var run = timedRun(); recorded(run);
+        when(history.accountingRuns("BL000012", "TEST", null, 0, 3)).thenReturn(List.of(run, run(7, "SUCCESS")));
+        var result = (tools.jackson.databind.node.ObjectNode) tools.agentAccountingRunsTool().execute(context,
+                json.readTree("{\"businessLineCode\":\"BL000012\",\"environmentCode\":\"TEST\",\"pageSize\":2}"));
+        assertFalse(result.path("historicalEnvironmentVerified").asBoolean());
+        assertEquals("MIXED_EXECUTION_EVIDENCE", result.path("scopeBasis").asText());
+        assertTrue(result.at("/data/runs/0/executionEvidence/scopeVerified").asBoolean());
+        assertFalse(result.at("/data/runs/1/executionEvidence/scopeVerified").asBoolean());
+        result.put("recordTimeZone", "UTC");
+        var extracted = new AutonomyEvidence(json).extract(observation("monitor.accounting.runs", result), "/data/runs/0", "EXECUTION_FAILURE", null);
+        assertEquals(LocalDateTime.of(2026, 11, 4, 2, 0), extracted.occurredAt());
+    }
+
+    private AccountingRunEntity timedRun() {
+        return json.readValue("{\"id\":8,\"configId\":1,\"status\":\"FAILED\",\"startTime\":\"2026-11-04T00:00:00\",\"endTime\":\"2026-11-04T01:00:00\",\"finishedAt\":\"2026-11-04T10:00:00\"}", AccountingRunEntity.class);
+    }
+    private void recorded(AccountingRunEntity run) {
+        var config = new AccountingExecutionSnapshot.Configuration(1L, "BL000012", "TEST", "fixture", "监测", "db-test", "fixture", "COMMON_SAPS", true);
+        var snapshot = new AccountingExecutionSnapshot(1, run.id(), config, AccountingExecutionEvidenceService.hash(json.writeValueAsString(config)),
+                List.of(), AccountingExecutionEvidenceService.hash("[]"), run.startTime(), run.endTime(), "Asia/Shanghai", "a".repeat(64));
+        String payload = json.writeValueAsString(snapshot);
+        when(evidenceMapper.find(run.id())).thenReturn(new AccountingExecutionEvidenceEntity(run.id(), "BL000012", "TEST", "fixture", "监测", payload,
+                AccountingExecutionEvidenceService.hash(payload), LocalDateTime.now(java.time.ZoneOffset.UTC)));
     }
 
     private AccountingRunEntity run(long id, String status) {
