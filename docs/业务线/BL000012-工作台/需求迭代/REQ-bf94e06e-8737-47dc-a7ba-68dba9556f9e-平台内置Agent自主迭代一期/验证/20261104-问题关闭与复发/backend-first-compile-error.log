@@ -1,0 +1,16 @@
+[ERROR] COMPILATION ERROR :
+[ERROR] /Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-server/workhub-service/src/main/java/cn/aslight/workhub/service/autonomy/AutonomyCaseService.java:[255,36] hash(java.lang.String)在cn.aslight.workhub.service.agent.AgentCodePolicy中不是公共的; 无法从外部程序包中对其进行访问
+[ERROR] /Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-server/workhub-service/src/main/java/cn/aslight/workhub/service/autonomy/AutonomyCaseService.java:[266,66] hash(java.lang.String)在cn.aslight.workhub.service.agent.AgentCodePolicy中不是公共的; 无法从外部程序包中对其进行访问
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.14.1:compile (default-compile) on project workhub-service: Compilation failure: Compilation failure:
+[ERROR] /Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-server/workhub-service/src/main/java/cn/aslight/workhub/service/autonomy/AutonomyCaseService.java:[255,36] hash(java.lang.String)在cn.aslight.workhub.service.agent.AgentCodePolicy中不是公共的; 无法从外部程序包中对其进行访问
+[ERROR] /Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-server/workhub-service/src/main/java/cn/aslight/workhub/service/autonomy/AutonomyCaseService.java:[266,66] hash(java.lang.String)在cn.aslight.workhub.service.agent.AgentCodePolicy中不是公共的; 无法从外部程序包中对其进行访问
+[ERROR] -> [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR]
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :workhub-service

@@ -29,6 +29,12 @@ public class AutonomyCaseController {
         return ApiResponse.success(service.detailForUser(agentId, id, auth.getName(), evidencePage, proposalPage, pageSize));
     }
 
+    @GetMapping("/{id}/resolutions")
+    public ApiResponse<AgentPage<AutonomyCaseResolution>> resolutions(@PathVariable String id,@RequestParam String agentId,
+            Authentication auth,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="5") int pageSize) {
+        return ApiResponse.success(service.resolutionsForUser(agentId,id,auth.getName(),page,pageSize));
+    }
+
     @GetMapping("/{id}/bugs")
     public ApiResponse<AgentPage<AutonomyBugLinkView>> bugs(@PathVariable String id,
             @RequestParam String agentId, Authentication auth, @RequestParam(defaultValue = "1") int page,

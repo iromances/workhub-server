@@ -86,7 +86,7 @@ class AgentInspectionServiceTest {
         String category = Files.readString(Path.of(SCHEMA + "V20260805_173000__categorize_system_alert_slow_sql.sql"));
         jdbc.execute(category.substring(0, category.indexOf(",\n  ADD KEY")));
         for (String file : List.of("V20261104_014200__add_agent_workbench.sql",
-                "V20261104_035107__add_agent_observations_and_cases.sql", "V20261104_094232__add_agent_inspection_progress.sql",
+                "V20261104_035107__add_agent_observations_and_cases.sql", "V20261104_174329__add_autonomy_case_resolution.sql", "V20261104_094232__add_agent_inspection_progress.sql",
                 "V20261104_103540__add_autonomy_bug_links.sql", "V20261104_132500__add_accounting_execution_evidence.sql"))
             ScriptUtils.executeSqlScript(keepAlive, new FileSystemResource(SCHEMA + file));
         jdbc.update("INSERT INTO pm_business_line(business_line_code,business_line_name) VALUES ('BL000012','工作台'),('BL000001','其他业务线')");

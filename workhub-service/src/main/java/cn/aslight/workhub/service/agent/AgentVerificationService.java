@@ -16,7 +16,7 @@ import java.util.*;
 /** Agent 判断业务含义；平台约束版本、来源、完整采样窗口和可恢复的真实调用。 */
 @Service
 public class AgentVerificationService {
-    public static final Set<String> MUTATIONS = Set.of("verification.start", "verification.record", "verification.finish", "verification.wait");
+    public static final Set<String> MUTATIONS = Set.of("verification.start", "verification.record", "verification.finish", "verification.wait", "verification.resolve_case");
     private final AgentVerificationMapper mapper;
     private final AgentReleasePlanMapper plans;
     private final AgentDeploymentMapper deployments;
@@ -150,6 +150,74 @@ public class AgentVerificationService {
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
+    public JsonNode resolveCase(AgentToolContext context,String verificationId,long caseVersion,long evidenceVersion,String reason) {
+        String code = "verification.resolve_case", key = callKey(context,code);
+        var row = required(context,verificationId); var frozen = frozen(row); authorize(context,code,frozen.plan());
+        access.requireExecution(context,code,Set.of("autonomy:case:operate"));
+        String safeReason = reason(reason);
+        if (caseVersion < 0 || evidenceVersion < 0) throw new IllegalArgumentException("问题处理版本和证据版本无效");
+        String requestHash = hash(List.of(code,verificationId,caseVersion,evidenceVersion,reason));
+        var previous = replay(context,key,code,requestHash); if (previous != null) return previous;
+        var approved = gate.snapshot(requiredPlan(context,row.planId()));
+        var reference = approved.change().manifest().caseReference();
+        if (reference == null) throw new IllegalArgumentException("本发布没有关联原问题，不能登记关闭");
+        var problem = observations.lockCase(reference.caseId());
+        var change = changes.detail(context,row.changeSetId());
+        var existing = observations.resolutionForVerification(row.id());
+        if (existing != null) {
+            if (existing.caseVersion() != caseVersion || existing.evidenceVersion() != evidenceVersion || !existing.reason().equals(safeReason))
+                throw new IllegalArgumentException("该复查已有不同的关闭判断，不能覆盖");
+            return save(context,key,code,requestHash,view(context,row));
+        }
+        if (problem == null || !"ANALYZING".equals(problem.status()) || !context.runId().equals(problem.activeRunId())
+                || problem.version() != caseVersion || reference.caseVersion() != caseVersion || problem.evidenceVersion() != evidenceVersion)
+            throw new IllegalArgumentException("原问题处理或证据版本已变化，请重新读取并分析");
+        var proposal = observations.proposal(reference.proposalId());
+        if (!Objects.equals(problem.latestProposalId(),reference.proposalId()) || proposal == null || !problem.id().equals(proposal.caseId())
+                || !reference.proposalHash().equals(AgentCodePolicy.hash(proposal.proposalJson()))
+                || !change.current() || !change.readyForReview() || !row.manifestHash().equals(change.manifestHash()))
+            throw new IllegalArgumentException("候选或原问题方案已变化，不能沿用该复查关闭");
+        requireDeploymentUnchanged(row,frozen);
+        var artifact = agents.findArtifact(row.runId(),"verification:" + row.id());
+        if (!"PASSED".equals(row.status()) || artifact == null || !"VERIFICATION".equals(artifact.kind())
+                || !"PLATFORM_VERIFICATION".equals(artifact.provenance()) || !artifact.id().equals(row.artifactId())
+                || !artifact.contentHash().equals(row.artifactHash()) || !AgentCodePolicy.hash(artifact.payloadJson()).equals(row.artifactHash()))
+            throw new IllegalArgumentException("缺少关联实际复查的通过凭据");
+        var certificate = json.readTree(artifact.payloadJson());
+        if (!certificate.path("passed").asBoolean() || !certificate.path("platformConstraintsSatisfied").asBoolean()
+                || certificate.path("historicalDataPending").asBoolean() || !"PASS".equals(certificate.path("assessment").asText())
+                || !row.id().equals(certificate.path("verificationId").asText()) || !row.planId().equals(certificate.path("planId").asText())
+                || !row.manifestHash().equals(certificate.path("manifestHash").asText())
+                || !row.snapshotHash().equals(certificate.path("verificationSnapshotHash").asText())
+                || !row.approvedSnapshotHash().equals(certificate.path("approvedSnapshotHash").asText()))
+            throw new IllegalArgumentException("复查凭据不完整或仍有历史数据待处置");
+        var progress = progress(context,row,frozen);
+        if (progress.stream().anyMatch(check -> !check.constraints().isEmpty())) throw new IllegalArgumentException("当前复查证据已失效或观察条件未满足，不能关闭");
+        var covered = new ArrayList<CheckProgress>();
+        for (var check : frozen.plan().checks()) {
+            var current = progress.stream().filter(value -> value.checkId().equals(check.id())).findFirst().orElseThrow();
+            var sample = mapper.sample(row.id(),current.latestSampleId());
+            if (facts(context,row,frozen,check,sample).stream().anyMatch(fact ->
+                    inspector.coversCase(problem,observations.observation(fact.observationId()),fact.pointer()))) covered.add(current);
+        }
+        if (covered.isEmpty()) throw new IllegalArgumentException("获批复查证据未覆盖原问题的环境和监测对象");
+        var start = covered.stream().map(CheckProgress::windowStart).max(Comparator.naturalOrder()).orElseThrow();
+        var end = covered.stream().map(CheckProgress::windowEnd).min(Comparator.naturalOrder()).orElseThrow();
+        if (start.isAfter(end) || problem.lastSeenAt() != null && !problem.lastSeenAt().toInstant(ZoneOffset.UTC).isBefore(start))
+            throw new IllegalArgumentException("已登记故障发生在恢复观察窗口内，请继续分析和复查");
+        var closedAt = now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        var resolution = new cn.aslight.workhub.model.autonomy.AutonomyCaseResolution(id(),problem.id(),caseVersion,caseVersion + 1,evidenceVersion,
+                context.runId(),row.id(),row.planId(),row.changeSetId(),row.manifestHash(),reference.proposalId(),reference.proposalHash(),
+                row.artifactId(),row.artifactHash(),json.writeValueAsString(covered.stream().map(CheckProgress::checkId).toList()),
+                LocalDateTime.ofInstant(start,ZoneOffset.UTC),LocalDateTime.ofInstant(end,ZoneOffset.UTC),safeReason,closedAt);
+        observations.insertResolution(resolution);
+        if (observations.resolve(problem.id(),context.runId(),caseVersion,evidenceVersion,closedAt) != 1)
+            throw new IllegalStateException("关闭时问题版本已变化，凭据未提交");
+        event(row,"CASE_RESOLVED",Map.of("caseId",problem.id(),"resolutionId",resolution.id(),"caseVersion",caseVersion + 1,"verificationId",row.id()));
+        return save(context,key,code,requestHash,view(context,row));
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public JsonNode waitForNext(AgentToolContext context, String verificationId, long seconds) {
         String code = "verification.wait", key = callKey(context, code);
         var row = required(context, verificationId); var frozen = frozen(row); authorize(context, code, frozen.plan());
@@ -273,7 +341,13 @@ public class AgentVerificationService {
             copy.remove("checks");
             String reason = copy.path("reason").asText(); copy.put("reason", preview(reason, 1000)); copy.put("reasonTruncated", reason.length() > 1000);
         }
-        value.put("conclusion", conclusion); value.put("caseClosed", false);
+        value.put("conclusion", conclusion);
+        var resolution = observations.resolutionForVerification(row.id());
+        var problem = resolution == null ? null : observations.find(resolution.caseId());
+        if (resolution != null && !human) changes.detail(context,row.changeSetId());
+        value.put("caseResolution",resolution);
+        value.put("caseStatus",problem == null ? null : problem.status());
+        value.put("caseClosed",problem != null && "RESOLVED".equals(problem.status()) && problem.version() == resolution.resolvedVersion());
         return json.valueToTree(value);
     }
     private JsonNode compact(CheckProgress progress) {

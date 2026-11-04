@@ -86,7 +86,7 @@ class AgentChangeServiceTest {
         jdbc.execute("CREATE TABLE sys_permission(permission_code VARCHAR(100) PRIMARY KEY,permission_name VARCHAR(100),permission_type VARCHAR(30),parent_code VARCHAR(100),route_path VARCHAR(200),sort_order INT,enabled INT,remark VARCHAR(500))");
         jdbc.execute("CREATE TABLE sys_role(id BIGINT PRIMARY KEY,role_code VARCHAR(100))");
         jdbc.execute("CREATE TABLE sys_role_permission(role_id BIGINT,permission_code VARCHAR(100),UNIQUE(role_id,permission_code))");
-        for (String file : List.of("V20261104_014200__add_agent_workbench.sql", "V20261104_031917__add_agent_code_workspaces.sql", "V20261104_035107__add_agent_observations_and_cases.sql", "V20261104_043000__add_agent_change_sets.sql", "V20261104_045500__add_agent_gitlab_delivery.sql")) {
+        for (String file : List.of("V20261104_014200__add_agent_workbench.sql", "V20261104_031917__add_agent_code_workspaces.sql", "V20261104_035107__add_agent_observations_and_cases.sql", "V20261104_174329__add_autonomy_case_resolution.sql", "V20261104_043000__add_agent_change_sets.sql", "V20261104_045500__add_agent_gitlab_delivery.sql")) {
             ScriptUtils.executeSqlScript(keepAlive, new FileSystemResource("../workhub-bootstrap/src/main/resources/db/schema/mysql/" + file));
         }
         var configuration = new Configuration(); configuration.setMapUnderscoreToCamelCase(true);
@@ -134,6 +134,9 @@ class AgentChangeServiceTest {
         cases = mock(AutonomyCaseService.class);
         store = proxy(new AgentChangeStore(mapper, workspaces, agents, autonomy, runs, policies, access, cases, json));
         validation = Validation.buildDefaultValidatorFactory();
+        var referencePolicy = new AutonomyCaseService(autonomy,agents,runs,access,
+                new cn.aslight.workhub.service.autonomy.AutonomyEvidence(json),data,json,validation.getValidator(),mock(AgentMonitorReadMapper.class));
+        when(cases.matchesReference(any(),any(),any())).thenAnswer(call -> referencePolicy.matchesReference(call.getArgument(0),call.getArgument(1),call.getArgument(2)));
         service = new AgentChangeService(mapper, workspaces, agents, autonomy, store, code, policies, runs, access, cases, data, json, validation.getValidator(), deliveries, gitLabPolicies);
     }
     @AfterEach void close() throws Exception { if (validation != null) validation.close(); if (keepAlive != null) keepAlive.close(); }

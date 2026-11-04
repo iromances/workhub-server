@@ -70,10 +70,18 @@ public class AutonomyCaseService {
         boolean added = previous == null;
         if (added) mapper.insertSignal(new AutonomySignalEntity(UUID.randomUUID().toString(), signalKey, found.id(), observation.id(), pointer,
                 extracted.sourceEventId(), extracted.sourceVersion(), json.writeValueAsString(extracted.evidence()), extracted.occurredAt(), observation.observedAt()));
-        boolean reopened = added && "RESOLVED".equals(found.status()) && found.resolvedAt() != null
-                && extracted.occurredAt() != null && extracted.occurredAt().isAfter(found.resolvedAt())
-                && !extracted.occurredAt().isAfter(observation.observedAt());
-        mapper.observe(found.id(), added ? 1 : 0, extracted.occurredAt(), observation.observedAt(), reopened ? 1 : 0, now);
+        int reopen = 0;
+        if (added && "RESOLVED".equals(found.status()) && found.resolvedAt() != null) {
+            var resolution = mapper.resolutionForVersion(found.id(), found.version() - 1);
+            var boundary = resolution == null ? found.resolvedAt() : resolution.windowStart();
+            if (extracted.occurredAt() == null || extracted.occurredAt().isAfter(observation.observedAt())) {
+                // 旧的无凭据历史保留原行为；本功能关闭的问题不能以未知时间维持已验证状态。
+                if (resolution != null) reopen = 2;
+            } else if (resolution == null ? extracted.occurredAt().isAfter(boundary) : !extracted.occurredAt().isBefore(boundary)) reopen = 1;
+        }
+        boolean reopened = reopen > 0;
+        var indexedTime = extracted.occurredAt() != null && !extracted.occurredAt().isAfter(observation.observedAt()) ? extracted.occurredAt() : null;
+        mapper.observe(found.id(), added ? 1 : 0, indexedTime, observation.observedAt(), reopen, now);
         link(found.id(), context.runId(), "OBSERVATION");
         return Map.of("caseInfo", mapper.find(found.id()), "created", created, "newEvidence", added, "reopened", reopened,
                 "assessment", "AI_CANDIDATE_REQUIRES_REVIEW");
@@ -237,6 +245,38 @@ public class AutonomyCaseService {
         access.requireAgent(actor, agent);
         actor.require("work-item:view");
         access.actor(agent.ownerName()).require("work-item:view");
+    }
+
+    /** 只承认由这份候选的持久复查凭据造成的关闭版本变化；复发或另一个方案不能沿用。 */
+    public boolean matchesReference(AutonomyCaseEntity problem,AgentChangeSetEntity change,AgentChangeManifest.CaseReference reference) {
+        if (problem == null || !Objects.equals(problem.latestProposalId(),reference.proposalId())) return false;
+        var proposal = mapper.proposal(reference.proposalId());
+        if (proposal == null || !problem.id().equals(proposal.caseId())
+                || !AutonomyEvidence.digest(proposal.proposalJson()).equals(reference.proposalHash())) return false;
+        if (problem.version() == reference.caseVersion()) return true;
+        if (!"RESOLVED".equals(problem.status()) || problem.version() != reference.caseVersion() + 1 || problem.activeRunId() != null) return false;
+        var resolved = mapper.resolutionForVersion(problem.id(),reference.caseVersion());
+        if (resolved == null || resolved.resolvedVersion() != problem.version() || !Objects.equals(resolved.createdAt(),problem.resolvedAt())
+                || !change.id().equals(resolved.changeSetId()) || !change.manifestHash().equals(resolved.manifestHash())
+                || !change.runId().equals(resolved.runId()) || !reference.proposalId().equals(resolved.proposalId())
+                || !reference.proposalHash().equals(resolved.proposalHash()) || mapper.resolutionProofMatches(resolved) != 1) return false;
+        var artifact = agents.findArtifact(resolved.runId(),"verification:" + resolved.verificationId());
+        return artifact != null && "VERIFICATION".equals(artifact.kind()) && "PLATFORM_VERIFICATION".equals(artifact.provenance())
+                && resolved.artifactId().equals(artifact.id()) && resolved.artifactHash().equals(artifact.contentHash())
+                && resolved.artifactHash().equals(AutonomyEvidence.digest(artifact.payloadJson()));
+    }
+
+    public AgentPage<AutonomyCaseResolution> resolutions(AgentToolContext context,String id,int page,int size) {
+        runs.requireActive(context.runId(),context.ownerToken());
+        requireCaseAccess(context,required(mapper.find(id)));
+        return resolutionPage(id,page,size);
+    }
+    public AgentPage<AutonomyCaseResolution> resolutionsForUser(String agentId,String id,String user,int page,int size) {
+        requireCaseForUser(agentId,id,user);
+        return resolutionPage(id,page,size);
+    }
+    private AgentPage<AutonomyCaseResolution> resolutionPage(String id,int page,int size) {
+        return new AgentPage<>(mapper.countResolutions(id),mapper.resolutions(id,offset(page,size,10),size));
     }
 
     public AgentPage<AutonomyCaseEntity> list(AgentToolContext context, AgentScope scope, int page, int size) {

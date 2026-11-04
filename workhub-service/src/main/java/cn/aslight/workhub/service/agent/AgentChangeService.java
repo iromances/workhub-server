@@ -154,7 +154,7 @@ public class AgentChangeService {
         }
         if (manifest.caseReference() != null) {
             var reference = manifest.caseReference(); var problem = autonomy.find(reference.caseId());
-            if (problem == null || problem.version() != reference.caseVersion() || !Objects.equals(problem.latestProposalId(), reference.proposalId())) blockers.add("CASE_PLAN_CHANGED");
+            if (!cases.matchesReference(problem,value,reference)) blockers.add("CASE_PLAN_CHANGED");
             if (problem != null && cases.bugContextChanged(problem)) blockers.add("BUG_CONTEXT_CHANGED");
         } else if (autonomy.activeCaseCount(value.runId()) > 0) blockers.add("CASE_REFERENCE_REQUIRED");
         boolean currentVersion = blockers.isEmpty();

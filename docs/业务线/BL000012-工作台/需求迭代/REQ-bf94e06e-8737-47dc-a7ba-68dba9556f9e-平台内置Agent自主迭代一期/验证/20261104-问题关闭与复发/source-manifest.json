@@ -1,0 +1,102 @@
+[
+  {
+    "repository": "backend",
+    "path": "workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_174329__add_autonomy_case_resolution.sql",
+    "sha256": "600971776eec2e2a7446f3f1edcff18a8c81c552197f7e2f6616d718fca0de99"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-controller/src/main/java/cn/aslight/workhub/controller/agent/AutonomyCaseController.java",
+    "sha256": "7a2a799281f7d5fc9bd57f47c68e9a9469bfe74b9a328efa8b4099c82ba73eaa"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/autonomy/AutonomyMapper.java",
+    "sha256": "9f9400d641afa88814db15d84a183fd1c7352fe85b51eb9606d0787a510fb0b0"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/autonomy/AutonomyCaseResolution.java",
+    "sha256": "c9e68475387855683508cfcc2a5210d771d7e2a13ef150c384470786d67b8586"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentChangeService.java",
+    "sha256": "86950900a55655b1af268975ac9b2e429e9fa93c7e3553216330cf74d024f9db"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentVerificationEvidence.java",
+    "sha256": "2699b71f285b0799057c687b59ac9816f9c97f9a79b5ea976ceed221ca06aa08"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentVerificationService.java",
+    "sha256": "ced9aebd0111a3156efd840ac38e12d69e50843936fe1ddad84c3ea681aceeba"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentVerificationTools.java",
+    "sha256": "70644a0b00f04ed08d96fbddb4acd1008ebb45277348e9183136d13b091a661a"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AutonomyCaseTools.java",
+    "sha256": "eecddc522116d31ebbe96d462074f015ae4a88b33ff6a61ac6734d40394f846d"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/autonomy/AutonomyCaseService.java",
+    "sha256": "921117d00eca2be21856afdcd648ad478c4324205cd82c29d8392750c44ad698"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentChangeServiceTest.java",
+    "sha256": "98833372e80b65b026cc4872b978cfa97e5ac9e0db1b31c4415a48f9e447f40f"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentInspectionServiceTest.java",
+    "sha256": "29feb2361a8e134a7bd88e95f92a195ec262784a64cdfb3080ea5b7d6a8a6ce9"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentVerificationServiceTest.java",
+    "sha256": "aa0a0137c1de58dc2ad33af8d392909eb287195325d7a07a799c751973609c98"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AutonomyCaseServiceTest.java",
+    "sha256": "30e585456986acab1d1c3670db81dc35fb075a0ea95c17dd8449896e03d9d2d1"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/api/autonomy.ts",
+    "sha256": "63c0f41c626a01eaffe995094d24f05fcd50a3bb2cc3b3fb7d992ec12c5418dc"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/types/agentRelease.ts",
+    "sha256": "90b46e4c15b546a9d775fd059402010024b62dcb9b90166f9a1c2757374cd6a6"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/types/autonomy.ts",
+    "sha256": "df24c2b54431a6b0a1bcab39d14d446b7c87f66296671365126684e7cf2e199a"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/views/agent/AgentCaseResolutionsPanel.vue",
+    "sha256": "aca4fdb3f00c196254d0a4a73affac418fa8c4d84158decd5bfc30c41cd64a08"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/views/agent/AgentCasesPanel.vue",
+    "sha256": "088c664cfb1883e64b2fb8be2843e04b9e0f713e7756a0294d749a1b4f516ded"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/views/agent/AgentVerificationResultsPanel.vue",
+    "sha256": "8623e1831352212dd54b98c12ce7ac5e4ea301bbec66fd59c2336774bfb3d58b"
+  }
+]

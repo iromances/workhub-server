@@ -41,7 +41,7 @@ class AgentVerificationServiceTest {
     private final MutableClock clock = new MutableClock();
     private final AgentScope scope = new AgentScope("BL000012", "TEST");
     private final String manifestHash = "a".repeat(64), sha = "b".repeat(40);
-    private final Set<String> grants = new HashSet<>(Set.of("agent:manage", "agent:task:assign", "agent:code:deliver", "ops:monitor:view", "ops:accounting:view", "ops:system-alert:view"));
+    private final Set<String> grants = new HashSet<>(Set.of("agent:manage", "agent:task:assign", "agent:code:deliver", "ops:monitor:view", "ops:accounting:view", "ops:system-alert:view", "autonomy:case:operate"));
     private final AtomicInteger sequence = new AtomicInteger();
     private Connection connection;
     private JdbcTemplate jdbc;
@@ -68,7 +68,7 @@ class AgentVerificationServiceTest {
         jdbc.execute("CREATE TABLE sys_permission(permission_code VARCHAR(100) PRIMARY KEY,permission_name VARCHAR(100),permission_type VARCHAR(30),parent_code VARCHAR(100),route_path VARCHAR(200),sort_order INT,enabled INT,remark VARCHAR(500))");
         jdbc.execute("CREATE TABLE sys_role(id BIGINT PRIMARY KEY,role_code VARCHAR(100))");
         jdbc.execute("CREATE TABLE sys_role_permission(role_id BIGINT,permission_code VARCHAR(100),UNIQUE(role_id,permission_code))");
-        for (String file : List.of("V20261104_014200__add_agent_workbench.sql", "V20261104_035107__add_agent_observations_and_cases.sql",
+        for (String file : List.of("V20261104_014200__add_agent_workbench.sql", "V20261104_035107__add_agent_observations_and_cases.sql", "V20261104_174329__add_autonomy_case_resolution.sql",
                 "V20261104_054000__add_agent_deployment_outbox.sql", "V20261104_061500__add_agent_release_plans.sql", "V20261104_154000__add_agent_verification.sql"))
             ScriptUtils.executeSqlScript(connection, new FileSystemResource("../workhub-bootstrap/src/main/resources/db/schema/mysql/" + file));
         var config = new Configuration(); config.setMapUnderscoreToCamelCase(true);
@@ -92,7 +92,7 @@ class AgentVerificationServiceTest {
         service = proxy(new AgentVerificationService(verifications, plans, deployments, agents, observations, runs, access, changes,
                 new AgentReleasePlanGate(plans, deployments, agents, json), new AgentVerificationEvidence(json), data, json, clock));
         var tools = new AgentVerificationTools(service, json);
-        catalog = new AgentToolCatalog(List.of(tools.agentVerificationStartTool(), tools.agentVerificationRecordTool(), tools.agentVerificationFinishTool(), tools.agentVerificationStatusTool(), tools.agentVerificationWaitTool()));
+        catalog = new AgentToolCatalog(List.of(tools.agentVerificationStartTool(), tools.agentVerificationRecordTool(), tools.agentVerificationFinishTool(), tools.agentVerificationStatusTool(), tools.agentVerificationWaitTool(), tools.agentVerificationResolveCaseTool()));
         var codes = new ArrayList<>(catalog.all().stream().map(AgentTool::code).toList()); codes.addAll(AgentReleaseVerificationPlan.TOOL_CODES);
         var specification = new AgentTaskSpecification("修复", "夹具", "复查", List.of("REPORT"), List.of(scope, new AgentScope("BL000012", "PROD")), codes);
         var configuration = new AgentConfiguration("Agent", "复查", 1L, "fixture", specification.scopes(), codes, 200, 3600, 2);
@@ -121,6 +121,133 @@ class AgentVerificationServiceTest {
         jdbc.update("UPDATE pm_agent_deployment SET build_number=2,receipt_json=? WHERE id='deploy'", receipt);
     }
     @AfterEach void close() throws Exception { connection.close(); }
+
+    @Test void passedCertificateClosesOnlyBoundProblemAndKeepsSameCandidateCurrent() {
+        bindCase("TEST","config:1:rule:BALANCE");
+        String id=completeSamples(); finish(id,"PASS",false);
+        var result=resolve(id,2,1);
+        assertTrue(result.path("caseClosed").asBoolean());
+        var problem=observations.find("case");
+        assertEquals("RESOLVED",problem.status()); assertEquals(3,problem.version()); assertEquals(1,problem.evidenceVersion()); assertNull(problem.activeRunId());
+        var resolution=observations.resolutionForVerification(id); assertNotNull(resolution);
+        assertEquals(2,resolution.caseVersion()); assertEquals(3,resolution.resolvedVersion()); assertEquals("[\"health\"]",resolution.checkIdsJson());
+        assertEquals(20,Duration.between(resolution.windowStart(),resolution.windowEnd()).getSeconds());
+        var policy=new cn.aslight.workhub.service.autonomy.AutonomyCaseService(observations,agents,runs,access,
+                new cn.aslight.workhub.service.autonomy.AutonomyEvidence(json),new AgentToolData(json),json,null,null);
+        var candidate=new AgentChangeSetEntity("change","run","task",1,"key","hash",manifestHash,json.writeValueAsString(change.manifest()),now());
+        assertTrue(policy.matchesReference(problem,candidate,change.manifest().caseReference()));
+        assertTrue(resolve(id,2,1).path("caseClosed").asBoolean()); assertEquals(1,count("pm_autonomy_case_resolution"));
+        assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM pm_agent_event WHERE kind='VERIFICATION_CASE_RESOLVED'",Integer.class));
+        jdbc.update("UPDATE pm_autonomy_case SET status='DISCOVERED',version=version+1, resolved_at=NULL WHERE id='case'");
+        assertFalse(policy.matchesReference(observations.find("case"),candidate,change.manifest().caseReference()));
+        var reopened=status(id); assertFalse(reopened.path("caseClosed").asBoolean()); assertEquals(resolution.id(),reopened.at("/caseResolution/id").asText());
+        assertEquals("DISCOVERED",reopened.path("caseStatus").asText());
+    }
+    @Test void closureRejectsUnfinishedHistoricalPendingAndStaleEvidence() {
+        bindCase("TEST","config:1"); String id=completeSamples();
+        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
+        finish(id,"PASS",true); assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
+        finish(id,"PASS",false); clock.advance(31);
+        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
+        assertEquals("ANALYZING",observations.find("case").status()); assertEquals(0,count("pm_autonomy_case_resolution"));
+    }
+    @Test void testEnvironmentVerificationCannotCloseProductionProblem() {
+        bindCase("PROD","config:1"); String id=completeSamples(); finish(id,"PASS",false);
+        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1)); assertEquals(0,count("pm_autonomy_case_resolution"));
+    }
+    @Test void unrelatedConfigurationOrRuleCannotCloseOriginalProblem() {
+        bindCase("TEST","config:2"); String id=completeSamples(); finish(id,"PASS",false);
+        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
+        jdbc.update("UPDATE pm_autonomy_case SET subject_key='config:1:rule:OTHER' WHERE id='case'");
+        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1)); assertEquals(0,count("pm_autonomy_case_resolution"));
+    }
+    @Test void closureRequiresLatestVersionsAndNoKnownFailureInsideObservationWindow() {
+        bindCase("TEST","config:1"); String id=completeSamples(); finish(id,"PASS",false);
+        assertThrows(AgentTool.Rejected.class,()->resolve(id,1,1));
+        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,0));
+        jdbc.update("UPDATE pm_autonomy_case SET evidence_version=2,last_seen_at=? WHERE id='case'",now().minusSeconds(10));
+        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
+        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,2)); assertEquals(0,count("pm_autonomy_case_resolution"));
+    }
+    @Test void failureExactlyAtRecoveredWindowStartCannotClose() {
+        bindCase("TEST","config:1"); String id=completeSamples(); finish(id,"PASS",false);
+        jdbc.update("UPDATE pm_autonomy_case SET last_seen_at=? WHERE id='case'",now().minusSeconds(20));
+        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1)); assertEquals(0,count("pm_autonomy_case_resolution"));
+    }
+    @Test void closureRechecksCasePermissionProposalAndPersistedCertificate() {
+        bindCase("TEST","config:1"); String id=completeSamples(); finish(id,"PASS",false);
+        grants.remove("autonomy:case:operate"); assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1)); grants.add("autonomy:case:operate");
+        grants.remove("ops:accounting:view"); assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1)); grants.add("ops:accounting:view");
+        jdbc.update("UPDATE pm_autonomy_proposal SET proposal_json='{}' WHERE id='proposal'");
+        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
+        jdbc.update("UPDATE pm_autonomy_proposal SET proposal_json=? WHERE id='proposal'","{\"plan\":\"fix\"}");
+        jdbc.update("UPDATE pm_agent_artifact SET payload_json='{}' WHERE kind='VERIFICATION'");
+        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1)); assertEquals(0,count("pm_autonomy_case_resolution"));
+    }
+    @Test void failedJournalInsertRollsBackClosureAndReceiptTogether() {
+        bindCase("TEST","config:1"); String id=completeSamples(); finish(id,"PASS",false);
+        var row=verifications.find(id); String key="verification:"+id+":CASE_RESOLVED:"+row.version();
+        agents.insertEvent(new AgentEventEntity("collision","run",key,agents.nextEventOrdinal("run"),"FIXTURE","{}","fixture",now()));
+        assertThrows(RuntimeException.class,()->resolve(id,2,1));
+        assertEquals("ANALYZING",observations.find("case").status()); assertEquals(2,observations.find("case").version());
+        assertEquals(0,count("pm_autonomy_case_resolution"));
+        assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM pm_agent_verification_call WHERE tool_code='verification.resolve_case'",Integer.class));
+    }
+    @Test void anUnlinkedVerificationDoesNotInventAProblemClosure() {
+        String id=completeSamples(); finish(id,"PASS",false);
+        assertThrows(AgentTool.Rejected.class,()->resolve(id,0,0)); assertEquals(0,count("pm_autonomy_case_resolution"));
+    }
+    @Test void committedClosureReceiptRecoversWithoutClosingTwice() {
+        bindCase("TEST","config:1"); String id=completeSamples(); finish(id,"PASS",false);
+        var args=json.valueToTree(Map.of("verificationId",id,"caseVersion",2,"evidenceVersion",1,"reason","原问题及历史数据已核对"));
+        String key=begin("verification.resolve_case",args);
+        var result=catalog.require("verification.resolve_case").execute(context,args); expire(); runs.recoverExpired("run");
+        assertEquals("QUEUED",runs.get("run").status()); assertNull(runs.get("run").externalHandle());
+        assertEquals(json.writeValueAsString(result),json.writeValueAsString(json.readTree(runs.event("run",key+":result").payloadJson()).path("value")));
+        assertEquals(1,count("pm_autonomy_case_resolution")); assertEquals(3,observations.find("case").version());
+    }
+    @Test void logClosureRequiresTheOriginalServiceRatherThanAnotherHealthyService() {
+        bindCase("TEST","service:"+AgentCodePolicy.hash("outside")+":error:signature");
+        jdbc.update("UPDATE pm_autonomy_case SET source_type='SELF_LOG',category='APPLICATION_ERROR' WHERE id='case'");
+        useSource("workhub.logs"); String id=start();
+        for(int i=0;i<3;i++){if(i>0)clock.advance(10);recordLog(id,"log-close"+i,clock.instant(),clock.instant().minusSeconds(60),false,false,null);}
+        finish(id,"PASS",false); assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
+        jdbc.update("UPDATE pm_autonomy_case SET subject_key=? WHERE id='case'","service:"+AgentCodePolicy.hash("a")+":error:signature");
+        assertTrue(resolve(id,2,1).path("caseClosed").asBoolean());
+    }
+    @Test void collectedAlertAndBusinessProofsCanCloseTheirOwnOriginalObjects() {
+        bindCase("TEST","service:"+AgentCodePolicy.hash("a")+":error:signature");
+        jdbc.update("UPDATE pm_autonomy_case SET source_type='SYSTEM_ALERT',category='APPLICATION_ERROR' WHERE id='case'");
+        useSource("monitor.system.alerts"); String id=start();
+        for(int i=0;i<3;i++){if(i>0)clock.advance(10);recordAlert(id,"alert-close"+i,clock.instant(),"window"+i,"a".repeat(64),false);}
+        finish(id,"PASS",false); assertTrue(resolve(id,2,1).path("caseClosed").asBoolean());
+    }
+    @Test void businessProofCannotResolveAnotherMonitor() {
+        bindCase("TEST","monitor:2:job:20");
+        jdbc.update("UPDATE pm_autonomy_case SET source_type='BUSINESS_MONITOR',category='EXECUTION_FAILURE' WHERE id='case'");
+        useBusinessDetail(); String id=start();
+        for(int i=0;i<3;i++){if(i>0)clock.advance(10);recordBusiness(id,"business-close"+i,clock.instant());}
+        finish(id,"PASS",false); assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
+        jdbc.update("UPDATE pm_autonomy_case SET subject_key='monitor:1:job:20' WHERE id='case'");
+        assertTrue(resolve(id,2,1).path("caseClosed").asBoolean());
+    }
+
+    private void bindCase(String environment,String subject) {
+        String proposal="{\"plan\":\"fix\"}";
+        observations.insertCase(new cn.aslight.workhub.model.autonomy.AutonomyCaseEntity("case","fingerprint","BL000012",environment,
+                "ACCOUNTING",subject,"DATA_DISCREPANCY","账务差异","ANALYZING","run","proposal",1,1,2,now().minusMinutes(5),now().minusMinutes(5),now(),null,now(),now()));
+        observations.insertProposal(new cn.aslight.workhub.model.autonomy.AutonomyProposalEntity("proposal","case","run","request","hash",2,proposal,now()));
+        var old=change.manifest(); var reference=new AgentChangeManifest.CaseReference("case",2,"proposal",AgentCodePolicy.hash(proposal));
+        var manifest=new AgentChangeManifest(old.schemaVersion(),old.runId(),old.taskId(),old.task(),old.plan(),reference,old.repositories(),old.dependencyOrder());
+        change=new AgentChangeView(change.id(),change.runId(),change.taskId(),change.revision(),change.manifestHash(),change.createdAt(),true,true,List.of(),manifest);
+        approved=new AgentReleasePlanSnapshot(approved.schemaVersion(),change,approved.evidence(),approved.blockers(),approved.steps(),approved.verificationPlan());
+        String snapshot=json.writeValueAsString(approved),hash=AgentCodePolicy.hash(snapshot);
+        jdbc.update("UPDATE pm_agent_release_plan SET snapshot_json=?,snapshot_hash=? WHERE id='plan'",snapshot,hash);
+        jdbc.update("UPDATE pm_agent_release_review SET snapshot_hash=? WHERE plan_id='plan'",hash);
+    }
+    private JsonNode resolve(String id,long version,long evidence) {
+        return invoke("verification.resolve_case",json.valueToTree(Map.of("verificationId",id,"caseVersion",version,"evidenceVersion",evidence,"reason","原问题和全部历史证据已处理，按获批标准确认恢复")));
+    }
 
     @Test void agentConclusionRequiresContinuousDistinctFreshEvidenceAndCreatesPersistedCertificate() {
         String id = start(); record(id, "one", accounting(clock.instant()), "PASS", false);

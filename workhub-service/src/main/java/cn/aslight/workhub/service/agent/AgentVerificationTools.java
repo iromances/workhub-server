@@ -40,6 +40,13 @@ public class AgentVerificationTools {
                 properties, List.copyOf(properties.keySet()), (context, args) -> service.finish(context, args.required("verificationId"),
                         args.required("assessment"), args.content("reason", 4000), args.bool("historicalDataPending")));
     }
+    @Bean AgentTool agentVerificationResolveCaseTool() {
+        return tool("verification.resolve_case", "已通过复查后，读取原问题最新 version 和 evidenceVersion，确认全部证据及历史数据已处置，再提交关闭理由。平台重新核对同一候选/方案、持久凭据、新鲜观察窗口及原环境/监测对象；测试复查不能关闭生产问题。保留不可变关闭凭据，不修改关联缺陷工作项。另需 autonomy:case:operate。", false,
+                Map.of("verificationId",text(36),"caseVersion",Map.of("type","integer","minimum",0),
+                        "evidenceVersion",Map.of("type","integer","minimum",0),"reason",text(4000)),
+                List.of("verificationId","caseVersion","evidenceVersion","reason"),
+                (context,args) -> service.resolveCase(context,args.required("verificationId"),args.version("caseVersion"),args.version("evidenceVersion"),args.content("reason",4000)));
+    }
     @Bean AgentTool agentVerificationStatusTool() {
         return tool("verification.status", "读取已获批标准、Agent 判断、平台约束缺口、有效样本和观察窗口；原始证据与已结束结论不会被覆盖。", true,
                 Map.of("verificationId", text(36)), List.of("verificationId"), (context, args) -> service.status(context, args.required("verificationId")));

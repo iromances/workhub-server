@@ -57,6 +57,12 @@ public class AutonomyCaseTools {
                     };
                 });
     }
+    @Bean AgentTool autonomyCaseResolutionsTool() {
+        return tool("case.resolutions", "分页读取不可变问题关闭凭据、原始复查/发布标识、观察窗口及Agent判断。旧关闭凭据是历史；问题复发后的当前状态以case.detail为准。", true,
+                Map.of("caseId",string(36),"page",integer(1,10000),"pageSize",integer(1,10)),List.of("caseId"),
+                (context,args) -> service.resolutions(context,args.required("caseId"),args.bounded("page",1,1,10000),args.bounded("pageSize",5,1,10)));
+    }
+
     @Bean AgentTool autonomyCaseClaimTool() {
         return tool("case.claim", "以问题当前 version 领取唯一分析/修复运行；claimed=false 表示已有活动运行，应附证据并查看进度，避免另起修复。未知外部执行不会被租约过期释放。", false,
                 Map.of("caseId", string(36), "version", integer(0, Long.MAX_VALUE)), List.of("caseId", "version"),

@@ -15,6 +15,41 @@ public class AgentVerificationEvidence {
     private final ObjectMapper json;
     public AgentVerificationEvidence(ObjectMapper json) { this.json = json; }
 
+    /** inspect 已核实来源证明；这里只核对原问题的稳定对象，业务含义继续由 Agent 判断。 */
+    public boolean coversCase(cn.aslight.workhub.model.autonomy.AutonomyCaseEntity problem,AgentObservationEntity row,String pointer) {
+        if (!problem.businessLineCode().equals(row.businessLineCode()) || !problem.environmentCode().equals(row.environmentCode())
+                || !problem.sourceType().equals(row.sourceType())) return false;
+        var root = json.readTree(row.payloadJson()); var selected = select(root,row.toolCode(),pointer);
+        String subject = problem.subjectKey();
+        if (row.toolCode().startsWith("monitor.accounting.")) {
+            var run = switch (row.toolCode()) {
+                case "monitor.accounting.status" -> selected.path("latestRun");
+                case "monitor.accounting.detail" -> root.at("/data/run");
+                default -> selected;
+            };
+            String base = "config:" + run.path("configId").asText();
+            if (subject.equals(base) || "no-configuration".equals(subject)) return true;
+            for (var rule : run.at("/executionEvidence/snapshot/rules")) {
+                String code = rule.path("ruleCode").asText();
+                if (subject.equals(base + ":rule:" + code)
+                        && (!pointer.startsWith("/data/results/") || code.equals(selected.path("ruleCode").asText()))) return true;
+            }
+            return false;
+        }
+        if ("monitor.business.detail".equals(row.toolCode())) {
+            var definition = selected.at("/executionEvidence/definition");
+            String base = "monitor:" + definition.path("monitorId").asText();
+            return subject.equals(base) || "no-configuration".equals(subject)
+                    || subject.startsWith(base + ":job:") && definition.path("author").asText("").isBlank()
+                    && definition.path("executorFilter").asText("").isBlank();
+        }
+        if (Set.of("workhub.logs","monitor.system.alerts").contains(row.toolCode())) {
+            for (var service : selected.at("/executionEvidence/definition/serviceNames"))
+                if (service.isString() && subject.startsWith("service:" + AgentCodePolicy.hash(service.asText()) + ":error:")) return true;
+        }
+        return false;
+    }
+
     public Fact inspect(AgentObservationEntity row, AgentToolContext context, AgentReleaseVerificationPlan.Check check,
                         String pointer, Instant deployedAt, Instant now) {
         if (row == null || !row.runId().equals(context.runId()) || !row.agentId().equals(context.agentId())

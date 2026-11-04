@@ -1,0 +1,66 @@
+
+> workhub-web@0.1.0 build
+> vue-tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && vite build --mode test --outDir /private/tmp/workhub-case-resolution-dist
+
+vite v6.4.1 building for test...
+
+(!) outDir /private/tmp/workhub-case-resolution-dist is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+transforming...
+✓ 1786 modules transformed.
+rendering chunks...
+computing gzip size...
+../../../../../private/tmp/workhub-case-resolution-dist/index.html                                   0.97 kB │ gzip:   0.40 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/DeveloperResourceView-CdanulhI.css    0.09 kB │ gzip:   0.09 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/AuditLogView-Mt_sJ4Hb.css             0.09 kB │ gzip:   0.09 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/UserManagementView-BI4truik.css       0.13 kB │ gzip:   0.11 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/SystemConfigView-CZvzVovc.css         0.13 kB │ gzip:   0.11 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/RoleManagementView-FETkdOfP.css       0.29 kB │ gzip:   0.18 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/ForbiddenView-Bh_BmPKs.css            0.32 kB │ gzip:   0.21 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/index-BjESXWbU.css                    0.61 kB │ gzip:   0.43 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/LoginView-DVql81uF.css                0.71 kB │ gzip:   0.39 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/WorkItemListView-CE6_sPJa.css         0.71 kB │ gzip:   0.33 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/OpsMonitorView-CP2Zr_0G.css           1.11 kB │ gzip:   0.47 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/SystemAlertView-DREwuLo-.css          1.65 kB │ gzip:   0.57 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/ProjectListView-hSG3noOy.css          1.86 kB │ gzip:   0.58 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/AccountingMonitorView-BI__Z05Z.css    2.21 kB │ gzip:   0.75 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/McpResourceView-vxJXdOFv.css          2.58 kB │ gzip:   0.83 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/DashboardView-DDkyTBE4.css            2.92 kB │ gzip:   0.86 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/AiConfigView-BM5erttj.css             3.52 kB │ gzip:   1.05 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/PaymentConfigView-B5fOOcZ4.css        4.29 kB │ gzip:   1.11 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/AppLayout-Cyg6G6AD.css                5.03 kB │ gzip:   1.27 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/AgentWorkbenchView-CG8CxBDS.css      13.51 kB │ gzip:   2.68 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/IntakeListView-DRtMD7x2.css          17.29 kB │ gzip:   3.67 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/vendor-element-plus-Plm10Dc1.css    352.47 kB │ gzip:  47.25 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/system-config-Znhdd0py.js             0.73 kB │ gzip:   0.26 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/ForbiddenView-DgEpGauZ.js             0.83 kB │ gzip:   0.58 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/system-BVZGII2v.js                    1.60 kB │ gzip:   0.42 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/ops-DAOztDj5.js                       1.72 kB │ gzip:   0.42 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/LoginView-DCaoLUBK.js                 1.82 kB │ gzip:   1.06 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/project-CEDkQeSz.js                   2.95 kB │ gzip:   0.79 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/intake-B0KNA3x0.js                    3.49 kB │ gzip:   0.98 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/AuditLogView-CZ4bopEI.js              4.35 kB │ gzip:   1.50 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/DeveloperResourceView-CPLAopFy.js     5.03 kB │ gzip:   2.10 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/SystemConfigView-ByWT2fRn.js          6.50 kB │ gzip:   2.54 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/RoleManagementView-DH_DOy5X.js        7.47 kB │ gzip:   2.76 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/UserManagementView-Dl_aIWkB.js        8.85 kB │ gzip:   3.09 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/DashboardView-BHC6Vf2a.js            11.23 kB │ gzip:   4.78 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/index-BnKrVD_G.js                    12.31 kB │ gzip:   4.15 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/AppLayout-BcaXzVhu.js                13.63 kB │ gzip:   4.81 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/OpsMonitorView-C83ShQIu.js           15.20 kB │ gzip:   4.90 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/WorkItemListView-D_RjsXzp.js         18.97 kB │ gzip:   4.93 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/AccountingMonitorView-5xLscXLd.js    21.48 kB │ gzip:   6.76 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/vendor-element-icons-DHNi1yoH.js     22.62 kB │ gzip:   5.68 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/ProjectListView-UlDFZvWF.js          24.68 kB │ gzip:   6.46 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/vendor-vue-FHeDBIv3.js               29.47 kB │ gzip:  11.71 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/SystemAlertView-aPK_wtpp.js          34.40 kB │ gzip:   9.50 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/vendor-axios-BEcps5oF.js             37.14 kB │ gzip:  14.83 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/McpResourceView-C_Ksj2mh.js          44.32 kB │ gzip:  10.01 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/AiConfigView-CJTMLO20.js             46.82 kB │ gzip:  12.19 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/PaymentConfigView-CnBWDKk0.js        52.58 kB │ gzip:  11.54 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/AgentWorkbenchView-D-k7xTLC.js      109.71 kB │ gzip:  33.90 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/IntakeListView-Dmzm2qai.js          118.35 kB │ gzip:  28.68 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/vendor-BS4eNR2F.js                  209.90 kB │ gzip:  77.59 kB
+../../../../../private/tmp/workhub-case-resolution-dist/assets/vendor-element-plus-Cxuz8Xag.js     756.52 kB │ gzip: 239.47 kB
+✓ built in 3.07s

@@ -55,10 +55,11 @@ public interface AutonomyMapper {
               first_seen_at=CASE WHEN first_seen_at IS NULL OR first_seen_at>#{occurred} THEN #{occurred} ELSE first_seen_at END,
               last_seen_at=CASE WHEN last_seen_at IS NULL OR last_seen_at<#{occurred} THEN #{occurred} ELSE last_seen_at END,
               last_observed_at=CASE WHEN last_observed_at<#{observed} THEN #{observed} ELSE last_observed_at END,
-              status=CASE WHEN #{reopen}=1 THEN 'DISCOVERED' ELSE status END,
-              active_run_id=CASE WHEN #{reopen}=1 THEN NULL ELSE active_run_id END,
-              resolved_at=CASE WHEN #{reopen}=1 THEN NULL ELSE resolved_at END,
-              version=version+#{reopen},updated_at=#{now} WHERE id=#{id}
+              status=CASE WHEN #{reopen}=1 THEN 'DISCOVERED' WHEN #{reopen}=2 THEN 'NEEDS_INPUT' ELSE status END,
+              active_run_id=CASE WHEN #{reopen}>0 THEN NULL ELSE active_run_id END,
+              latest_proposal_id=CASE WHEN #{reopen}>0 THEN NULL ELSE latest_proposal_id END,
+              resolved_at=CASE WHEN #{reopen}>0 THEN NULL ELSE resolved_at END,
+              version=version+CASE WHEN #{reopen}>0 THEN 1 ELSE 0 END,updated_at=#{now} WHERE id=#{id}
             """)
     int observe(@Param("id") String id, @Param("newSignal") int newSignal, @Param("occurred") LocalDateTime occurred,
                 @Param("observed") LocalDateTime observed, @Param("reopen") int reopen, @Param("now") LocalDateTime now);
@@ -112,4 +113,36 @@ public interface AutonomyMapper {
     int insertBugLinkRequest(AutonomyBugLinkRequest request);
     @Update("UPDATE pm_autonomy_case SET latest_proposal_id=NULL,version=version+1,updated_at=#{now} WHERE id=#{id} AND version=#{version}")
     int reviseBugContext(@Param("id") String id, @Param("version") long version, @Param("now") LocalDateTime now);
+
+    @Select("SELECT * FROM pm_autonomy_case_resolution WHERE verification_id=#{id}")
+    AutonomyCaseResolution resolutionForVerification(String id);
+    @Select("SELECT * FROM pm_autonomy_case_resolution WHERE case_id=#{id} AND case_version=#{version}")
+    AutonomyCaseResolution resolutionForVersion(@Param("id") String id,@Param("version") long version);
+    @Select("SELECT * FROM pm_autonomy_case_resolution WHERE case_id=#{id} ORDER BY case_version DESC LIMIT #{limit} OFFSET #{offset}")
+    List<AutonomyCaseResolution> resolutions(@Param("id") String id,@Param("offset") int offset,@Param("limit") int limit);
+    @Select("SELECT COUNT(*) FROM pm_autonomy_case_resolution WHERE case_id=#{id}")
+    long countResolutions(String id);
+    @Insert("""
+            INSERT INTO pm_autonomy_case_resolution(id,case_id,case_version,resolved_version,evidence_version,run_id,
+              verification_id,plan_id,change_set_id,manifest_hash,proposal_id,proposal_hash,artifact_id,artifact_hash,
+              check_ids_json,window_start,window_end,reason,created_at)
+            VALUES(#{id},#{caseId},#{caseVersion},#{resolvedVersion},#{evidenceVersion},#{runId},#{verificationId},#{planId},
+              #{changeSetId},#{manifestHash},#{proposalId},#{proposalHash},#{artifactId},#{artifactHash},#{checkIdsJson},
+              #{windowStart},#{windowEnd},#{reason},#{createdAt})
+            """)
+    int insertResolution(AutonomyCaseResolution value);
+    @Update("""
+            UPDATE pm_autonomy_case SET status='RESOLVED',active_run_id=NULL,resolved_at=#{now},version=version+1,updated_at=#{now}
+            WHERE id=#{id} AND version=#{version} AND evidence_version=#{evidenceVersion} AND active_run_id=#{runId}
+              AND status='ANALYZING'
+            """)
+    int resolve(@Param("id") String id,@Param("runId") String runId,@Param("version") long version,
+            @Param("evidenceVersion") long evidenceVersion,@Param("now") LocalDateTime now);
+    @Select("""
+            SELECT COUNT(*) FROM pm_agent_verification
+            WHERE id=#{verificationId} AND status='PASSED' AND run_id=#{runId} AND plan_id=#{planId}
+              AND change_set_id=#{changeSetId} AND manifest_hash=#{manifestHash} AND artifact_id=#{artifactId} AND artifact_hash=#{artifactHash}
+            """)
+    int resolutionProofMatches(AutonomyCaseResolution value);
+
 }

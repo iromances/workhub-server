@@ -69,7 +69,7 @@ class AutonomyCaseServiceTest {
         jdbc.execute("CREATE TABLE sys_role(id BIGINT PRIMARY KEY,role_code VARCHAR(100))");
         jdbc.execute("CREATE TABLE sys_role_permission(role_id BIGINT,permission_code VARCHAR(100),UNIQUE(role_id,permission_code))");
         jdbc.update("INSERT INTO sys_role VALUES (1,'SUPER_ADMIN')");
-        for (String file : List.of("V20261104_014200__add_agent_workbench.sql", "V20261104_035107__add_agent_observations_and_cases.sql",
+        for (String file : List.of("V20261104_014200__add_agent_workbench.sql", "V20261104_035107__add_agent_observations_and_cases.sql", "V20261104_174329__add_autonomy_case_resolution.sql",
                 "V20261104_103540__add_autonomy_bug_links.sql")) {
             ScriptUtils.executeSqlScript(keepAlive, new FileSystemResource("../workhub-bootstrap/src/main/resources/db/schema/mysql/" + file));
         }
@@ -204,6 +204,43 @@ class AutonomyCaseServiceTest {
         var fresh = record(context, capture(context, "monitor.business.status", business("2026-11-04T11:00:00", "ERROR", "HAS_RESULT", "failure", "2026-11-04T04:00:00Z")));
         assertEquals(true, fresh.get("reopened")); assertEquals("DISCOVERED", mapper.find(id).status());
         assertEquals(8, mapper.find(id).version()); assertNull(mapper.find(id).resolvedAt()); assertEquals(4, mapper.find(id).occurrenceCount());
+    }
+
+    @Test void lateFailureInsideVerifiedWindowReopensWithoutOverwritingResolutionHistory() {
+        var context=run(); String id=closedCase(context);
+        var old=record(context,capture(context,"monitor.business.status",business("2026-11-04T10:05:00","ERROR","HAS_RESULT","old backfill","2026-11-04T04:00:00Z")));
+        assertEquals(false,old.get("reopened")); assertEquals("RESOLVED",mapper.find(id).status());
+        var delayed=record(context,capture(context,"monitor.business.status",business("2026-11-04T10:15:00","ERROR","HAS_RESULT","late error","2026-11-04T04:00:00Z")));
+        assertEquals(true,delayed.get("reopened")); assertEquals("DISCOVERED",mapper.find(id).status());
+        assertNull(mapper.find(id).latestProposalId()); assertNull(mapper.find(id).activeRunId()); assertNull(mapper.find(id).resolvedAt());
+        assertEquals(8,mapper.find(id).version()); assertEquals(1,mapper.countResolutions(id));
+        var repeated=record(context,capture(context,"monitor.business.status",business("2026-11-04T10:15:00","ERROR","HAS_RESULT","late error","2026-11-04T04:00:00Z")));
+        assertEquals(false,repeated.get("newEvidence")); assertEquals(8,mapper.find(id).version());
+        var history=cases.resolutionsForUser(agent.id(),id,"owner",1,5);
+        assertEquals(1,history.total()); assertEquals(7,history.items().getFirst().resolvedVersion());
+        grants.get("owner").remove("ops:monitor:view");
+        assertThrows(AccessDeniedException.class,()->cases.resolutionsForUser(agent.id(),id,"owner",1,5));
+    }
+    @Test void failureExactlyAtRecoveredWindowStartReopensResolvedCase() {
+        var context=run(); String id=closedCase(context);
+        var result=record(context,capture(context,"monitor.business.status",business("2026-11-04T10:10:00","ERROR","HAS_RESULT","boundary error","2026-11-04T04:00:00Z")));
+        assertEquals(true,result.get("reopened")); assertEquals("DISCOVERED",mapper.find(id).status());
+        assertEquals(8,mapper.find(id).version()); assertEquals(1,mapper.countResolutions(id));
+    }
+    @Test void unverifiedOccurrenceTimeReopensForClarificationWithoutPollutingLatestKnownTime() {
+        var context=run(); String id=closedCase(context); var before=mapper.find(id).lastSeenAt();
+        var result=record(context,capture(context,"monitor.business.status",business("2026-11-04T13:00:00","ERROR","HAS_RESULT","bad clock","2026-11-04T04:00:00Z")));
+        assertEquals(true,result.get("reopened")); assertEquals("NEEDS_INPUT",mapper.find(id).status());
+        assertEquals(before,mapper.find(id).lastSeenAt()); assertEquals(8,mapper.find(id).version());
+        assertEquals(1,mapper.countResolutions(id)); assertNull(mapper.find(id).latestProposalId());
+    }
+    private String closedCase(AgentToolContext context) {
+        String id=caseId(record(context,capture(context,"monitor.business.status",business("2026-11-04T09:00:00","ERROR","HAS_RESULT","initial error","2026-11-04T04:00:00Z"))));
+        var at=LocalDateTime.parse("2026-11-04T03:00:00");
+        jdbc.update("UPDATE pm_autonomy_case SET status='RESOLVED',resolved_at=?,version=7,latest_proposal_id='old-proposal',active_run_id=NULL WHERE id=?",at,id);
+        mapper.insertResolution(new AutonomyCaseResolution(UUID.randomUUID().toString(),id,6,7,1,context.runId(),"verification","plan","change","a".repeat(64),
+                "old-proposal","b".repeat(64),"artifact","c".repeat(64),"[\"health\"]",at.minusMinutes(50),at.minusMinutes(30),"原问题已验证",at));
+        return id;
     }
 
     @Test void analysisHistoryIsImmutableIdempotentAndVersionBound() {
