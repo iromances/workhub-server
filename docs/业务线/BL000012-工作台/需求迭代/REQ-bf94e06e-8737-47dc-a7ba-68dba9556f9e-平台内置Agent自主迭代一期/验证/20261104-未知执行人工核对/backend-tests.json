@@ -1,0 +1,528 @@
+{
+  "passed": 81,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 1,
+  "exitCode": 0,
+  "suites": [
+    {
+      "class": "AgentWorkbenchServiceTest",
+      "tests": 55,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "cases": [
+        {
+          "name": "manualApiResolutionCreatesNoMachineReceiptAndCanWaitForInput",
+          "seconds": 0.041,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "skippedMissedScheduleRecordsDecisionWithoutCreatingRun",
+          "seconds": 0.01,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "recoveredCliQuestionIsConsumedOnceAndHumanReplyStartsTheNextTask",
+          "seconds": 0.245,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "lateToolReceiptReleasesOnlyTheOriginalCallAndIsNotExecutedAgain",
+          "seconds": 0.014,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "duplicateConcurrentTaskRequestsCreateOneTaskAndOneRun",
+          "seconds": 0.013,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "apiTaskActivelyCallsToolThenUsesPersistedObservation",
+          "seconds": 0.013,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "cancellationAcceptsLateProofButNeverResumesTheCancelledTask",
+          "seconds": 0.008,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "lateModelReceiptIsImmutableAndRecoveryConsumesItWithoutCallingModelAgain",
+          "seconds": 0.013,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "realCliProofIsRetainedWhileOnlyItsUnknownToolIsManuallyReconciled",
+          "seconds": 0.011,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "concurrentManualRequestsCommitOnceAndReturnOriginalResultAfterRunChanges",
+          "seconds": 0.013,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "runScopedMcpRejectsForeignTokensAndDeduplicatesToolRequests",
+          "seconds": 0.094,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "cliAndToolLateReceiptsMustBothArriveBeforeReleasingTheRun",
+          "seconds": 0.038,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "manualAuditFailureRollsBackReleaseAndAllEvents",
+          "seconds": 0.082,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "manualReconciliationUsesExactVersionAndReceiptSnapshot",
+          "seconds": 0.012,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "retryCannotDuplicateUnreconciledExternalWork",
+          "seconds": 0.008,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "modelReportCannotClaimCodeAndActualTestArtifactsExist",
+          "seconds": 0.01,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "cancellationCannotBeUndoneByManualReconciliation",
+          "seconds": 0.01,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "malformedModelOutputHasBoundedCorrectionAndCannotExecuteHiddenTools",
+          "seconds": 0.011,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "nativeCliUsesWholeTaskAndRealProcessWithScopedToolsWithoutModelStepProtocol",
+          "seconds": 0.185,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "concurrentWorkersRespectGlobalAndPerAgentLimits",
+          "seconds": 0.013,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "genericTaskNeedsNoAlertAndKeepsSnapshotWhenAgentChanges",
+          "seconds": 0.007,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "resumeRequiresCurrentAuthorizationProviderScopesAndBudgetButCancellationStillWorks",
+          "seconds": 0.014,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "cancellationAndBudgetAreCheckedBeforeNextExternalAction",
+          "seconds": 0.009,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "unresolvedExternalCallKeepsHandleAndConcurrencySlotInsteadOfRestarting",
+          "seconds": 0.011,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "liveCliBlocksReconciliationEvenWhenLeaseExpiredAndFormWasAlreadyRead",
+          "seconds": 0.023,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "committedInspectionResultOverridesManualClaimAndMissingRecordIsNotStopProof",
+          "seconds": 0.011,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "inputArrivingDuringModelCallInvalidatesItsOldFinalAnswer",
+          "seconds": 0.011,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "retryCreatesOneNewSnapshotAndKeepsOriginalEvidence",
+          "seconds": 0.007,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "manualEvidenceIsRequiredAndSensitiveValuesAreMaskedBeforeEventsAndAudit",
+          "seconds": 0.009,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "oldSnapshotCannotKeepRevokedToolOrScopePermissions",
+          "seconds": 0.005,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "disabledAgentRollsBackTaskAndAuditWhenImmediateRunCannotStart",
+          "seconds": 0.005,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "persistedToolReceiptIsNotRepeatedAfterRecoveryAndOldWorkerCannotWrite",
+          "seconds": 0.011,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "newInputInvalidatesManualSnapshotWithoutDroppingTheOriginalCall",
+          "seconds": 0.009,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "changingProviderChannelOrVersionCannotSilentlySwitchAnExistingTaskToCli",
+          "seconds": 0.007,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "disabledAgentAndSpentStepBudgetCannotBeResumedByReconciliation",
+          "seconds": 0.012,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "cliReceiptWithoutProcessTreeStopProofCannotReleaseTheRun",
+          "seconds": 0.007,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "cliIsStoppedBeforeReplanningWithNewInstructions",
+          "seconds": 0.444,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "tasksCannotExpandScopesOrViewAnotherOwnersAgent",
+          "seconds": 0.007,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "taskReplyIsIdempotentAndDoesNotRestartUnreconciledExternalExecution",
+          "seconds": 0.008,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "stoppedCliWithoutResultDoesNotRestartAutomatically",
+          "seconds": 0.008,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "scheduledCatchUpIsBoundedAndRepeatedDispatchDoesNotDuplicateRun",
+          "seconds": 0.006,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "idempotencyKeyCannotBeReusedForDifferentTaskContent",
+          "seconds": 0.005,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "cliAndItsToolRequireSeparateChecksAndCannotClaimAStartedCliWasNeverStarted",
+          "seconds": 0.01,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "disableCancelsQueuedRunButKeepsInFlightOwnershipUntilExecutorStops",
+          "seconds": 0.005,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "staleConfigUpdateCannotOverwriteNewerVersion",
+          "seconds": 0.004,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "manualReconciliationReplansWithoutReplayingUnknownApiToolAndKeepsBudgets",
+          "seconds": 0.012,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "competingManualDecisionsCannotBothReleaseTheSameCall",
+          "seconds": 0.009,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "humanReplyContinuesAfterWaitingDecisionRatherThanRepeatingOldQuestion",
+          "seconds": 0.009,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "installedZcodeCompletesTaskThroughProductionMcpAndStoresObservedResult(Path)",
+          "seconds": 0.0,
+          "result": "skipped",
+          "skipReason": "System property [workhub.test.zcode.command] does not exist"
+        },
+        {
+          "name": "savedCliResultAndConsumptionMarkerCommitTogether",
+          "seconds": 0.009,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "realReceiptRacingManualDecisionHasExactlyOneWinner",
+          "seconds": 0.008,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "cancellingNativeCliStopsActualProcessBeforeClaimingCancellationComplete",
+          "seconds": 0.254,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "newInputIsCheckedInsideModelToolAndFinishTransactions",
+          "seconds": 0.008,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "inputArrivingDuringModelCallAlsoPreventsItsOldToolAction",
+          "seconds": 0.022,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "manualReconciliationRefusesActiveLeaseWrongTaskAndUnauthorizedActor",
+          "seconds": 0.01,
+          "result": "passed",
+          "skipReason": null
+        }
+      ]
+    },
+    {
+      "class": "AgentCliProcessProbeTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "cases": [
+        {
+          "name": "localPidAndStartTimeAreCheckedWithoutMistakingMissingParentForStoppedTree",
+          "seconds": 0.002,
+          "result": "passed",
+          "skipReason": null
+        }
+      ]
+    },
+    {
+      "class": "AgentInspectionServiceTest",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "cases": [
+        {
+          "name": "accountingFindingCanReferenceSameRunsRealRuleEvidence",
+          "seconds": 0.731,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "committedReadIsRecoveredOnceAndApiConsumesItWithoutRepeatingTheTool",
+          "seconds": 0.119,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "findingMustMatchActualSignalAndDeduplicatedSignalsRemainUsable",
+          "seconds": 0.078,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "concurrentBugAssociationReplaysOneCommittedRevision",
+          "seconds": 0.063,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "bugAssociationKeepsAccountingScopeUncertaintyAndRefusesOversizedSnapshot",
+          "seconds": 0.064,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "nativeRecoveryNeedsBothCommittedToolResultAndProcessStopProof",
+          "seconds": 0.049,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "bugAssociationRejectsForeignSourceAndRechecksBothPermissions",
+          "seconds": 0.065,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "registeredBugLinksActualRuntimeEvidenceThenAcknowledgesWithoutChangingWorkItem",
+          "seconds": 0.081,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "receiptFailureRollsBackSnapshotsCursorAndObservationTogether",
+          "seconds": 0.063,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "newHumanInputAfterCommittedCallReplansFromFactsInsteadOfClaimingNothingRan",
+          "seconds": 0.032,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "nativeCompositeHandleUsesSameTransactionAndReceiptIdentity",
+          "seconds": 0.021,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "concurrentRunsHaveOneOwnerAndUnknownExecutionCannotBeStolen",
+          "seconds": 0.032,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "cancellationKeepsCommittedAcknowledgmentAndDoesNotRepeatAnalysis",
+          "seconds": 0.027,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "bugContextSummaryCoversLatestAssociationsBeyondVisibleHistoryPage",
+          "seconds": 0.089,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "oversizedRecordKeepsItsQueueIdentityButCannotBeAcknowledgedAsFullyRead",
+          "seconds": 0.034,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "needsInputRemainsVisibleAndRetryKeepsAnalysisHistory",
+          "seconds": 0.026,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "sourcePermissionsScopeAndTaskCannotBeBypassedByGenericTools",
+          "seconds": 0.024,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "maskingExpansionIsRejectedBeforeAnyAnalysisWrite",
+          "seconds": 0.021,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "acknowledgmentAndHistoryRollbackTogetherAndCommittedCallIsIdempotent",
+          "seconds": 0.023,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "pendingPagesKeepLongReasonsAndStableContinuationBelowOutputLimit",
+          "seconds": 0.08,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "finiteSweepRescansLateLowerIdsAndChangedRecords",
+          "seconds": 0.099,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "mismatchedToolIntentCannotBorrowPersistedInspectionResult",
+          "seconds": 0.018,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "missingReceiptOrOtherRunsReceiptDoesNotProveThisCallCompleted",
+          "seconds": 0.018,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "sameCallAndPendingRecordReplayUntilExplicitAnalysis",
+          "seconds": 0.025,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "editedBugInvalidatesPlanningAndNewAssociationRetainsHistory",
+          "seconds": 0.06,
+          "result": "passed",
+          "skipReason": null
+        },
+        {
+          "name": "completedAccountingRunsAreScopedAndLateCompletionIsRescanned",
+          "seconds": 0.026,
+          "result": "passed",
+          "skipReason": null
+        }
+      ]
+    }
+  ]
+}

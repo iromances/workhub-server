@@ -50,6 +50,8 @@ class AgentWorkbenchServiceTest {
     private final Map<Long, List<String>> grants = new ConcurrentHashMap<>();
     private AgentTool tool;
     private AgentRunStore store;
+    private AgentRunReconciliationService reconciliation;
+    private AgentCliProcessProbe processes;
     private AgentToolCatalog catalog;
     private AiProviderConfigService providers;
     private final AtomicInteger toolCalls = new AtomicInteger();
@@ -124,6 +126,12 @@ class AgentWorkbenchServiceTest {
         var storeProxy = new ProxyFactory(new AgentRunStore(mapper, json, access, new AgentToolData(json), providers, clock));
         storeProxy.addAdvice(interceptor);
         store = (AgentRunStore) storeProxy.getProxy();
+        processes = mock(AgentCliProcessProbe.class);
+        when(processes.observe(any(), any(), any())).thenReturn("REMOTE_HOST");
+        var reconciliationProxy = new ProxyFactory(new AgentRunReconciliationService(mapper, access, store, catalog,
+                new AgentToolData(json), processes, json, clock));
+        reconciliationProxy.addAdvice(interceptor);
+        reconciliation = (AgentRunReconciliationService) reconciliationProxy.getProxy();
     }
 
     @AfterEach
@@ -837,6 +845,348 @@ class AgentWorkbenchServiceTest {
         assertEquals(1, service.runs(task.id(), "owner", 1, 20).total());
         assertEquals("unknown-process", mapper.findRun(original.id()).externalHandle());
     }
+    @Test
+    void manualReconciliationReplansWithoutReplayingUnknownApiToolAndKeepsBudgets() {
+        var run = unknownTool();
+        var old = store.get(run.id());
+        jdbc.update("UPDATE pm_agent_run SET elapsed_millis=13000 WHERE id=?", run.id());
+        var view = reconciliation.preview(run.taskId(), run.id(), "owner");
+        assertTrue(view.canReconcile());
+        assertEquals("monitor.read", view.calls().getFirst().toolCode());
+        assertTrue(view.calls().getFirst().requestPayloadJson().contains("monitor.read"));
+        var result = reconciliation.reconcile(run.taskId(), run.id(), resolution(view, "replan", "RESUME"), "owner");
+        assertEquals("QUEUED", result.status());
+        assertEquals(1, store.get(run.id()).stepCount());
+        assertEquals(13000, store.get(run.id()).elapsedMillis());
+        assertNull(store.event(run.id(), "step:1:tool:result"));
+        assertTrue(mapper.listArtifacts(run.id()).isEmpty());
+        assertEquals("MANUAL_RECONCILIATION_HANDLED", store.event(run.id(), "step:1:handled").kind());
+        assertThrows(AgentRunStore.LeaseLost.class, () -> store.endTool(run.id(), old.ownerToken(), "step:1:tool", Map.of("succeeded", true)));
+        var next = store.claim(4);
+        var gateway = mock(AiGatewayClient.class);
+        when(gateway.executeAgentApi(any())).thenAnswer(invocation -> {
+            String prompt = ((cn.aslight.workhub.service.ai.AiAgentApiRequest) invocation.getArgument(0)).prompt();
+            assertTrue(prompt.contains("MANUAL_RECONCILIATION"));
+            assertTrue(prompt.contains("核对日志及原调用记录"));
+            return answer("{\"type\":\"RESULT\",\"plan\":\"按人工补充重新分析\",\"summary\":\"已重新分析，未宣称实测完成\"}");
+        });
+        adapter(gateway).execute(run.id(), next.ownerToken());
+        verify(gateway, times(1)).executeAgentApi(any());
+        assertEquals(0, toolCalls.get());
+        assertEquals(2, store.get(run.id()).stepCount());
+        assertEquals("COMPLETED", store.get(run.id()).status());
+    }
+
+    @Test
+    void manualApiResolutionCreatesNoMachineReceiptAndCanWaitForInput() {
+        var run = unknownApi();
+        var view = reconciliation.preview(run.taskId(), run.id(), "owner");
+        var result = reconciliation.reconcile(run.taskId(), run.id(), resolution(view, "waiting", "WAIT_INPUT"), "owner");
+        assertEquals("WAITING_INPUT", result.status());
+        assertEquals(0, mapper.countOwnedRuns(null));
+        assertNull(store.get(run.id()).externalHandle());
+        assertNull(store.event(run.id(), "step:1:response"));
+        assertTrue(mapper.listArtifacts(run.id()).isEmpty());
+        assertEquals("QUEUED", service.message(run.taskId(), new AgentMessageRequest(run.id(), "resume-after-check",
+                result.version(), "继续完成报告"), "owner").status());
+    }
+
+    @Test
+    void manualReconciliationRefusesActiveLeaseWrongTaskAndUnauthorizedActor() {
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        store.beginModel(run.id(), old.ownerToken(), Map.of());
+        var live = reconciliation.preview(run.taskId(), run.id(), "owner");
+        assertFalse(live.canReconcile());
+        assertThrows(IllegalStateException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(live, "live", "CANCEL"), "owner"));
+        expire(run.id()); store.recoverExpired(run.id());
+        var view = reconciliation.preview(run.taskId(), run.id(), "owner");
+        assertThrows(IllegalArgumentException.class, () -> reconciliation.preview("foreign-task", run.id(), "owner"));
+        assertThrows(AccessDeniedException.class, () -> reconciliation.preview(run.taskId(), run.id(), "other"));
+        assertThrows(AccessDeniedException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(view, "forbidden", "CANCEL"), "other"));
+        grants.put(2L, List.of("agent:manage", "agent:task:view"));
+        assertFalse(reconciliation.preview(run.taskId(), run.id(), "other").canReconcile());
+        assertThrows(AccessDeniedException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(view, "no-operate", "CANCEL"), "other"));
+        assertEquals(1, mapper.countOwnedRuns(null));
+    }
+
+    @Test
+    void manualReconciliationUsesExactVersionAndReceiptSnapshot() {
+        var run = unknownApi(); var old = store.get(run.id());
+        var view = reconciliation.preview(run.taskId(), run.id(), "owner");
+        store.endModel(run.id(), old.ownerToken(), 1, Map.of("succeeded", false, "error", "actual response"));
+        assertEquals(view.version(), store.get(run.id()).version());
+        var refreshed = reconciliation.preview(run.taskId(), run.id(), "owner");
+        assertNotEquals(view.snapshotHash(), refreshed.snapshotHash());
+        assertFalse(refreshed.canReconcile());
+        assertEquals("MODEL_RESPONSE", refreshed.calls().getFirst().receiptSource());
+        assertThrows(IllegalStateException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(view, "stale-receipt", "CANCEL"), "owner"));
+        assertNotNull(store.get(run.id()).externalHandle());
+        store.recoverExpired(run.id());
+        assertEquals("QUEUED", store.get(run.id()).status());
+        assertNull(store.event(run.id(), "reconcile:stale-receipt"));
+    }
+
+    @Test
+    void newInputInvalidatesManualSnapshotWithoutDroppingTheOriginalCall() {
+        var run = unknownApi(); var view = reconciliation.preview(run.taskId(), run.id(), "owner");
+        service.message(run.taskId(), new AgentMessageRequest(run.id(), "new-fact", view.version(), "发现新证据"), "owner");
+        assertThrows(IllegalStateException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(view, "stale-version", "CANCEL"), "owner"));
+        assertNotNull(store.get(run.id()).externalHandle());
+    }
+
+    @Test
+    void concurrentManualRequestsCommitOnceAndReturnOriginalResultAfterRunChanges() throws Exception {
+        var run = unknownApi(); var view = reconciliation.preview(run.taskId(), run.id(), "owner");
+        var request = resolution(view, "same-resolution", "RESUME");
+        AgentRunReconciliationResult result;
+        try (var pool = Executors.newFixedThreadPool(6)) {
+            var futures = new ArrayList<Future<AgentRunReconciliationResult>>();
+            for (int i = 0; i < 6; i++) futures.add(pool.submit(() -> reconciliation.reconcile(run.taskId(), run.id(), request, "owner")));
+            result = futures.getFirst().get(5, TimeUnit.SECONDS);
+            for (var future : futures) assertEquals(result, future.get(5, TimeUnit.SECONDS));
+        }
+        store.claim(4);
+        assertEquals(result, reconciliation.reconcile(run.taskId(), run.id(), request, "owner"));
+        assertEquals(1, store.events(run.id()).stream().filter(event -> "MANUAL_RECONCILIATION".equals(event.kind())).count());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM pm_agent_audit WHERE action='MANUAL_RECONCILIATION'", Integer.class));
+        assertThrows(IllegalArgumentException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(view, "same-resolution", "CANCEL"), "owner"));
+        grants.put(2L, grants.get(1L));
+        assertThrows(IllegalArgumentException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), request, "other"));
+    }
+
+    @Test
+    void competingManualDecisionsCannotBothReleaseTheSameCall() throws Exception {
+        var run = unknownApi(); var view = reconciliation.preview(run.taskId(), run.id(), "owner");
+        try (var pool = Executors.newFixedThreadPool(2)) {
+            var a = pool.submit(() -> reconciliation.reconcile(run.taskId(), run.id(), resolution(view, "first", "CANCEL"), "owner"));
+            var b = pool.submit(() -> reconciliation.reconcile(run.taskId(), run.id(), resolution(view, "second", "RESUME"), "owner"));
+            int succeeded = 0;
+            for (var future : List.of(a, b)) {
+                try { future.get(5, TimeUnit.SECONDS); succeeded++; }
+                catch (ExecutionException ex) { assertInstanceOf(IllegalStateException.class, ex.getCause()); }
+            }
+            assertEquals(1, succeeded);
+        }
+        assertEquals(1, store.events(run.id()).stream().filter(event -> "MANUAL_RECONCILIATION".equals(event.kind())).count());
+    }
+
+    @Test
+    void cancellationCannotBeUndoneByManualReconciliation() {
+        var run = unknownApi();
+        service.cancel(run.taskId(), run.id(), store.get(run.id()).version(), "owner");
+        var view = reconciliation.preview(run.taskId(), run.id(), "owner");
+        for (String action : List.of("RESUME", "WAIT_INPUT")) {
+            assertThrows(IllegalStateException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(view, action, action), "owner"));
+        }
+        assertEquals("CANCELLED", reconciliation.reconcile(run.taskId(), run.id(), resolution(view, "cancel-final", "CANCEL"), "owner").status());
+        assertTrue(store.get(run.id()).cancelRequested());
+        assertEquals(0, mapper.countOwnedRuns(null));
+        assertNull(store.claim(4));
+    }
+
+    @Test
+    void resumeRequiresCurrentAuthorizationProviderScopesAndBudgetButCancellationStillWorks() {
+        var run = unknownTool();
+        grants.put(1L, List.of("agent:manage", "agent:task:view", "agent:task:operate", "agent:task:assign"));
+        var denied = reconciliation.preview(run.taskId(), run.id(), "owner");
+        assertFalse(denied.resumeBlockedReasons().isEmpty());
+        assertThrows(AccessDeniedException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(denied, "revoked", "RESUME"), "owner"));
+        grants.put(1L, List.of("agent:view", "agent:manage", "agent:task:view", "agent:task:operate", "agent:task:assign", "ops:monitor:view"));
+        var provider = providers.getEnabledById(1L);
+        provider.setChannelType("CLI");
+        var changed = reconciliation.preview(run.taskId(), run.id(), "owner");
+        assertThrows(IllegalStateException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(changed, "provider-change", "RESUME"), "owner"));
+        provider.setChannelType("API");
+        var agent = service.detail(run.agentId(), "owner");
+        service.update(agent.id(), new AgentSaveRequest(agent.version(), new AgentConfiguration("变更范围", "巡检", 1L,
+                "first-model", List.of(), List.of("monitor.read"), 20, 60, 2)), "owner");
+        var scopeChanged = reconciliation.preview(run.taskId(), run.id(), "owner");
+        assertThrows(AccessDeniedException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(scopeChanged, "scope-change", "RESUME"), "owner"));
+        agent = service.detail(run.agentId(), "owner");
+        service.update(agent.id(), new AgentSaveRequest(agent.version(), config("恢复范围", "first-model")), "owner");
+        jdbc.update("UPDATE pm_agent_run SET elapsed_millis=60000 WHERE id=?", run.id());
+        var budget = reconciliation.preview(run.taskId(), run.id(), "owner");
+        assertThrows(IllegalStateException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(budget, "spent", "RESUME"), "owner"));
+        assertEquals("CANCELLED", reconciliation.reconcile(run.taskId(), run.id(), resolution(budget, "end-spent", "CANCEL"), "owner").status());
+        assertEquals(60000, store.get(run.id()).elapsedMillis());
+    }
+
+    @Test
+    void cliAndItsToolRequireSeparateChecksAndCannotClaimAStartedCliWasNeverStarted() {
+        providers.getEnabledById(1L).setChannelType("CLI");
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        store.beginNative(run.id(), old.ownerToken(), "cli:manual", "fixture-host");
+        store.nativeStarted(run.id(), old.ownerToken(), "cli:manual", 789, "2026-11-03T17:59:50Z");
+        store.beginTool(run.id(), old.ownerToken(), "cli:manual:tool", tool, json.createObjectNode(), true);
+        expire(run.id()); store.recoverExpired(run.id());
+        var view = reconciliation.preview(run.taskId(), run.id(), "owner");
+        assertEquals(2, view.calls().size());
+        assertEquals("2026-11-03T17:59:50Z", view.calls().getFirst().startInstant());
+        verify(processes).observe("fixture-host", 789L, "2026-11-03T17:59:50Z");
+        var request = resolution(view, "cli-complete", "WAIT_INPUT");
+        var partial = new AgentRunReconciliationRequest("cli-partial", view.version(), view.snapshotHash(), request.nextAction(), request.decisions().subList(0, 1));
+        assertThrows(IllegalArgumentException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), partial, "owner"));
+        var falseStart = new AgentRunReconciliationRequest("cli-not-started", view.version(), view.snapshotHash(), request.nextAction(), List.of(
+                new AgentRunReconciliationRequest.Decision("cli:manual", AgentRunReconciliationRequest.Outcome.NOT_STARTED, "仅看到父进程已消失"), request.decisions().get(1)));
+        assertThrows(IllegalArgumentException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), falseStart, "owner"));
+        assertEquals(1, mapper.countOwnedRuns(null));
+        reconciliation.reconcile(run.taskId(), run.id(), request, "owner");
+        assertEquals(0, mapper.countOwnedRuns(null));
+        assertNull(store.event(run.id(), "cli:manual:result"));
+        assertNull(store.event(run.id(), "cli:manual:tool:result"));
+        assertNotNull(store.event(run.id(), "cli:manual:handled"));
+        assertTrue(mapper.listArtifacts(run.id()).isEmpty());
+    }
+
+    @Test
+    void liveCliBlocksReconciliationEvenWhenLeaseExpiredAndFormWasAlreadyRead() {
+        providers.getEnabledById(1L).setChannelType("CLI");
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        store.beginNative(run.id(), old.ownerToken(), "cli:alive", "fixture-host");
+        expire(run.id()); store.recoverExpired(run.id());
+        var view = reconciliation.preview(run.taskId(), run.id(), "owner");
+        for (String state : List.of("RUNNING", "LIVE_IDENTITY_UNAVAILABLE")) {
+            when(processes.observe(any(), any(), any())).thenReturn(state);
+            assertFalse(reconciliation.preview(run.taskId(), run.id(), "owner").canReconcile());
+            assertThrows(IllegalStateException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(view, state, "CANCEL"), "owner"));
+        }
+        assertEquals(1, mapper.countOwnedRuns(null));
+    }
+
+    @Test
+    void realCliProofIsRetainedWhileOnlyItsUnknownToolIsManuallyReconciled() {
+        providers.getEnabledById(1L).setChannelType("CLI");
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        store.beginNative(run.id(), old.ownerToken(), "cli:proved", "fixture-host");
+        store.beginTool(run.id(), old.ownerToken(), "cli:proved:tool", tool, json.createObjectNode(), true);
+        expire(run.id()); store.recoverExpired(run.id());
+        store.endNative(run.id(), old.ownerToken(), "cli:proved", nativeResult("RESULT", "旧的 CLI 结论"));
+        var receipt = store.event(run.id(), "cli:proved:result");
+        var view = reconciliation.preview(run.taskId(), run.id(), "owner");
+        assertFalse(view.calls().getFirst().needsConfirmation());
+        assertEquals("CLI_RESULT", view.calls().getFirst().receiptSource());
+        var request = resolution(view, "known-cli", "WAIT_INPUT");
+        assertEquals(1, request.decisions().size());
+        reconciliation.reconcile(run.taskId(), run.id(), request, "owner");
+        assertEquals(receipt, store.event(run.id(), "cli:proved:result"));
+        assertNotNull(store.event(run.id(), "cli:proved:handled"));
+        assertTrue(mapper.listArtifacts(run.id()).isEmpty());
+    }
+
+    @Test
+    void committedInspectionResultOverridesManualClaimAndMissingRecordIsNotStopProof() {
+        var run = unknownTool();
+        jdbc.execute("CREATE TABLE pm_agent_inspection_call(run_id VARCHAR(36),tool_key VARCHAR(160),result_json TEXT)");
+        jdbc.update("UPDATE pm_agent_run SET external_handle=? WHERE id=?", "{\"kind\":\"TOOL\",\"key\":\"step:1:tool\",\"tool\":\"inspection.ack\",\"readOnly\":false}", run.id());
+        jdbc.update("UPDATE pm_agent_event SET payload_json=? WHERE run_id=? AND event_key='step:1:tool:request'", "{\"tool\":\"inspection.ack\",\"arguments\":{}}", run.id());
+        var missing = reconciliation.preview(run.taskId(), run.id(), "owner");
+        assertTrue(missing.canReconcile());
+        jdbc.update("INSERT INTO pm_agent_inspection_call VALUES(?,?,?)", run.id(), "step:1:tool", "{\"state\":\"FINDING\"}");
+        var actual = reconciliation.preview(run.taskId(), run.id(), "owner");
+        assertFalse(actual.canReconcile());
+        assertEquals("COMMITTED_INSPECTION_TRANSACTION", actual.calls().getFirst().receiptSource());
+        assertThrows(IllegalStateException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(missing, "late-commit", "CANCEL"), "owner"));
+        store.recoverExpired(run.id());
+        assertNotNull(store.event(run.id(), "step:1:tool:result"));
+        assertEquals("QUEUED", store.get(run.id()).status());
+    }
+
+    @Test
+    void manualAuditFailureRollsBackReleaseAndAllEvents() {
+        var run = unknownApi(); var before = store.get(run.id()); var count = store.events(run.id()).size();
+        var view = reconciliation.preview(run.taskId(), run.id(), "owner");
+        jdbc.execute("ALTER TABLE pm_agent_audit ADD CONSTRAINT fail_manual CHECK(action <> 'MANUAL_RECONCILIATION')");
+        var request = resolution(view, "rollback", "CANCEL");
+        assertThrows(RuntimeException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), request, "owner"));
+        assertEquals(before, store.get(run.id()));
+        assertEquals(count, store.events(run.id()).size());
+        assertNull(store.event(run.id(), "step:1:handled"));
+        jdbc.execute("ALTER TABLE pm_agent_audit DROP CONSTRAINT fail_manual");
+        assertEquals("CANCELLED", reconciliation.reconcile(run.taskId(), run.id(), request, "owner").status());
+    }
+
+    @Test
+    void manualEvidenceIsRequiredAndSensitiveValuesAreMaskedBeforeEventsAndAudit() {
+        var run = unknownApi(); var view = reconciliation.preview(run.taskId(), run.id(), "owner");
+        var request = resolution(view, "masked", "CANCEL");
+        var blank = new AgentRunReconciliationRequest("blank", view.version(), view.snapshotHash(), request.nextAction(), List.of(
+                new AgentRunReconciliationRequest.Decision("step:1", AgentRunReconciliationRequest.Outcome.ENDED, "   ")));
+        assertThrows(IllegalArgumentException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), blank, "owner"));
+        var sensitive = new AgentRunReconciliationRequest("masked", view.version(), view.snapshotHash(), request.nextAction(), List.of(
+                new AgentRunReconciliationRequest.Decision("step:1", AgentRunReconciliationRequest.Outcome.ENDED, "核对日志，password=secret-test-value，调用已结束")));
+        reconciliation.reconcile(run.taskId(), run.id(), sensitive, "owner");
+        assertFalse(store.event(run.id(), "reconcile:masked").payloadJson().contains("secret-test-value"));
+        assertFalse(jdbc.queryForObject("SELECT payload_json FROM pm_agent_audit WHERE action='MANUAL_RECONCILIATION'", String.class).contains("secret-test-value"));
+        assertEquals("owner", store.event(run.id(), "reconcile:masked").actor());
+    }
+
+    @Test
+    void realReceiptRacingManualDecisionHasExactlyOneWinner() throws Exception {
+        var run = unknownApi(); var owner = store.get(run.id()).ownerToken();
+        var view = reconciliation.preview(run.taskId(), run.id(), "owner");
+        try (var pool = Executors.newFixedThreadPool(2)) {
+            var gate = new CountDownLatch(1);
+            var human = pool.submit(() -> { gate.await(); return reconciliation.reconcile(run.taskId(), run.id(), resolution(view, "race-receipt", "CANCEL"), "owner"); });
+            var machine = pool.submit(() -> { gate.await(); store.endModel(run.id(), owner, 1, Map.of("succeeded", false, "error", "original receipt")); return true; });
+            gate.countDown();
+            int succeeded = 0;
+            for (var future : List.of(human, machine)) {
+                try { future.get(5, TimeUnit.SECONDS); succeeded++; }
+                catch (ExecutionException ex) { assertInstanceOf(IllegalStateException.class, ex.getCause()); }
+            }
+            assertEquals(1, succeeded);
+        }
+        boolean machineWon = store.event(run.id(), "step:1:response") != null;
+        assertEquals(!machineWon, store.event(run.id(), "reconcile:race-receipt") != null);
+        if (machineWon) { assertNotNull(store.get(run.id()).externalHandle()); store.recoverExpired(run.id()); }
+        assertNull(store.get(run.id()).externalHandle());
+        assertTrue(mapper.listArtifacts(run.id()).isEmpty());
+    }
+
+    @Test
+    void disabledAgentAndSpentStepBudgetCannotBeResumedByReconciliation() {
+        var disabledRun = unknownApi(); var agent = service.detail(disabledRun.agentId(), "owner");
+        service.setEnabled(agent.id(), agent.version(), false, "owner");
+        var disabled = reconciliation.preview(disabledRun.taskId(), disabledRun.id(), "owner");
+        assertTrue(disabled.canReconcile());
+        assertTrue(disabled.cancelRequested());
+        assertThrows(IllegalStateException.class, () -> reconciliation.reconcile(disabledRun.taskId(), disabledRun.id(), resolution(disabled, "disabled-agent", "RESUME"), "owner"));
+        assertEquals("CANCELLED", reconciliation.reconcile(disabledRun.taskId(), disabledRun.id(), resolution(disabled, "stop-disabled", "CANCEL"), "owner").status());
+        var run = unknownApi();
+        var frozen = json.readTree(store.get(run.id()).configurationJson());
+        ((tools.jackson.databind.node.ObjectNode) frozen).put("maxSteps", 1);
+        jdbc.update("UPDATE pm_agent_run SET configuration_json=? WHERE id=?", json.writeValueAsString(frozen), run.id());
+        var spent = reconciliation.preview(run.taskId(), run.id(), "owner");
+        assertThrows(IllegalStateException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(spent, "spent-steps", "RESUME"), "owner"));
+        assertEquals("WAITING_INPUT", reconciliation.reconcile(run.taskId(), run.id(), resolution(spent, "wait-spent-steps", "WAIT_INPUT"), "owner").status());
+        assertEquals(1, store.get(run.id()).stepCount());
+        assertEquals(0, mapper.countOwnedRuns(null));
+    }
+
+    private AgentRunEntity unknownApi() {
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        store.beginModel(run.id(), old.ownerToken(), Map.of());
+        expire(run.id()); store.recoverExpired(run.id());
+        return store.get(run.id());
+    }
+
+    private AgentRunEntity unknownTool() {
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        int step = store.beginModel(run.id(), old.ownerToken(), Map.of());
+        var decision = AgentApiDecision.parse("{\"type\":\"TOOL_CALL\",\"plan\":\"巡检\",\"tool\":\"monitor.read\",\"arguments\":{}}", json);
+        store.endModel(run.id(), old.ownerToken(), step, Map.of("succeeded", true, "decision", decision));
+        store.beginApiTool(run.id(), old.ownerToken(), "step:1:tool", tool, json.createObjectNode(), "step:1:request");
+        expire(run.id()); store.recoverExpired(run.id());
+        return store.get(run.id());
+    }
+
+    private AgentRunReconciliationRequest resolution(AgentRunReconciliationView view, String key, String action) {
+        return new AgentRunReconciliationRequest(key, view.version(), view.snapshotHash(), AgentRunReconciliationRequest.NextAction.valueOf(action),
+                view.calls().stream().filter(AgentRunReconciliationView.Call::needsConfirmation)
+                        .map(call -> new AgentRunReconciliationRequest.Decision(call.key(), AgentRunReconciliationRequest.Outcome.ENDED,
+                                "核对日志及原调用记录，已确认执行结束、无遗留子进程；领域发布状态另行核实")).toList());
+    }
+
     private void expire(String runId) { jdbc.update("UPDATE pm_agent_run SET lease_until='2026-11-03 17:59:00' WHERE id=?", runId); }
 
     private AgentConfiguration config(String name, String model) {

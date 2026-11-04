@@ -158,6 +158,7 @@ public class AgentNativeCliAdapter implements AgentExecutionAdapter {
     private String prompt(AgentToolContext context, List<cn.aslight.workhub.model.agent.AgentEventEntity> events) {
         return """
                 你是企业通过 WorkHub 配置的 Agent。请自主规划并执行完整任务，使用 workhub_task MCP 中获授权的工具。
+                MANUAL_RECONCILIATION 是人工核对，不是平台成功回执；依据现状重新规划，不重放已核对的旧调用，也不据此宣称实测或发布成功。
                 输出中文；根据工具观察持续调整计划，非巡检任务无需制造问题或进入发布阶段。
                 巡检需区分最新状态、历史运行和已读取页面；固定返回的时间范围继续分页，截断或还有下一页不能解释为全量健康。
                 周期巡检已授权 inspection 工具时，用 next 接续持久化进度，每条分析后 ack；NEEDS_INPUT 留在 pending，补充后用 retryItemId 重新领取。扫描和确认不表示业务已健康。

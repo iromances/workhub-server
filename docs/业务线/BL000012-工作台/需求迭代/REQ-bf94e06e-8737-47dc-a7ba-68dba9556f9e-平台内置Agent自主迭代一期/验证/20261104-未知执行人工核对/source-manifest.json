@@ -1,0 +1,73 @@
+{
+  "backendBaseCommit": "cbcf850d3e774728f570170c09df60b661a82f45",
+  "frontendCommit": "d4992306b3dd2d7d9a0f45bfbe086c8ba2255efb",
+  "branch": "codex/agent-workbench-autonomy",
+  "backendSources": [
+    {
+      "path": "workhub-controller/src/main/java/cn/aslight/workhub/controller/agent/AgentTaskController.java",
+      "sha256": "4c3a2344392e34964c54f8dc1df2e2ad4f60a1cc4bb7d0b348eae60fb6489476"
+    },
+    {
+      "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/agent/AgentMapper.java",
+      "sha256": "155683932d82eb00aaf7b1a7f353665e335689d8b945a4886bb62bf930f70059"
+    },
+    {
+      "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentRunReconciliationRequest.java",
+      "sha256": "2245c9a5e06181504be7761921fbcae9d260a95e8332537dc65d5325d9082713"
+    },
+    {
+      "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentRunReconciliationResult.java",
+      "sha256": "aebc194511eb94915a2e8615f9742431ffa3612d0912c735c5e89117cb3d3a26"
+    },
+    {
+      "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentRunReconciliationView.java",
+      "sha256": "c3af985335c809c6e1416f48e62029918666a1477f80e0e5619842a8753a48a1"
+    },
+    {
+      "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentApiExecutionAdapter.java",
+      "sha256": "9e63bf4c3e1e5dbe6f2a1ea3541cbf80f83853cd43648bd1cfc29299c84c6ba0"
+    },
+    {
+      "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentCliProcessProbe.java",
+      "sha256": "553ff9530608403f1906b77ce19d0cb62fe7c7dd0009c9c2ce011eaa5dbdb693"
+    },
+    {
+      "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentNativeCliAdapter.java",
+      "sha256": "74fe3bbb29aeb8a398b2fceedae23f9d42ee06028be5f9fdd30d3db43e8e0f69"
+    },
+    {
+      "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentRunReconciliationService.java",
+      "sha256": "ba287d079eb1d4652ddcd04f3778568e6a849fd7bf43a18e8f9cf53c01df7efb"
+    },
+    {
+      "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentCliProcessProbeTest.java",
+      "sha256": "05b9ecb42f64d3dddcfc0edfd70f6c183a4b386c586770c212db990681e4368b"
+    },
+    {
+      "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentWorkbenchServiceTest.java",
+      "sha256": "32b004394593643c5a36e8320f92ce0834f2b0a7e082f3836290c176a2baf007"
+    }
+  ],
+  "frontendSources": [
+    {
+      "path": "src/api/agent.ts",
+      "sha256": "05f67e523180e1c2f4c2b81089da61e475d4c13574405a59708f9620bfcb7d54"
+    },
+    {
+      "path": "src/types/agent.ts",
+      "sha256": "db7b25e15c2cb1ab88a2a8637aafc715e23d4cb322a0393c17a218409b4dedf3"
+    },
+    {
+      "path": "src/views/agent/AgentRunPanel.vue",
+      "sha256": "522ec12f6007b3eb7fb3f9664d7d678edad44f8ffbff039a56ff95260390cde3"
+    },
+    {
+      "path": "src/views/agent/AgentRunReconciliationPanel.vue",
+      "sha256": "d12d08eb0fb274972e5823e95c44ed970599132725e55949844baec1c9d57c63"
+    },
+    {
+      "path": "src/views/agent/agentPresentation.ts",
+      "sha256": "c43c8b69cbea8c0b1e699937ee674e56015ab3f3d2dcb4a226686225f15d4491"
+    }
+  ]
+}

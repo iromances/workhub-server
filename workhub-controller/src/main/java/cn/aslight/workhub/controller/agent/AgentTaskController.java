@@ -3,6 +3,7 @@ package cn.aslight.workhub.controller.agent;
 import cn.aslight.workhub.common.api.ApiResponse;
 import cn.aslight.workhub.model.agent.*;
 import cn.aslight.workhub.service.agent.AgentWorkbenchService;
+import cn.aslight.workhub.service.agent.AgentRunReconciliationService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -13,7 +14,12 @@ import org.springframework.web.bind.annotation.*;
 public class AgentTaskController {
     private final AgentWorkbenchService service;
 
-    public AgentTaskController(AgentWorkbenchService service) { this.service = service; }
+    private final AgentRunReconciliationService reconciliation;
+
+    public AgentTaskController(AgentWorkbenchService service, AgentRunReconciliationService reconciliation) {
+        this.service = service;
+        this.reconciliation = reconciliation;
+    }
 
     @GetMapping
     @PreAuthorize("hasAuthority('agent:task:view')")
@@ -54,6 +60,20 @@ public class AgentTaskController {
     public ApiResponse<AgentRunDetailResponse> runDetail(@PathVariable String id,
             @PathVariable String runId, Authentication auth) {
         return ApiResponse.success(service.runDetail(id, runId, auth.getName()));
+    }
+
+    @GetMapping("/{id}/runs/{runId}/reconciliation")
+    @PreAuthorize("hasAuthority('agent:task:view')")
+    public ApiResponse<AgentRunReconciliationView> reconciliation(@PathVariable String id,
+            @PathVariable String runId, Authentication auth) {
+        return ApiResponse.success(reconciliation.preview(id, runId, auth.getName()));
+    }
+
+    @PostMapping("/{id}/runs/{runId}/reconciliation")
+    @PreAuthorize("hasAuthority('agent:task:operate') and hasAuthority('agent:manage')")
+    public ApiResponse<AgentRunReconciliationResult> reconcile(@PathVariable String id, @PathVariable String runId,
+            @Valid @RequestBody AgentRunReconciliationRequest request, Authentication auth) {
+        return ApiResponse.success(reconciliation.reconcile(id, runId, request, auth.getName()));
     }
 
     @PostMapping("/{id}/runs/{runId}/cancel")

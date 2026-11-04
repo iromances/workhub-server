@@ -1,0 +1,21 @@
+{
+  "fixtureOnly": true,
+  "duplicateRequestChecks": [
+    {
+      "key": "run-one:31351b1a3b955743130720118fca507c",
+      "requests": 2,
+      "identicalBodies": true,
+      "storedRecords": 1
+    },
+    {
+      "key": "run-one:2ab8d86abc8c8f5105d8184eac60d842",
+      "requests": 2,
+      "identicalBodies": true,
+      "storedRecords": 1
+    }
+  ],
+  "warningsAfterReload": 0,
+  "errorsAfterReload": 0,
+  "scriptDialog": false,
+  "viteStopExitCode": 130
+}

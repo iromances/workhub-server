@@ -184,6 +184,15 @@ public interface AgentMapper {
                    @Param("owner") String owner, @Param("lease") LocalDateTime lease,
                    @Param("handle") String handle, @Param("error") String error, @Param("now") LocalDateTime now);
 
+    @Update("""
+            UPDATE pm_agent_run SET status=#{status},cancel_requested=#{cancelled},owner_token=NULL,lease_until=NULL,
+              external_handle=NULL,error_message=#{message},version=version+1,updated_at=#{now}
+            WHERE id=#{id} AND version=#{version} AND owner_token IS NOT NULL AND external_handle IS NOT NULL
+              AND lease_until<=#{now} AND status IN ('RUNNING','CANCELLING','WAITING_RESOURCE')
+            """)
+    int reconcileRun(@Param("id") String id, @Param("version") long version, @Param("status") String status,
+                     @Param("cancelled") boolean cancelled, @Param("message") String message, @Param("now") LocalDateTime now);
+
     @Select("SELECT id,run_id,event_key,ordinal,kind,payload_json,actor,created_at FROM pm_agent_event WHERE run_id=#{runId} ORDER BY ordinal LIMIT 5000")
     List<AgentEventEntity> listEvents(String runId);
 

@@ -1,0 +1,66 @@
+
+> workhub-web@0.1.0 build
+> vue-tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && vite build --mode test --outDir /private/tmp/workhub-agent-reconciliation-final-dist
+
+vite v6.4.1 building for test...
+
+(!) outDir /private/tmp/workhub-agent-reconciliation-final-dist is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+transforming...
+✓ 1773 modules transformed.
+rendering chunks...
+computing gzip size...
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/index.html                                   0.97 kB │ gzip:   0.40 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/DeveloperResourceView-CdanulhI.css    0.09 kB │ gzip:   0.09 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/AuditLogView-Mt_sJ4Hb.css             0.09 kB │ gzip:   0.09 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/UserManagementView-BI4truik.css       0.13 kB │ gzip:   0.11 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/SystemConfigView-CZvzVovc.css         0.13 kB │ gzip:   0.11 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/RoleManagementView-FETkdOfP.css       0.29 kB │ gzip:   0.18 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/ForbiddenView-Bh_BmPKs.css            0.32 kB │ gzip:   0.21 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/index-BjESXWbU.css                    0.61 kB │ gzip:   0.43 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/LoginView-DVql81uF.css                0.71 kB │ gzip:   0.39 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/WorkItemListView-CE6_sPJa.css         0.71 kB │ gzip:   0.33 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/OpsMonitorView-CP2Zr_0G.css           1.11 kB │ gzip:   0.47 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/SystemAlertView-DREwuLo-.css          1.65 kB │ gzip:   0.57 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/ProjectListView-hSG3noOy.css          1.86 kB │ gzip:   0.58 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/AccountingMonitorView-BI__Z05Z.css    2.21 kB │ gzip:   0.75 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/McpResourceView-vxJXdOFv.css          2.58 kB │ gzip:   0.83 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/DashboardView-DDkyTBE4.css            2.92 kB │ gzip:   0.86 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/AiConfigView-BM5erttj.css             3.52 kB │ gzip:   1.05 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/PaymentConfigView-B5fOOcZ4.css        4.29 kB │ gzip:   1.11 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/AppLayout-Cyg6G6AD.css                5.03 kB │ gzip:   1.27 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/AgentWorkbenchView-CYPwLZga.css       9.37 kB │ gzip:   1.99 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/IntakeListView-DRtMD7x2.css          17.29 kB │ gzip:   3.67 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/vendor-element-plus-Plm10Dc1.css    352.47 kB │ gzip:  47.25 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/system-config-BVzeG9Da.js             0.73 kB │ gzip:   0.26 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/ForbiddenView-D_CcuDBj.js             0.83 kB │ gzip:   0.58 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/system-CW47bq8B.js                    1.60 kB │ gzip:   0.43 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/ops-CW9KxVoF.js                       1.72 kB │ gzip:   0.42 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/LoginView-eFyveT-N.js                 1.82 kB │ gzip:   1.07 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/project-rsYSFw69.js                   2.95 kB │ gzip:   0.80 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/intake-D9z8byMa.js                    3.49 kB │ gzip:   0.98 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/AuditLogView-DNIoRIBi.js              4.35 kB │ gzip:   1.51 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/DeveloperResourceView-StFzDuht.js     5.03 kB │ gzip:   2.10 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/SystemConfigView-CZ88GogI.js          6.50 kB │ gzip:   2.54 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/RoleManagementView-0SQ22Vzk.js        7.47 kB │ gzip:   2.76 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/UserManagementView-Bge5EA6f.js        8.85 kB │ gzip:   3.09 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/DashboardView-6gsecAB5.js            11.23 kB │ gzip:   4.78 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/index-D3ZwQh-y.js                    12.31 kB │ gzip:   4.16 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/AppLayout-lClIpzrf.js                13.63 kB │ gzip:   4.82 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/OpsMonitorView-DLFJsEbu.js           15.20 kB │ gzip:   4.90 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/WorkItemListView-BGSf5j8D.js         18.97 kB │ gzip:   4.93 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/AccountingMonitorView-CrZzN2iZ.js    21.48 kB │ gzip:   6.76 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/vendor-element-icons-BWAqjU4H.js     22.62 kB │ gzip:   5.68 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/ProjectListView-7FwIV2FP.js          24.68 kB │ gzip:   6.46 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/vendor-vue-DUkM4ZJD.js               29.47 kB │ gzip:  11.71 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/SystemAlertView-CTwTSNF9.js          34.40 kB │ gzip:   9.51 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/vendor-axios-BEcps5oF.js             37.14 kB │ gzip:  14.83 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/McpResourceView-CYK9srQf.js          44.32 kB │ gzip:  10.01 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/AiConfigView-BiTBoS5E.js             46.82 kB │ gzip:  12.19 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/PaymentConfigView--fWGbyVb.js        52.58 kB │ gzip:  11.54 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/AgentWorkbenchView-CKkhH_Ur.js       84.51 kB │ gzip:  26.06 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/IntakeListView-BVnm14T5.js          118.35 kB │ gzip:  28.68 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/vendor-Dtzm4W4C.js                  209.12 kB │ gzip:  77.33 kB
+../../../../../private/tmp/workhub-agent-reconciliation-final-dist/assets/vendor-element-plus-3K_oGLLI.js     756.52 kB │ gzip: 239.47 kB
+✓ built in 2.89s

@@ -1,0 +1,53 @@
+- main:
+  - complementary:
+    - strong: 本地样本验证 · 不连接业务系统
+    - text: 样本响应
+    - combobox "样本响应":
+      - option "CLI 与工具均未知"
+      - option "API 未知" [selected]
+      - option "CLI 仍存活"
+      - option "实际回执已到齐"
+      - option "已请求取消"
+      - option "读取失败"
+      - option "读取延迟12秒"
+      - option "提交延迟12秒"
+      - option "已保存但响应丢失"
+    - button "切换运行"
+    - button "切换管理权限"
+    - button "切换页面激活" [active]
+    - generic: 已应用：api · run-two · 已刷新 2 次 · WAITING_RESOURCE
+  - heading "Agent 运行人工核对" [level=2]
+  - strong: 执行结果核对
+  - paragraph: 调用回执缺失时，先核实原执行情况，再决定如何继续。
+  - button "收起核对":
+    - generic: 收起核对
+  - alert:
+    - generic: 逐项核实执行是否结束。仅父进程消失不足以确认整个进程树已停止；人工结论不表示测试或发布成功。
+  - paragraph: 材料版本 11 · 执行租约截至 2026/11/4 14:10:00
+  - article:
+    - strong: 1. AI API 调用
+    - generic: 需要人工核对
+    - paragraph: 调用标识：step:4
+    - generic "查看原调用意图"
+    - generic: 核对结论
+    - radiogroup "核对结论":
+      - radio "确认已结束" [checked]
+      - generic: 确认已结束
+      - radio "确认未发出"
+      - generic: 确认未发出
+    - generic: 1. 核对依据
+    - textbox "1. 核对依据":
+      - /placeholder: 记录核对时间、日志或任务位置、执行结果及遗留影响；CLI 还需说明子进程树停止依据。不要填写凭据。
+    - generic: 0 / 3000
+  - generic: 核对后的处理
+  - radiogroup "核对后的处理":
+    - radio "继续重新规划"
+    - generic: 继续重新规划
+    - radio "等待人工补充" [checked]
+    - generic: 等待人工补充
+    - radio "结束本次运行"
+    - generic: 结束本次运行
+  - button "重新读取核对材料":
+    - generic: 重新读取核对材料
+  - button "提交人工核对" [disabled]:
+    - generic: 提交人工核对

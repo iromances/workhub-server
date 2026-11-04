@@ -1,0 +1,31 @@
+
+  VITE v6.4.1   test   ready in 261 ms
+
+  ➜  Local:   http://127.0.0.1:19539/
+{"method":"GET","runId":"run-one","mode":"cli"}
+{"method":"POST","runId":"run-one","mode":"cli","key":"0503727c488a5296ac35e8e5b60c2233","body":"{\"requestKey\":\"0503727c488a5296ac35e8e5b60c2233\",\"expectedVersion\":11,\"snapshotHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"nextAction\":\"WAIT_INPUT\",\"decisions\":[{\"key\":\"cli:fixture\",\"outcome\":\"ENDED\",\"evidence\":\"本地样本：已核对执行主机进程树及日志，原 CLI 与其子进程均已结束。\"},{\"key\":\"cli:fixture:tool\",\"outcome\":\"ENDED\",\"evidence\":\"本地样本：原工具调用已结束，远端交付状态仍按原交付记录核实，未宣称发布成功。\"}]}"}
+{"kind":"saved","writes":1,"key":"run-one:0503727c488a5296ac35e8e5b60c2233"}
+{"method":"GET","runId":"run-one","mode":"lost"}
+{"method":"POST","runId":"run-one","mode":"lost","key":"31351b1a3b955743130720118fca507c","body":"{\"requestKey\":\"31351b1a3b955743130720118fca507c\",\"expectedVersion\":11,\"snapshotHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"nextAction\":\"WAIT_INPUT\",\"decisions\":[{\"key\":\"cli:fixture\",\"outcome\":\"ENDED\",\"evidence\":\"本地样本：已核实进程树停止，保留主机日志位置。\"},{\"key\":\"cli:fixture:tool\",\"outcome\":\"ENDED\",\"evidence\":\"本地样本：工具调用已结束，交付记录待独立核实。\"}]}"}
+{"kind":"saved","writes":2,"key":"run-one:31351b1a3b955743130720118fca507c"}
+{"method":"POST","runId":"run-one","mode":"lost","key":"31351b1a3b955743130720118fca507c","body":"{\"requestKey\":\"31351b1a3b955743130720118fca507c\",\"expectedVersion\":11,\"snapshotHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"nextAction\":\"WAIT_INPUT\",\"decisions\":[{\"key\":\"cli:fixture\",\"outcome\":\"ENDED\",\"evidence\":\"本地样本：已核实进程树停止，保留主机日志位置。\"},{\"key\":\"cli:fixture:tool\",\"outcome\":\"ENDED\",\"evidence\":\"本地样本：工具调用已结束，交付记录待独立核实。\"}]}"}
+12:37:56 PM [vite] (client) hmr update /@fs/Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-web/src/views/agent/AgentRunReconciliationPanel.vue
+{"method":"GET","runId":"run-one","mode":"lost"}
+{"method":"POST","runId":"run-one","mode":"lost","key":"2ab8d86abc8c8f5105d8184eac60d842","body":"{\"requestKey\":\"2ab8d86abc8c8f5105d8184eac60d842\",\"expectedVersion\":11,\"snapshotHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"nextAction\":\"WAIT_INPUT\",\"decisions\":[{\"key\":\"cli:fixture\",\"outcome\":\"ENDED\",\"evidence\":\"本地样本：原 CLI 和子进程已停止，已查主机日志。\"},{\"key\":\"cli:fixture:tool\",\"outcome\":\"ENDED\",\"evidence\":\"本地样本：工具调用结束，领域状态仍单独核实。\"}]}"}
+{"kind":"saved","writes":3,"key":"run-one:2ab8d86abc8c8f5105d8184eac60d842"}
+{"method":"POST","runId":"run-one","mode":"lost","key":"2ab8d86abc8c8f5105d8184eac60d842","body":"{\"requestKey\":\"2ab8d86abc8c8f5105d8184eac60d842\",\"expectedVersion\":11,\"snapshotHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"nextAction\":\"WAIT_INPUT\",\"decisions\":[{\"key\":\"cli:fixture\",\"outcome\":\"ENDED\",\"evidence\":\"本地样本：原 CLI 和子进程已停止，已查主机日志。\"},{\"key\":\"cli:fixture:tool\",\"outcome\":\"ENDED\",\"evidence\":\"本地样本：工具调用结束，领域状态仍单独核实。\"}]}"}
+{"method":"GET","runId":"run-one","mode":"alive"}
+{"method":"GET","runId":"run-one","mode":"known"}
+{"method":"GET","runId":"run-one","mode":"cancel"}
+{"method":"GET","runId":"run-one","mode":"error"}
+{"method":"GET","runId":"run-one","mode":"delay"}
+{"method":"GET","runId":"run-two","mode":"api"}
+{"method":"GET","runId":"run-two","mode":"delay"}
+12:41:01 PM [vite] (client) hmr update /@fs/Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-web/src/views/agent/AgentRunReconciliationPanel.vue
+{"method":"GET","runId":"run-two","mode":"known"}
+{"method":"GET","runId":"run-two","mode":"delay"}
+{"method":"GET","runId":"run-two","mode":"api"}
+{"method":"GET","runId":"run-two","mode":"post-delay"}
+{"method":"POST","runId":"run-two","mode":"post-delay","key":"812562c1f1da9061735485cddf248410","body":"{\"requestKey\":\"812562c1f1da9061735485cddf248410\",\"expectedVersion\":11,\"snapshotHash\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"nextAction\":\"WAIT_INPUT\",\"decisions\":[{\"key\":\"cli:fixture\",\"outcome\":\"ENDED\",\"evidence\":\"本地延迟样本：已核实原进程树结束。\"},{\"key\":\"cli:fixture:tool\",\"outcome\":\"ENDED\",\"evidence\":\"本地延迟样本：已核实工具调用结束，原回执位置已记录。\"}]}"}
+{"kind":"saved","writes":4,"key":"run-two:812562c1f1da9061735485cddf248410"}
+{"method":"GET","runId":"run-one","mode":"cli"}

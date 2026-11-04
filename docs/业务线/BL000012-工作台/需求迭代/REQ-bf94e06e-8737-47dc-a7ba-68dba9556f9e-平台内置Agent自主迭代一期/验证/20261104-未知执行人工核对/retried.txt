@@ -1,0 +1,21 @@
+- main:
+  - complementary:
+    - strong: 本地样本验证 · 不连接业务系统
+    - text: 样本响应
+    - combobox "样本响应":
+      - option "CLI 与工具均未知"
+      - option "API 未知"
+      - option "CLI 仍存活"
+      - option "实际回执已到齐"
+      - option "已请求取消"
+      - option "读取失败"
+      - option "读取延迟12秒"
+      - option "提交延迟12秒"
+      - option "已保存但响应丢失" [selected]
+    - button "切换运行"
+    - button "切换管理权限"
+    - button "切换页面激活"
+    - generic: 已应用：lost · run-one · 已刷新 3 次 · WAITING_INPUT
+  - heading "Agent 运行人工核对" [level=2]
+- alert:
+  - paragraph: 人工核对已保存，正在刷新运行状态

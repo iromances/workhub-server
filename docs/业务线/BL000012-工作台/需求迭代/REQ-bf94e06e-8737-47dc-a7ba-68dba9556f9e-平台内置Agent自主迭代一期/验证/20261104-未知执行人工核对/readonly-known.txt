@@ -1,0 +1,43 @@
+- main:
+  - complementary:
+    - strong: 本地样本验证 · 不连接业务系统
+    - text: 样本响应
+    - combobox "样本响应":
+      - option "CLI 与工具均未知"
+      - option "API 未知"
+      - option "CLI 仍存活"
+      - option "实际回执已到齐" [selected]
+      - option "已请求取消"
+      - option "读取失败"
+      - option "读取延迟12秒"
+      - option "提交延迟12秒"
+      - option "已保存但响应丢失"
+    - button "切换运行"
+    - button "切换管理权限"
+    - button "切换页面激活"
+    - generic: 已应用：known · run-two · 已刷新 2 次 · WAITING_RESOURCE
+  - heading "Agent 运行人工核对" [level=2]
+  - strong: 执行结果核对
+  - paragraph: 调用回执缺失时，先核实原执行情况，再决定如何继续。
+  - button "收起核对":
+    - generic: 收起核对
+  - alert:
+    - generic: 逐项核实执行是否结束。仅父进程消失不足以确认整个进程树已停止；人工结论不表示测试或发布成功。
+  - paragraph: 材料版本 11 · 执行租约截至 2026/11/4 14:10:00
+  - alert:
+    - generic: 已取得全部实际回执，等待执行器自动恢复，无需人工替代回执
+  - article:
+    - strong: 1. CLI 进程树
+    - generic: 已有进程树停止回执
+    - paragraph: 调用标识：cli:fixture
+    - paragraph: 执行主机：fixture-worker · PID：789 · 启动时间：2026/11/4 14:00:00
+    - paragraph: 实际证据：cli:fixture:result
+    - generic "查看原调用意图"
+  - article:
+    - strong: 2. 企业工具 · change.publish
+    - generic: 已有工具回执
+    - paragraph: 调用标识：cli:fixture:tool · 包含写入操作
+    - paragraph: 实际证据：cli:fixture:tool:result
+    - generic "查看原调用意图"
+  - button "重新读取核对材料":
+    - generic: 重新读取核对材料
