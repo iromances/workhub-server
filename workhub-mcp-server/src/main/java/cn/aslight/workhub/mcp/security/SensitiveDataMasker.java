@@ -12,7 +12,7 @@ public class SensitiveDataMasker {
 
     private static final Pattern MOBILE_PATTERN = Pattern.compile("(?<!\\d)(1[3-9]\\d{9})(?!\\d)");
     private static final Pattern ID_CARD_PATTERN = Pattern.compile("(?<![0-9A-Za-z])([1-9]\\d{5}(?:19|20)\\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\\d|3[01])\\d{3}[0-9Xx])(?![0-9A-Za-z])");
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("(?i)([A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,})");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("(?i)(?<![A-Z0-9._%+-])([A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,})");
     private static final Pattern IPV4_PATTERN = Pattern.compile("^(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})\\.\\d{1,3}$");
     private static final Pattern SQL_LITERAL_PATTERN = Pattern.compile(
             "(?i)([A-Z0-9_`.]+)\\s*(=|<>|!=|LIKE)\\s*('(?:''|[^'])*'|\\\"(?:\\\"\\\"|[^\\\"])*\\\"|[0-9]+)"

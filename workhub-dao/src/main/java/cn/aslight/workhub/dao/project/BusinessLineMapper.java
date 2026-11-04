@@ -25,7 +25,7 @@ public interface BusinessLineMapper {
      */
     @Select({
             "<script>",
-            "SELECT id, business_line_code, business_line_name, gitlab_group_name, description, enabled, created_at, updated_at",
+            "SELECT id, business_line_code, business_line_name, gitlab_group_name, description, supported_environments, enabled, created_at, updated_at",
             "FROM pm_business_line",
             "<where>",
             "<if test='keyword != null and keyword != \"\"'>",
@@ -46,7 +46,7 @@ public interface BusinessLineMapper {
      * @return 业务线实体
      */
     @Select("""
-            SELECT id, business_line_code, business_line_name, gitlab_group_name, description, enabled, created_at, updated_at
+            SELECT id, business_line_code, business_line_name, gitlab_group_name, description, supported_environments, enabled, created_at, updated_at
             FROM pm_business_line
             WHERE id = #{id}
             """)
@@ -59,7 +59,7 @@ public interface BusinessLineMapper {
      * @return 业务线实体
      */
     @Select("""
-            SELECT id, business_line_code, business_line_name, gitlab_group_name, description, enabled, created_at, updated_at
+            SELECT id, business_line_code, business_line_name, gitlab_group_name, description, supported_environments, enabled, created_at, updated_at
             FROM pm_business_line
             WHERE business_line_name = #{businessLineName}
             LIMIT 1
@@ -73,7 +73,7 @@ public interface BusinessLineMapper {
      * @return 业务线实体
      */
     @Select("""
-            SELECT id, business_line_code, business_line_name, gitlab_group_name, description, enabled, created_at, updated_at
+            SELECT id, business_line_code, business_line_name, gitlab_group_name, description, supported_environments, enabled, created_at, updated_at
             FROM pm_business_line
             WHERE business_line_code = #{businessLineCode}
             LIMIT 1
@@ -100,9 +100,9 @@ public interface BusinessLineMapper {
      */
     @Insert("""
             INSERT INTO pm_business_line (
-                business_line_code, business_line_name, gitlab_group_name, description, enabled
+                business_line_code, business_line_name, gitlab_group_name, description, supported_environments, enabled
             ) VALUES (
-                #{businessLineCode}, #{businessLineName}, #{gitlabGroupName}, #{description}, #{enabled}
+                #{businessLineCode}, #{businessLineName}, #{gitlabGroupName}, #{description}, #{supportedEnvironments}, #{enabled}
             )
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
@@ -119,6 +119,7 @@ public interface BusinessLineMapper {
             SET business_line_name = #{businessLineName},
                 gitlab_group_name = #{gitlabGroupName},
                 description = #{description},
+                supported_environments = #{supportedEnvironments},
                 enabled = #{enabled},
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = #{id}

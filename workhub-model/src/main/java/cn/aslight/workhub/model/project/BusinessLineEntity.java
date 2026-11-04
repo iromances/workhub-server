@@ -28,6 +28,10 @@ public class BusinessLineEntity {
      */
     private String description;
     /**
+     * 支持环境编码，大写英文逗号分隔，如 DEV,FAT,TEST,PROD。
+     */
+    private String supportedEnvironments;
+    /**
      * 是否启用。
      */
     private Boolean enabled;
@@ -78,6 +82,14 @@ public class BusinessLineEntity {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getSupportedEnvironments() {
+        return supportedEnvironments;
+    }
+
+    public void setSupportedEnvironments(String supportedEnvironments) {
+        this.supportedEnvironments = supportedEnvironments;
     }
 
     public Boolean getEnabled() {
