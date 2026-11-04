@@ -15,7 +15,14 @@ public record XxlJobLogPageResponse(Long id,
                                     int total,
                                     int page,
                                     int pageSize,
-                                    List<XxlJobFailedJobResponse> logs) {
+                                    List<XxlJobFailedJobResponse> logs,
+                                    XxlJobQueryEvidence executionEvidence) {
+
+    public XxlJobLogPageResponse(Long id, String monitorKey, String businessLineCode, String environmentCode, String name,
+            String xxlJobDatabaseName, String status, String message, LocalDateTime checkedAt, int total, int page, int pageSize,
+            List<XxlJobFailedJobResponse> logs) {
+        this(id, monitorKey, businessLineCode, environmentCode, name, xxlJobDatabaseName, status, message, checkedAt, total, page, pageSize, logs, null);
+    }
 
     public XxlJobLogPageResponse(Long id,
                                  String monitorKey,

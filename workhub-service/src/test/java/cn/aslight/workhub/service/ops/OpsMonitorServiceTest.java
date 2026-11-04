@@ -23,9 +23,35 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 class OpsMonitorServiceTest {
+
+    @Test
+    void agentQueryMustMatchAuthorizedScopeBeforeAnyDatabaseCollection() {
+        var mapper = mock(OpsMonitorMapper.class); var collector = mock(XxlJobMonitorCollector.class);
+        var service = new OpsMonitorService(mapper,mock(BusinessLineMapper.class),mock(OpsMonitorSchemaInitializer.class),mock(McpCryptoService.class),collector);
+        var moved = monitor(9L,"fixture"); moved.setBusinessLineCode("BL000012"); moved.setEnvironmentCode("PROD");
+        when(mapper.findById(9L)).thenReturn(moved);
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () ->
+                service.xxlJobLogsInScope(9L,"BL000012","TEST",LocalDate.of(2026,11,3),LocalDate.of(2026,11,4),1,20,null,null,"FAILED"));
+        verifyNoInteractions(collector);
+    }
+
+    @Test
+    void agentQueryUsesTheSameValidatedMonitorSnapshotThroughoutCollection() {
+        var mapper = mock(OpsMonitorMapper.class); var collector = mock(XxlJobMonitorCollector.class);
+        var service = new OpsMonitorService(mapper,mock(BusinessLineMapper.class),mock(OpsMonitorSchemaInitializer.class),mock(McpCryptoService.class),collector);
+        var valid = monitor(9L,"fixture"); valid.setBusinessLineCode("BL000012"); valid.setEnvironmentCode("TEST");
+        when(mapper.findById(9L)).thenReturn(valid);
+        var from=LocalDate.of(2026,11,3); var to=LocalDate.of(2026,11,4);
+        var response=new XxlJobLogPageResponse(9L,"key","BL000012","TEST","监测","fixture","UP","",LocalDateTime.now(),0,1,20,List.of());
+        when(collector.collectLogs(valid,from,to,1,20,null,null,"FAILED")).thenReturn(response);
+        assertEquals(response,service.xxlJobLogsInScope(9L,"BL000012","TEST",from,to,1,20,null,null,"FAILED"));
+        verify(mapper,times(1)).findById(9L); verify(collector).collectLogs(valid,from,to,1,20,null,null,"FAILED");
+    }
 
     @Test
     void list_shouldReturnBusinessLineNameAndLocalizedLastStatus() {

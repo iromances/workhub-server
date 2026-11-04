@@ -124,10 +124,10 @@ class AgentMonitoringToolsTest {
         var monitor = new OpsMonitorEntity(); monitor.setId(7L); monitor.setBusinessLineCode("BL000012"); monitor.setEnvironmentCode("TEST");
         when(monitors.findById(7L)).thenReturn(monitor);
         var page = json.readValue("""
-                {"id":7,"status":"UP","total":4,"page":2,"pageSize":2,"logs":[
+                {"id":7,"businessLineCode":"BL000012","environmentCode":"TEST","status":"UP","total":4,"page":2,"pageSize":2,"logs":[
                  {"jobId":20,"logId":30,"failureType":"EXECUTION_FAILED","handleTime":"2026-10-12 10:00:00.0"}]}
                 """, XxlJobLogPageResponse.class);
-        when(business.xxlJobLogs(7L, java.time.LocalDate.parse("2026-10-01"), java.time.LocalDate.parse("2026-10-31"), 2, 2, null, null, "FAILED")).thenReturn(page);
+        when(business.xxlJobLogsInScope(7L, "BL000012", "TEST", java.time.LocalDate.parse("2026-10-01"), java.time.LocalDate.parse("2026-10-31"), 2, 2, null, null, "FAILED")).thenReturn(page);
         var result = (JsonNode) tools.agentBusinessDetailTool().execute(context, json.readTree("""
                 {"monitorId":7,"fromDate":"2026-10-01","toDate":"2026-10-31","page":2,"pageSize":2}
                 """));
@@ -139,12 +139,24 @@ class AgentMonitoringToolsTest {
     }
 
     @Test
+    void movedBusinessMonitorIsCheckedAgainstActualResultScopeBeforeEvidenceCapture() {
+        var monitor = new OpsMonitorEntity(); monitor.setBusinessLineCode("BL000012"); monitor.setEnvironmentCode("TEST");
+        when(monitors.findById(7L)).thenReturn(monitor);
+        var moved = new XxlJobLogPageResponse(7L,"monitor","BL000012","PROD","调度","fixture","UP","",LocalDateTime.now(),0,1,10,List.of());
+        when(business.xxlJobLogsInScope(eq(7L), eq("BL000012"), eq("TEST"),any(),any(),eq(1),eq(10),isNull(),isNull(),eq("FAILED"))).thenReturn(moved);
+        doThrow(new org.springframework.security.access.AccessDeniedException("scope")).when(access).requireScope(context,new AgentScope("BL000012","PROD"));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> tools.agentBusinessDetailTool().execute(context,json.readTree("{\"monitorId\":7}")));
+        verify(observations,never()).capture(any(),anyString(),any());
+    }
+
+    @Test
     void failedXxlQueryIsNotReportedAsSuccessfulEmptyCoverage() {
         var monitor = new OpsMonitorEntity(); monitor.setBusinessLineCode("BL000012"); monitor.setEnvironmentCode("TEST");
         when(monitors.findById(7L)).thenReturn(monitor);
         var failed = new XxlJobLogPageResponse(7L, "monitor", "BL000012", "TEST", "调度", "fixture",
                 "ERROR", "database unavailable", LocalDateTime.now(), 0, 1, 10, List.of());
-        when(business.xxlJobLogs(eq(7L), any(), any(), eq(1), eq(10), isNull(), isNull(), eq("FAILED")))
+        when(business.xxlJobLogsInScope(eq(7L), eq("BL000012"), eq("TEST"), any(), any(), eq(1), eq(10), isNull(), isNull(), eq("FAILED")))
                 .thenReturn(failed);
         var result = (JsonNode) tools.agentBusinessDetailTool().execute(context, json.readTree("{\"monitorId\":7}"));
         assertEquals("QUERY_FAILED", result.path("coverage").asText());

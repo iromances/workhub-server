@@ -195,7 +195,8 @@ class XxlJobMonitorCollectorTest {
                 "disabledJobCount", 0,
                 "triggerRunningCount", 0,
                 "triggerSuccessCount", 20,
-                "triggerFailedCount", 2
+                "triggerFailedCount", 2,
+                "reportUpdatedAt", "2026-06-02 09:00:00"
         )));
         queryClient.nextRows(List.of(Map.of("failedJobTotal", 18)));
         queryClient.nextRows(List.of(successJobRow()));
@@ -225,7 +226,7 @@ class XxlJobMonitorCollectorTest {
     @Test
     void collectLogs_shouldReadRawLogsWithoutCollectingSummary() {
         FakeXxlJobDatabaseQueryClient queryClient = new FakeXxlJobDatabaseQueryClient();
-        queryClient.nextRows(List.of(Map.of("failedJobTotal", 18)));
+        queryClient.nextRows(List.of(Map.of("failedJobTotal", 1, "activityCount", 1, "latestActivityAt", "2026-06-02 09:01:00")));
         queryClient.nextRows(List.of(successJobRow()));
         XxlJobMonitorCollector collector = new XxlJobMonitorCollector(queryClient);
 
@@ -240,17 +241,17 @@ class XxlJobMonitorCollectorTest {
                 LOG_STATUS_ALL
         );
 
-        assertEquals(18, response.total());
+        assertEquals(1, response.total());
         assertEquals(1, response.logs().size());
         assertEquals("SUCCESS", response.logs().getFirst().failureType());
-        assertEquals(2, queryClient.sqls.size());
+        assertEquals(1, queryClient.sqls.size());
         assertTrue(queryClient.sqls.getFirst().contains("COUNT(1) AS failedJobTotal"));
         assertTrue(queryClient.sqls.getFirst().contains("FROM `amp_xxl_job`.`xxl_job_log` l"));
-        assertTrue(queryClient.sqls.get(1).contains("ORDER BY l.trigger_time DESC, l.id DESC"));
+        assertTrue(queryClient.sqls.getFirst().contains("ORDER BY l.trigger_time DESC, l.id DESC"));
         assertTrue(!queryClient.sqls.getFirst().contains("xxl_job_log_report"));
-        assertTrue(!queryClient.sqls.get(1).contains("xxl_job_log_report"));
+        assertTrue(!queryClient.sqls.getFirst().contains("xxl_job_log_report"));
         assertTrue(queryClient.sqls.getFirst().contains("i.author LIKE '%张%'"));
-        assertTrue(queryClient.sqls.get(1).contains("g.app_name LIKE '%premium%'"));
+        assertTrue(queryClient.sqls.getFirst().contains("g.app_name LIKE '%premium%'"));
     }
 
     @Test
@@ -263,7 +264,8 @@ class XxlJobMonitorCollectorTest {
                 "disabledJobCount", 0,
                 "triggerRunningCount", 0,
                 "triggerSuccessCount", 0,
-                "triggerFailedCount", 1
+                "triggerFailedCount", 1,
+                "reportUpdatedAt", "2026-06-02 09:00:00"
         )));
         queryClient.nextRows(List.of(Map.of("failedJobTotal", 1)));
         Map<String, Object> failedJob = failedJobRow();
@@ -289,7 +291,8 @@ class XxlJobMonitorCollectorTest {
                 "disabledJobCount", 0,
                 "triggerRunningCount", 0,
                 "triggerSuccessCount", 1,
-                "triggerFailedCount", 0
+                "triggerFailedCount", 0,
+                "reportUpdatedAt", "2026-06-02 09:00:00"
         )));
         queryClient.nextRows(List.of(Map.of("failedJobTotal", 0)));
         queryClient.nextRows(List.of());
@@ -318,7 +321,8 @@ class XxlJobMonitorCollectorTest {
                 "disabledJobCount", 0,
                 "triggerRunningCount", 0,
                 "triggerSuccessCount", 20,
-                "triggerFailedCount", 2
+                "triggerFailedCount", 2,
+                "reportUpdatedAt", "2026-06-02 09:00:00"
         )));
         queryClient.nextRows(List.of(Map.of("failedJobTotal", 1)));
         queryClient.nextRows(List.of(failedJobRow()));
@@ -345,7 +349,8 @@ class XxlJobMonitorCollectorTest {
                 "disabledJobCount", 0,
                 "triggerRunningCount", 0,
                 "triggerSuccessCount", 20,
-                "triggerFailedCount", 2
+                "triggerFailedCount", 2,
+                "reportUpdatedAt", "2026-06-02 09:00:00"
         )));
         queryClient.nextRows(List.of(Map.of("failedJobTotal", 1)));
         queryClient.nextRows(List.of(failedJobRow()));
@@ -369,7 +374,8 @@ class XxlJobMonitorCollectorTest {
                 "disabledJobCount", 0,
                 "triggerRunningCount", 0,
                 "triggerSuccessCount", 20,
-                "triggerFailedCount", 2
+                "triggerFailedCount", 2,
+                "reportUpdatedAt", "2026-06-02 09:00:00"
         )));
         queryClient.nextRows(List.of(Map.of("failedJobTotal", 1)));
         queryClient.nextRows(List.of(failedJobRow()));
@@ -393,7 +399,8 @@ class XxlJobMonitorCollectorTest {
                 "disabledJobCount", 0,
                 "triggerRunningCount", 0,
                 "triggerSuccessCount", 1,
-                "triggerFailedCount", 1
+                "triggerFailedCount", 1,
+                "reportUpdatedAt", "2026-06-02 09:00:00"
         )));
         queryClient.nextRows(List.of(Map.of("failedJobTotal", 1)));
         Map<String, Object> failedJob = failedJobRow();
@@ -416,7 +423,8 @@ class XxlJobMonitorCollectorTest {
                 "disabledJobCount", 0,
                 "triggerRunningCount", 0,
                 "triggerSuccessCount", 3,
-                "triggerFailedCount", 0
+                "triggerFailedCount", 0,
+                "reportUpdatedAt", "2026-06-02 09:00:00"
         )));
         queryClient.nextRows(List.of(Map.of("failedJobTotal", 0)));
         queryClient.nextRows(List.of());
@@ -431,14 +439,14 @@ class XxlJobMonitorCollectorTest {
     @Test
     void collectLogs_shouldExecuteCountAndPageSqlInSingleBatch() {
         FakeXxlJobDatabaseQueryClient queryClient = new FakeXxlJobDatabaseQueryClient();
-        queryClient.nextRows(List.of(Map.of("failedJobTotal", 3)));
+        queryClient.nextRows(List.of(Map.of("failedJobTotal", 1, "activityCount", 3, "latestActivityAt", "2026-06-02 09:01:00")));
         queryClient.nextRows(List.of(failedJobRow()));
         XxlJobMonitorCollector collector = new XxlJobMonitorCollector(queryClient);
 
         collector.collectLogs(monitor(), LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 9), 1, 20, null, null, "FAILED");
 
         assertEquals(1, queryClient.batchCount);
-        assertEquals(2, queryClient.sqls.size());
+        assertEquals(1, queryClient.sqls.size());
     }
 
     @Test
@@ -451,7 +459,8 @@ class XxlJobMonitorCollectorTest {
                 "disabledJobCount", 0,
                 "triggerRunningCount", 0,
                 "triggerSuccessCount", 1,
-                "triggerFailedCount", 0
+                "triggerFailedCount", 0,
+                "reportUpdatedAt", "2026-06-02 09:00:00"
         )));
         queryClient.nextRows(List.of(Map.of("failedJobTotal", 0)));
         queryClient.nextRows(List.of());
@@ -463,9 +472,109 @@ class XxlJobMonitorCollectorTest {
         assertEquals(3, queryClient.sqls.size());
     }
 
+    @Test
+    void missingEmptyMultirowAndInvalidAggregateCountsCannotReportHealthy() {
+        for (var rows : List.<List<Map<String, Object>>>of(List.of(), List.of(Map.of()),
+                List.of(Map.of("jobCount", 0), Map.of("jobCount", 0)))) {
+            var client = new FakeXxlJobDatabaseQueryClient(); client.nextRows(rows);
+            org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> new XxlJobMonitorCollector(client).collectSummary(monitor()));
+        }
+        for (Object invalid : List.of(-1, "not-a-number", "1.2", "2147483648")) {
+            var client = new FakeXxlJobDatabaseQueryClient();
+            client.nextRows(List.of(Map.of("triggerRunningCount", invalid)));
+            org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () -> new XxlJobMonitorCollector(client).collectSummary(monitor()));
+        }
+    }
+
+    @Test
+    void zeroFailuresWithActualActivityCarriesFullFixedExecutionEvidence() {
+        var client = new FakeXxlJobDatabaseQueryClient();
+        client.nextRows(List.of(Map.of("failedJobTotal", 0, "activityCount", 4, "latestActivityAt", "2026-06-02 09:02:00")));
+        client.nextRows(List.of());
+        var result = new XxlJobMonitorCollector(client).collectLogs(monitor(), LocalDate.of(2026,6,1), LocalDate.of(2026,6,9), 1,20,null,null,"FAILED");
+        assertEquals("UP", result.status()); assertEquals(0, result.logs().size());
+        var evidence = result.executionEvidence(); org.junit.jupiter.api.Assertions.assertNotNull(evidence);
+        assertEquals("支付", evidence.definition().businessLineCode()); assertEquals("prod", evidence.definition().environmentCode());
+        assertEquals(4, evidence.activityCount()); assertTrue(evidence.completePage()); assertEquals(1, evidence.queryHashes().size());
+        assertEquals("Asia/Shanghai", evidence.recordTimeZone());
+        assertTrue(client.sqls.getFirst().contains("COUNT(CASE WHEN")); assertTrue(client.sqls.getFirst().contains("latestActivityAt"));
+        assertEquals(1, client.batchCount);
+    }
+
+    @Test
+    void noActivityRemainsExplicitInsteadOfInventingDataTime() {
+        var client = new FakeXxlJobDatabaseQueryClient(); var statistics = new LinkedHashMap<String,Object>();
+        statistics.put("failedJobTotal",0); statistics.put("activityCount",0); statistics.put("latestActivityAt",null);
+        client.nextRows(List.of(statistics)); client.nextRows(List.of());
+        var result = new XxlJobMonitorCollector(client).collectLogs(monitor(), LocalDate.of(2026,6,1),LocalDate.of(2026,6,9),1,20,null,null,"FAILED");
+        assertEquals(0,result.executionEvidence().activityCount()); org.junit.jupiter.api.Assertions.assertNull(result.executionEvidence().latestActivityAt());
+    }
+
+    @Test
+    void partialPageAndDuplicateIdsCannotAppearComplete() {
+        var client = new FakeXxlJobDatabaseQueryClient();
+        client.nextRows(List.of(Map.of("failedJobTotal", 2, "activityCount", 3, "latestActivityAt","2026-06-02 09:02:00")));
+        client.nextRows(List.of(failedJobRow()));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> new XxlJobMonitorCollector(client).collectLogs(monitor(),LocalDate.of(2026,6,1),LocalDate.of(2026,6,9),1,20,null,null,"FAILED"));
+        var duplicate = new FakeXxlJobDatabaseQueryClient();
+        duplicate.nextRows(List.of(Map.of("failedJobTotal", 2, "activityCount", 3, "latestActivityAt","2026-06-02 09:02:00")));
+        duplicate.nextRows(List.of(failedJobRow(),failedJobRow()));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> new XxlJobMonitorCollector(duplicate).collectLogs(monitor(),LocalDate.of(2026,6,1),LocalDate.of(2026,6,9),1,20,null,null,"FAILED"));
+    }
+
+    @Test
+    void completeLaterPageStillDoesNotClaimWholeQueryCoverage() {
+        var client = new FakeXxlJobDatabaseQueryClient();
+        client.nextRows(List.of(Map.of("failedJobTotal", 2, "activityCount", 3, "latestActivityAt","2026-06-02 09:02:00")));
+        client.nextRows(List.of(failedJobRow()));
+        var result = new XxlJobMonitorCollector(client).collectLogs(monitor(),LocalDate.of(2026,6,1),LocalDate.of(2026,6,9),2,1,null,null,"FAILED");
+        assertEquals(1,result.logs().size()); org.junit.jupiter.api.Assertions.assertFalse(result.executionEvidence().completePage());
+    }
+
+    @Test
+    void actualSqlReturnsConsistentCountsActivityAndLogsIncludingEmptyMatch() throws Exception {
+        try (var connection=java.sql.DriverManager.getConnection("jdbc:h2:mem:"+java.util.UUID.randomUUID()+";MODE=MySQL")) {
+            try (var statement=connection.createStatement()) {
+                for (String ddl:List.of("CREATE SCHEMA amp_xxl_job",
+                        "CREATE TABLE amp_xxl_job.xxl_job_group(id BIGINT,app_name VARCHAR(50))",
+                        "CREATE TABLE amp_xxl_job.xxl_job_info(id BIGINT,job_group BIGINT,job_desc VARCHAR(50),author VARCHAR(50),executor_handler VARCHAR(50),trigger_status INT)",
+                        "CREATE TABLE amp_xxl_job.xxl_job_log(id BIGINT,job_id BIGINT,trigger_time TIMESTAMP,trigger_code INT,trigger_msg VARCHAR(50),handle_time TIMESTAMP,handle_code INT,handle_msg VARCHAR(50))",
+                        "INSERT INTO amp_xxl_job.xxl_job_group VALUES(1,'worker')",
+                        "INSERT INTO amp_xxl_job.xxl_job_info VALUES(1,1,'job','owner','handler',1)",
+                        "INSERT INTO amp_xxl_job.xxl_job_log VALUES(1,1,'2026-06-02 09:00:00',200,'ok','2026-06-02 09:01:00',200,'ok'),(2,1,'2026-06-02 09:02:00',200,'ok','2026-06-02 09:03:00',500,'failed')")) statement.execute(ddl);
+            }
+            XxlJobDatabaseQueryClient client=new XxlJobDatabaseQueryClient() {
+                public List<Map<String,Object>> runRows(String line,String environment,String sql) { throw new AssertionError(); }
+                public VerifiedBatch runVerifiedBatch(String line,String environment,List<String> sqls) {
+                    assertEquals(1,sqls.size()); var rows=new ArrayList<Map<String,Object>>();
+                    try (var statement=connection.createStatement();var rs=statement.executeQuery(sqls.getFirst())) {
+                        var metadata=rs.getMetaData();
+                        while(rs.next()) { Map<String,Object> row=new LinkedHashMap<>(); for(int i=1;i<=metadata.getColumnCount();i++) row.put(metadata.getColumnLabel(i),rs.getObject(i)); rows.add(row); }
+                    } catch(java.sql.SQLException ex) { throw new IllegalStateException(ex); }
+                    var at=java.time.Instant.parse("2026-06-02T02:00:00Z");
+                    return new VerifiedBatch("a".repeat(64),at,at,List.of(rows));
+                }
+            };
+            var collector=new XxlJobMonitorCollector(client); var from=LocalDate.of(2026,6,1); var to=LocalDate.of(2026,6,2);
+            var failed=collector.collectLogs(monitor(),from,to,1,20,null,null,"FAILED");
+            assertEquals(1,failed.total()); assertEquals(2,failed.executionEvidence().activityCount());
+            assertEquals(2,failed.logs().getFirst().logId()); assertEquals("ERROR",failed.status());
+            assertEquals(java.time.LocalDateTime.parse("2026-06-02T09:03:00"),failed.executionEvidence().latestActivityAt());
+            try(var statement=connection.createStatement()) { statement.executeUpdate("UPDATE amp_xxl_job.xxl_job_log SET handle_code=200 WHERE id=2"); }
+            var healthy=collector.collectLogs(monitor(),from,to,1,20,null,null,"FAILED");
+            assertEquals(0,healthy.total()); assertEquals(0,healthy.logs().size()); assertEquals(2,healthy.executionEvidence().activityCount());
+            assertTrue(healthy.executionEvidence().completePage()); assertEquals("UP",healthy.status());
+            var unknown=collector.collectLogs(monitor(),from,to,1,20,null,"unknown","FAILED");
+            assertEquals(0,unknown.executionEvidence().activityCount()); org.junit.jupiter.api.Assertions.assertNull(unknown.executionEvidence().latestActivityAt());
+        }
+    }
+
     private OpsMonitorEntity monitor() {
         OpsMonitorEntity entity = new OpsMonitorEntity();
         entity.setId(7L);
+        entity.setEnabled(true);
         entity.setMonitorType("XXL_JOB");
         entity.setMonitorKey("pay-prod-xxljob");
         entity.setBusinessLineCode("支付");
@@ -527,6 +636,17 @@ class XxlJobMonitorCollectorTest {
             environmentCodes.add(environmentCode);
             sqls.add(sql);
             return queuedRows.removeFirst();
+        }
+
+        @Override
+        public VerifiedBatch runVerifiedBatch(String line, String environment, List<String> statements) {
+            var started = java.time.Instant.parse("2026-06-02T02:00:00Z");
+            batchCount++; sqls.addAll(statements); businessLineCodes.add(line); environmentCodes.add(environment);
+            var statistics = queuedRows.removeFirst().getFirst(); var page = queuedRows.removeFirst();
+            var combined = new ArrayList<Map<String,Object>>();
+            if (page.isEmpty()) { var row = new LinkedHashMap<String,Object>(statistics); row.put("logId",null); combined.add(row); }
+            else for (var detail : page) { var row=new LinkedHashMap<String,Object>(statistics); row.putAll(detail); combined.add(row); }
+            return new VerifiedBatch("a".repeat(64), started, started.plusSeconds(1), List.of(combined));
         }
 
         @Override

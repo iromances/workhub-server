@@ -88,7 +88,7 @@ public class AgentMonitoringTools {
 
     @Bean
     AgentTool agentBusinessDetailTool() {
-        return tool("monitor.business.detail", "读取已授权监测项逐次 XXL-JOB 失败日志；默认最近七天，可固定 fromDate/toDate（单次最多31天）和 page/pageSize 续读。",
+        return tool("monitor.business.detail", "读取已授权监测项逐次 XXL-JOB 失败日志和实际查询凭据、全状态最新活动时间；默认最近七天，可固定 fromDate/toDate（单次最多31天）和 page/pageSize 续读。旧数据或不完整分页不能作为复查通过证据。",
                 Set.of("ops:monitor:view", "ops:monitor:manage"),
                 Map.of("monitorId", integer(1, Long.MAX_VALUE), "page", integer(1, 10000), "pageSize", integer(1, 20),
                         "fromDate", string(), "toDate", string()), List.of("monitorId"), (context, args) -> {
@@ -99,10 +99,12 @@ public class AgentMonitoringTools {
                     if (monitor == null) throw new IllegalArgumentException("监测项不存在");
                     AgentScope scope = new AgentScope(monitor.getBusinessLineCode(), monitor.getEnvironmentCode());
                     access.requireScope(context, scope);
-                    var result = business.xxlJobLogs(id, window.from(), window.to(), page, size, null, null, "FAILED");
-                    var value = observation("XXL-JOB 失败记录", scope, result);
+                    var result = business.xxlJobLogsInScope(id, scope.businessLineCode(), scope.environmentCode(), window.from(), window.to(), page, size, null, null, "FAILED");
+                    var actualScope = new AgentScope(result.businessLineCode(), result.environmentCode());
+                    access.requireScope(context, actualScope);
+                    var value = observation("XXL-JOB 失败记录", actualScope, result);
                     value.put("query", Map.of("fromDate", window.from().toString(), "toDate", window.to().toString(), "page", page, "pageSize", size));
-                    value.put("coverage", "ERROR".equals(result.status()) ? "QUERY_FAILED" : "QUERY_SUCCEEDED");
+                    value.put("coverage", result.executionEvidence() != null ? "QUERY_SUCCEEDED" : "ERROR".equals(result.status()) ? "QUERY_FAILED" : "UNVERIFIED_QUERY");
                     return value;
                 });
     }

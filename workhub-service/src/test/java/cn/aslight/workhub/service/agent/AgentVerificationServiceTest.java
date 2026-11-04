@@ -300,7 +300,7 @@ class AgentVerificationServiceTest {
         for (String tool : List.of("monitor.system.alerts", "workhub.logs", "monitor.business.detail")) {
             var evidence = new AgentVerificationEvidence(json); String id = observation(tool, json.createObjectNode(), clock.instant());
             var fact = evidence.inspect(observations.observation(id), context, standards(tool).checks().getFirst(), "/data", deploymentTime, clock.instant());
-            assertTrue(fact.problems().contains("COLLECTION_COVERAGE_UNPROVEN"));
+            assertTrue(fact.problems().contains(tool.equals("monitor.business.detail") ? "EXECUTION_SCOPE_UNVERIFIED" : "COLLECTION_COVERAGE_UNPROVEN"));
         }
     }
 
@@ -395,6 +395,53 @@ class AgentVerificationServiceTest {
         jdbc.update("UPDATE pm_agent_deployment SET status='SUCCEEDED' WHERE id='deploy'");
         jdbc.update("UPDATE pm_agent_verification SET artifact_hash='changed' WHERE id=?", id);
         assertTrue(gate.material("change", "prod", "production-draft", "owner").blockers().contains("TEST_ENVIRONMENT_VERIFICATION_MISSING"));
+    }
+
+    @Test void businessDetailProducerSuppliesFreshCompleteEvidenceForRealVerificationWindow() {
+        useBusinessDetail(); String id = start();
+        for (int index=0;index<3;index++) {
+            if(index>0) clock.advance(10);
+            recordBusiness(id,"business"+index,clock.instant());
+        }
+        var result=finish(id,"PASS",false);
+        assertEquals("PASSED",result.path("status").asText()); assertEquals(3,result.at("/checks/0/distinctSamples").asInt());
+        assertEquals(20,result.at("/checks/0/observedSeconds").asLong());
+    }
+    @Test void refreshingBusinessQueryWithoutNewActivityDoesNotInventNewSamples() {
+        useBusinessDetail(); String id=start(); Instant old=clock.instant();
+        for(int index=0;index<3;index++) { if(index>0) clock.advance(10); recordBusiness(id,"same"+index,old); }
+        var result=finish(id,"PASS",false);
+        assertEquals("OBSERVING",result.path("status").asText()); assertEquals(1,result.at("/checks/0/distinctSamples").asInt());
+    }
+    @Test void noBusinessActivityCannotBeReportedAsRecovery() {
+        useBusinessDetail(); String id=start(); var result=recordBusiness(id,"empty",null);
+        assertEquals(0,result.at("/checks/0/distinctSamples").asInt()); assertTrue(result.at("/checks/0/constraints").toString().contains("NO_BUSINESS_ACTIVITY"));
+    }
+    private void useBusinessDetail() {
+        approved=new AgentReleasePlanSnapshot(2,change,List.of(),List.of(),approved.steps(),standards("monitor.business.detail"));
+        String snapshot=json.writeValueAsString(approved), hash=AgentCodePolicy.hash(snapshot);
+        jdbc.update("UPDATE pm_agent_release_plan SET snapshot_json=?,snapshot_hash=? WHERE id='plan'",snapshot,hash);
+        jdbc.update("UPDATE pm_agent_release_review SET snapshot_hash=? WHERE id='review'",hash);
+    }
+    private JsonNode recordBusiness(String verificationId,String request,Instant activityAt) {
+        var monitor=new cn.aslight.workhub.model.ops.OpsMonitorEntity();
+        monitor.setId(1L); monitor.setEnabled(true); monitor.setMonitorType("XXL_JOB"); monitor.setMonitorKey("workhub-test");
+        monitor.setBusinessLineCode("BL000012"); monitor.setEnvironmentCode("TEST"); monitor.setXxlJobDatabaseName("fixture"); monitor.setName("任务监测");
+        var query=new cn.aslight.workhub.service.ops.XxlJobDatabaseQueryClient() {
+            public List<Map<String,Object>> runRows(String line,String environment,String sql) { throw new AssertionError("必须使用固定目标批次"); }
+            public VerifiedBatch runVerifiedBatch(String line,String environment,List<String> sqls) {
+                Map<String,Object> statistics=new LinkedHashMap<>(); statistics.put("failedJobTotal",0); statistics.put("activityCount",activityAt==null?0:1);
+                statistics.put("latestActivityAt",activityAt==null?null:LocalDateTime.ofInstant(activityAt,ZoneId.of("Asia/Shanghai")));
+                statistics.put("logId",null);
+                return new VerifiedBatch("f".repeat(64),clock.instant().minusMillis(1),clock.instant(),List.of(List.of(statistics)));
+            }
+        };
+        var date=clock.instant().atZone(ZoneId.of("Asia/Shanghai")).toLocalDate();
+        var result=new cn.aslight.workhub.service.ops.XxlJobMonitorCollector(query).collectLogs(monitor,date.minusDays(1),date,1,20,null,null,"FAILED");
+        String observation=observation("monitor.business.detail",new AgentToolData(json).sanitize(result),clock.instant());
+        var args=recordArgs(verificationId,request,observation,"PASS",false);
+        ((ObjectNode)args.at("/evidence/0")).put("pointer","/data");
+        return invoke("verification.record",args);
     }
 
     private AgentReleaseVerificationPlan standards(String tool) {

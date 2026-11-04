@@ -94,7 +94,38 @@ public class AgentVerificationEvidence {
                     }
                     eventKey = sourceKey + ":" + run.path("id").asText();
                 }
-                case "monitor.business.detail", "monitor.system.alerts", "workhub.logs" -> {
+                case "monitor.business.detail" -> {
+                    var raw = selected.path("executionEvidence");
+                    if (!raw.isObject()) problems.add("EXECUTION_SCOPE_UNVERIFIED");
+                    else {
+                        var proof = json.treeToValue(raw, cn.aslight.workhub.model.ops.XxlJobQueryEvidence.class);
+                        var definition = proof.definition();
+                        if (proof.schemaVersion() != 1 || definition == null || definition.monitorId() == null
+                                || !AgentCodePolicy.hash(json.writeValueAsString(definition)).equals(proof.definitionHash())
+                                || proof.targetBindingHash() == null || !proof.targetBindingHash().matches("[a-f0-9]{64}")
+                                || !check.scope().businessLineCode().equals(definition.businessLineCode())
+                                || !check.scope().environmentCode().equals(definition.environmentCode())
+                                || definition.monitorId() != selected.path("id").asLong()
+                                || !definition.businessLineCode().equals(selected.path("businessLineCode").asText())
+                                || !definition.environmentCode().equals(selected.path("environmentCode").asText()))
+                            throw new IllegalArgumentException("业务监测执行凭据的来源、范围或摘要不一致");
+                        if (!definition.enabled() || !"XXL_JOB".equals(definition.monitorType())) problems.add("MONITOR_NOT_EVALUATED");
+                        if (proof.startedAt() == null || proof.finishedAt() == null || proof.startedAt().isBefore(deployedAt)
+                                || proof.finishedAt().isBefore(proof.startedAt()) || proof.finishedAt().isAfter(observedAt))
+                            problems.add("EXECUTION_NOT_AFTER_DEPLOYMENT");
+                        if (!"QUERY_SUCCEEDED".equals(root.path("coverage").asText()) || !proof.completePage() || definition.page() != 1
+                                || !selected.path("logs").isArray() || proof.matchingCount() != selected.path("logs").size()
+                                || proof.matchingCount() != selected.path("total").asLong(-1) || proof.matchingCount() < 0
+                                || proof.activityCount() < proof.matchingCount()) problems.add("QUERY_RESULTS_INCOMPLETE");
+                        if (proof.activityCount() == 0) problems.add("NO_BUSINESS_ACTIVITY");
+                        ZoneId recordZone = zone(raw.path("recordTimeZone"));
+                        dataAt = instant(raw.path("latestActivityAt"), recordZone);
+                        if (proof.finishedAt() != null && dataAt != null && dataAt.isAfter(proof.finishedAt())) problems.add("DATA_OUTSIDE_QUERY_WINDOW");
+                        sourceKey += ":" + proof.definitionHash() + ":" + proof.targetBindingHash();
+                        eventKey = sourceKey + ":" + proof.executionId();
+                    }
+                }
+                case "monitor.system.alerts", "workhub.logs" -> {
                     // 当前来源只有失败/匹配记录，没有查询范围内连续采集健康证明；空列表不能自动通过。
                     problems.add("COLLECTION_COVERAGE_UNPROVEN");
                     if (root.at("/data/truncated").asBoolean() || root.at("/data/hasMore").asBoolean()) problems.add("TRUNCATED_EVIDENCE");

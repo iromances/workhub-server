@@ -1,0 +1,6 @@
+工作目录：/Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-server
+
+mvn -o -q -pl workhub-controller,workhub-job -am -Dtest=McpXxlJobDatabaseQueryClientTest,XxlJobMonitorCollectorTest,OpsMonitorServiceTest,XxlJobFailureAlertServiceTest,AgentMonitoringToolsTest,AgentVerificationServiceTest,AutonomyCaseServiceTest,AgentInspectionServiceTest -Dsurefire.failIfNoSpecifiedTests=false -DargLine=-javaagent:/Users/aslight/.m2/repository/org/mockito/mockito-core/5.20.0/mockito-core-5.20.0.jar test
+
+8 份本次 Surefire 报告合计 130 项，失败/错误/跳过均为 0；测试进程已结束。
+本轮未安装依赖、启动应用或访问真实服务。

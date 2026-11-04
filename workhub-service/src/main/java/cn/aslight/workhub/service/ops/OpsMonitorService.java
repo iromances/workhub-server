@@ -215,7 +215,21 @@ public class OpsMonitorService {
                                             String executorAppName,
                                             String logStatus) {
         schemaInitializer.ensureInitialized();
-        OpsMonitorEntity entity = requireExisting(id);
+        return xxlJobLogs(requireExisting(id), startDate, endDate, page, pageSize, author, executorAppName, logStatus);
+    }
+
+    /** Agent 在查询前绑定已经授权的实际范围；重新加载后发生迁移的监测项不能跨环境取数。 */
+    public XxlJobLogPageResponse xxlJobLogsInScope(Long id, String businessLineCode, String environmentCode,
+            LocalDate startDate, LocalDate endDate, int page, int pageSize, String author, String executorAppName, String logStatus) {
+        schemaInitializer.ensureInitialized();
+        var entity = requireExisting(id);
+        if (!businessLineCode.equals(entity.getBusinessLineCode()) || !environmentCode.equals(entity.getEnvironmentCode()))
+            throw new IllegalArgumentException("监测项所属业务线或环境已变化，请重新确认授权范围");
+        return xxlJobLogs(entity, startDate, endDate, page, pageSize, author, executorAppName, logStatus);
+    }
+
+    private XxlJobLogPageResponse xxlJobLogs(OpsMonitorEntity entity, LocalDate startDate, LocalDate endDate,
+            int page, int pageSize, String author, String executorAppName, String logStatus) {
         if (!XXL_JOB.equals(entity.getMonitorType())) {
             throw new IllegalArgumentException("MQ 监测详情下一步接入");
         }

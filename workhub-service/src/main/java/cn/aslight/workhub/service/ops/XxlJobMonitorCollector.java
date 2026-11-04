@@ -48,10 +48,10 @@ public class XxlJobMonitorCollector {
                 monitor.getEnvironmentCode(),
                 summarySql(databaseName, monitor.getExecutorAppName(), normalizedStartDate, normalizedEndDate)
         ));
-        int triggerRunningCount = intValue(rowValue(statistics, "triggerRunningCount"));
-        int triggerSuccessCount = intValue(rowValue(statistics, "triggerSuccessCount"));
-        int triggerFailedCount = intValue(rowValue(statistics, "triggerFailedCount"));
-        int triggerCount = triggerRunningCount + triggerSuccessCount + triggerFailedCount;
+        int triggerRunningCount = countValue(rowValue(statistics, "triggerRunningCount"));
+        int triggerSuccessCount = countValue(rowValue(statistics, "triggerSuccessCount"));
+        int triggerFailedCount = countValue(rowValue(statistics, "triggerFailedCount"));
+        int triggerCount = Math.addExact(Math.addExact(triggerRunningCount, triggerSuccessCount), triggerFailedCount);
         String status = triggerFailedCount > 0 ? "ERROR" : "UP";
         String message = triggerFailedCount > 0
                 ? "XXL-JOB 报表失败调度次数：" + triggerFailedCount
@@ -67,9 +67,9 @@ public class XxlJobMonitorCollector {
                 message,
                 LocalDateTime.now(),
                 executorCount(rowValue(statistics, "executorRegistryList")),
-                intValue(rowValue(statistics, "jobCount")),
-                intValue(rowValue(statistics, "enabledJobCount")),
-                intValue(rowValue(statistics, "disabledJobCount")),
+                countValue(rowValue(statistics, "jobCount")),
+                countValue(rowValue(statistics, "enabledJobCount")),
+                countValue(rowValue(statistics, "disabledJobCount")),
                 triggerCount,
                 triggerRunningCount,
                 triggerSuccessCount,
@@ -133,16 +133,16 @@ public class XxlJobMonitorCollector {
                 )
         );
         Map<String, Object> statistics = firstRow(batches.get(0));
-        int triggerRunningCount = intValue(rowValue(statistics, "triggerRunningCount"));
-        int triggerSuccessCount = intValue(rowValue(statistics, "triggerSuccessCount"));
-        int triggerFailedCount = intValue(rowValue(statistics, "triggerFailedCount"));
-        int triggerCount = triggerRunningCount + triggerSuccessCount + triggerFailedCount;
+        int triggerRunningCount = countValue(rowValue(statistics, "triggerRunningCount"));
+        int triggerSuccessCount = countValue(rowValue(statistics, "triggerSuccessCount"));
+        int triggerFailedCount = countValue(rowValue(statistics, "triggerFailedCount"));
+        int triggerCount = Math.addExact(Math.addExact(triggerRunningCount, triggerSuccessCount), triggerFailedCount);
         String reportUpdatedAt = stringValue(rowValue(statistics, "reportUpdatedAt"));
         int executorCount = executorCount(rowValue(statistics, "executorRegistryList"));
-        int jobCount = intValue(rowValue(statistics, "jobCount"));
-        int enabledJobCount = intValue(rowValue(statistics, "enabledJobCount"));
-        int disabledJobCount = intValue(rowValue(statistics, "disabledJobCount"));
-        int failedJobCount = intValue(rowValue(firstRow(batches.get(1)), "failedJobTotal"));
+        int jobCount = countValue(rowValue(statistics, "jobCount"));
+        int enabledJobCount = countValue(rowValue(statistics, "enabledJobCount"));
+        int disabledJobCount = countValue(rowValue(statistics, "disabledJobCount"));
+        int failedJobCount = countValue(rowValue(firstRow(batches.get(1)), "failedJobTotal"));
         List<XxlJobFailedJobResponse> failedJobs = batches.get(2)
                 .stream()
                 .map(this::toFailedJob)
@@ -179,57 +179,82 @@ public class XxlJobMonitorCollector {
     }
 
     public XxlJobLogPageResponse collectLogs(OpsMonitorEntity monitor,
-                                             LocalDate startDate,
-                                             LocalDate endDate,
-                                             int page,
-                                             int pageSize,
-                                             String author,
-                                             String executorAppName,
-                                             String logStatus) {
-        LocalDate normalizedStartDate = requireDate(startDate, "开始日期不能为空");
-        LocalDate normalizedEndDate = requireDate(endDate, "结束日期不能为空");
-        if (normalizedStartDate.isAfter(normalizedEndDate)) {
-            throw new IllegalArgumentException("开始日期不能晚于结束日期");
+                                             LocalDate startDate, LocalDate endDate, int page, int pageSize,
+                                             String author, String executorAppName, String logStatus) {
+        LocalDate from = requireDate(startDate, "开始日期不能为空"), to = requireDate(endDate, "结束日期不能为空");
+        if (from.isAfter(to)) throw new IllegalArgumentException("开始日期不能晚于结束日期");
+        int normalizedPage = normalizePage(page), size = normalizePageSize(pageSize);
+        int offset = Math.multiplyExact(normalizedPage - 1, size);
+        String normalizedStatus = normalizeLogStatus(logStatus);
+        var definition = new cn.aslight.workhub.model.ops.XxlJobQueryEvidence.Definition(monitor.getId(), monitor.getMonitorType(),
+                monitor.getMonitorKey(), monitor.getBusinessLineCode(), monitor.getEnvironmentCode(), monitor.getXxlJobDatabaseName(),
+                trimToNull(monitor.getExecutorAppName()), Boolean.TRUE.equals(monitor.getEnabled()), from, to, trimToNull(author),
+                trimToNull(executorAppName), normalizedStatus, normalizedPage, size);
+        String database = quoteDatabaseName(definition.databaseName());
+        String detailFilter = detailFilterSql(definition.author(), definition.executorFilter());
+        String statusFilter = logStatusFilterSql(normalizedStatus);
+        String statisticsSql = logStatisticsSql(database, from, to, definition.configuredExecutors(), detailFilter, normalizedStatus);
+        String pageSql = failedJobsSql(database, from, to, definition.configuredExecutors(), detailFilter, statusFilter, size, offset);
+        // 一个 SELECT 内的统计与明细共享数据库读取视图，避免并发新增日志把旧计数配上新分页。
+        var statements = List.of("SELECT stats.*, logs.* FROM (" + statisticsSql + ") stats LEFT JOIN (" + pageSql
+                + ") logs ON 1=1 ORDER BY logs.triggerTime DESC, logs.logId DESC");
+        var batch = queryClient.runVerifiedBatch(definition.businessLineCode(), definition.environmentCode(), statements);
+        if (batch == null || batch.rows() == null || batch.rows().size() != statements.size() || batch.targetHash() == null
+                || !batch.targetHash().matches("[a-f0-9]{64}") || batch.startedAt() == null || batch.finishedAt() == null
+                || batch.finishedAt().isBefore(batch.startedAt())) throw new IllegalArgumentException("缺少实际查询目标或完整批次回执");
+        var rows = batch.rows().getFirst();
+        if (rows == null || rows.isEmpty()) throw new IllegalArgumentException("数据库查询缺少聚合回执");
+        var statistics = rows.getFirst();
+        int total = countValue(rowValue(statistics, "failedJobTotal"));
+        long activityCount = countLong(rowValue(statistics, "activityCount"));
+        LocalDateTime latest = timestamp(rowValue(statistics, "latestActivityAt"));
+        if (total > activityCount || (activityCount == 0) != (latest == null)) throw new IllegalArgumentException("日志统计数量与实际活动时间不一致");
+        for (var row : rows) {
+            if (countValue(rowValue(row, "failedJobTotal")) != total || countLong(rowValue(row, "activityCount")) != activityCount
+                    || !java.util.Objects.equals(timestamp(rowValue(row, "latestActivityAt")), latest))
+                throw new IllegalArgumentException("同一查询的统计与分页回执不一致");
+            if (rowValue(row, "logId") == null && rows.size() != 1) throw new IllegalArgumentException("空分页标记与实际记录混合");
         }
-        int normalizedPage = normalizePage(page);
-        int normalizedPageSize = normalizePageSize(pageSize);
-        int offset = (normalizedPage - 1) * normalizedPageSize;
-        String databaseName = quoteDatabaseName(monitor.getXxlJobDatabaseName());
-        String detailFilter = detailFilterSql(author, executorAppName);
-        String statusFilter = logStatusFilterSql(logStatus);
-        List<List<Map<String, Object>>> batches = queryClient.runRowsBatch(
-                monitor.getBusinessLineCode(),
-                monitor.getEnvironmentCode(),
-                List.of(
-                        failedJobsCountSql(databaseName, normalizedStartDate, normalizedEndDate, monitor.getExecutorAppName(), detailFilter, statusFilter),
-                        failedJobsSql(databaseName, normalizedStartDate, normalizedEndDate, monitor.getExecutorAppName(), detailFilter, statusFilter, normalizedPageSize, offset)
-                )
-        );
-        int total = intValue(rowValue(firstRow(batches.get(0)), "failedJobTotal"));
-        List<XxlJobFailedJobResponse> logs = batches.get(1)
-                .stream()
-                .map(this::toFailedJob)
-                .toList();
-        boolean failedOnly = LOG_STATUS_FAILED.equals(normalizeLogStatus(logStatus));
-        String status = failedOnly && total > 0 ? "ERROR" : "UP";
-        String message = failedOnly
-                ? (total > 0 ? "XXL-JOB 区间失败日志数：" + total : "XXL-JOB 区间内无失败日志")
-                : "XXL-JOB 区间日志数：" + total;
-        return new XxlJobLogPageResponse(
-                monitor.getId(),
-                monitor.getMonitorKey(),
-                monitor.getBusinessLineCode(),
-                monitor.getEnvironmentCode(),
-                monitor.getName(),
-                monitor.getXxlJobDatabaseName(),
-                status,
-                message,
-                LocalDateTime.now(),
-                total,
-                normalizedPage,
-                normalizedPageSize,
-                logs
-        );
+        var logs = rows.stream().filter(row -> rowValue(row, "logId") != null).map(this::toFailedJob).toList();
+        int expected = Math.min(size, Math.max(0, total - offset));
+        if (logs.size() != expected || logs.stream().map(XxlJobFailedJobResponse::logId).distinct().count() != logs.size())
+            throw new IllegalArgumentException("日志分页不完整或查询期间数据已变化，请重新查询");
+        var json = new tools.jackson.databind.ObjectMapper();
+        var evidence = new cn.aslight.workhub.model.ops.XxlJobQueryEvidence(1, java.util.UUID.randomUUID().toString(), definition,
+                AccountingExecutionEvidenceService.hash(json.writeValueAsString(definition)), batch.targetHash(),
+                statements.stream().map(AccountingExecutionEvidenceService::hash).toList(), batch.startedAt(), batch.finishedAt(),
+                "Asia/Shanghai", total, activityCount, latest, normalizedPage == 1 && total == logs.size());
+        boolean failedOnly = LOG_STATUS_FAILED.equals(normalizedStatus);
+        return new XxlJobLogPageResponse(definition.monitorId(), definition.monitorKey(), definition.businessLineCode(), definition.environmentCode(),
+                monitor.getName(), definition.databaseName(), failedOnly && total > 0 ? "ERROR" : "UP",
+                failedOnly ? (total > 0 ? "XXL-JOB 区间失败日志数：" + total : "XXL-JOB 区间内无失败日志") : "XXL-JOB 区间日志数：" + total,
+                LocalDateTime.ofInstant(batch.finishedAt(), java.time.ZoneId.systemDefault()), total, normalizedPage, size, logs, evidence);
+    }
+
+    /** 匹配总数与全状态活动时间来自同一条 SQL，不能拼接不同时点的零失败和最新活动。 */
+    private String logStatisticsSql(String database, LocalDate from, LocalDate to, String executors, String filter, String status) {
+        String matching = LOG_STATUS_ALL.equals(status) ? "1"
+                : "CASE WHEN l.handle_code <> 200 AND NOT (l.trigger_code IN (0, 200) AND l.handle_code = 0) THEN 1 END";
+        return """
+                SELECT COUNT(%1$s) AS failedJobTotal,
+                  COUNT(1) AS activityCount,
+                  MAX(GREATEST(l.trigger_time, COALESCE(l.handle_time, l.trigger_time))) AS latestActivityAt
+                FROM %2$s.`xxl_job_log` l
+                JOIN %2$s.`xxl_job_info` i ON i.id = l.job_id
+                JOIN %2$s.`xxl_job_group` g ON g.id = i.job_group
+                WHERE l.trigger_time >= '%3$s 00:00:00'
+                  AND l.trigger_time < '%4$s 00:00:00'
+                  %5$s
+                  %6$s
+                """.formatted(matching, database, from, to.plusDays(1), executorAppNameFilterSql(executors), filter);
+    }
+
+    private LocalDateTime timestamp(Object value) {
+        if (value == null) return null;
+        if (value instanceof java.sql.Timestamp timestamp) return timestamp.toLocalDateTime();
+        if (value instanceof LocalDateTime timestamp) return timestamp;
+        try { return LocalDateTime.parse(value.toString().replace(' ', 'T')); }
+        catch (java.time.DateTimeException ex) { throw new IllegalArgumentException("数据库活动时间格式无效", ex); }
     }
 
     public OpsMonitorCheckResponse check(OpsMonitorEntity monitor) {
@@ -485,7 +510,8 @@ public class XxlJobMonitorCollector {
     }
 
     private Map<String, Object> firstRow(List<Map<String, Object>> rows) {
-        return rows.isEmpty() ? Map.of() : rows.getFirst();
+        if (rows == null || rows.size() != 1 || rows.getFirst() == null) throw new IllegalArgumentException("数据库聚合回执必须完整且恰好一行");
+        return rows.getFirst();
     }
 
     private LocalDate requireDate(LocalDate date, String message) {
@@ -584,7 +610,7 @@ public class XxlJobMonitorCollector {
                 return entry.getValue();
             }
         }
-        return null;
+        throw new IllegalArgumentException("数据库回执缺少字段：" + key);
     }
 
     private String stringValue(Object value) {
@@ -605,19 +631,22 @@ public class XxlJobMonitorCollector {
     }
 
     private int intValue(Object value) {
-        if (value instanceof Number number) {
-            return number.intValue();
-        }
-        String text = trimToNull(value == null ? null : String.valueOf(value));
-        return text == null ? 0 : Integer.parseInt(text);
+        try { return new java.math.BigDecimal(java.util.Objects.requireNonNull(value, "整数值缺失").toString()).intValueExact(); }
+        catch (ArithmeticException | NumberFormatException | NullPointerException ex) { throw new IllegalArgumentException("数据库回执整数值缺失、无效或越界", ex); }
     }
 
+    private int countValue(Object value) { return Math.toIntExact(countLong(value)); }
+    private long countLong(Object value) {
+        try {
+            long result = new java.math.BigDecimal(java.util.Objects.requireNonNull(value, "计数缺失").toString()).longValueExact();
+            if (result < 0) throw new IllegalArgumentException("数据库回执计数不能为负数");
+            return result;
+        } catch (ArithmeticException | NumberFormatException | NullPointerException ex) { throw new IllegalArgumentException("数据库回执计数缺失、无效或越界", ex); }
+    }
     private Long longValue(Object value) {
-        if (value instanceof Number number) {
-            return number.longValue();
-        }
-        String text = trimToNull(value == null ? null : String.valueOf(value));
-        return text == null ? null : Long.parseLong(text);
+        long result = countLong(value);
+        if (result == 0) throw new IllegalArgumentException("数据库记录标识必须为正整数");
+        return result;
     }
 
     private String trimToNull(String value) {

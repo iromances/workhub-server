@@ -1,0 +1,4 @@
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+15:16:33.348 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 9.0.1.Final
+15:16:37.095 [main] INFO cn.aslight.workhub.service.ops.XxlJobFailureAlertService -- XXL-JOB failure alert scan finished. monitorCount=1, alertCandidateCount=1
+15:16:37.097 [main] INFO cn.aslight.workhub.service.ops.XxlJobFailureAlertService -- XXL-JOB failure alert scan finished. monitorCount=1, alertCandidateCount=1
