@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: cn.aslight.workhub.service.agent.AgentInspectionServiceTest
+-------------------------------------------------------------------------------
+Tests run: 27, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.270 s -- in cn.aslight.workhub.service.agent.AgentInspectionServiceTest

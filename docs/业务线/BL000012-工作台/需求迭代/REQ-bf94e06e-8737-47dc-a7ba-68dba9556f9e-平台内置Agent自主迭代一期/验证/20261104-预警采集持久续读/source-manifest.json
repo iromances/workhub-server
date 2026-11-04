@@ -1,0 +1,50 @@
+[
+  {
+    "path": "workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_155928__add_system_alert_collection_progress.sql",
+    "sha256": "b28a3282adf450f4c4538f9076388eb29eb078772ab5c789581f68e78d5f0582"
+  },
+  {
+    "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/ops/SystemAlertCollectionMapper.java",
+    "sha256": "d3350b1a8aef6c7b4d810ed19d13b256716f4a2e67d8b36a33184e53c3ef011d"
+  },
+  {
+    "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/ops/SystemAlertScopeIngestionMapper.java",
+    "sha256": "926a7eabcc9331c17255660093e47631c8827b2ce1c41802929db21c9221f67c"
+  },
+  {
+    "path": "workhub-job/src/main/java/cn/aslight/workhub/job/ElkSystemAlertJob.java",
+    "sha256": "77848df07a4295fc580d15be017b6544d02d3396b41646ba94e86297b229b0bb"
+  },
+  {
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/ops/SystemAlertCollectionState.java",
+    "sha256": "63e8bee91cbc5c0cfac3ab925565e906c0baaa194ddd1e8260164a9dcec2218b"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ops/ElasticsearchSystemAlertClient.java",
+    "sha256": "6a41e5585df84a27c1e0cf655e9ecf283da025e7a6ffb0681db52d45cc4c0e12"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ops/ElkSystemAlertCollector.java",
+    "sha256": "cd28f194f1f48f2791543f80dd1edaaa66fa1fcb6e4c1879b032ea105c9217a1"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ops/SystemAlertCollectionStore.java",
+    "sha256": "197da139652eb3a4d73603357aabeb93db455f4518b2518af34d33e4654f5e4a"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ops/SystemAlertLogSource.java",
+    "sha256": "a095861bb092d6370cb12b076970dcfd2d20a1270ab4242424ec367e2f5ae783"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/ops/ElasticsearchSystemAlertClientTest.java",
+    "sha256": "686aca7bd9187dc890d1b19b5c993d5a834d7fe09be685f00ec3a20035bbb08e"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/ops/ElkSystemAlertCollectorTest.java",
+    "sha256": "ea09878acb1a01d976883cc7cc96a17e478d8494c08d79811a852693507aa50d"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/ops/SystemAlertCollectionStoreTest.java",
+    "sha256": "9dcf8162371b4c844de630ecef0cd74c965674ad9fce482b9e98554de5bd1820"
+  }
+]

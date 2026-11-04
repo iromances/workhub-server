@@ -17,4 +17,8 @@ public class ElkSystemAlertJob {
     public void collectErrors() {
         collector.collect();
     }
+    /** 仅续读已有区间，避免每分钟调度间隔耗尽默认PIT有效期。 */
+    @Scheduled(fixedDelay = 10000)
+    public void resumeIncompleteCollections() { collector.resume(); }
+
 }

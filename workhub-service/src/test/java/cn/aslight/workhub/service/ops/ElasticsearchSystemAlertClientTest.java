@@ -396,6 +396,45 @@ class ElasticsearchSystemAlertClientTest {
         return root.toString();
     }
 
+    @Test
+    void persistedErrorPagePositionContinuesSamePitAcrossClientInstances() throws Exception {
+        var open=new AtomicInteger();var close=new AtomicInteger();var requests=new ArrayList<com.fasterxml.jackson.databind.JsonNode>();
+        var json=new com.fasterxml.jackson.databind.ObjectMapper();var calls=new AtomicInteger();
+        server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
+        server.createContext("/workhub-logs-*/_pit",e->{open.incrementAndGet();respond(e,200,"{\"id\":\"pit-1\"}");});
+        String hit=oneHit("2026-08-22T23:59:00Z",true);
+        server.createContext("/_search",e->{requests.add(json.readTree(e.getRequestBody()));respond(e,200,calls.getAndIncrement()==0?hit:completeEmpty());});
+        server.createContext("/_pit",e->{close.incrementAndGet();respond(e,200,"{}");});server.start();
+        var properties=properties();properties.setPageSize(1);
+        Instant from=Instant.parse("2026-08-22T23:50:00Z"),to=Instant.parse("2026-08-23T00:00:00Z");
+        var first=new ElasticsearchSystemAlertClient(properties).readErrorPage(null,List.of(),"TEST",from,to,null);
+        assertFalse(first.complete());assertEquals(0,close.get());assertEquals(1,first.events().size());
+        var saved=json.readValue(json.writeValueAsString(first.next()),SystemAlertLogSource.Position.class);
+        var second=new ElasticsearchSystemAlertClient(properties).readErrorPage(null,List.of(),"TEST",from,to,saved);
+        assertTrue(second.complete());assertEquals(null,second.next());assertEquals(1,open.get());assertEquals(1,close.get());
+        assertEquals("pit-2",requests.get(1).at("/pit/id").asText());assertEquals(json.readTree(saved.searchAfterJson()),requests.get(1).path("search_after"));
+        assertTrue(requests.get(1).toString().contains("2026-08-23T00:00:00Z"));
+        assertEquals(first.execution().targetBindingHash(),second.execution().targetBindingHash());
+    }
+
+    @Test
+    void expiredPitAndChangedTargetRequireExplicitRestartWithoutReusingSortOnNewSnapshot() throws Exception {
+        var open=new AtomicInteger();var query=new AtomicInteger();
+        server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
+        server.createContext("/workhub-logs-*/_pit",e->{open.incrementAndGet();respond(e,200,"{\"id\":\"pit-1\"}");});
+        String hit=oneHit("2026-08-22T23:59:00Z",true);
+        server.createContext("/_search",e->{if(query.getAndIncrement()==0)respond(e,200,hit);else respond(e,404,"private-server-message");});
+        server.createContext("/_pit",e->respond(e,200,"{}"));server.start();
+        var properties=properties();properties.setPageSize(1);var client=new ElasticsearchSystemAlertClient(properties);
+        Instant from=Instant.parse("2026-08-22T23:50:00Z"),to=Instant.parse("2026-08-23T00:00:00Z");
+        var first=client.readErrorPage(null,List.of(),"TEST",from,to,null);
+        var error=assertThrows(SystemAlertLogSource.RestartRequired.class,()->client.readErrorPage(null,List.of(),"TEST",from,to,first.next()));
+        assertFalse(error.getMessage().contains("private"));assertEquals(1,open.get());assertEquals(2,query.get());
+        var changed=new SystemAlertLogSource.Position(first.next().pitId(),first.next().searchAfterJson(),"0".repeat(64));
+        assertThrows(SystemAlertLogSource.RestartRequired.class,()->client.readErrorPage(null,List.of(),"TEST",from,to,changed));
+        assertEquals(2,query.get());
+    }
+
     private ElkAlertProperties properties() {
         ElkAlertProperties properties = new ElkAlertProperties();
         properties.setEnabled(true);

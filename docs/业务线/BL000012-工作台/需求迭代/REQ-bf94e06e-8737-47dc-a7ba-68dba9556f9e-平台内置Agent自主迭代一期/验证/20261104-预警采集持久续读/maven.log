@@ -1,0 +1,4 @@
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+16:17:03.684 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 9.0.1.Final
+16:17:07.264 [main] WARN cn.aslight.workhub.service.ops.ElkSystemAlertCollector -- ELK系统预警采集未完成，scopeId=1，原因=expired
+16:17:07.266 [main] WARN cn.aslight.workhub.service.ops.ElkSystemAlertCollector -- ELK系统预警采集未完成，scopeId=1，原因=temporarily unavailable

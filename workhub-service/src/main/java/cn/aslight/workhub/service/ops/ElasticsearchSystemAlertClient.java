@@ -74,6 +74,7 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
         HttpClient httpClient = clientFor(config);
         String pitId = null;
         int fetched = 0;
+        boolean complete = false;
         Instant latest = null;
         var seen = new java.util.HashSet<String>();
         JsonNode searchAfter = null;
@@ -99,13 +100,14 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
                     break;
                 }
                 if (page.hitCount() < config.pageSize()) {
+                    complete = true;
                     break;
                 }
                 if (page.searchAfter() == null || page.searchAfter().equals(searchAfter))
                     throw new IllegalStateException("ELK响应缺少或重复分页游标");
                 searchAfter = page.searchAfter();
             }
-            return new SyncResult(fetched, latest);
+            return new SyncResult(fetched, latest, complete);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("ELK查询被中断", ex);
@@ -116,6 +118,52 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
         } finally {
             closePit(config, httpClient, pitId);
         }
+    }
+
+    /** 只读取一页；未完成时由事务保存位置，再继续同一PIT。过期不得拿旧sort套新快照。 */
+    @Override
+    public ErrorPage readErrorPage(String indexPattern, List<String> services, String environment, Instant from, Instant to, Position position) {
+        var config = configService.current(null, indexPattern);
+        validateConfiguration(config);
+        if (from == null || to == null || !from.isBefore(to)) throw new IllegalArgumentException("采集区间无效");
+        final String targetHash;
+        try { targetHash = sha256(objectMapper.writeValueAsString(config)); }
+        catch (com.fasterxml.jackson.core.JsonProcessingException ex) { throw new IllegalStateException("无法固定ELK目标"); }
+        if (position != null && !targetHash.equals(position.targetHash())) throw new RestartRequired("ELK目标已变化，重新扫描原区间");
+        var http = clientFor(config);
+        String pitId = position == null ? null : position.pitId();
+        boolean retain = false;
+        Instant started = Instant.now();
+        try {
+            if (pitId == null) pitId = openPit(config, http);
+            JsonNode after = position == null ? null : objectMapper.readTree(position.searchAfterJson());
+            int size = Math.min(config.pageSize(), config.maxEventsPerRun());
+            var page = searchLogsPage(config, http, pitId, services, environment, List.of(config.errorLevel()), from, to, null, null, null, size, after);
+            pitId = page.pitId();
+            if (page.events().stream().map(ElkSystemAlertLog::sourceEventId).distinct().count() != page.events().size())
+                throw new IllegalStateException("ELK分页返回重复日志");
+            if (page.events().stream().anyMatch(event -> event.occurredAt().isBefore(from) || event.occurredAt().isAfter(to)))
+                throw new IllegalStateException("ELK返回日志超出采集区间");
+            boolean complete = page.hitCount() < size;
+            if (!complete && (page.searchAfter() == null || page.searchAfter().equals(after)))
+                throw new IllegalStateException("ELK响应缺少或重复分页游标");
+            List<Activity> activities = List.of();
+            if (complete && services != null && !services.isEmpty() && services.size() <= 100) {
+                var activity = searchActivity(config,http,pitId,services,environment,from,to);
+                pitId = activity.pitId(); activities = activity.activities();
+            }
+            Position next = complete ? null : new Position(pitId,objectMapper.writeValueAsString(page.searchAfter()),targetHash);
+            retain = !complete;
+            return new ErrorPage(page.events(),next,complete,page.contentTruncated(),
+                    new QueryReceipt(targetHash,started,Instant.now(),sha256(pitId),activities));
+        } catch (RequestFailure ex) {
+            if (ex.status == 404 && position != null) throw new RestartRequired("ELK分页快照失效，重新扫描原区间");
+            throw ex;
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt(); throw new IllegalStateException("ELK查询被中断",ex);
+        } catch (IllegalArgumentException | IllegalStateException ex) { throw ex; }
+        catch (Exception ex) { throw new IllegalStateException("ELK连接或响应异常",ex); }
+        finally { if (!retain) closePit(config,http,pitId); }
     }
 
     public LogSearchResult searchLogs(String indexPattern,
@@ -434,7 +482,7 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
             throw new IllegalStateException("ELK认证或授权失败");
         }
         if (status < 200 || status >= 300) {
-            throw new IllegalStateException(operation + "失败，HTTP " + status);
+            throw new RequestFailure(status, operation + "失败，HTTP " + status);
         }
         try {
             return objectMapper.readTree(response.body());
@@ -594,6 +642,11 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
         } catch (Exception ex) {
             throw new IllegalStateException("无法生成ELK事件指纹", ex);
         }
+    }
+
+    private static final class RequestFailure extends IllegalStateException {
+        private final int status;
+        RequestFailure(int status, String message) { super(message); this.status=status; }
     }
 
     private record SearchPage(String pitId, int hitCount, java.util.List<ElkSystemAlertLog> events,

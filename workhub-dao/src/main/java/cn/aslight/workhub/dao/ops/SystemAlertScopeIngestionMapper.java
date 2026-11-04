@@ -81,7 +81,6 @@ public interface SystemAlertScopeIngestionMapper {
                 #{log.serviceName}, #{log.level}, #{eventCategory}, #{log.title}, #{log.message}, #{log.errorType},
                 #{log.stackTrace}, #{log.traceId}, #{log.requestId}, #{occurredAt}, 'ELK', #{log.sourceEventId}
             )
-            ON DUPLICATE KEY UPDATE id = id
             """)
     int insertElkEvent(@Param("scope") SystemAlertScopeEntity scope,
                        @Param("subsystemName") String subsystemName,
@@ -100,6 +99,13 @@ public interface SystemAlertScopeIngestionMapper {
     int saveSuccess(@Param("scopeId") Long scopeId,
                     @Param("lastOccurredAt") LocalDateTime lastOccurredAt,
                     @Param("message") String message);
+
+    @Insert("""
+            INSERT INTO ops_system_alert_scope_sync_state(scope_id,last_status,last_message,last_synced_at)
+            VALUES(#{scopeId},'PARTIAL',#{message},CURRENT_TIMESTAMP)
+            ON DUPLICATE KEY UPDATE last_status='PARTIAL',last_message=VALUES(last_message),last_synced_at=CURRENT_TIMESTAMP
+            """)
+    int savePartial(@Param("scopeId") Long scopeId, @Param("message") String message);
 
     @Insert("""
             INSERT INTO ops_system_alert_scope_sync_state (scope_id, last_status, last_message, last_synced_at)
