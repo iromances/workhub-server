@@ -85,6 +85,17 @@ public class AgentChangeService {
         requireVisible(context, manifest, false);
         return view(value, manifest);
     }
+    /** 完成验收不消耗行动预算；运行锁由调用方持有，关联问题在同事务内固定。 */
+    AgentChangeView forAcceptance(AgentToolContext context, String id) {
+        access.actor(context.requestedBy()).require("agent:code:use");
+        access.actor(agents.findAgent(context.agentId()).ownerName()).require("agent:code:use");
+        var value = required(id);
+        var manifest = manifest(value);
+        if (manifest.caseReference() != null) autonomy.lockCase(manifest.caseReference().caseId());
+        requireVisible(context, manifest, false);
+        for (var repo : manifest.repositories()) access.requireScope(context, repo.scope());
+        return view(value, manifest);
+    }
     public AgentPage<Map<String, Object>> list(AgentToolContext context, int page) {
         runs.requireActive(context.runId(), context.ownerToken());
         return new AgentPage<>(mapper.count(context.runId()), mapper.list(context.runId(), offset(page), 20).stream()

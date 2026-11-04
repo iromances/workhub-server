@@ -1,0 +1,77 @@
+[
+  {
+    "repository": "backend",
+    "path": "workhub-controller/src/main/java/cn/aslight/workhub/controller/agent/AgentTaskController.java",
+    "sha256": "c7a31601525ac38222d7311abe9ec992807634d6a5051c21830ec51f118ca8ca"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentRunAcceptance.java",
+    "sha256": "f96a5a4cf251d0cf80d779bb80e0b6c1c5aa3d169fa7116afabf2e446814c93e"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentChangeService.java",
+    "sha256": "a4799fe6bd6ba5590f4974e476c4b7b6b6c42856da1f49bfa3c550457ee67657"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentRunAcceptanceService.java",
+    "sha256": "697fe06a5ca2b4fcaff601f6b6c5f3f1fe2cd85c6e68dbc8716a028dccab730e"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentRunStore.java",
+    "sha256": "f3d66f80104994639b5264a633adb6fdb313815471e4c3504556e723bedeea2b"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentAcceptanceTestSupport.java",
+    "sha256": "6edfa531ac403680015ea89157ecbd7eea4e0b605c87a866c090e2bd11734605"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentChangeServiceTest.java",
+    "sha256": "6182530f2a3b5ff4682441c269d705b9e0db0532ee4feb9075f21c7f37afbe8b"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentInspectionServiceTest.java",
+    "sha256": "b46437fc179e79bfe36c818da7434f8994e8694c158ecaab511de2ee5ac1a616"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentWorkbenchServiceTest.java",
+    "sha256": "c0bccb67672eacff8a84f48757c57589fe8456c17a2698e3f5b27d85900612de"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AutonomyCaseServiceTest.java",
+    "sha256": "906d36b664e8ce7da8413c9bdee308cc8c746587e70fdf7cfb02e31a614087ea"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/api/agent.ts",
+    "sha256": "3370911168163e7ee8e10c2e926b35413b3cd49c4591aa27101b48ab9d92b5fd"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/types/agent.ts",
+    "sha256": "12dec992baaf0a546a04fbf1077e7061ae5dd555fe6f7761b63177d3ccf84352"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/views/agent/AgentRunAcceptancePanel.vue",
+    "sha256": "c7908d9e85e1a50c474fdccfdbcbd544538fbc42f2a4622f8adab704d3fc5eed"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/views/agent/AgentRunPanel.vue",
+    "sha256": "79e12737d09cf03db3fca0f0e325542ff095502fa9338aba9eb178e33c424937"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/views/agent/agentPresentation.ts",
+    "sha256": "961310759325a910450dfa7b1668c648ccc5efe2ffd13f1008d8c4ad3fd96fdc"
+  }
+]

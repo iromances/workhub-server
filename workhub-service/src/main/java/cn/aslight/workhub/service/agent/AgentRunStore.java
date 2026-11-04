@@ -30,19 +30,21 @@ public class AgentRunStore {
     private final AgentToolData data;
     private final AiProviderConfigService providers;
     private final Clock clock;
+    private final AgentRunAcceptanceService acceptance;
 
     @Autowired
-    public AgentRunStore(AgentMapper mapper, ObjectMapper json, AgentAccessService access, AgentToolData data, AiProviderConfigService providers) {
-        this(mapper, json, access, data, providers, Clock.systemUTC());
+    public AgentRunStore(AgentMapper mapper, ObjectMapper json, AgentAccessService access, AgentToolData data, AiProviderConfigService providers, AgentRunAcceptanceService acceptance) {
+        this(mapper, json, access, data, providers, Clock.systemUTC(), acceptance);
     }
 
-    AgentRunStore(AgentMapper mapper, ObjectMapper json, AgentAccessService access, AgentToolData data, AiProviderConfigService providers, Clock clock) {
+    AgentRunStore(AgentMapper mapper, ObjectMapper json, AgentAccessService access, AgentToolData data, AiProviderConfigService providers, Clock clock, AgentRunAcceptanceService acceptance) {
         this.mapper = mapper;
         this.json = json;
         this.access = access;
         this.data = data;
         this.providers = providers;
         this.clock = clock;
+        this.acceptance = acceptance;
     }
 
     @Transactional
@@ -229,7 +231,7 @@ public class AgentRunStore {
     }
 
     /** 回读原生 CLI 已落盘的结果；消费标记与完成状态同事务，重启不重跑完整任务。 */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public boolean finishSavedNative(String runId, String owner) {
         owned(mapper.lockRun(runId), owner, true);
         var saved = mapper.listEvents(runId).reversed().stream().filter(event -> "CLI_RESULT".equals(event.kind())
@@ -255,7 +257,7 @@ public class AgentRunStore {
         return true;
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void finishDecision(String runId, String owner, String modelRequestKey, String status, String result) {
         owned(mapper.lockRun(runId), owner, true);
         requireUnchangedInput(runId, modelRequestKey);
@@ -268,7 +270,7 @@ public class AgentRunStore {
         return request != null && mapper.listEvents(runId).stream().anyMatch(event -> "HUMAN_INPUT".equals(event.kind()) && event.ordinal() > request.ordinal());
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void finish(String runId, String owner, String status, String result, String error) {
         if (!END_STATES.contains(status)) throw new IllegalArgumentException("不支持的结束状态");
         var run = owned(mapper.lockRun(runId), owner, true);
@@ -280,10 +282,6 @@ public class AgentRunStore {
             changed(mapper.heartbeat(runId, owner, now().plusSeconds(LEASE_SECONDS), Math.max(elapsed, run.elapsedMillis()), now()));
         }
         String actual = run.cancelRequested() ? "CANCELLED" : status;
-        if ("COMPLETED".equals(actual) && !context(run).specification().expectedArtifacts().stream().allMatch("REPORT"::equals)) {
-            actual = "WAITING_INPUT";
-            error = "当前只有分析报告，尚未取得所要求的分支、实际测试或发布验证产物，任务未完成";
-        }
         String safeResult = result == null ? null : data.sanitize(result).asText();
         String safeError = error == null ? null : data.sanitize(error).asText();
         if ("COMPLETED".equals(status) && !run.cancelRequested()) {
@@ -293,6 +291,17 @@ public class AgentRunStore {
             if (mapper.findArtifact(runId, artifactKey) == null) {
                 mapper.insertArtifact(new AgentArtifactEntity(UUID.randomUUID().toString(), runId, artifactKey,
                         "REPORT", "AI_REPORT", payload, digest(payload), now()));
+            }
+        }
+        if ("COMPLETED".equals(actual)) {
+            access.requireRunAuthorization(context(run));
+            var checked = acceptance.record(run);
+            append(runId, "acceptance:" + owner, "ACCEPTANCE_CHECKED", checked);
+            if (!checked.satisfied()) {
+                actual = "WAITING_INPUT";
+                safeError = "尚未取得所要求的全部产物：" + checked.items().stream()
+                        .filter(item -> !"SATISFIED".equals(item.status())).map(AgentRunAcceptance.Item::message)
+                        .collect(java.util.stream.Collectors.joining("；"));
             }
         }
         if (safeError != null && safeError.length() > 2000) safeError = safeError.substring(0, 2000);

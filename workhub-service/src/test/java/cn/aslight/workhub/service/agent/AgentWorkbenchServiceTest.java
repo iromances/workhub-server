@@ -123,7 +123,7 @@ class AgentWorkbenchServiceTest {
         var proxy = new ProxyFactory(target);
         proxy.addAdvice(interceptor);
         service = (AgentWorkbenchService) proxy.getProxy();
-        var storeProxy = new ProxyFactory(new AgentRunStore(mapper, json, access, new AgentToolData(json), providers, clock));
+        var storeProxy = new ProxyFactory(new AgentRunStore(mapper, json, access, new AgentToolData(json), providers, clock, AgentAcceptanceTestSupport.withoutCode(mapper, access, json, clock)));
         storeProxy.addAdvice(interceptor);
         store = (AgentRunStore) storeProxy.getProxy();
         processes = mock(AgentCliProcessProbe.class);
@@ -516,6 +516,23 @@ class AgentWorkbenchServiceTest {
         adapter(gateway).execute(run.id(), claim.ownerToken());
         assertEquals("WAITING_INPUT", store.get(run.id()).status());
         assertTrue(store.get(run.id()).errorMessage().contains("尚未取得"));
+    }
+
+    @Test
+    void savedNativeResultUsesSameArtifactAcceptanceGate() {
+        providers.getEnabledById(1L).setChannelType("CLI");
+        var run = inspectionRun(List.of("REPORT", "CHANGE_SET", "TEST_REPORT"));
+        var claim = store.claim(4);
+        store.beginNative(run.id(), claim.ownerToken(), "cli:acceptance", "fixture-host");
+        store.endNative(run.id(), claim.ownerToken(), "cli:acceptance", nativeResult("RESULT", "声称代码测试全部完成"));
+        assertTrue(store.finishSavedNative(run.id(), claim.ownerToken()));
+        assertEquals("WAITING_INPUT", store.get(run.id()).status());
+        var checked = mapper.findEventByKey(run.id(), "acceptance:" + claim.ownerToken());
+        var items = json.readTree(checked.payloadJson()).path("items");
+        assertEquals("SATISFIED", items.get(0).path("status").asText());
+        assertNotEquals("SATISFIED", items.get(1).path("status").asText());
+        assertEquals("UNAVAILABLE", items.get(2).path("status").asText());
+        assertNotNull(mapper.findEventByKey(run.id(), "cli:acceptance:handled"));
     }
 
     @Test

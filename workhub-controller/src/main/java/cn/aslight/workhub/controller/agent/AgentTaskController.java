@@ -4,6 +4,7 @@ import cn.aslight.workhub.common.api.ApiResponse;
 import cn.aslight.workhub.model.agent.*;
 import cn.aslight.workhub.service.agent.AgentWorkbenchService;
 import cn.aslight.workhub.service.agent.AgentRunReconciliationService;
+import cn.aslight.workhub.service.agent.AgentRunAcceptanceService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -16,9 +17,18 @@ public class AgentTaskController {
 
     private final AgentRunReconciliationService reconciliation;
 
-    public AgentTaskController(AgentWorkbenchService service, AgentRunReconciliationService reconciliation) {
+    private final AgentRunAcceptanceService acceptance;
+
+    public AgentTaskController(AgentWorkbenchService service, AgentRunReconciliationService reconciliation, AgentRunAcceptanceService acceptance) {
         this.service = service;
         this.reconciliation = reconciliation;
+        this.acceptance = acceptance;
+    }
+
+    @GetMapping("/{id}/runs/{runId}/acceptance")
+    @PreAuthorize("hasAuthority('agent:task:view')")
+    public ApiResponse<AgentRunAcceptance> acceptance(@PathVariable String id, @PathVariable String runId, Authentication auth) {
+        return ApiResponse.success(acceptance.preview(id, runId, auth.getName()));
     }
 
     @GetMapping

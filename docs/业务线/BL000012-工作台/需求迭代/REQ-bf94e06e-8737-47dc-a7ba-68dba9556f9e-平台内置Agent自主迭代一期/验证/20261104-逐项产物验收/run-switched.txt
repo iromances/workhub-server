@@ -1,0 +1,43 @@
+Browser tab: 6, Title: "Agent 产物验收本地验证", URL: "http://127.0.0.1:19540/".
+0 AXWebArea Agent 产物验收本地验证, URL: 127.0.0.1:19540/
+	1 container
+		2 text 本地样本验证 · 不连接业务系统
+		3 container
+			4 text 场景 
+			5 pop up button (collapsed, settable) Description: 场景, Value: 仅代码任务, Secondary Actions: Expand
+				6 menu
+					7 代码已交付，实测待完成
+					8 (selected) 仅代码任务
+					9 读取失败
+					10 延迟6秒
+					11 权限不足
+		12 button 切换运行
+		13 button 切换代码权限
+		14 button 切换查看权限
+		15 button 切换页面激活
+		30 text run-two · code · 版本8
+		17 heading Agent 运行与产物验收, Value: 2
+			18 text Agent 运行与产物验收
+		19 container
+			20 text 等待补充 6 次行动 · 32 秒 · 2026/11/4 15:00:00
+		21 text 本次 AI：CLI · fixture · 接入配置版本 1
+		22 tab group
+			23 tab (selectable, settable, boolean) 结果与产物, Value: 0, ID: tab-result
+			28 tab (selected, settable, boolean) 产物验收, Value: 1, ID: tab-acceptance
+			29 tab (selectable, settable, boolean) 候选变更, Value: 0, ID: tab-changes
+			26 tab (selectable, settable, boolean) 执行记录（0）, Value: 0, ID: tab-events
+		31 container Description: 产物验收, ID: pane-acceptance
+			32 container
+				33 text 按分派时要求的产物逐项核验。
+				34 button 重新核验
+				35 text 这是当前证据复查，不会改写运行的历史结果。代码交付、实际测试、发布和效果验证分别验收。
+				36 text 当前证据已满足所需产物 核验时间：2026/11/4 15:30:00
+				37 text 代码分支及变更
+				38 text 已满足
+				39 text 当前清单的全部仓库已交付并核验；实测、发布及问题解决需另行验证
+				40 container
+					41 button (expanded) 查看证据引用, Secondary Actions: Collapse
+						42 text 查看证据引用
+					43 text 交付清单：manifest-run-two bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb 准确提交、实际分支及 MR 核验记录可在“候选变更”中查看。
+
+The focused UI element is 41 button (expanded) 查看证据引用, Secondary Actions: Collapse

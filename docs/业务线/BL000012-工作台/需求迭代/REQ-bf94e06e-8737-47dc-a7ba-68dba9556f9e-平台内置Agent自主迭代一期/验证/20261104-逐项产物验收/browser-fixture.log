@@ -1,0 +1,16 @@
+
+  VITE v6.4.1   test   ready in 258 ms
+
+  ➜  Local:   http://127.0.0.1:19540/
+{"method":"GET","id":"run-one","mode":"mixed"}
+{"method":"GET","id":"run-one","mode":"code"}
+{"method":"GET","id":"run-one","mode":"error"}
+{"method":"GET","id":"run-one","mode":"delay"}
+{"method":"GET","id":"run-one","mode":"blocked"}
+{"method":"GET","id":"run-one","mode":"delay"}
+{"method":"GET","id":"run-one","mode":"delay"}
+{"method":"GET","id":"run-one","mode":"code"}
+{"method":"GET","id":"run-one","mode":"delay"}
+{"method":"GET","id":"run-two","mode":"code"}
+{"method":"GET","id":"run-two","mode":"delay"}
+{"method":"GET","id":"run-two","mode":"mixed"}

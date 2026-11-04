@@ -1,0 +1,13 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import AgentRunPanel from '/@fs/Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-web/src/views/agent/AgentRunPanel.vue'
+import { useAuthStore } from '/@fs/Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-web/src/stores/auth.ts'
+const auth=useAuthStore(), full=['agent:view','agent:task:view','agent:code:use'];auth.permissions=full
+const mode=ref('mixed'),second=ref(false),visible=ref(true),version=ref(1),status=ref('WAITING_INPUT')
+const detail=computed(()=>({run:{id:second.value?'run-two':'run-one',taskId:'task-fixture',agentId:'agent-fixture',status:status.value,stepCount:6,elapsedMillis:32000,cancelRequested:false,resultText:'已经交付代码，实际测试与业务验证待完成。',errorMessage:null,retryAllowed:false,version:version.value,createdAt:'2026-11-04T07:00:00',updatedAt:'2026-11-04T07:30:00'},configuration:{model:'fixture'},providerBinding:{channelType:'CLI',configurationVersion:1},specification:{expectedArtifacts:['REPORT','CHANGE_SET','TEST_REPORT','DEPLOYMENT','VERIFICATION']},events:[],artifacts:[]}))
+async function setMode(){await fetch('/__fixture/mode',{method:'POST',body:JSON.stringify({mode:mode.value})});version.value++}
+async function revoke(){mode.value='blocked';await fetch('/__fixture/mode',{method:'POST',body:JSON.stringify({mode:'blocked'})});auth.permissions=auth.permissions.includes('agent:code:use')?['agent:view','agent:task:view']:full}
+function toggleView(){auth.permissions=auth.permissions.includes('agent:task:view')?['agent:view']:full}
+</script>
+<template><main><aside><strong>本地样本验证 · 不连接业务系统</strong><label>场景 <select v-model="mode" aria-label="场景" @change="setMode"><option value="mixed">代码已交付，实测待完成</option><option value="code">仅代码任务</option><option value="error">读取失败</option><option value="delay">延迟6秒</option><option value="blocked">权限不足</option></select></label><button @click="second=!second">切换运行</button><button @click="revoke">切换代码权限</button><button @click="toggleView">切换查看权限</button><button @click="visible=!visible">切换页面激活</button><span>{{detail.run.id}} · {{mode}} · 版本{{version}}</span></aside><h2>Agent 运行与产物验收</h2><KeepAlive><AgentRunPanel v-if="visible" :detail="detail" /></KeepAlive></main></template>
+<style>body{font-family:Arial,'PingFang SC',sans-serif;background:#f4f6f8;margin:0;color:#1f2937}main{padding:145px 28px 28px;max-width:1000px;margin:auto}aside{position:fixed;top:0;left:0;right:0;z-index:10000;background:#e7efff;padding:18px 28px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:13px}aside button,aside select{padding:7px}h2{font-size:20px}</style>

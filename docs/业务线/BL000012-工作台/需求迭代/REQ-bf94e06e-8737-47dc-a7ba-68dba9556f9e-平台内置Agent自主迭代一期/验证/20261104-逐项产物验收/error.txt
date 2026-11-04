@@ -1,0 +1,9 @@
+Browser tab: 6, Title: "Agent 产物验收本地验证", URL: "http://127.0.0.1:19540/".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 34-41
+~			5 pop up button (collapsed, settable) Description: 场景, Value: 读取失败, Secondary Actions: Expand
+~					8 仅代码任务
+~					9 (selected) 读取失败
+~		32 text run-one · error · 版本3
++				33 text 本地模拟：暂时无法核验
+The focused UI element is 0 AXWebArea Agent 产物验收本地验证, URL: 127.0.0.1:19540/

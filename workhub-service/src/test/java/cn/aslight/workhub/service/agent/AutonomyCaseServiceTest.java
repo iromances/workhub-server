@@ -93,7 +93,7 @@ class AutonomyCaseServiceTest {
         var providers = mock(AiProviderConfigService.class); var provider = new AiProviderConfigEntity();
         provider.setId(1L); provider.setEnabled(true); provider.setChannelType("API"); provider.setDefaultModel("fixture-model");
         when(providers.requireExisting(1L)).thenReturn(provider); when(providers.getEnabledById(1L)).thenReturn(provider);
-        var data = new AgentToolData(json); runs = proxy(new AgentRunStore(agents, json, access, data, providers, clock));
+        var data = new AgentToolData(json); runs = proxy(new AgentRunStore(agents, json, access, data, providers, clock, AgentAcceptanceTestSupport.withoutCode(agents, access, json, clock)));
         observations = proxy(new AgentObservationService(mapper, agents, runs, access, json, data));
         validation = Validation.buildDefaultValidatorFactory();
         cases = proxy(new AutonomyCaseService(mapper, agents, runs, access, new AutonomyEvidence(json), data, json, validation.getValidator(), mock(AgentMonitorReadMapper.class)));

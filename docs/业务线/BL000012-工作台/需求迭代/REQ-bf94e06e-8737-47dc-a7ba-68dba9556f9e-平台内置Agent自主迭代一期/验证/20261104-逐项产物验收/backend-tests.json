@@ -1,0 +1,34 @@
+[
+  {
+    "name": "cn.aslight.workhub.service.agent.AgentChangeServiceTest",
+    "tests": "38",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "34.478"
+  },
+  {
+    "name": "cn.aslight.workhub.service.agent.AgentWorkbenchServiceTest",
+    "tests": "56",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "1",
+    "time": "1.759"
+  },
+  {
+    "name": "cn.aslight.workhub.service.agent.AgentInspectionServiceTest",
+    "tests": "26",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "2.1"
+  },
+  {
+    "name": "cn.aslight.workhub.service.agent.AutonomyCaseServiceTest",
+    "tests": "13",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "0.193"
+  }
+]

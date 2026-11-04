@@ -1,0 +1,9 @@
+Browser tab: 6, Title: "Agent 产物验收本地验证", URL: "http://127.0.0.1:19540/".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
++				34 text 当前证据已满足所需产物 核验时间：2026/11/4 15:30:00
++				35 text 代码分支及变更
++				36 text 已满足
++				37 text 当前清单的全部仓库已交付并核验；实测、发布及问题解决需另行验证
+~				33 button (collapsed) 查看证据引用, Secondary Actions: Expand
++					38 text 查看证据引用
+The focused UI element is 24 tab (selected, settable, boolean) 产物验收, Value: 1, ID: tab-acceptance

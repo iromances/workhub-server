@@ -68,6 +68,7 @@ class AgentChangeServiceTest {
     private AgentCodeWorkspaceService code;
     private AgentChangeStore store;
     private AgentChangeService service;
+    private AgentRunAcceptanceService acceptance;
     private AgentToolContext context;
     private final Map<String, String> bases = new TreeMap<>();
     private final Set<String> userPermissions = new HashSet<>(Set.of("agent:task:view", "agent:code:use"));
@@ -115,7 +116,11 @@ class AgentChangeServiceTest {
         policies = new AgentCodePolicy(configs, json);
         var providers = mock(AiProviderConfigService.class); var provider = new AiProviderConfigEntity(); provider.setId(1L); provider.setEnabled(true); provider.setChannelType("API");
         when(providers.getEnabledById(1L)).thenReturn(provider);
-        var data = new AgentToolData(json); runs = proxy(new AgentRunStore(agents, json, access, data, providers, clock));
+        var data = new AgentToolData(json);
+        acceptance = new AgentRunAcceptanceService(agents, mapper, deliveries, new org.springframework.beans.factory.ObjectProvider<AgentChangeService>() {
+            @Override public AgentChangeService getObject() { return service; }
+        }, access, json, clock);
+        runs = proxy(new AgentRunStore(agents, json, access, data, providers, clock, acceptance));
         var config = new AgentConfiguration("Code", "修复", 1L, "fixture", List.of(scope), List.of(), 100, 3600, 2);
         var specification = new AgentTaskSpecification("修复代码", "输入", "实际测试后交付", List.of("CHANGE_SET", "TEST_REPORT"), List.of(scope), List.of());
         LocalDateTime now = LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC);
@@ -424,6 +429,150 @@ class AgentChangeServiceTest {
         var tool = new AgentDeliveryTools(deliveryService, access, json).agentPublishChangeTool();
         var arguments = json.createObjectNode().put("changeSetId", value.id()).put("repositoryId", "server").put("url", "https://unbound.invalid").put("tested", true);
         assertThrows(AgentTool.Rejected.class, () -> tool.execute(context, arguments)); verifyNoInteractions(gitLab, publishing); assertTrue(deliveries.list(value.id()).isEmpty());
+    }
+
+
+    @Test void codeOnlyCompletionRecordsExactReceiptsWithoutClaimingTestOrReview() {
+        expected("CHANGE_SET"); var change = delivered();
+        assertTrue(acceptance.preview("task", "run", "owner").satisfied());
+        assertTrue(agents.listArtifacts("run").isEmpty(), "预览不得写入产物");
+        assertFalse(service.detail(context, change.id()).readyForReview());
+        clearInvocations(gitLab, publishing);
+        runs.finish("run", "lease", "COMPLETED", "代码已交付", null);
+        assertEquals("COMPLETED", runs.get("run").status());
+        var artifact = agents.listArtifacts("run").stream().filter(a -> "CHANGE_SET".equals(a.kind())).findFirst().orElseThrow();
+        var payload = json.readTree(artifact.payloadJson());
+        assertEquals(change.id(), payload.path("changeSetId").asText());
+        assertEquals(change.manifestHash(), payload.path("manifestHash").asText());
+        assertEquals(2, payload.path("receipts").size());
+        for (var receipt : payload.path("receipts")) {
+            var event = agents.findEventByKey("run", "delivery:" + receipt.path("id").asText() + ":" + receipt.path("version").asLong());
+            assertEquals(AgentCodePolicy.hash(event.payloadJson()), receipt.path("contentHash").asText());
+        }
+        assertEquals(AgentCodePolicy.hash(artifact.payloadJson()), artifact.contentHash());
+        assertNotNull(agents.findEventByKey("run", "acceptance:lease"));
+        assertFalse(service.detailForUser(change.id(), "owner").readyForReview());
+        verifyNoInteractions(gitLab, publishing);
+    }
+
+    @Test void codeAndTestRemainWaitingEvenWithReportAndFakeTestArtifact() {
+        var change = delivered();
+        String fake = "{\"passed\":true}";
+        agents.insertArtifact(new AgentArtifactEntity("fake", "run", "fake:test", "TEST_REPORT", "PLATFORM_EXECUTION",
+                fake, AgentCodePolicy.hash(fake), LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC)));
+        int step = runs.beginModel("run", "lease", Map.of());
+        runs.endModel("run", "lease", step, Map.of("type", "RESULT"));
+        runs.finishDecision("run", "lease", "step:" + step + ":request", "COMPLETED", "测试已经全部通过");
+        assertEquals("WAITING_INPUT", runs.get("run").status());
+        assertTrue(runs.get("run").errorMessage().contains("实际构建测试证据"));
+        var result = acceptance.preview("task", "run", "owner");
+        assertEquals("SATISFIED", result.items().getFirst().status());
+        assertEquals("UNAVAILABLE", result.items().get(1).status());
+        assertEquals(1, agents.listArtifacts("run").stream().filter(a -> "CHANGE_SET".equals(a.kind())).count());
+        assertFalse(service.detailForUser(change.id(), "owner").readyForReview());
+    }
+
+    @Test void staleCodeOrNewManifestCannotReuseEarlierRemoteDelivery() {
+        expected("CHANGE_SET"); var change = delivered();
+        String workspace = change.manifest().repositories().getFirst().workspaceId();
+        change(workspace, "new-code", "changed after delivery\n");
+        assertEquals("BLOCKED", acceptance.preview("task", "run", "owner").items().getFirst().status());
+        service.prepare(context, "revised", null, plan());
+        assertEquals("MISSING", acceptance.preview("task", "run", "owner").items().getFirst().status());
+        runs.finish("run", "lease", "COMPLETED", "完成", null);
+        assertEquals("WAITING_INPUT", runs.get("run").status());
+        assertEquals(0, agents.listArtifacts("run").stream().filter(a -> "CHANGE_SET".equals(a.kind())).count());
+    }
+
+    @Test void partialUnknownOrTamperedDeliveryCannotSatisfyCode() {
+        expected("CHANGE_SET"); preparedWorkspaces(); var change = service.prepare(context, "partial", null, plan()); remoteFixture();
+        deliveryService.publish(context, change.id(), "server");
+        assertFalse(acceptance.preview("task", "run", "owner").satisfied());
+        deliveryService.publish(context, change.id(), "web");
+        assertTrue(acceptance.preview("task", "run", "owner").satisfied());
+        var row = deliveries.byRepository(change.id(), "server");
+        jdbc.update("UPDATE pm_agent_delivery SET status='MR_UNKNOWN' WHERE id=?", row.id());
+        assertFalse(acceptance.preview("task", "run", "owner").satisfied());
+        jdbc.update("UPDATE pm_agent_delivery SET status='REMOTE_CONFIRMED',source_branch='wrong' WHERE id=?", row.id());
+        assertFalse(acceptance.preview("task", "run", "owner").satisfied());
+        jdbc.update("UPDATE pm_agent_delivery SET source_branch=? WHERE id=?", row.sourceBranch(), row.id());
+        jdbc.update("UPDATE pm_agent_event SET payload_json='{}' WHERE event_key=?", "delivery:" + row.id() + ":" + row.version());
+        assertFalse(acceptance.preview("task", "run", "owner").satisfied(), "缺少原始核验回执不能完成");
+    }
+
+    @Test void changedRemoteBindingAndPermissionsInvalidateCurrentAcceptance() {
+        expected("CHANGE_SET"); delivered();
+        String policy = gitLabPolicyText.get();
+        gitLabPolicyText.set(policy.replace("group/server", "group/new-server"));
+        assertFalse(acceptance.preview("task", "run", "owner").satisfied());
+        gitLabPolicyText.set(policy);
+        userPermissions.remove("agent:code:use");
+        var item = acceptance.preview("task", "run", "owner").items().getFirst();
+        assertEquals("BLOCKED", item.status()); assertTrue(item.evidence().isEmpty());
+        assertThrows(AccessDeniedException.class, () -> acceptance.preview("task", "run", "other"));
+        assertThrows(IllegalArgumentException.class, () -> acceptance.preview("other-task", "run", "owner"));
+        userPermissions.remove("agent:task:view");
+        assertThrows(AccessDeniedException.class, () -> acceptance.preview("task", "run", "owner"));
+        runs.finish("run", "lease", "COMPLETED", "完成", null);
+        assertEquals("WAITING_INPUT", runs.get("run").status());
+    }
+
+    @Test void manifestCorruptionAndAcceptanceWriteFailureRollBackReportAndFinish() {
+        expected("CHANGE_SET"); var change = delivered();
+        jdbc.update("UPDATE pm_agent_change_set SET manifest_hash='broken' WHERE id=?", change.id());
+        assertThrows(IllegalStateException.class, () -> runs.finish("run", "lease", "COMPLETED", "完成", null));
+        assertEquals("RUNNING", runs.get("run").status()); assertTrue(agents.listArtifacts("run").isEmpty());
+        jdbc.update("UPDATE pm_agent_change_set SET manifest_hash=? WHERE id=?", change.manifestHash(), change.id());
+        jdbc.execute("ALTER TABLE pm_agent_event ADD CONSTRAINT reject_acceptance CHECK(kind <> 'ACCEPTANCE_CHECKED')");
+        assertThrows(RuntimeException.class, () -> runs.finish("run", "lease", "COMPLETED", "完成", null));
+        assertEquals("RUNNING", runs.get("run").status()); assertTrue(agents.listArtifacts("run").isEmpty());
+        jdbc.execute("ALTER TABLE pm_agent_event DROP CONSTRAINT reject_acceptance");
+        runs.finish("run", "lease", "COMPLETED", "完成", null);
+        assertEquals("COMPLETED", runs.get("run").status());
+    }
+
+    @Test void cancellationWinsOverAvailableCodeEvidence() {
+        expected("CHANGE_SET"); delivered();
+        jdbc.update("UPDATE pm_agent_run SET cancel_requested=TRUE WHERE id='run'");
+        runs.finish("run", "lease", "COMPLETED", "完成", null);
+        assertEquals("CANCELLED", runs.get("run").status()); assertTrue(agents.listArtifacts("run").isEmpty());
+        assertNull(agents.findEventByKey("run", "acceptance:lease"));
+    }
+
+    @Test void fakeArtifactWithoutDomainReceiptsCannotSatisfyCode() {
+        expected("CHANGE_SET");
+        String fake = "{\"remoteConfirmed\":true}";
+        agents.insertArtifact(new AgentArtifactEntity("fake-code", "run", "fake:code", "CHANGE_SET", "PLATFORM_EXECUTION",
+                fake, AgentCodePolicy.hash(fake), LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC)));
+        assertFalse(acceptance.preview("task", "run", "owner").satisfied());
+        runs.finish("run", "lease", "COMPLETED", "声称交付成功", null);
+        assertEquals("WAITING_INPUT", runs.get("run").status());
+    }
+
+    @Test void bugContextAndCasePlanChangesBlockDeliveredCode() {
+        expected("CHANGE_SET"); caseFixture(); preparedWorkspaces();
+        var change = service.prepare(context, "case-acceptance", "case", plan()); remoteFixture();
+        deliveryService.publish(context, change.id(), "server"); deliveryService.publish(context, change.id(), "web");
+        assertTrue(acceptance.preview("task", "run", "owner").satisfied());
+        when(cases.bugContextChanged(any())).thenReturn(true);
+        assertEquals("BLOCKED", acceptance.preview("task", "run", "owner").items().getFirst().status());
+        when(cases.bugContextChanged(any())).thenReturn(false);
+        jdbc.update("UPDATE pm_autonomy_case SET version=version+1 WHERE id='case'");
+        assertFalse(acceptance.preview("task", "run", "owner").satisfied());
+        runs.finish("run", "lease", "COMPLETED", "完成", null);
+        assertEquals("WAITING_INPUT", runs.get("run").status());
+    }
+
+    private void expected(String... kinds) {
+        var spec = context.specification();
+        var next = new AgentTaskSpecification(spec.objective(), spec.context(), spec.acceptanceCriteria(), List.of(kinds), spec.scopes(), spec.toolCodes());
+        jdbc.update("UPDATE pm_agent_run SET specification_json=? WHERE id='run'", json.writeValueAsString(next));
+        context = runs.context(runs.get("run"));
+    }
+    private AgentChangeView delivered() {
+        preparedWorkspaces(); var change = service.prepare(context, "accepted", null, plan()); remoteFixture();
+        deliveryService.publish(context, change.id(), "server"); deliveryService.publish(context, change.id(), "web");
+        return change;
     }
 
     @SuppressWarnings("unchecked") private void remoteFixture() {

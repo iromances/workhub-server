@@ -1,0 +1,28 @@
+Browser tab: 6, Title: "Agent 产物验收本地验证", URL: "http://127.0.0.1:19540/".
+0 AXWebArea Agent 产物验收本地验证, URL: 127.0.0.1:19540/
+	1 container
+		2 text 本地样本验证 · 不连接业务系统
+		3 container
+			4 text 场景 
+			5 pop up button (collapsed, settable) Description: 场景, Value: 延迟6秒, Secondary Actions: Expand
+				6 menu
+					7 代码已交付，实测待完成
+					8 仅代码任务
+					9 读取失败
+					10 (selected) 延迟6秒
+					11 权限不足
+		12 button 切换运行
+		13 button 切换代码权限
+		14 button 切换查看权限
+		15 button 切换页面激活
+		32 text run-one · delay · 版本5
+		17 heading Agent 运行与产物验收, Value: 2
+			18 text Agent 运行与产物验收
+		19 container
+			20 text 等待补充 6 次行动 · 32 秒 · 2026/11/4 15:00:00
+		21 text 本次 AI：CLI · fixture · 接入配置版本 1
+		22 tab group
+			23 tab (selectable, settable, boolean) 结果与产物, Value: 0, ID: tab-result
+			26 tab (selectable, settable, boolean) 执行记录（0）, Value: 0, ID: tab-events
+
+The focused UI element is 14 button 切换查看权限
