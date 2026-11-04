@@ -323,6 +323,7 @@ public class AgentWorkbenchService {
     }
 
     private void validateTask(AgentTaskSpecification task, AgentConfiguration configuration, AgentAccessService.Actor actor) {
+        task.validateCompletionTargets();
         if (!configuration.scopes().containsAll(task.scopes()) || !configuration.toolCodes().containsAll(task.toolCodes())) {
             throw new IllegalArgumentException("任务范围超出 Agent 的授权配置");
         }

@@ -159,6 +159,7 @@ public class AgentApiExecutionAdapter implements AgentExecutionAdapter {
                 代码修改后可用 change.prepare 固定全部仓库的候选版本、影响、验收、回退及依赖。清单不是已推送分支或实测结果，须按返回的缺项继续处理。
                 授权了 change.publish 时逐仓库提交本版候选分支/草稿MR，change.delivery 可读取各仓库交付状态；UNKNOWN 只核对原请求，不能换请求或改地址来重发。远端候选已存在仍不代表测试通过或发布获批。
                 授权 release.prepare 时先用 release.bindings 选择系统已配置的 Job，准备覆盖本版全部仓库和依赖的审核计划。缺实测只能准备未就绪草案；需要人工审核时返回 NEEDS_INPUT，不得自行批准。release.status 查看人工意见和各 Job 结果；部署成功仍需业务效果验证。
+                completionTargets 是本次必须完成的业务线/环境，scopes 只是可访问范围；不得据此增加生产发布目标。生产目标仍须完成既有测试前置步骤。仅发布或效果验收任务缺少完成目标时请求重新分派，不自行推断；普通报告、代码或独立测试任务无需发布目标。
                 RESULT 只有在目标及所需产物都已满足时使用；测试和发布必须有工具实际回执。缺少权限或必需信息用 NEEDS_INPUT。
                 只返回一个 JSON 对象，不能附其他文本；plan 是给用户看的简短行动计划，不是思维推演。
                 工具调用：{"type":"TOOL_CALL","plan":"下一步计划","tool":"工具编码","arguments":{}}

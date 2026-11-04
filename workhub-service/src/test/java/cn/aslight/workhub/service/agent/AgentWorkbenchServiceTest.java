@@ -138,6 +138,71 @@ class AgentWorkbenchServiceTest {
     void close() throws Exception { keepAlive.close(); }
 
     @Test
+    void completionTargetIsExplicitAndFrozenWithTaskAndRun() {
+        var agent=enabledAgent(); var prod=new AgentScope("BL000012","PROD");
+        var original=agent.configuration();
+        var configured=service.update(agent.id(),new AgentSaveRequest(agent.version(),new AgentConfiguration(original.name(),original.instructions(),
+                original.providerConfigId(),original.model(),List.of(testScope,prod),original.toolCodes(),original.maxSteps(),original.maxRunSeconds(),original.maxConcurrentRuns())),"owner");
+        var spec=new AgentTaskSpecification("修复并发布","","测试环境通过",List.of("DEPLOYMENT","VERIFICATION"),List.of(testScope,prod),List.of(tool.code()),List.of(testScope));
+        var task=service.createTask(agent.id(),new AgentTaskCreateRequest("target",spec,manual(),true),"owner");
+        var run=service.runs(task.id(),"owner",1,20).items().getFirst();
+        assertEquals(List.of(testScope),task.specification().completionTargets());
+        assertEquals(List.of(testScope),service.runDetail(task.id(),run.id(),"owner").specification().completionTargets());
+        service.update(agent.id(),new AgentSaveRequest(configured.version(),config("调整职责","model")),"owner");
+        assertEquals(List.of(testScope),service.runDetail(task.id(),run.id(),"owner").specification().completionTargets());
+        var changed=new AgentTaskSpecification(spec.objective(),spec.context(),spec.acceptanceCriteria(),spec.expectedArtifacts(),spec.scopes(),spec.toolCodes(),List.of(prod));
+        assertThrows(IllegalArgumentException.class,()->service.createTask(agent.id(),new AgentTaskCreateRequest("target",changed,manual(),true),"owner"));
+        assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM pm_agent_run",Integer.class));
+    }
+
+    @Test
+    void missingDuplicateCrossScopeOrNonReleaseTargetsCannotCreateTask() {
+        var agent=enabledAgent();
+        var targets=List.of(List.<AgentScope>of(),List.of(testScope,testScope),List.of(new AgentScope("BL000012","PROD")),List.of(new AgentScope("BL000099","TEST")));
+        for(var target:targets){
+            var spec=new AgentTaskSpecification("发布","","通过",List.of("DEPLOYMENT"),List.of(testScope),List.of(),target);
+            assertThrows(IllegalArgumentException.class,()->service.createTask(agent.id(),new AgentTaskCreateRequest(UUID.randomUUID().toString(),spec,manual(),true),"owner"));
+        }
+        var report=new AgentTaskSpecification("报告","","通过",List.of("REPORT"),List.of(testScope),List.of(),List.of(testScope));
+        assertThrows(IllegalArgumentException.class,()->service.createTask(agent.id(),new AgentTaskCreateRequest("report-target",report,manual(),false),"owner"));
+        assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM pm_agent_task",Integer.class));
+        assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM pm_agent_run",Integer.class));
+    }
+
+    @Test
+    void legacyReleaseTaskCannotInferCompletionFromAuthorizedScope() {
+        var agent=enabledAgent();
+        var spec=new AgentTaskSpecification("发布","","通过",List.of("DEPLOYMENT","VERIFICATION"),List.of(testScope),List.of(),List.of(testScope));
+        var task=service.createTask(agent.id(),new AgentTaskCreateRequest("old-target",spec,manual(),true),"owner");
+        var run=service.runs(task.id(),"owner",1,20).items().getFirst();
+        var old=(tools.jackson.databind.node.ObjectNode)json.valueToTree(spec);old.remove("completionTargets");
+        jdbc.update("UPDATE pm_agent_task SET specification_json=? WHERE id=?",json.writeValueAsString(old),task.id());
+        jdbc.update("UPDATE pm_agent_run SET specification_json=? WHERE id=?",json.writeValueAsString(old),run.id());
+        assertTrue(service.runDetail(task.id(),run.id(),"owner").specification().completionTargets().isEmpty());
+        assertThrows(IllegalArgumentException.class,()->service.run(task.id(),new AgentRunRequest("legacy-start",task.version()),"owner"));
+        var check=AgentAcceptanceTestSupport.withoutCode(mapper,access,json,clock).preview(task.id(),run.id(),"owner");
+        assertFalse(check.satisfied());assertTrue(check.items().stream().allMatch(item->"BLOCKED".equals(item.status())));
+        var claim=store.claim(4);store.finish(run.id(),claim.ownerToken(),"COMPLETED","声称完成",null);
+        assertEquals("WAITING_INPUT",store.get(run.id()).status());
+    }
+
+    @Test
+    void completionTargetsRemainSeparateFromArtifactEvidence() {
+        var agent=enabledAgent();var prod=new AgentScope("BL000012","PROD");var original=agent.configuration();
+        service.update(agent.id(),new AgentSaveRequest(agent.version(),new AgentConfiguration(original.name(),original.instructions(),original.providerConfigId(),
+                original.model(),List.of(testScope,prod),original.toolCodes(),original.maxSteps(),original.maxRunSeconds(),original.maxConcurrentRuns())),"owner");
+        var spec=new AgentTaskSpecification("发布及复查","","逐环境通过",List.of("DEPLOYMENT","VERIFICATION"),List.of(testScope,prod),List.of(),List.of(testScope,prod));
+        var task=service.createTask(agent.id(),new AgentTaskCreateRequest("both-targets",spec,manual(),true),"owner");
+        var run=service.runs(task.id(),"owner",1,20).items().getFirst();
+        var check=AgentAcceptanceTestSupport.withoutCode(mapper,access,json,clock).preview(task.id(),run.id(),"owner");
+        assertFalse(check.satisfied());
+        for(var item:check.items()){
+            assertEquals(List.of(testScope,prod),item.targets().stream().map(AgentRunAcceptance.Target::scope).toList());
+            assertTrue(item.targets().stream().allMatch(target->"UNAVAILABLE".equals(target.status()) && target.evidence().isEmpty()));
+        }
+    }
+
+    @Test
     void genericTaskNeedsNoAlertAndKeepsSnapshotWhenAgentChanges() {
         var agent = enabledAgent();
         var task = service.createTask(agent.id(), taskRequest("generic", true), "owner");

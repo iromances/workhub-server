@@ -1,0 +1,45 @@
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[ERROR] Tests run: 61, Failures: 1, Errors: 0, Skipped: 1, Time elapsed: 3.036 s <<< FAILURE! -- in cn.aslight.workhub.service.agent.AgentWorkbenchServiceTest
+[ERROR] cn.aslight.workhub.service.agent.AgentWorkbenchServiceTest.legacyReleaseTaskCannotInferCompletionFromAuthorizedScope -- Time elapsed: 0.017 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: Unexpected exception type thrown, expected: <java.lang.IllegalArgumentException> but was: <java.lang.IllegalStateException>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:158)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:68)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35)
+	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3223)
+	at cn.aslight.workhub.service.agent.AgentWorkbenchServiceTest.legacyReleaseTaskCannotInferCompletionFromAuthorizedScope(AgentWorkbenchServiceTest.java:182)
+Caused by: java.lang.IllegalStateException: 版本已变化，请刷新后重试
+	at cn.aslight.workhub.service.agent.AgentWorkbenchService.requireVersion(AgentWorkbenchService.java:394)
+	at cn.aslight.workhub.service.agent.AgentWorkbenchService.run(AgentWorkbenchService.java:191)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:190)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:158)
+	at org.springframework.transaction.interceptor.TransactionInterceptor$1.proceedWithInvocation(TransactionInterceptor.java:133)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:371)
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:130)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:719)
+	at cn.aslight.workhub.service.agent.AgentWorkbenchService$$SpringCGLIB$$0.run(<generated>)
+	at cn.aslight.workhub.service.agent.AgentWorkbenchServiceTest.lambda$legacyReleaseTaskCannotInferCompletionFromAuthorizedScope$0(AgentWorkbenchServiceTest.java:182)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:54)
+	... 3 more
+
+20:15:28.326 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 9.0.1.Final
+[ERROR] Failures:
+[ERROR]   AgentWorkbenchServiceTest.legacyReleaseTaskCannotInferCompletionFromAuthorizedScope:182 Unexpected exception type thrown, expected: <java.lang.IllegalArgumentException> but was: <java.lang.IllegalStateException>
+[ERROR] Tests run: 99, Failures: 1, Errors: 0, Skipped: 1
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.5:test (default-test) on project workhub-service: There are test failures.
+[ERROR]
+[ERROR] See /Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-server/workhub-service/target/surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR]
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :workhub-service

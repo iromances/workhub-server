@@ -1,0 +1,66 @@
+
+> workhub-web@0.1.0 build
+> vue-tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && vite build --mode test --outDir /private/tmp/workhub-completion-target-dist
+
+vite v6.4.1 building for test...
+
+(!) outDir /private/tmp/workhub-completion-target-dist is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+transforming...
+✓ 1786 modules transformed.
+rendering chunks...
+computing gzip size...
+../../../../../private/tmp/workhub-completion-target-dist/index.html                                   0.97 kB │ gzip:   0.40 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/DeveloperResourceView-CdanulhI.css    0.09 kB │ gzip:   0.09 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/AuditLogView-Mt_sJ4Hb.css             0.09 kB │ gzip:   0.09 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/UserManagementView-BI4truik.css       0.13 kB │ gzip:   0.11 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/SystemConfigView-CZvzVovc.css         0.13 kB │ gzip:   0.11 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/RoleManagementView-FETkdOfP.css       0.29 kB │ gzip:   0.18 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/ForbiddenView-Bh_BmPKs.css            0.32 kB │ gzip:   0.21 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/index-BjESXWbU.css                    0.61 kB │ gzip:   0.43 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/LoginView-DVql81uF.css                0.71 kB │ gzip:   0.39 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/WorkItemListView-CE6_sPJa.css         0.71 kB │ gzip:   0.33 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/OpsMonitorView-CP2Zr_0G.css           1.11 kB │ gzip:   0.47 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/SystemAlertView-DREwuLo-.css          1.65 kB │ gzip:   0.57 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/ProjectListView-hSG3noOy.css          1.86 kB │ gzip:   0.58 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/AccountingMonitorView-BI__Z05Z.css    2.21 kB │ gzip:   0.75 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/McpResourceView-vxJXdOFv.css          2.58 kB │ gzip:   0.83 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/DashboardView-DDkyTBE4.css            2.92 kB │ gzip:   0.86 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/AiConfigView-BM5erttj.css             3.52 kB │ gzip:   1.05 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/PaymentConfigView-B5fOOcZ4.css        4.29 kB │ gzip:   1.11 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/AppLayout-Cyg6G6AD.css                5.03 kB │ gzip:   1.27 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/AgentWorkbenchView-DrkP8Huj.css      13.67 kB │ gzip:   2.69 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/IntakeListView-DRtMD7x2.css          17.29 kB │ gzip:   3.67 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/vendor-element-plus-Plm10Dc1.css    352.47 kB │ gzip:  47.25 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/system-config-DUYAFq-l.js             0.73 kB │ gzip:   0.26 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/ForbiddenView-DaLjOm4V.js             0.83 kB │ gzip:   0.58 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/system-_9RyFdtQ.js                    1.60 kB │ gzip:   0.43 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/ops-CAjpo9ZB.js                       1.72 kB │ gzip:   0.42 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/LoginView-CFwEv4v5.js                 1.82 kB │ gzip:   1.06 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/project-bDjnijCP.js                   2.95 kB │ gzip:   0.80 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/intake-DG_kBm6R.js                    3.49 kB │ gzip:   0.98 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/AuditLogView-D_yEltez.js              4.35 kB │ gzip:   1.50 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/DeveloperResourceView-Cbvljd0x.js     5.03 kB │ gzip:   2.10 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/SystemConfigView-BMloavnM.js          6.50 kB │ gzip:   2.54 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/RoleManagementView-DPVbjT10.js        7.47 kB │ gzip:   2.76 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/UserManagementView-Ck-V-_On.js        8.85 kB │ gzip:   3.09 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/DashboardView-CwvRIHnf.js            11.23 kB │ gzip:   4.78 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/index-D14L-6b5.js                    12.31 kB │ gzip:   4.15 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/AppLayout-CXRkvsbZ.js                13.63 kB │ gzip:   4.81 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/OpsMonitorView-MX0rK5Iz.js           15.20 kB │ gzip:   4.90 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/WorkItemListView-DHCgpvCe.js         18.97 kB │ gzip:   4.93 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/AccountingMonitorView-C4Ab_CM0.js    21.48 kB │ gzip:   6.76 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/vendor-element-icons-DHNi1yoH.js     22.62 kB │ gzip:   5.68 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/ProjectListView-B9DkaTFm.js          24.68 kB │ gzip:   6.46 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/vendor-vue-FHeDBIv3.js               29.47 kB │ gzip:  11.71 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/SystemAlertView-DjhWw8Uc.js          34.40 kB │ gzip:   9.50 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/vendor-axios-BEcps5oF.js             37.14 kB │ gzip:  14.83 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/McpResourceView-JmqTk6Bw.js          44.32 kB │ gzip:  10.01 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/AiConfigView-fitIosPc.js             46.82 kB │ gzip:  12.19 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/PaymentConfigView-jC_iThJx.js        52.58 kB │ gzip:  11.54 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/AgentWorkbenchView-DLXjzTXn.js      112.18 kB │ gzip:  34.73 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/IntakeListView-Cm0UaAXT.js          118.35 kB │ gzip:  28.68 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/vendor-BS4eNR2F.js                  209.90 kB │ gzip:  77.59 kB
+../../../../../private/tmp/workhub-completion-target-dist/assets/vendor-element-plus-Cxuz8Xag.js     756.52 kB │ gzip: 239.47 kB
+✓ built in 3.19s

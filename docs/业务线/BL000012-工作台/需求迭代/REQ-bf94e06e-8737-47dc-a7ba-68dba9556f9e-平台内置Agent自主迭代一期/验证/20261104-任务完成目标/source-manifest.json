@@ -1,0 +1,62 @@
+[
+  {
+    "repository": "backend",
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentRunAcceptance.java",
+    "sha256": "15000600a5be29fa4f68421f8992578fd117287cfebd1c0ddfdfb60cfcb9d8f0"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentTaskSpecification.java",
+    "sha256": "23509d1e53bbe94a3bd0960d5847a9640824d980e68a8342d9417e15ea3256df"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentApiExecutionAdapter.java",
+    "sha256": "9263a25eea179f03cc95ec99497ff9e1f7339e980549134b9dced486c6a7a2b8"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentNativeCliAdapter.java",
+    "sha256": "9b59d7f60b1c7841eb96920d069983815e4ad0458a469d69fc38a19f4e749d57"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentRunAcceptanceService.java",
+    "sha256": "4e53ffd6f642df043b580ca4a7c1c945fa319972b4d5434a2cebad51ee751aea"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentWorkbenchService.java",
+    "sha256": "f6365532a214992a4c7567ddfd0e5b1fd8fd30a63656e4e24877136cea845808"
+  },
+  {
+    "repository": "backend",
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentWorkbenchServiceTest.java",
+    "sha256": "c5cb1056f6d9830c653bb49796ccb373b290b7dd73dda59b572022bf8bf1866b"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/types/agent.ts",
+    "sha256": "4cd1fae6bb03a2fd065ca32080c941027b676fe6f6250e9ac59df20b71fcc88f"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/views/agent/AgentRunAcceptancePanel.vue",
+    "sha256": "dda52d173cc68344af0e87b0ed85e3f03ad7fb5b12af1af47602e0d37a5922c8"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/views/agent/AgentRunPanel.vue",
+    "sha256": "8c50796dd724b49ef2757e683c465e4e7fa49d4336d04bec38da39b490e42589"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/views/agent/AgentTaskDialog.vue",
+    "sha256": "ece0773bb131e3ac4b6bb6d17a972af8af5cb3350dcdeec07106486350c9741b"
+  },
+  {
+    "repository": "frontend",
+    "path": "src/views/agent/AgentWorkbenchView.vue",
+    "sha256": "217d9b58549aad01b57ed855fdb61817dde723694968196fd027a35f81c838ae"
+  }
+]

@@ -1,0 +1,42 @@
+{
+  "environment": "本机真实Vue组件，所有保存/验收接口为本地样本",
+  "checks": [
+    {
+      "case": "普通报告任务不显示完成环境选择",
+      "result": "PASS"
+    },
+    {
+      "case": "发布/效果任务显示测试与生产，均未默认选中",
+      "result": "PASS"
+    },
+    {
+      "case": "未选完成目标时阻止分派",
+      "result": "PASS"
+    },
+    {
+      "case": "只选测试保存completionTargets=TEST，scopes仍可包含TEST/PROD",
+      "result": "PASS"
+    },
+    {
+      "case": "重新打开任务选择清空",
+      "result": "PASS"
+    },
+    {
+      "case": "选择双目标后移除PROD任务范围，生产目标同步移除",
+      "result": "PASS"
+    },
+    {
+      "case": "重新加入PROD范围，生产完成目标仍未选中",
+      "result": "PASS"
+    },
+    {
+      "case": "明确选择双目标后保存，验收按测试和生产分别显示未满足",
+      "result": "PASS"
+    }
+  ],
+  "limitations": [
+    "样本保存未调用真实Agent或Jenkins",
+    "未单独验证窄屏",
+    "真实凭据到最终验收仍未联通"
+  ]
+}

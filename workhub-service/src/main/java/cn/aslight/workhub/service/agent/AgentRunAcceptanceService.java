@@ -56,12 +56,20 @@ public class AgentRunAcceptanceService {
             case "REPORT" -> report(run);
             case "CHANGE_SET" -> code(run, user, persist);
             case "TEST_REPORT" -> item(kind, "UNAVAILABLE", "尚未取得绑定当前代码的实际构建测试证据，Jenkins 独立测试接入待完成");
-            case "DEPLOYMENT" -> item(kind, "UNAVAILABLE", "尚未完成任务目标环境与发布结果的验收绑定，已有发布记录不能直接替代任务验收");
-            case "VERIFICATION" -> item(kind, "UNAVAILABLE", "尚未取得原问题回归及观察窗口的业务效果证据");
+            case "DEPLOYMENT" -> environment(kind, spec, "尚未完成本目标环境的实际发布凭据验收绑定");
+            case "VERIFICATION" -> environment(kind, spec, "尚未完成本目标环境的业务复查及原问题结果验收绑定");
             default -> throw new IllegalArgumentException("不支持的任务产物类型");
         }).toList();
         return new AgentRunAcceptance(run.id(), LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC),
                 !items.isEmpty() && items.stream().allMatch(value -> "SATISFIED".equals(value.status())), items);
+    }
+
+    private AgentRunAcceptance.Item environment(String kind, AgentTaskSpecification spec, String message) {
+        try { spec.validateCompletionTargets(); }
+        catch (IllegalArgumentException ex) { return item(kind, "BLOCKED", ex.getMessage()); }
+        var targets = spec.completionTargets().stream()
+                .map(scope -> new AgentRunAcceptance.Target(scope, "UNAVAILABLE", message, List.of())).toList();
+        return new AgentRunAcceptance.Item(kind, "UNAVAILABLE", "按明确选择的完成目标逐项核验，实际凭据验收仍待接通", List.of(), targets);
     }
 
     private AgentRunAcceptance.Item report(AgentRunEntity run) {

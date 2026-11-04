@@ -1,0 +1,6 @@
+
+  VITE v6.4.1  ready in 133 ms
+
+  ➜  Local:   http://127.0.0.1:19544/
+{"id":"task-1","specification":{"objective":"本地样本：修复并验证业务问题","context":null,"acceptanceCriteria":"按明确目标检查实际证据","expectedArtifacts":["REPORT","DEPLOYMENT","VERIFICATION"],"completionTargets":[{"businessLineCode":"BL000012","environmentCode":"TEST"}],"scopes":[{"businessLineCode":"BL000012","environmentCode":"TEST"},{"businessLineCode":"BL000012","environmentCode":"PROD"}],"toolCodes":[]},"schedule":{"expectedVersion":null,"mode":"MANUAL","cronExpression":null,"zoneId":"Asia/Shanghai","misfirePolicy":"RUN_ONCE","enabled":false},"runImmediately":true,"requestKey":"2fdc942f745e40a14c3889c2e0908225"}
+{"id":"task-2","specification":{"objective":"本地样本：测试与生产目标","context":null,"acceptanceCriteria":"两个目标逐项核验","expectedArtifacts":["REPORT","DEPLOYMENT"],"completionTargets":[{"businessLineCode":"BL000012","environmentCode":"TEST"},{"businessLineCode":"BL000012","environmentCode":"PROD"}],"scopes":[{"businessLineCode":"BL000012","environmentCode":"TEST"},{"businessLineCode":"BL000012","environmentCode":"PROD"}],"toolCodes":[]},"schedule":{"expectedVersion":null,"mode":"MANUAL","cronExpression":null,"zoneId":"Asia/Shanghai","misfirePolicy":"RUN_ONCE","enabled":false},"runImmediately":true,"requestKey":"6afb41323d9ecd0311911cd6e2fc579b"}

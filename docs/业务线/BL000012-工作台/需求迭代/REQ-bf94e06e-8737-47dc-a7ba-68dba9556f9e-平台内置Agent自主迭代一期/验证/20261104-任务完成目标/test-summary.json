@@ -1,0 +1,23 @@
+[
+  {
+    "suite": "AgentWorkbenchServiceTest",
+    "tests": 61,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "skips": [
+      {
+        "test": "installedZcodeCompletesTaskThroughProductionMcpAndStoresObservedResult(Path)",
+        "reason": "System property [workhub.test.zcode.command] does not exist"
+      }
+    ]
+  },
+  {
+    "suite": "AgentChangeServiceTest",
+    "tests": 38,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skips": []
+  }
+]
