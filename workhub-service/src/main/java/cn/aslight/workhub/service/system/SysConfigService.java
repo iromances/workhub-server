@@ -93,6 +93,15 @@ public class SysConfigService {
         return entity == null ? null : resolvePlainValue(entity);
     }
 
+    /** 集成凭据只从已启用的加密配置取值，避免把普通文本配置当作密钥引用。 */
+    public String requireSecretValue(String configGroup, String configKey) {
+        var entity = sysConfigMapper.findEnabledByKey(configGroup, configKey);
+        if (entity == null || !VALUE_TYPE_SECRET.equals(entity.getValueType())) throw new IllegalArgumentException("密钥配置不存在、未启用或不是加密类型：" + configGroup + "." + configKey);
+        String value = resolvePlainValue(entity);
+        if (value == null) throw new IllegalArgumentException("密钥配置值为空：" + configGroup + "." + configKey);
+        return value;
+    }
+
     /**
      * 供服务端运行时一次性读取同组已启用配置，敏感值只在当前进程内解密，不得用于接口响应。
      */

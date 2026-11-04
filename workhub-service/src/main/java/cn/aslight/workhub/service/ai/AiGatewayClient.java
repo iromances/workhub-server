@@ -13,6 +13,11 @@ public interface AiGatewayClient {
 
     AiGatewayResult executeStructured(AiGatewayRequest request);
 
+    /** Agent API 适配使用已选 Provider，不绑定全局业务 useCase 或转交 CLI。 */
+    default AiGatewayResult executeAgentApi(AiAgentApiRequest request) {
+        throw new UnsupportedOperationException("当前 AI 网关不支持 Agent API 执行");
+    }
+
     /**
      * 使用固定无业务数据提示词探测指定 Provider。
      */

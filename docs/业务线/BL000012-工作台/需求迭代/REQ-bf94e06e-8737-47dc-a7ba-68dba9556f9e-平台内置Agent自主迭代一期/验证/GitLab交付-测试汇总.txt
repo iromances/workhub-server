@@ -1,0 +1,22 @@
+2026-11-04 本地离线测试；未连接真实 AI/GitLab/Jenkins。
+测试/失败/错误/跳过：
+AgentWorkbenchServiceTest [26, 0, 0, 0]
+AgentScheduleTest [3, 0, 0, 0]
+AgentMonitoringToolsTest [7, 0, 0, 0]
+CodexAgentCliProtocolTest [3, 0, 0, 0]
+DefaultAiGatewayClientTest [10, 0, 0, 0]
+AgentCodeWorkspaceServiceTest [12, 0, 0, 0]
+AgentJenkinsClientTest [12, 0, 0, 0]
+AgentJenkinsPolicyTest [7, 0, 0, 0]
+SysConfigServiceTest [3, 0, 0, 0]
+AutonomyCaseServiceTest [13, 0, 0, 0]
+AutonomyEvidenceTest [6, 0, 0, 0]
+AgentChangeServiceTest [28, 0, 0, 0]
+AgentGitLabClientTest [11, 0, 0, 0]
+AgentGitPublishTest [2, 0, 0, 0]
+TOTAL [143, 0, 0, 0]
+
+范围：真实临时 Git HTTP 接收端；GitLab API 使用本机 HTTP 桩；交付服务使用 H2/MyBatis/Spring 事务和模拟远端回执。
+实际 MySQL 迁移、执行环境与业务线端到端验收未执行。
+controller/job 及依赖：mvn -o -q -pl workhub-controller,workhub-job -am -DskipTests compile 通过。
+前端：npm run build（已有依赖；vue-tsc --noEmit && vite build）通过，1767 modules。

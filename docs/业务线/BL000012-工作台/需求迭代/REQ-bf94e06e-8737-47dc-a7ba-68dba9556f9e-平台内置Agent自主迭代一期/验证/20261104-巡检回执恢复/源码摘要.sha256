@@ -1,0 +1,6 @@
+979c97c422835583de8c33a9508a813278797d4320ab084f03ccdbf66efe714c  workhub-dao/src/main/java/cn/aslight/workhub/dao/agent/AgentMapper.java
+6841f442de5d1ee0abd5a7e151df184664b5ee6cf67fdc798aec0cab0ad96aa9  workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentRunStore.java
+ae2b73f316da58c1bb599898772d21338901e89dc95a688b32f0088d41f398cb  workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentToolReplies.java
+a9026a3eeff8ce280449e08cd5a6b49521d3376f1835cc2aad43c10dc4b5ab93  workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentApiExecutionAdapter.java
+15ebd48c675e64cadfc0c9e1482b3b6f6dc5c4b63f92ef86e682d411daf5e1be  workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentMcpBridge.java
+5333f49bec06102482008657b2f16b829a7ba4bb0fa4469c3102d4cfb37ae247  workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentInspectionServiceTest.java

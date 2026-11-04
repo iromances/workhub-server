@@ -1,0 +1,24 @@
+整组发布审核本地验证（2026-11-04）
+范围：生产迁移/Mapper/事务；隔离 H2，模拟权限/实测就绪，Jenkins 仅本机 HTTP 桩。
+没有真实 AI/GitLab/Jenkins 调用、真实批准或迁移。
+
+AgentReleasePlanServiceTest: tests=25 failures=0 errors=0 skipped=0
+AgentDeploymentDispatcherTest: tests=28 failures=0 errors=0 skipped=0
+AgentJenkinsPolicyTest: tests=8 failures=0 errors=0 skipped=0
+AgentJenkinsClientTest: tests=12 failures=0 errors=0 skipped=0
+合计：tests=73 failures=0 errors=0 skipped=0
+
+执行：mvn -o -q -pl workhub-service -am -Dtest=AgentReleasePlanServiceTest,AgentDeploymentDispatcherTest,AgentJenkinsPolicyTest,AgentJenkinsClientTest -Dsurefire.failIfNoSpecifiedTests=false -DargLine=<已有Mockito javaagent> test
+controller/job 及依赖离线 compile 通过。
+前端 npm run build（vue-tsc --noEmit && vite build）通过，1771 modules transformed。
+
+页面：127.0.0.1:4384，本地内存样本，不代理实际服务。
+缺实测/材料过期禁用批准；两仓库准确 SHA、目标环境和 Job 依赖可见。
+取消确认不发送审核；批准和驳回结果/意见回显；503 清空旧材料。
+模拟审核已保存但响应丢失：两次 POST 请求键、摘要、版本、意见完全相同，只有一条审核历史。
+5 秒迟到详情未覆盖新选择；切换其他候选显示空计划并清除旧详情。
+页面 console warn/error 返回空；截图：发布审核-本地样本.jpg。
+临时页面和服务已关闭，4384 无监听。
+
+仍待：实际测试执行器及可信测试/业务验证产物；统一未知执行/人工对账；真实 Provider、GitLab、Jenkins 及业务线接入。
+WorkHub get_business_line_context(BL000012) 返回 CannotGetJdbcConnectionException。

@@ -176,6 +176,9 @@ public class AiUseCaseConfigService {
             throw new IllegalArgumentException("AI 接入配置已停用，不能绑定任务");
         }
         definition.requireChannel(provider.getChannelType());
+        if (enabled && AiCliType.is(provider, "ZCODE") && definition.capability() == AiUseCaseDefinitions.Capability.LOCAL_REPOSITORY_READ) {
+            throw new IllegalArgumentException("ZCode 代码任务请使用 Agent 工作台；旧本地研发分析场景尚未适配");
+        }
         String promptTemplate = requireText(request.getPromptTemplate(), "提示词模板不能为空");
         entity.setUseCaseCode(requireText(request.getUseCaseCode(), "AI 任务编码不能为空"));
         entity.setUseCaseName(requireText(request.getUseCaseName(), "AI 任务名称不能为空"));
@@ -183,7 +186,7 @@ public class AiUseCaseConfigService {
         entity.setDescription(trimToNull(request.getDescription()));
         entity.setProviderConfigId(request.getProviderConfigId());
         entity.setModel(trimToNull(request.getModel()));
-        entity.setReasoningLevel(upperOrNull(request.getReasoningLevel()));
+        entity.setReasoningLevel(AiCliType.is(provider, "ZCODE") ? trimToNull(request.getReasoningLevel()) : upperOrNull(request.getReasoningLevel()));
         entity.setSpeedMode(upperOrNull(request.getSpeedMode()));
         entity.setTimeoutSeconds(positiveOrNull(request.getTimeoutSeconds()));
         entity.setJsonSchemaEnabled(request.getJsonSchemaEnabled() == null || request.getJsonSchemaEnabled());
@@ -202,6 +205,10 @@ public class AiUseCaseConfigService {
     }
 
     private void validateEffectiveConfig(AiUseCaseConfigEntity entity, AiProviderConfigEntity provider) {
+        if (AiCliType.is(provider, "ZCODE")) {
+            AiCliType.selection(firstText(entity.getModel(), provider.getDefaultModel()), firstText(entity.getReasoningLevel(), provider.getDefaultReasoningLevel()));
+            if (!"STANDARD".equals(firstText(entity.getSpeedMode(), provider.getDefaultSpeedMode()))) throw new IllegalArgumentException("ZCode 速度使用 STANDARD");
+        }
         if (firstText(entity.getModel(), provider.getDefaultModel()) == null) {
             throw new IllegalArgumentException("AI 任务最终生效模型不能为空，请配置任务覆盖值或通道默认值");
         }

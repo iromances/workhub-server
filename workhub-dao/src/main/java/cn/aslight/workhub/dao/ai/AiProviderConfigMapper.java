@@ -8,7 +8,7 @@ import java.util.List;
 public interface AiProviderConfigMapper {
     String COLUMNS = "id, provider_code, provider_name, channel_type, vendor, model_provider, "
             + "default_model, default_reasoning_level, default_speed_mode, api_protocol, api_base_url, api_key, "
-            + "cli_command, cli_working_directory, connect_timeout_seconds, read_timeout_seconds, call_timeout_seconds, "
+            + "cli_command, cli_type, cli_runtime_command, cli_builtin_config_path, cli_personal_config_path, cli_working_directory, connect_timeout_seconds, read_timeout_seconds, call_timeout_seconds, "
             + "site_url, app_name, enabled, remark, create_time, create_by, modify_time, modify_by, "
             + "delete_time, delete_by, is_delete AS deleted, version";
 
@@ -24,11 +24,11 @@ public interface AiProviderConfigMapper {
     @Insert("""
         INSERT INTO ai_provider_config(provider_code, provider_name, channel_type, vendor, model_provider,
           default_model, default_reasoning_level, default_speed_mode, api_protocol, api_base_url, api_key,
-          cli_command, cli_working_directory, connect_timeout_seconds, read_timeout_seconds, call_timeout_seconds,
+          cli_command, cli_type, cli_runtime_command, cli_builtin_config_path, cli_personal_config_path, cli_working_directory, connect_timeout_seconds, read_timeout_seconds, call_timeout_seconds,
           site_url, app_name, enabled, remark, create_time, create_by, modify_time, modify_by, is_delete, version)
         VALUES(#{providerCode}, #{providerName}, #{channelType}, #{vendor}, #{modelProvider},
           #{defaultModel}, #{defaultReasoningLevel}, #{defaultSpeedMode}, #{apiProtocol}, #{apiBaseUrl}, #{apiKey},
-          #{cliCommand}, #{cliWorkingDirectory}, #{connectTimeoutSeconds}, #{readTimeoutSeconds}, #{callTimeoutSeconds},
+          #{cliCommand}, #{cliType}, #{cliRuntimeCommand}, #{cliBuiltinConfigPath}, #{cliPersonalConfigPath}, #{cliWorkingDirectory}, #{connectTimeoutSeconds}, #{readTimeoutSeconds}, #{callTimeoutSeconds},
           #{siteUrl}, #{appName}, #{enabled}, #{remark}, CURRENT_TIMESTAMP, #{createBy}, CURRENT_TIMESTAMP, #{modifyBy}, 0, 0)
         """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
@@ -38,7 +38,8 @@ public interface AiProviderConfigMapper {
         UPDATE ai_provider_config SET provider_name=#{providerName}, channel_type=#{channelType}, vendor=#{vendor},
           model_provider=#{modelProvider}, default_model=#{defaultModel}, default_reasoning_level=#{defaultReasoningLevel},
           default_speed_mode=#{defaultSpeedMode}, api_protocol=#{apiProtocol}, api_base_url=#{apiBaseUrl}, api_key=#{apiKey},
-          cli_command=#{cliCommand}, cli_working_directory=#{cliWorkingDirectory},
+          cli_command=#{cliCommand}, cli_type=#{cliType}, cli_runtime_command=#{cliRuntimeCommand},
+          cli_builtin_config_path=#{cliBuiltinConfigPath}, cli_personal_config_path=#{cliPersonalConfigPath}, cli_working_directory=#{cliWorkingDirectory},
           connect_timeout_seconds=#{connectTimeoutSeconds}, read_timeout_seconds=#{readTimeoutSeconds},
           call_timeout_seconds=#{callTimeoutSeconds}, site_url=#{siteUrl}, app_name=#{appName}, enabled=#{enabled},
           remark=#{remark}, modify_time=CURRENT_TIMESTAMP, modify_by=#{modifyBy}, updated_at=CURRENT_TIMESTAMP,

@@ -1,0 +1,79 @@
+package cn.aslight.workhub.controller.agent;
+
+import cn.aslight.workhub.common.api.ApiResponse;
+import cn.aslight.workhub.model.agent.*;
+import cn.aslight.workhub.service.agent.AgentWorkbenchService;
+import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/agent-tasks")
+public class AgentTaskController {
+    private final AgentWorkbenchService service;
+
+    public AgentTaskController(AgentWorkbenchService service) { this.service = service; }
+
+    @GetMapping
+    @PreAuthorize("hasAuthority('agent:task:view')")
+    public ApiResponse<AgentPage<AgentTaskResponse>> list(@RequestParam String agentId, Authentication auth,
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize) {
+        return ApiResponse.success(service.tasks(agentId, auth.getName(), page, pageSize));
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('agent:task:view')")
+    public ApiResponse<AgentTaskResponse> detail(@PathVariable String id, Authentication auth) {
+        return ApiResponse.success(service.task(id, auth.getName()));
+    }
+
+    @PutMapping("/{id}/schedule")
+    @PreAuthorize("hasAuthority('agent:task:operate')")
+    public ApiResponse<AgentTaskResponse> schedule(@PathVariable String id,
+            @Valid @RequestBody AgentScheduleRequest request, Authentication auth) {
+        return ApiResponse.success(service.schedule(id, request, auth.getName()));
+    }
+
+    @PostMapping("/{id}/run")
+    @PreAuthorize("hasAuthority('agent:task:operate')")
+    public ApiResponse<AgentRunResponse> run(@PathVariable String id,
+            @Valid @RequestBody AgentRunRequest request, Authentication auth) {
+        return ApiResponse.success(service.run(id, request, auth.getName()));
+    }
+
+    @GetMapping("/{id}/runs")
+    @PreAuthorize("hasAuthority('agent:task:view')")
+    public ApiResponse<AgentPage<AgentRunResponse>> runs(@PathVariable String id, Authentication auth,
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize) {
+        return ApiResponse.success(service.runs(id, auth.getName(), page, pageSize));
+    }
+
+    @GetMapping("/{id}/runs/{runId}")
+    @PreAuthorize("hasAuthority('agent:task:view')")
+    public ApiResponse<AgentRunDetailResponse> runDetail(@PathVariable String id,
+            @PathVariable String runId, Authentication auth) {
+        return ApiResponse.success(service.runDetail(id, runId, auth.getName()));
+    }
+
+    @PostMapping("/{id}/runs/{runId}/cancel")
+    @PreAuthorize("hasAuthority('agent:task:operate')")
+    public ApiResponse<AgentRunResponse> cancel(@PathVariable String id, @PathVariable String runId,
+            @Valid @RequestBody AgentVersionRequest request, Authentication auth) {
+        return ApiResponse.success(service.cancel(id, runId, request.expectedVersion(), auth.getName()));
+    }
+
+    @PostMapping("/{id}/messages")
+    @PreAuthorize("hasAuthority('agent:task:operate')")
+    public ApiResponse<AgentRunResponse> message(@PathVariable String id,
+            @Valid @RequestBody AgentMessageRequest request, Authentication auth) {
+        return ApiResponse.success(service.message(id, request, auth.getName()));
+    }
+
+    @PostMapping("/{id}/runs/{runId}/retry")
+    @PreAuthorize("hasAuthority('agent:task:operate')")
+    public ApiResponse<AgentRunResponse> retry(@PathVariable String id, @PathVariable String runId,
+            @Valid @RequestBody AgentRunRequest request, Authentication auth) {
+        return ApiResponse.success(service.retry(id, runId, request, auth.getName()));
+    }
+}

@@ -1,0 +1,316 @@
+REQ-bf94e06e 跨运行巡检进度
+生成时间: 2026-11-04T10:06:25.392344+08:00
+分支: codex/development-20261102；本地未提交工作区。
+范围: 本地源码、H2、loopback模拟服务；无真实AI/GitLab/Jenkins/数据库调用。
+命令: mvn -o -q -pl workhub-controller,workhub-job -am '-Dtest=Agent*Test,CodexAgentCliProtocolTest,Autonomy*Test,ZCode*Test,AiProviderConfigServiceTest,AiUseCaseConfigServiceTest,DefaultAiGatewayClientTest' -Dsurefire.failIfNoSpecifiedTests=false '-DargLine=-javaagent:/Users/aslight/.m2/repository/org/mockito/mockito-core/5.20.0/mockito-core-5.20.0.jar' '-Dworkhub.test.zcode.command=/Applications/ZCode.app/Contents/Resources/glm/zcode.cjs' '-Dworkhub.test.zcode.node=/opt/homebrew/opt/node@22/bin/node' '-Dworkhub.test.zcode.builtin=/Applications/ZCode.app/Contents/Resources/config/provider/zcode-builtin.json' test
+完整回归: exit 0；276 tests / 0 failures / 0 errors / 0 skipped；23 suites。
+最后调整待补充数量回显和权限拒绝后复查命令: mvn -o -q -pl workhub-controller,workhub-job -am '-Dtest=AgentInspectionServiceTest,AgentMonitoringToolsTest,AgentBugToolsTest,AutonomyCaseServiceTest,AutonomyEvidenceTest,AgentMonitorReadMapperTest' -Dsurefire.failIfNoSpecifiedTests=false '-DargLine=-javaagent:/Users/aslight/.m2/repository/org/mockito/mockito-core/5.20.0/mockito-core-5.20.0.jar' test
+最后复查: exit 0；55 tests / 0 failures / 0 errors / 0 skipped；6 suites。
+编译: controller/job及依赖随test生命周期完成。
+以下为各类最新报告文件修改时间；6类巡检报告来自最后复查，其余来自完整回归。
+
+逐类及逐项结果：
+AgentBugToolsTest: tests=4, failures=0, errors=0, skipped=0, seconds=0.562, reportTime=2026-11-04T10:04:44.710860+08:00
+  PASS detailKeepsSourceIdentityAndMasksTextBeforeReturningIt
+  PASS listIsBoundToActualLineAndDoesNotInferEnvironmentFromTaskScope
+  PASS foreignLineAndRevokedCurrentScopeAreRejectedBeforeSourceRead
+  PASS sourcePermissionAndToolArgumentRulesRemainRequired
+AgentChangeServiceTest: tests=28, failures=0, errors=0, skipped=0, seconds=33.177, reportTime=2026-11-04T10:01:57.976883+08:00
+  PASS busyWorkspaceBeforeSendingDoesNotLeaveAnUnknownPush
+  PASS movingSourceBaselineRequiresFreshPlanning
+  PASS freezesAllRepositoriesActualDiffAndDependencyOrderWithoutClaimingDelivery
+  PASS missingUnknownPushIsNotResubmitted
+  PASS invalidOrCyclicDependenciesDoNotSavePartialManifest
+  PASS diffPreviewIsMaskedAndBoundedWhileHashCoversTheActualDiff
+  PASS lostMergeRequestResponseIsFoundByOriginalBranchAndCorrelation
+  PASS wholeSetCasRejectsOmittedRepository
+  PASS problemRepairCannotOmitCaseAndPreservesExactAnalysisVersion
+  PASS remoteBaselineMismatchAndWrongMergeRequestCannotCountAsDelivery
+  PASS cancellationDuringPushPreservesIntentAndDoesNotCreateMergeRequest
+  PASS wholeSetCasRejectsWorkspaceChangedAfterGitEvidenceWasRead
+  PASS newManifestCannotBypassUnknownRequestAndStaleVersionCanStillReconcile
+  PASS modelCannotSupplyRemoteAddressOrClaimTestSuccess
+  PASS missingUnknownMergeRequestDoesNotBecomeNewPost
+  PASS cancelledOrReplacedWorkerCannotRegisterFrozenCode
+  PASS changedBindingOrChangedCodeStopsExistingDeliveryInsteadOfUpdatingIt
+  PASS publishesExactDraftWithCommittedIntentsAndKeepsWholeSetUnreadyUntilEveryRepositoryIsVerified
+  PASS humanCanInspectStoppedAgentHistoryButCannotBypassOwnershipOrRevokedPaths
+  PASS concurrentRequestsCreateOneImmutableRevision
+  PASS staleProblemOrPolicyRollsBackManifestRegistration
+  PASS lostPushResponseIsReconciledWithoutAnotherPush
+  PASS emptyCodeChangesCannotBecomeFakeDeliveryArtifact
+  PASS permissionRevocationBetweenPushAndMergeRequestStopsFurtherWrites
+  PASS protectedBranchOrDifferentExistingShaNeverGetsOverwritten
+  PASS modelCannotSubmitItsOwnShaOrForgeReadinessThroughToolArguments
+  PASS concurrentDeliveryCannotSendASecondPushAndStaleReceiptIsRecoverable
+  PASS retryKeepsOriginalManifestWhenCodeChangesAndNewKeyCreatesNewRevision
+AgentCodeWorkspaceServiceTest: tests=12, failures=0, errors=0, skipped=0, seconds=6.414, reportTime=2026-11-04T10:02:06.840404+08:00
+  PASS pagedReadAndUniqueReplacementPreserveUnexposedParts
+  PASS concurrentMutationsDoNotOverwriteOneAnother
+  PASS refusesMovingBaselineAndPolicyChanges
+  PASS rejectsTraversalLinksSecretsAndReadOnlyPaths
+  PASS refusesUnconfiguredOrOverlappingWorkspaceRoot
+  PASS separateRunsCannotReadOrModifyEachOthersWorkspace
+  PASS deleteIsConfinedToCandidateAndRecordedOnce
+  PASS writeCreatesExactCandidateWithBlobCasAndIdempotency
+  PASS maskedFileCannotBeReplacedWholesaleAndPartialEditPreservesSecret
+  PASS lostLeaseAfterGeneratingObjectsCannotRegisterCandidate
+  PASS searchesOnlyAuthorizedTextAndReportsCoverage
+  PASS copiesOnlyPinnedCommittedObjectsAndKeepsUserChanges
+AgentDeploymentDispatcherTest: tests=28, failures=0, errors=0, skipped=0, seconds=0.417, reportTime=2026-11-04T10:01:58.396216+08:00
+  PASS buildSuccessWithoutReceiptOrWithWrongShaCannotCountAsDeployment
+  PASS missingOrMismatchedBuildHoldsResourceUntilActualTerminalState
+  PASS credentialRevokedDuringProbeCannotBeUsedForSubmission
+  PASS cancellationBeforeIntentBlocksNewRelease
+  PASS partialReceiptAndFailedBuildAreTerminalFailuresWithNoBusinessSuccess
+  PASS jobResourceIdentityNormalizesTrailingSlashHostCaseAndDefaultPort
+  PASS unknownSearchResultsKeepLocksAndCannotBeBypassedWithNewApproval
+  PASS receiptRejectsForeignIdentityWrongTypesTimesAndIncompleteSuccess
+  PASS changedCodeDuringProbeInvalidatesApprovalBeforePost
+  PASS concurrentWorkersCannotSubmitTwice
+  PASS approvalAndOutboxMustShareTransactionAndRollbackTogether
+  PASS explicitRejectionOrQueueCancellationDoesNotRetry
+  PASS productionNeedsVerifiedTestEnvironmentCoveringEntireManifest
+  PASS approvedRequestPersistsBeforePostAndCompletesOnlyWithActualVersionReceipt
+  PASS unapprovedOrUntestedMaterialCannotEnterOutbox
+  PASS actualHttpClientAndDurableStoreCompleteOneRequestWithoutDatabaseTransactionAcrossPost
+  PASS productionAcceptsOnlyVerifiedWholeTestReleaseAndRejectsChangedEvidence
+  PASS changedBindingCannotRedirectRequestOrReadNewCredentials
+  PASS readFailureBeforeSendingRemainsRetryableWithoutUnknownWrite
+  PASS policyChangeAfterSendingKeepsUnknownStateAndResourceReservation
+  PASS permissionRevokedDuringProbePreventsPost
+  PASS materialCannotSubstituteModelReportOrChangeApprovedParameters
+  PASS leaseExpiryDuringMaterialRevalidationCannotPersistSubmissionIntent
+  PASS lostSubmitResponseRecoversPersistedBuildWithoutPostingAgain
+  PASS crashAfterIntentOnlyReconcilesAndFencesLateWorker
+  PASS newEvidenceOrCodeInvalidatesOldSnapshotBeforeSending
+  PASS cancelledTaskDoesNotPretendAnExistingBuildHasStopped
+  PASS expiredQueueRecoversOriginalBuildButCannotReplaceKnownQueue
+AgentGitLabClientTest: tests=11, failures=0, errors=0, skipped=0, seconds=0.185, reportTime=2026-11-04T10:01:24.778823+08:00
+  PASS missingAsynchronousShaRemainsMissing
+  PASS doesNotFollowRedirectOrLeakTokenThroughSerialization
+  PASS refusesUncertainProtectionAndWrongBranchIdentity
+  PASS searchesAllMergeRequestStatesAndRejectsIncompleteSearch
+  PASS createsOnlyDraftWithoutMergeOrBranchDeletionFlags
+  PASS encodesBranchAndDoesNotInventMissingBranch
+  PASS checksProjectIdentityBeforeUsingRepositoryAddress
+  PASS boundsResponseAndSubmissionTimeout
+  PASS rejectsForeignMergeRequestAndTreatsPostReceiptMismatchAsUnknown
+  PASS knownRejectionAndUnknownSubmissionAreDifferentAndNeverRetried
+  PASS checksInheritedWildcardProtectionWithoutChangingIt
+AgentGitPublishTest: tests=2, failures=0, errors=0, skipped=0, seconds=1.234, reportTime=2026-11-04T10:01:59.628939+08:00
+  PASS retryIsIdempotentButExistingDifferentBranchCannotBeOverwritten
+  PASS pushesExactCommitAsNewBranchWithoutTouchingSourceOrSavingCredentials
+AgentInspectionServiceTest: tests=14, failures=0, errors=0, skipped=0, seconds=1.748, reportTime=2026-11-04T10:04:46.459537+08:00
+  PASS accountingFindingCanReferenceSameRunsRealRuleEvidence
+  PASS findingMustMatchActualSignalAndDeduplicatedSignalsRemainUsable
+  PASS receiptFailureRollsBackSnapshotsCursorAndObservationTogether
+  PASS nativeCompositeHandleUsesSameTransactionAndReceiptIdentity
+  PASS concurrentRunsHaveOneOwnerAndUnknownExecutionCannotBeStolen
+  PASS oversizedRecordKeepsItsQueueIdentityButCannotBeAcknowledgedAsFullyRead
+  PASS needsInputRemainsVisibleAndRetryKeepsAnalysisHistory
+  PASS sourcePermissionsScopeAndTaskCannotBeBypassedByGenericTools
+  PASS maskingExpansionIsRejectedBeforeAnyAnalysisWrite
+  PASS acknowledgmentAndHistoryRollbackTogetherAndCommittedCallIsIdempotent
+  PASS pendingPagesKeepLongReasonsAndStableContinuationBelowOutputLimit
+  PASS finiteSweepRescansLateLowerIdsAndChangedRecords
+  PASS sameCallAndPendingRecordReplayUntilExplicitAnalysis
+  PASS completedAccountingRunsAreScopedAndLateCompletionIsRescanned
+AgentJenkinsClientTest: tests=12, failures=0, errors=0, skipped=0, seconds=0.373, reportTime=2026-11-04T10:01:18.641635+08:00
+  PASS rejectsCrossOriginQueueWithoutFollowingOrLeakingCredentials
+  PASS rejectsUnsafeInstanceJobAndParameterInputBeforeHttp
+  PASS queueAndBuildRequireMatchingJobAndActualParameters
+  PASS readsActualDeploymentReceiptSeparatelyAndCannotTraverseArtifacts
+  PASS distinguishesRejectedSubmissionFromUnknownAndNeverRetriesEither
+  PASS detectsDuplicateBuildsOrChangedFixedParametersDuringRecovery
+  PASS submitsExactParametersOnceAndReturnsBoundedQueueIdentity
+  PASS limitsLargeResponsesAndRejectsRedirects
+  PASS probeReadsParameterDefinitionsWithoutTriggeringBuild
+  PASS expiredQueueRecoversBuildByCorrelationButZeroMatchesRemainUnknown
+  PASS timeoutLeavesSubmissionUnknownAndDoesNotIssueSecondPost
+  PASS comparesNativeBooleanParametersWithoutLosingExactCommitChecks
+AgentJenkinsPolicyTest: tests=8, failures=0, errors=0, skipped=0, seconds=0.58, reportTime=2026-11-04T10:01:18.103004+08:00
+  PASS crossScopePreflightFailsBeforeCredentialResolutionOrNetwork
+  PASS fixedParametersIncludeExactManifestEnvironmentAndEveryRepository
+  PASS rejectsParameterOverrideAndPlainSensitiveFixedValues
+  PASS copiedHashCannotAuthorizeDifferentSnapshotFields
+  PASS targetListExposesOnlyScopedMetadataAndMissingConfigIsVisible
+  PASS preflightReportsMissingParametersAndNeverApprovesOrTriggers
+  PASS equivalentParameterOrderKeepsHashButBindingChangeInvalidatesSnapshot
+  PASS credentialsAreOnlyResolvedFromEncryptedReferenceWhenNeeded
+AgentMonitorReadMapperTest: tests=3, failures=0, errors=0, skipped=0, seconds=0.018, reportTime=2026-11-04T10:04:46.785542+08:00
+  PASS bugQueriesUseActualProjectLineAndTypeBeforeReturningDescription
+  PASS rulePagesRemainBoundToRunAndRetainDecimalEvidence
+  PASS historicalRunPagesIncludeOldFailureAndCannotCrossEnvironmentOrBusinessLine
+AgentMonitoringToolsTest: tests=14, failures=0, errors=0, skipped=0, seconds=0.293, reportTime=2026-11-04T10:04:46.753450+08:00
+  PASS invalidPageAndTimeInputsAreRejectedBeforeReadingSources
+  PASS noMonitorConfigurationDoesNotBecomeHealthy
+  PASS accountingFiltersEnvironmentAndPreservesExecutionFailureMeaning
+  PASS rejectsUnknownAndMalformedToolParametersBeforeBusinessQuery
+  PASS accountingRulesCanContinuePastFirstPageAndExposeUnfinishedRun
+  PASS failedXxlQueryIsNotReportedAsSuccessfulEmptyCoverage
+  PASS historicalAccountingFindsFailureBehindLatestSuccessAndKeepsEnvironmentConstraint
+  PASS emptyLaterPageAndMissingSpecificMonitorCannotClaimWholeScopeUnconfigured
+  PASS numericIdCannotBypassEnvironmentScopeBeforeLoadingSensitiveResults
+  PASS oversizedToolResultExplicitlyReportsIncompleteCoverage
+  PASS alertPaginationCanReuseTheExactReturnedTimeWindow
+  PASS actualXxlLogDtoCanBeRegisteredAsFailureEvidenceAndKeepsRequestedWindow
+  PASS nestedSamplesAndSecretObjectsAreMaskedWithoutChangingFinancialAmount
+  PASS proactiveQueryDistinguishesNeverRunUnimplementedAndOldDataWithoutAlertInput
+AgentReleasePlanServiceTest: tests=25, failures=0, errors=0, skipped=0, seconds=0.519, reportTime=2026-11-04T10:02:00.426615+08:00
+  PASS failedStepBlocksUnsentJobsAndReleasesOnlyKnownTerminalGroup
+  PASS corruptedFrozenMaterialsAreNotReadableOrExecutable
+  PASS modelReportCannotReplaceTrustedTestEvidence
+  PASS productionPreparationRequiresSeparateTestEnvironmentVerification
+  PASS fullRepositoryCoverageAndAcyclicJobDependenciesAreRequired
+  PASS disabledExecutionKeepsHistoryVisibleButMarksReviewUnavailable
+  PASS cancellationAfterIntentRetainsUnknownRequestAndResourceLocks
+  PASS failedIndependentStepFencesAnotherWorkerStillInPreflight
+  PASS directDispatcherClaimCannotSkipDependencyAndSuccessIsNotBusinessVerification
+  PASS resourceConflictOnSecondStepRollsBackEntireHumanDecision
+  PASS cancellationAfterClaimButBeforeIntentCannotSendTheJob
+  PASS permissionVersionAndMaterialHashAreCheckedBeforeApproval
+  PASS completeBundleJobsCanRunInExplicitOrderWithoutInventingCrossJobCycle
+  PASS concurrentReviewCreatesOneSetOfRequests
+  PASS sharedSystemRequiresOrderAndThenIsReservedForWholeGroup
+  PASS rejectionReturnsCommentToOriginalRunWithoutAnyOutbox
+  PASS wholePlanFreezesExactCommitsAndDerivedOrderThenEnqueuesAtomically
+  PASS currentTargetScopeRevocationHidesPlanHistoryAndPreventsReview
+  PASS rejectedReviewCannotWakeRunWithUnknownExternalHandle
+  PASS cancellationBeforeDispatchBlocksAllUnsentJobs
+  PASS evidenceArrivingAfterDraftRequiresNewImmutablePlan
+  PASS addedEvidenceOrChangedBindingInvalidatesApproval
+  PASS repeatedPrepareAndReviewAreIdempotentButChangedPayloadIsRejected
+  PASS missingRealTestAllowsVisibleDraftButNeverApproval
+  PASS stageMismatchAndInvalidInputNeverCreatePlans
+AgentScheduleTest: tests=3, failures=0, errors=0, skipped=0, seconds=0.008, reportTime=2026-11-04T10:01:20.493525+08:00
+  PASS rejectsInvalidZoneAndInconsistentManualSchedule
+  PASS storesLocalScheduleAsUtcAndDoesNotRepeatTriggerAtAnchor
+  PASS daylightSavingGapUsesNextRealOccurrence
+AgentWorkbenchServiceTest: tests=38, failures=0, errors=0, skipped=0, seconds=4.078, reportTime=2026-11-04T10:01:24.575209+08:00
+  PASS skippedMissedScheduleRecordsDecisionWithoutCreatingRun
+  PASS recoveredCliQuestionIsConsumedOnceAndHumanReplyStartsTheNextTask
+  PASS lateToolReceiptReleasesOnlyTheOriginalCallAndIsNotExecutedAgain
+  PASS duplicateConcurrentTaskRequestsCreateOneTaskAndOneRun
+  PASS apiTaskActivelyCallsToolThenUsesPersistedObservation
+  PASS cancellationAcceptsLateProofButNeverResumesTheCancelledTask
+  PASS lateModelReceiptIsImmutableAndRecoveryConsumesItWithoutCallingModelAgain
+  PASS runScopedMcpRejectsForeignTokensAndDeduplicatesToolRequests
+  PASS cliAndToolLateReceiptsMustBothArriveBeforeReleasingTheRun
+  PASS retryCannotDuplicateUnreconciledExternalWork
+  PASS modelReportCannotClaimCodeAndActualTestArtifactsExist
+  PASS malformedModelOutputHasBoundedCorrectionAndCannotExecuteHiddenTools
+  PASS nativeCliUsesWholeTaskAndRealProcessWithScopedToolsWithoutModelStepProtocol
+  PASS concurrentWorkersRespectGlobalAndPerAgentLimits
+  PASS genericTaskNeedsNoAlertAndKeepsSnapshotWhenAgentChanges
+  PASS cancellationAndBudgetAreCheckedBeforeNextExternalAction
+  PASS unresolvedExternalCallKeepsHandleAndConcurrencySlotInsteadOfRestarting
+  PASS inputArrivingDuringModelCallInvalidatesItsOldFinalAnswer
+  PASS retryCreatesOneNewSnapshotAndKeepsOriginalEvidence
+  PASS oldSnapshotCannotKeepRevokedToolOrScopePermissions
+  PASS disabledAgentRollsBackTaskAndAuditWhenImmediateRunCannotStart
+  PASS persistedToolReceiptIsNotRepeatedAfterRecoveryAndOldWorkerCannotWrite
+  PASS changingProviderChannelOrVersionCannotSilentlySwitchAnExistingTaskToCli
+  PASS cliReceiptWithoutProcessTreeStopProofCannotReleaseTheRun
+  PASS cliIsStoppedBeforeReplanningWithNewInstructions
+  PASS tasksCannotExpandScopesOrViewAnotherOwnersAgent
+  PASS taskReplyIsIdempotentAndDoesNotRestartUnreconciledExternalExecution
+  PASS stoppedCliWithoutResultDoesNotRestartAutomatically
+  PASS scheduledCatchUpIsBoundedAndRepeatedDispatchDoesNotDuplicateRun
+  PASS idempotencyKeyCannotBeReusedForDifferentTaskContent
+  PASS disableCancelsQueuedRunButKeepsInFlightOwnershipUntilExecutorStops
+  PASS staleConfigUpdateCannotOverwriteNewerVersion
+  PASS humanReplyContinuesAfterWaitingDecisionRatherThanRepeatingOldQuestion
+  PASS installedZcodeCompletesTaskThroughProductionMcpAndStoresObservedResult(Path)
+  PASS savedCliResultAndConsumptionMarkerCommitTogether
+  PASS cancellingNativeCliStopsActualProcessBeforeClaimingCancellationComplete
+  PASS newInputIsCheckedInsideModelToolAndFinishTransactions
+  PASS inputArrivingDuringModelCallAlsoPreventsItsOldToolAction
+AiProviderConfigServiceTest: tests=15, failures=0, errors=0, skipped=0, seconds=0.011, reportTime=2026-11-04T10:02:15.474746+08:00
+  PASS update_shouldKeepExistingSecretForBlankOrOriginalMask
+  PASS update_shouldRejectProviderCodeMutation
+  PASS listAndResolveApiKey_shouldMaskResponseAndReadLegacyPlainText
+  PASS prepareConnectionTest_shouldUsePlainKeyForUnsavedConfig
+  PASS prepareConnectionTest_shouldRejectMaskWithoutIdAndChannelMismatch
+  PASS create_shouldEncryptApiKeyAtRestAndReturnMaskedValue
+  PASS prepareConnectionTest_shouldRestoreExistingMaskedKeyWithoutSaving
+  PASS update_shouldMigrateLegacyPlainTextWhenSecretIsKept
+  PASS create_shouldRejectUnsafeXianxingtongResponsesUrls
+  PASS cliSavePreservesDynamicAndHistoricalReasoningCodes
+  PASS zcodeConfigurationRoundTripsWithoutUsingCodexDefaults
+  PASS create_shouldAuditMetadataWithoutApiKey
+  PASS create_shouldRequireDefaultsOnlyWhenEnabled
+  PASS apiSaveStillUsesItsExistingDictionaryConvention
+  PASS create_shouldAllowExplicitHttpsPortAndTrailingSlash
+AiUseCaseConfigServiceTest: tests=4, failures=0, errors=0, skipped=0, seconds=0.066, reportTime=2026-11-04T10:02:15.463615+08:00
+  PASS create_shouldAllowStoppedUseCaseToBindStoppedProvider
+  PASS update_shouldRejectUseCaseCodeMutationBeforePersisting
+  PASS create_shouldAuditMetadataWithoutPromptContent
+  PASS create_shouldPersistNullOverridesAndInheritProviderDefaults
+AutonomyCaseServiceTest: tests=13, failures=0, errors=0, skipped=0, seconds=0.525, reportTime=2026-11-04T10:04:47.312035+08:00
+  PASS unknownExternalWorkCannotBeTakenOverAndSafeFailureCan
+  PASS historicalBackfillDoesNotReopenButFreshRecurrenceDoes
+  PASS concurrentAgentsCreateOneCaseAndOneActiveAnalysis
+  PASS repeatPollingDoesNotInventOccurrencesOrChangeProcessingVersion
+  PASS analysisHistoryIsImmutableIdempotentAndVersionBound
+  PASS truncatedResultsKeepReferenceButCannotBecomeCompleteEvidence
+  PASS cliCompositeHandleProducesTheSameEvidenceContract
+  PASS sharedCaseToolsCompleteAnInspectionReportWithoutClosingTheProblem
+  PASS boundedDetailSectionsKeepLargeEvidenceAndAnalysisIndividuallyReadable
+  PASS crossRunScopeAndRevokedSourceAccessCannotReadOrAttachEvidence
+  PASS cancelledOrStaleWorkersCannotRegisterEvidenceOrAdvanceAnalysis
+  PASS observationRequiresActualToolHandleMasksSecretsAndFreezesDuplicateCall
+  PASS apiExecutionReceivesObservedEvidenceThenRegistersClaimsAndAnalysesTheProblem
+AutonomyEvidenceTest: tests=7, failures=0, errors=0, skipped=0, seconds=0.014, reportTime=2026-11-04T10:04:46.767822+08:00
+  PASS sameFailedAccountingRunHasOneIdentityAcrossLatestAndHistoryViews
+  PASS slowSqlAndFailedJobsUseTheirActualSourceIdentity
+  PASS missingConfigurationAndNeverRunAreCandidatesWithoutInventedEventTimes
+  PASS accountingFailureAndSkippedRulesCannotBecomeFinancialDifferences
+  PASS freshnessNeedsAStatedExceededLimitAndKeepsItAsAiJudgment
+  PASS logGroupingUsesStableErrorSignatureButRetainsEachSourceEvent
+  PASS evidencePointerCannotSelectNestedTextOrAnotherScopeAndInvalidDatesRemainErrors
+CodexAgentCliProtocolTest: tests=3, failures=0, errors=0, skipped=0, seconds=0.007, reportTime=2026-11-04T10:01:18.650344+08:00
+  PASS childEnvironmentKeepsSandboxRestrictionsAndDropsEnterpriseCredentials
+  PASS commandPreservesNativeExecutionAndOnlyTaskScopedToolsWithoutBypassOrTokenInArguments
+  PASS otherCliIsNotSentCodexFlagsAndShellExpressionsAreRejected
+DefaultAiGatewayClientTest: tests=13, failures=0, errors=0, skipped=0, seconds=0.252, reportTime=2026-11-04T10:02:15.759324+08:00
+  PASS agentApiCannotSilentlyRouteCliProviderThroughLegacyCodexClient
+  PASS testConnection_shouldRouteCurrentApiConfigWithPlainKey
+  PASS zcodeConnectionTestUsesNativeClientWithExactModelAndReasoning
+  PASS agentApiUsesSelectedProviderForEveryApiProtocolWithoutCliFallback
+  PASS executeStructured_shouldResolveUseCaseRenderPromptAndRouteResponses
+  PASS executeStructured_shouldAllowLocalRepositoryOnlyForCliDefinition
+  PASS executeStructured_shouldApplyRequestOverridesAndRouteCustomToChat
+  PASS testConnection_shouldRejectUnexpectedStructuredOutput
+  PASS cliPassesDynamicCodesUnchangedAndOnlyNormalizesLegacyUppercase
+  PASS executeStructured_shouldRejectApiForLocalRepositoryUseCase
+  PASS zcodeTextTaskPreservesSelectionsAndSchemaWithoutCodexFallback
+  PASS zcodeRejectsUnsupportedLegacyRepositoryImagesAndSpeedBeforeStarting
+  PASS testConnection_shouldRouteCliInRestrictedMode
+ZCodeCliClientTest: tests=7, failures=0, errors=0, skipped=0, seconds=0.027, reportTime=2026-11-04T10:02:15.503318+08:00
+  PASS protocolReaderRejectsUnboundedAndIncompleteMessages
+  PASS authenticationAndDeviceStateArePrivateCopiesAndSourceIsUnchanged
+  PASS malformedCredentialStateDoesNotExposeItsContents
+  PASS modelAndReasoningAreExplicitAndSpeedDoesNotClaimUnsupportedModes
+  PASS launchIsPrivateAndDoesNotImportHostMcpSkillsOrShellSecrets
+  PASS shellExpressionsAndUnknownCliTypesCannotSelectCodex
+  PASS sourceSymlinkIsRejectedBeforeCredentialsCanBeCopied
+ZCodeCliLocalProtocolTest: tests=4, failures=0, errors=0, skipped=0, seconds=8.555, reportTime=2026-11-04T10:02:15.394942+08:00
+  PASS actualZcodeUsesOnlyTaskMcpAndObservesItsResultBeforeCompleting
+  PASS timedOutActualZcodeIsStoppedAndDoesNotProduceSuccess
+  PASS actualZcodeModelOnlyTaskHasNoHostTools
+  PASS forgedBashCallCannotWriteToHost
+ZCodeTaskConversationTest: tests=8, failures=0, errors=0, skipped=0, seconds=0.013, reportTime=2026-11-04T10:02:15.769134+08:00
+  PASS cancelledOrBudgetFailureCannotBecomeSuccessfulArtifact
+  PASS wrongInputAndWrongSessionAreRejected
+  PASS modelMismatchDoesNotSubmitBusinessPrompt
+  PASS lateRepeatedTerminalCannotOverwriteArtifact
+  PASS fastCompletionBeforeAcknowledgementIsAcceptedWithoutStartingAnotherTask
+  PASS toolOutsideTaskAllowlistFailsBeforeAcceptingCliCompletion
+  PASS acknowledgementDoesNotCompleteAndOnlyMatchingSuccessfulTerminalWritesResult
+  PASS reverseRequestsDoNotApproveShellPermissionsOrEnableMemory
+
+已修正过程失败: lambda非final变量编译失败；旧预警迁移复合ALTER不被H2接受；JSON long/int节点比较与实际序列化结果不一致。
+自查修正: 脱敏后理由长度、重领后的待补充数量、权限拒绝属于无副作用的Rejected。
+新迁移原文在H2执行，旧预警字段取真实迁移定义，旧复合ALTER索引未由H2验证；不等同于真实MySQL迁移验收。
+Jenkins按用户要求暂缓；现有Jenkins测试仅本机模拟。

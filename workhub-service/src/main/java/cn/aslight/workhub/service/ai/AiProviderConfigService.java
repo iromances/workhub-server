@@ -205,6 +205,11 @@ public class AiProviderConfigService {
         entity.setApiBaseUrl(trimToNull(request.getApiBaseUrl()));
         entity.setApiKey(resolveApiKeyForStorage(request.getApiKey(), existing));
         entity.setCliCommand(trimToNull(request.getCliCommand()));
+        entity.setCliType(CHANNEL_CLI.equals(channelType) ? AiCliType.resolve(request.getCliType(), request.getCliCommand()) : null);
+        entity.setCliRuntimeCommand(trimToNull(request.getCliRuntimeCommand()));
+        entity.setCliBuiltinConfigPath(trimToNull(request.getCliBuiltinConfigPath()));
+        entity.setCliPersonalConfigPath(trimToNull(request.getCliPersonalConfigPath()));
+
         entity.setCliWorkingDirectory(trimToNull(request.getCliWorkingDirectory()));
         entity.setConnectTimeoutSeconds(defaultPositive(request.getConnectTimeoutSeconds(), 30));
         entity.setReadTimeoutSeconds(defaultPositive(request.getReadTimeoutSeconds(), CHANNEL_CLI.equals(channelType) ? 300 : 300));
@@ -245,6 +250,7 @@ public class AiProviderConfigService {
         }
         if (CHANNEL_CLI.equals(entity.getChannelType())) {
             requireText(entity.getCliCommand(), "CLI 命令不能为空");
+            AiCliType.validate(entity);
         }
     }
 
@@ -263,6 +269,11 @@ public class AiProviderConfigService {
                 entity.getApiBaseUrl(),
                 credentialCryptoService.mask(credentialCryptoService.decrypt(entity.getApiKey())),
                 entity.getCliCommand(),
+                entity.getCliType(),
+                entity.getCliRuntimeCommand(),
+                entity.getCliBuiltinConfigPath(),
+                entity.getCliPersonalConfigPath(),
+
                 entity.getCliWorkingDirectory(),
                 entity.getConnectTimeoutSeconds(),
                 entity.getReadTimeoutSeconds(),

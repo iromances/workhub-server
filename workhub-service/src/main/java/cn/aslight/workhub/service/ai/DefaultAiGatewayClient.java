@@ -46,6 +46,7 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
     private final AiUseCaseConfigService aiUseCaseConfigService;
     private final AiProviderConfigService aiProviderConfigService;
     private final CodexCliClient codexCliClient;
+    private final ZCodeCliClient zcodeCliClient;
     private final OpenAiResponsesClient responsesClient;
     private final OpenAiChatClient chatClient;
     private final ObjectMapper objectMapper;
@@ -53,12 +54,14 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
     public DefaultAiGatewayClient(AiUseCaseConfigService aiUseCaseConfigService,
                                   AiProviderConfigService aiProviderConfigService,
                                   CodexCliClient codexCliClient,
+                                  ZCodeCliClient zcodeCliClient,
                                   OpenAiResponsesClient responsesClient,
                                   OpenAiChatClient chatClient,
                                   ObjectMapper objectMapper) {
         this.aiUseCaseConfigService = aiUseCaseConfigService;
         this.aiProviderConfigService = aiProviderConfigService;
         this.codexCliClient = codexCliClient;
+        this.zcodeCliClient = zcodeCliClient;
         this.responsesClient = responsesClient;
         this.chatClient = chatClient;
         this.objectMapper = objectMapper;
@@ -71,11 +74,12 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
             AiUseCaseConfigEntity useCase = aiUseCaseConfigService.requireEnabledByCode(useCaseCode);
             AiProviderConfigEntity provider = aiProviderConfigService.requireExisting(useCase.getProviderConfigId());
             definition.requireChannel(provider.getChannelType());
+            if (AiCliType.is(provider, "ZCODE") && definition.capability() == AiUseCaseDefinitions.Capability.LOCAL_REPOSITORY_READ) return false;
             requireText(firstText(useCase.getModel(), provider.getDefaultModel()), "AI 场景模型未配置");
             if (!Boolean.TRUE.equals(provider.getEnabled())) {
                 return false;
             }
-            return !"CLI".equals(normalize(provider.getChannelType())) || codexCliClient.isEnabled();
+            return !"CLI".equals(normalize(provider.getChannelType())) || AiCliType.is(provider, "ZCODE") || (AiCliType.is(provider, "CODEX") && codexCliClient.isEnabled());
         } catch (Exception ex) {
             return false;
         }
@@ -89,6 +93,37 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
     @Override
     public AiGatewayResult executeStructured(AiGatewayRequest request) {
         return executeInternal(request, true);
+    }
+
+    @Override
+    public AiGatewayResult executeAgentApi(AiAgentApiRequest request) {
+        long startedAt = System.nanoTime();
+        String providerCode = null;
+        String model = null;
+        try {
+            if (request == null || request.providerConfigId() == null || request.timeoutSeconds() < 1
+                    || request.timeoutSeconds() > 14_400) {
+                throw new IllegalArgumentException("Agent API 请求缺少有效接入或超时预算");
+            }
+            AiProviderConfigEntity provider = aiProviderConfigService.getEnabledById(request.providerConfigId());
+            providerCode = provider.getProviderCode();
+            if (request.expectedProviderVersion() != (provider.getVersion() == null ? 0 : provider.getVersion())
+                    || !java.util.Objects.equals(request.expectedApiProtocol(), provider.getApiProtocol())) {
+                throw new IllegalStateException("AI 接入配置与 Agent 运行快照不符");
+            }
+            if (!"API".equals(normalize(provider.getChannelType()))) {
+                throw new IllegalArgumentException("此执行器仅处理 API；CLI 必须使用其任务执行适配器");
+            }
+            model = requireText(request.model(), "Agent 运行快照未记录模型");
+            String output = executeApi(new AiApiInvocation("agent.task.step", provider,
+                    aiProviderConfigService.resolveApiKey(provider.getId()), model,
+                    provider.getDefaultReasoningLevel(), provider.getDefaultSpeedMode(), request.timeoutSeconds(),
+                    requireText(request.prompt(), "Agent 任务上下文为空"), List.of(), null));
+            return AiGatewayResult.succeeded(output, providerCode, model, elapsedMillis(startedAt));
+        } catch (Exception ex) {
+            log.warn("Agent API invocation failed. providerCode={}, model={}, errorType={}", providerCode, model, ex.getClass().getSimpleName());
+            return AiGatewayResult.failed("Agent API 调用失败: " + summarizeException(ex), providerCode, model, elapsedMillis(startedAt));
+        }
     }
 
     @Override
@@ -169,6 +204,12 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
     }
 
     private String executeConnectionTestCli(AiProviderConfigEntity provider, String model) throws Exception {
+        if (AiCliType.is(provider, "ZCODE")) {
+            AiCliType.validate(provider);
+            return zcodeCliClient.execute(provider, model, provider.getDefaultReasoningLevel(),
+                    "这是不含业务数据的连接测试。严格只返回 JSON：{\"status\":\"OK\"}。", provider.getCallTimeoutSeconds());
+        }
+        if (!AiCliType.is(provider, "CODEX")) throw new IllegalArgumentException("所选 CLI 没有对应适配器");
         if (!codexCliClient.isEnabled()) {
             throw new IllegalStateException("Codex CLI 未启用");
         }
@@ -284,6 +325,20 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
                               AiUseCaseConfigEntity useCase,
                               String prompt,
                               String outputSchema) throws Exception {
+        if (AiCliType.is(provider, "ZCODE")) {
+            if (definition.capability() == AiUseCaseDefinitions.Capability.LOCAL_REPOSITORY_READ) {
+                throw new IllegalArgumentException("ZCode 的代码操作请使用 Agent 工作台授权工具；旧研发分析场景的本地目录能力尚未适配");
+            }
+            if (request.imagePaths() != null && !request.imagePaths().isEmpty()) throw new IllegalArgumentException("ZCode 当前文本场景尚不接受图片附件");
+            String speed = firstCliValue(request.speedModeOverride(), firstCliValue(useCase.getSpeedMode(), provider.getDefaultSpeedMode()));
+            if (!"STANDARD".equalsIgnoreCase(speed)) throw new IllegalArgumentException("ZCode CLI 速度使用 STANDARD");
+            return zcodeCliClient.execute(provider,
+                    firstCliValue(request.modelOverride(), firstCliValue(useCase.getModel(), provider.getDefaultModel())),
+                    firstCliValue(request.reasoningLevelOverride(), firstCliValue(useCase.getReasoningLevel(), provider.getDefaultReasoningLevel())),
+                    prompt + (outputSchema == null ? "" : "\n仅输出符合此 schema 的 JSON：\n" + outputSchema),
+                    positive(request.timeoutSecondsOverride(), positive(useCase.getTimeoutSeconds(), provider.getCallTimeoutSeconds())));
+        }
+        if (!AiCliType.is(provider, "CODEX")) throw new IllegalArgumentException("所选 CLI 没有对应适配器");
         if (!codexCliClient.isEnabled()) {
             throw new IllegalStateException("Codex CLI 未启用");
         }

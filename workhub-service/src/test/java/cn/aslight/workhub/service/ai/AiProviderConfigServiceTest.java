@@ -36,6 +36,26 @@ class AiProviderConfigServiceTest {
     }
 
     @Test
+    void zcodeConfigurationRoundTripsWithoutUsingCodexDefaults() {
+        var request = xianxingtongRequest("https://aiserver.thchengtay.com/v1");
+        request.setChannelType("CLI"); request.setCliType("ZCODE"); request.setCliCommand("/opt/zcode/zcode.cjs");
+        request.setCliRuntimeCommand("/opt/node22/bin/node"); request.setCliBuiltinConfigPath("/opt/zcode/config/builtin.json");
+        request.setCliPersonalConfigPath("/srv/zcode/provider.json"); request.setDefaultModel("GLM/glm-4.6");
+        request.setDefaultReasoningLevel("disabled"); request.setDefaultSpeedMode("STANDARD");
+        var created = service.create(request);
+        assertEquals("ZCODE", created.cliType()); assertEquals("disabled", created.defaultReasoningLevel());
+        assertEquals(request.getCliRuntimeCommand(), created.cliRuntimeCommand());
+        assertEquals(request.getCliBuiltinConfigPath(), created.cliBuiltinConfigPath());
+        assertEquals(request.getCliPersonalConfigPath(), created.cliPersonalConfigPath());
+        var probe = service.prepareConnectionTest(request).provider();
+        assertEquals(created.cliType(), probe.getCliType()); assertEquals(created.cliPersonalConfigPath(), probe.getCliPersonalConfigPath());
+        request.setDefaultReasoningLevel("enabled");
+        assertEquals("enabled", service.update(created.id(), request).defaultReasoningLevel());
+        request.setDefaultSpeedMode("FAST");
+        assertThrows(IllegalArgumentException.class, () -> service.update(created.id(), request));
+    }
+
+    @Test
     void cliSavePreservesDynamicAndHistoricalReasoningCodes() {
         for (String effort : List.of("minimal", "ultra", "futureEffort", "HIGH")) {
             mapper = new FakeAiProviderConfigMapper();

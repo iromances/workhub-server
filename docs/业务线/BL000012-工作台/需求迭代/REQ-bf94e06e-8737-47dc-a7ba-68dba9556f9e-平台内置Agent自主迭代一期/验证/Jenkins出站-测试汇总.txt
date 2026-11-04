@@ -1,0 +1,14 @@
+2026-11-04 本地隔离验证：没有执行真实 Jenkins Job、数据库迁移或运行配置变更。
+批准材料和实测就绪状态为明确的测试夹具，不能视为真实人工审批或实际代码测试。
+本次仅验证出站协议、真实生产 Mapper/事务、H2 MySQL 模式、原始 HTTP 客户端与本机 Jenkins 桩。
+测试/失败/错误/跳过：
+AgentDeploymentDispatcherTest [27, 0, 0, 0]
+AgentJenkinsPolicyTest [8, 0, 0, 0]
+AgentJenkinsClientTest [12, 0, 0, 0]
+TOTAL [47, 0, 0, 0]
+
+mvn -o -q -pl workhub-service -am -Dtest=AgentDeploymentDispatcherTest,AgentJenkinsPolicyTest,AgentJenkinsClientTest -Dsurefire.failIfNoSpecifiedTests=false '-DargLine=-javaagent:/Users/aslight/.m2/repository/org/mockito/mockito-core/5.20.0/mockito-core-5.20.0.jar' test
+
+Controller/job及依赖：mvn -o -q -pl workhub-controller,workhub-job -am -DskipTests compile 通过。
+测试覆盖：同事务回滚、未批准/未实测拒绝、快照变化、权限/凭据撤销、单次POST、响应丢失、重启后原句柄核对、旧持有者、并发、未知请求资源占用、队列过期/取消、构建/回执与准确版本核验、部分失败、生产验证门禁。
+实际测试执行器、人工审核写API、组合发布协调器和自动调度尚未接通，源码不会自动触发真实发布。

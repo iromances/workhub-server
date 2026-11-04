@@ -12,12 +12,26 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class SysConfigServiceTest {
+
+    @Test
+    void integrationCredentialMustReferenceEnabledEncryptedConfig() {
+        SysConfigMapper mapper = mock(SysConfigMapper.class);
+        PaymentCryptoService crypto = mock(PaymentCryptoService.class);
+        var service = new SysConfigService(mapper, crypto);
+        assertThrows(IllegalArgumentException.class, () -> service.requireSecretValue("jenkins.main", "token"));
+        when(mapper.findEnabledByKey("jenkins.main", "token")).thenReturn(textEntity("token", "plain-secret", true));
+        assertThrows(IllegalArgumentException.class, () -> service.requireSecretValue("jenkins.main", "token"));
+        when(mapper.findEnabledByKey("jenkins.main", "token")).thenReturn(secretEntity());
+        when(crypto.decrypt("old-cipher")).thenReturn("decrypted-token");
+        assertEquals("decrypted-token", service.requireSecretValue("jenkins.main", "token"));
+    }
 
     @Test
     void shouldReadEnabledGroupValuesAndDecryptSecretsInMemory() {

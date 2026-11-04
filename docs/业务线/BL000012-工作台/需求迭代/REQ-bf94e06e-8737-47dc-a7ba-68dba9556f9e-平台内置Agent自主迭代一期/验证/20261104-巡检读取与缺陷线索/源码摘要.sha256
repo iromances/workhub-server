@@ -1,0 +1,16 @@
+6bad9f3fe0cb2ab77cdedf2f1b0a2384f527ae3137a1410c63900e4472eb0f7c  workhub-dao/src/main/java/cn/aslight/workhub/dao/agent/AgentMonitorReadMapper.java
+9f2e5e6f342e9eca5c44e36bf335c75dd425e91e151181e8c62b74f6116bc421  workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentBugRecord.java
+5e3f783d7008613e4a9be8a4ee2cfc55bcc50f12137980e02e8af11c25755e00  workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentConfiguration.java
+ad0ed5112e7b7c212514d2414155ed262e805eef1496821fe1cb1574361057e0  workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentTaskSpecification.java
+b8aff9845325969d8d41bc4b0387f46d6b116a5be4e67c13b72ec9d8bcd28257  workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentMonitoringTools.java
+44425eee840fc00f3670872b726856c3e35021063cd6dbb33ecfa64569156149  workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentBugTools.java
+fad853ace8a31da80cb37720b0ff9f6d326e89d334191247232a28257210e335  workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentAccessService.java
+aa6add611b32ae84dd9ae822a97c709acddbc0f1b6e8f7a466a45c7773275ae8  workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentToolArguments.java
+d311d0a5825d7d56e68fa08bce879f55d9015d8ef76446b8f65e621fd78e326b  workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentApiExecutionAdapter.java
+54252cba3fb1725714abb939c0e27833aca90c83ec711889c3f291380f9a165c  workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentNativeCliAdapter.java
+d0f1e873dc052f02268b823dce55e61cc2232a0bfd88fee9763b9bac08bf26c1  workhub-service/src/main/java/cn/aslight/workhub/service/autonomy/AgentObservationService.java
+ed689e601cffc86dc9476d570aaaa4eb3b87ba0b71a00efe0d3f1fbab1b0c357  workhub-service/src/main/java/cn/aslight/workhub/service/autonomy/AutonomyEvidence.java
+361876297c815bcc05ec5358cbababa72f91881262159d501ba4222e66515911  workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentMonitoringToolsTest.java
+1a6903d4e1df0d1e413ceedf2cc4d7c7ba7f25f1885d1f620bfe71b38c8be937  workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentBugToolsTest.java
+379f1ebfa4393c1f413f21e01541f33eac91c26233a0426483e3831d57539f43  workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentMonitorReadMapperTest.java
+27523a2c8306a6a394d2c9c4c1e2f82dfebeb5c91bd627d7ebd7bf56af2b3987  workhub-service/src/test/java/cn/aslight/workhub/service/agent/AutonomyEvidenceTest.java

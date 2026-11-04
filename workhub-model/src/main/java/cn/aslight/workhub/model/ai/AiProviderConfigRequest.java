@@ -30,6 +30,11 @@ public class AiProviderConfigRequest {
     private String apiBaseUrl;
     private String apiKey;
     private String cliCommand;
+    private String cliType;
+    private String cliRuntimeCommand;
+    private String cliBuiltinConfigPath;
+    private String cliPersonalConfigPath;
+
     private String cliWorkingDirectory;
     private Integer connectTimeoutSeconds;
     private Integer readTimeoutSeconds;
@@ -117,6 +122,15 @@ public class AiProviderConfigRequest {
     public void setApiKey(String apiKey) {
         this.apiKey = apiKey;
     }
+
+    public String getCliType() { return cliType; }
+    public void setCliType(String value) { cliType = value; }
+    public String getCliRuntimeCommand() { return cliRuntimeCommand; }
+    public void setCliRuntimeCommand(String value) { cliRuntimeCommand = value; }
+    public String getCliBuiltinConfigPath() { return cliBuiltinConfigPath; }
+    public void setCliBuiltinConfigPath(String value) { cliBuiltinConfigPath = value; }
+    public String getCliPersonalConfigPath() { return cliPersonalConfigPath; }
+    public void setCliPersonalConfigPath(String value) { cliPersonalConfigPath = value; }
 
     public String getCliCommand() {
         return cliCommand;

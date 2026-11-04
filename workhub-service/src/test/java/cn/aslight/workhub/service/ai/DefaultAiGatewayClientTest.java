@@ -14,12 +14,65 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class DefaultAiGatewayClientTest {
+
+    @Test
+    void zcodeConnectionTestUsesNativeClientWithExactModelAndReasoning() throws Exception {
+        var context = new TestContext(); var provider = zcodeProvider();
+        when(context.zcodeCliClient.execute(eq(provider), eq("GLM/glm-4.6"), eq("disabled"), any(), eq(30)))
+                .thenReturn("{\"status\":\"OK\"}");
+        assertTrue(context.gateway.testConnection(provider, null).succeeded());
+        verify(context.zcodeCliClient).execute(eq(provider), eq("GLM/glm-4.6"), eq("disabled"), any(), eq(30));
+        verifyNoInteractions(context.codexCliClient, context.chatClient, context.responsesClient);
+    }
+
+    @Test
+    void zcodeTextTaskPreservesSelectionsAndSchemaWithoutCodexFallback() throws Exception {
+        var context = new TestContext(); var provider = zcodeProvider();
+        var useCase = useCase(AiUseCaseDefinitions.STRUCTURED_EXTRACT, 7L);
+        useCase.setModel(null); useCase.setReasoningLevel(null);
+        when(context.useCaseService.requireEnabledByCode(useCase.getUseCaseCode())).thenReturn(useCase);
+        when(context.providerService.requireExisting(7L)).thenReturn(provider);
+        when(context.zcodeCliClient.execute(eq(provider), eq("GLM/glm-4.6"), eq("disabled"), any(), eq(30)))
+                .thenReturn("{\"status\":\"OK\"}");
+        var request = AiGatewayRequest.structured(useCase.getUseCaseCode(), "整理需求", Path.of("/tmp"), List.of(), List.of(), "{\"type\":\"object\"}");
+        assertTrue(context.gateway.isConfigured(useCase.getUseCaseCode()));
+        assertTrue(context.gateway.executeStructured(request).succeeded());
+        verify(context.zcodeCliClient).execute(eq(provider), eq("GLM/glm-4.6"), eq("disabled"),
+                argThat(prompt -> prompt.contains("整理需求") && prompt.contains("\"type\":\"object\"")), eq(30));
+        verifyNoInteractions(context.codexCliClient, context.chatClient, context.responsesClient);
+    }
+
+    @Test
+    void zcodeRejectsUnsupportedLegacyRepositoryImagesAndSpeedBeforeStarting() {
+        for (String scenario : List.of("repository", "images", "speed")) {
+            var context = new TestContext(); var provider = zcodeProvider();
+            var useCase = useCase(scenario.equals("repository") ? AiUseCaseDefinitions.DEVELOPMENT_ANALYZE : AiUseCaseDefinitions.STRUCTURED_EXTRACT, 7L);
+            useCase.setModel(null); useCase.setReasoningLevel(null);
+            when(context.useCaseService.requireEnabledByCode(useCase.getUseCaseCode())).thenReturn(useCase);
+            when(context.providerService.requireExisting(7L)).thenReturn(provider);
+            var request = new AiGatewayRequest(useCase.getUseCaseCode(), java.util.Map.of("prompt", "测试"), Path.of("/tmp"), List.of(),
+                    scenario.equals("images") ? List.of("/tmp/image.png") : List.of(), "{\"type\":\"object\"}",
+                    null, null, null, scenario.equals("speed") ? "FAST" : null, null, null);
+            assertFalse(context.gateway.executeStructured(request).succeeded());
+            if (scenario.equals("repository")) assertFalse(context.gateway.isConfigured(useCase.getUseCaseCode()));
+            verifyNoInteractions(context.zcodeCliClient, context.codexCliClient, context.chatClient, context.responsesClient);
+        }
+    }
+
+    private AiProviderConfigEntity zcodeProvider() {
+        var provider = provider(7L, "CLI", null);
+        provider.setCliType("ZCODE"); provider.setCliCommand("zcode");
+        provider.setDefaultModel("GLM/glm-4.6"); provider.setDefaultReasoningLevel("disabled"); provider.setDefaultSpeedMode("STANDARD");
+        return provider;
+    }
 
     @Test
     void cliPassesDynamicCodesUnchangedAndOnlyNormalizesLegacyUppercase() {
@@ -204,6 +257,37 @@ class DefaultAiGatewayClientTest {
         assertTrue(result.failureSummary().contains("返回内容不符合预期"));
     }
 
+    @Test
+    void agentApiUsesSelectedProviderForEveryApiProtocolWithoutCliFallback() throws Exception {
+        for (String protocol : List.of("OPENAI_RESPONSES", "OPENROUTER", "OPENAI_COMPATIBLE", "CUSTOM")) {
+            TestContext context = new TestContext();
+            var provider = provider(9L, "API", protocol);
+            when(context.providerService.getEnabledById(9L)).thenReturn(provider);
+            when(context.providerService.resolveApiKey(9L)).thenReturn("provider-key");
+            when(context.responsesClient.execute(any())).thenReturn("{\"kind\":\"RESULT\"}");
+            when(context.chatClient.execute(any())).thenReturn("{\"kind\":\"RESULT\"}");
+            var result = context.gateway.executeAgentApi(new AiAgentApiRequest(9L, "chosen-model", "task-context", 20, 0, protocol));
+            assertTrue(result.succeeded());
+            assertEquals("chosen-model", result.model());
+            if (protocol.equals("OPENAI_RESPONSES")) {
+                verify(context.responsesClient).execute(argThat(call -> call.model().equals("chosen-model") && call.outputSchema() == null));
+            } else {
+                verify(context.chatClient).execute(argThat(call -> call.model().equals("chosen-model") && call.outputSchema() == null));
+            }
+            verify(context.codexCliClient, never()).execute(any(), any());
+            verify(context.useCaseService, never()).requireEnabledByCode(any());
+        }
+    }
+
+    @Test
+    void agentApiCannotSilentlyRouteCliProviderThroughLegacyCodexClient() {
+        TestContext context = new TestContext();
+        when(context.providerService.getEnabledById(9L)).thenReturn(provider(9L, "CLI", null));
+        var result = context.gateway.executeAgentApi(new AiAgentApiRequest(9L, "chosen-model", "task-context", 20, 0, null));
+        assertFalse(result.succeeded());
+        verify(context.codexCliClient, never()).execute(any(), any());
+    }
+
     private AiUseCaseConfigEntity useCase(String code, Long providerId) {
         AiUseCaseConfigEntity entity = new AiUseCaseConfigEntity();
         entity.setUseCaseCode(code);
@@ -238,12 +322,14 @@ class DefaultAiGatewayClientTest {
         private final AiUseCaseConfigService useCaseService = mock(AiUseCaseConfigService.class);
         private final AiProviderConfigService providerService = mock(AiProviderConfigService.class);
         private final CodexCliClient codexCliClient = mock(CodexCliClient.class);
+        private final ZCodeCliClient zcodeCliClient = mock(ZCodeCliClient.class);
         private final OpenAiResponsesClient responsesClient = mock(OpenAiResponsesClient.class);
         private final OpenAiChatClient chatClient = mock(OpenAiChatClient.class);
         private final DefaultAiGatewayClient gateway = new DefaultAiGatewayClient(
                 useCaseService,
                 providerService,
                 codexCliClient,
+                zcodeCliClient,
                 responsesClient,
                 chatClient,
                 new ObjectMapper()
