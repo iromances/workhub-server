@@ -33,7 +33,7 @@ public class AgentVerificationEvidence {
             throw new IllegalArgumentException("监测查询时间与来源索引不一致");
         if (observedAt.isAfter(now) || observedAt.isBefore(deployedAt)) problems.add("OBSERVATION_OUTSIDE_DEPLOYED_WINDOW");
         String sourceKey = check.toolCode(), eventKey = row.id();
-        Instant dataAt = null;
+        Instant dataAt = null, coverageFrom = null, coverageThrough = null;
         if (root.path("truncated").asBoolean()) problems.add("TRUNCATED_EVIDENCE");
         else {
             JsonNode selected = select(root, check.toolCode(), pointer);
@@ -125,7 +125,53 @@ public class AgentVerificationEvidence {
                         eventKey = sourceKey + ":" + proof.executionId();
                     }
                 }
-                case "monitor.system.alerts", "workhub.logs" -> {
+                case "workhub.logs" -> {
+                    var raw = selected.path("executionEvidence");
+                    if (!raw.isObject()) {
+                        problems.add("COLLECTION_COVERAGE_UNPROVEN");
+                        if (selected.path("truncated").asBoolean() || selected.path("hasMore").asBoolean()) problems.add("TRUNCATED_EVIDENCE");
+                    } else {
+                        var proof = json.treeToValue(raw, cn.aslight.workhub.model.ops.BusinessLogQueryEvidence.class);
+                        var definition = proof.definition();
+                        if (proof.schemaVersion() != 1 || definition == null || definition.scopeId() == null
+                                || !AgentCodePolicy.hash(json.writeValueAsString(definition)).equals(proof.definitionHash())
+                                || !digest(proof.targetBindingHash()) || !digest(proof.snapshotHash())
+                                || !check.scope().businessLineCode().equals(definition.businessLineCode())
+                                || !check.scope().environmentCode().equals(definition.environmentCode())
+                                || !definition.businessLineCode().equals(selected.path("businessLineCode").asText())
+                                || !definition.environmentCode().equals(selected.path("environmentCode").asText())
+                                || !json.valueToTree(definition.indexPatterns()).equals(selected.path("indexPatterns"))
+                                || !json.valueToTree(definition.serviceNames()).equals(selected.path("serviceNames"))
+                                || !json.valueToTree(definition.levels()).equals(selected.path("levels"))
+                                || !json.valueToTree(proof.from()).equals(selected.path("from")) || !json.valueToTree(proof.to()).equals(selected.path("to")))
+                            throw new IllegalArgumentException("日志执行凭据的来源、范围或摘要不一致");
+                        if (proof.startedAt() == null || proof.finishedAt() == null || proof.startedAt().isBefore(deployedAt)
+                                || proof.finishedAt().isBefore(proof.startedAt()) || proof.finishedAt().isAfter(observedAt))
+                            problems.add("EXECUTION_NOT_AFTER_DEPLOYMENT");
+                        if (!proof.complete() || selected.path("truncated").asBoolean() || !selected.path("items").isArray()
+                                || selected.path("count").asInt(-1) != selected.path("items").size()) problems.add("QUERY_RESULTS_INCOMPLETE");
+                        var expected = definition.serviceNames() == null ? Set.<String>of() : new HashSet<>(definition.serviceNames());
+                        var activities = proof.activities() == null ? List.<cn.aslight.workhub.model.ops.BusinessLogQueryEvidence.Activity>of() : proof.activities();
+                        if (expected.isEmpty() || activities.size() != expected.size()
+                                || !expected.equals(new HashSet<>(activities.stream().map(cn.aslight.workhub.model.ops.BusinessLogQueryEvidence.Activity::serviceName).toList())))
+                            problems.add("SERVICE_ACTIVITY_COVERAGE_UNPROVEN");
+                        for (var activity : activities) {
+                            if (activity.count() <= 0 || activity.latestAt() == null || !digest(activity.latestEventId())) problems.add("NO_SERVICE_ACTIVITY");
+                            else {
+                                if (proof.from() == null || proof.to() == null || activity.latestAt().isBefore(proof.from())
+                                        || activity.latestAt().isAfter(proof.to()) || proof.startedAt() == null || activity.latestAt().isAfter(proof.startedAt()))
+                                    problems.add("DATA_OUTSIDE_QUERY_WINDOW");
+                                if (dataAt == null || activity.latestAt().isBefore(dataAt)) dataAt = activity.latestAt();
+                            }
+                        }
+                        coverageFrom = proof.from(); coverageThrough = proof.to();
+                        if (coverageFrom == null || coverageThrough == null || !coverageFrom.isBefore(coverageThrough)
+                                || proof.startedAt() == null || coverageThrough.isAfter(proof.startedAt())) problems.add("QUERY_WINDOW_UNVERIFIED");
+                        sourceKey += ":" + proof.definitionHash() + ":" + proof.targetBindingHash();
+                        eventKey = sourceKey + ":" + proof.executionId();
+                    }
+                }
+                case "monitor.system.alerts" -> {
                     // 当前来源只有失败/匹配记录，没有查询范围内连续采集健康证明；空列表不能自动通过。
                     problems.add("COLLECTION_COVERAGE_UNPROVEN");
                     if (root.at("/data/truncated").asBoolean() || root.at("/data/hasMore").asBoolean()) problems.add("TRUNCATED_EVIDENCE");
@@ -138,7 +184,7 @@ public class AgentVerificationEvidence {
             if (dataAt.isAfter(observedAt) || dataAt.isBefore(deployedAt)) problems.add("DATA_OUTSIDE_DEPLOYED_WINDOW");
             if (dataAt.plusSeconds(check.maxDataAgeSeconds()).isBefore(observedAt)) problems.add("DATA_STALE_AT_QUERY");
         }
-        return new Fact(row.id(), row.contentHash(), pointer, sourceKey, eventKey, observedAt, dataAt, List.copyOf(problems));
+        return new Fact(row.id(), row.contentHash(), pointer, sourceKey, eventKey, observedAt, dataAt, List.copyOf(problems), coverageFrom, coverageThrough);
     }
 
     private JsonNode select(JsonNode root, String tool, String pointer) {
@@ -153,6 +199,7 @@ public class AgentVerificationEvidence {
         if (!selected.isObject()) throw new IllegalArgumentException("引用位置没有完整监测记录，请重新读取真实监测证据");
         return selected;
     }
+    private boolean digest(String value) { return value != null && value.matches("[a-f0-9]{64}"); }
     private boolean zero(JsonNode value, String key) { return value.path(key).isIntegralNumber() && value.path(key).asLong() == 0; }
     private long positive(JsonNode value, String key) {
         if (!value.path(key).isIntegralNumber() || value.path(key).asLong() <= 0) throw new IllegalArgumentException("来源记录标识缺失");
@@ -170,5 +217,5 @@ public class AgentVerificationEvidence {
         } catch (DateTimeException ex) { return null; }
     }
     public record Fact(String observationId, String contentHash, String pointer, String sourceKey, String eventKey,
-                       Instant observedAt, Instant dataAt, List<String> problems) { }
+                       Instant observedAt, Instant dataAt, List<String> problems, Instant coverageFrom, Instant coverageThrough) { }
 }

@@ -46,7 +46,7 @@ class ElasticsearchSystemAlertClientTest {
             searchBodies.add(body);
             if (searchCount.getAndIncrement() == 0) {
                 respond(exchange, 200, """
-                        {"pit_id":"pit-2","hits":{"hits":[{
+                        {"timed_out":false,"_shards":{"total":1,"successful":1,"failed":0},"pit_id":"pit-2","hits":{"hits":[{
                           "_index":"workhub-logs-2026.07.21","_id":"event-1",
                           "_source":{"@timestamp":"2026-07-21T02:03:04.123Z",
                             "service":{"name":"asset-payment","environment":"prod"},
@@ -57,7 +57,7 @@ class ElasticsearchSystemAlertClientTest {
                         }]}}
                         """);
             } else {
-                respond(exchange, 200, "{\"pit_id\":\"pit-3\",\"hits\":{\"hits\":[]}}");
+                respond(exchange, 200, "{\"timed_out\":false,\"_shards\":{\"total\":1,\"successful\":1,\"failed\":0},\"pit_id\":\"pit-3\",\"hits\":{\"hits\":[]}}");
             }
         });
         server.createContext("/_pit", exchange -> {
@@ -129,7 +129,7 @@ class ElasticsearchSystemAlertClientTest {
                 respond(exchange, 200, "{\"id\":\"pit-1\"}"));
         server.createContext("/_search", exchange -> {
             bodies.add(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
-            respond(exchange, 200, "{\"pit_id\":\"pit-2\",\"hits\":{\"hits\":[]}}");
+            respond(exchange, 200, "{\"timed_out\":false,\"_shards\":{\"total\":1,\"successful\":1,\"failed\":0},\"pit_id\":\"pit-2\",\"hits\":{\"hits\":[]}}");
         });
         server.createContext("/_pit", exchange -> respond(exchange, 200, "{\"succeeded\":true}"));
         server.start();
@@ -155,7 +155,7 @@ class ElasticsearchSystemAlertClientTest {
             assertFalse(body.contains("service.environment"));
             queried.set(true);
             respond(exchange, 200, """
-                    {"pit_id":"pit-2","hits":{"hits":[{
+                    {"timed_out":false,"_shards":{"total":1,"successful":1,"failed":0},"pit_id":"pit-2","hits":{"hits":[{
                       "_index":"amp-saps-2026.07.23","_id":"event-1",
                       "_source":{"@timestamp":"2026-07-23T02:03:04.123Z",
                         "appName":"amp-saps","level":"ERROR","logger_name":"OrderService",
@@ -202,7 +202,7 @@ class ElasticsearchSystemAlertClientTest {
         server.createContext("/_search", exchange -> {
             searchCount.incrementAndGet();
             respond(exchange, 200, """
-                    {"pit_id":"pit-2","hits":{"hits":[
+                    {"timed_out":false,"_shards":{"total":1,"successful":1,"failed":0},"pit_id":"pit-2","hits":{"hits":[
                       {"_index":"amp-saps-2026.07.23","_id":"event-2",
                        "_source":{"@timestamp":"2026-07-23T02:04:04.123Z","appName":"amp-saps","level":"ERROR","message":"new"},
                        "sort":["2026-07-23T02:04:04.123Z",43]},
@@ -245,9 +245,15 @@ class ElasticsearchSystemAlertClientTest {
         server.createContext("/scf-payment-*,scf-saps-*/_pit", exchange ->
                 respond(exchange, 200, "{\"id\":\"pit-1\"}"));
         server.createContext("/_search", exchange -> {
-            bodies.add(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            String request = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            bodies.add(request);
+            if (request.contains("\"aggs\"")) {
+                assertTrue(request.contains("\"id\":\"pit-2\""));
+                assertFalse(request.contains("trace.id")); assertFalse(request.contains("log.level"));
+                respond(exchange, 200, activityResponse(List.of("2026-08-22T23:59:00Z"))); return;
+            }
             respond(exchange, 200, """
-                    {"pit_id":"pit-2","hits":{"hits":[{
+                    {"timed_out":false,"_shards":{"total":1,"successful":1,"failed":0},"pit_id":"pit-2","hits":{"hits":[{
                       "_index":"scf-payment-2026.08.23","_id":"event-1",
                       "_source":{"@timestamp":"2026-08-22T23:59:00Z",
                         "service":{"name":"scf-payment","environment":"prod"},
@@ -276,6 +282,118 @@ class ElasticsearchSystemAlertClientTest {
         assertTrue(body.contains("\"match_phrase\":{\"error.message\":\"查询当日交易明细\"}"));
         assertTrue(body.contains("\"trace.id\":\"trace-1\""));
         assertTrue(body.contains("\"http.request.id\":\"req-1\""));
+    }
+
+    @Test
+    void shouldRejectPartialAndMalformedPagesRatherThanReturnEmptySuccess() throws Exception {
+        var response = new java.util.concurrent.atomic.AtomicReference<String>();
+        AtomicInteger closed = new AtomicInteger();
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/workhub-logs-*/_pit", e -> respond(e, 200, "{\"id\":\"pit-1\"}"));
+        server.createContext("/_search", e -> respond(e, 200, response.get()));
+        server.createContext("/_pit", e -> { closed.incrementAndGet(); respond(e, 200, "{}"); }); server.start();
+        var json = new com.fasterxml.jackson.databind.ObjectMapper();
+        var valid = (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(completeEmpty());
+        var timed = valid.deepCopy().put("timed_out", true);
+        var failed = valid.deepCopy(); ((com.fasterxml.jackson.databind.node.ObjectNode)failed.path("_shards")).put("failed", 1);
+        var missing = valid.deepCopy(); missing.remove("_shards");
+        var unknown = valid.deepCopy(); unknown.remove("timed_out");
+        var zero = valid.deepCopy(); ((com.fasterxml.jackson.databind.node.ObjectNode)zero.path("_shards")).put("total", 0).put("successful", 0);
+        var early = valid.deepCopy().put("terminated_early", true);
+        for (var value : List.of(timed, failed, missing, unknown, zero, early)) {
+            response.set(value.toString());
+            var client = new ElasticsearchSystemAlertClient(properties());
+            assertThrows(IllegalStateException.class, () -> client.readErrors(null,List.of(),"TEST",Instant.EPOCH, ignored -> {}));
+            assertThrows(IllegalStateException.class, () -> query(client,List.of()));
+        }
+        response.set(oneHit("not-a-time", true));
+        assertThrows(IllegalStateException.class, () -> query(new ElasticsearchSystemAlertClient(properties()), List.of()));
+        var properties = properties(); properties.setPageSize(1);
+        response.set(oneHit("2026-08-22T23:59:00Z", false));
+        assertThrows(IllegalStateException.class, () -> query(new ElasticsearchSystemAlertClient(properties), List.of()));
+        assertEquals(14, closed.get());
+    }
+
+    @Test
+    void shouldBindEveryExpectedServiceActivityToTheSamePitAndUnfilteredTimeRange() throws Exception {
+        var requests = new ArrayList<com.fasterxml.jackson.databind.JsonNode>();
+        var json = new com.fasterxml.jackson.databind.ObjectMapper();
+        AtomicBoolean closed = new AtomicBoolean();
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/workhub-logs-*/_pit", e -> {
+            assertTrue(e.getRequestURI().getQuery().contains("allow_partial_search_results=false"));
+            respond(e,200,"{\"id\":\"pit-1\"}");
+        });
+        server.createContext("/_search", e -> {
+            var request=json.readTree(e.getRequestBody()); requests.add(request);
+            assertTrue(e.getRequestURI().getQuery().contains("allow_partial_search_results=false"));
+            if(request.has("aggs")) respond(e,200,activityResponse(java.util.Arrays.asList("2026-08-22T23:59:00Z",null)));
+            else respond(e,200,completeEmpty());
+        });
+        server.createContext("/_pit", e -> { closed.set(json.readTree(e.getRequestBody()).path("id").asText().equals("pit-activity")); respond(e,200,"{}"); }); server.start();
+        var result=query(new ElasticsearchSystemAlertClient(properties()),List.of("a","b"));
+        assertFalse(result.truncated()); assertTrue(result.items().isEmpty());
+        assertEquals(2,result.receipt().activities().size());
+        assertEquals(0,result.receipt().activities().get(1).count()); assertEquals(null,result.receipt().activities().get(1).latestAt());
+        assertEquals(Instant.parse("2026-08-22T23:59:00Z"),result.receipt().activities().getFirst().latestAt());
+        assertEquals(64,result.receipt().targetBindingHash().length()); assertTrue(closed.get());
+        assertEquals("pit-2",requests.get(1).at("/pit/id").asText());
+        assertFalse(requests.get(1).path("query").toString().contains("log.level"));
+        assertTrue(requests.get(1).path("query").toString().contains("service.environment"));
+        assertTrue(requests.get(1).path("query").toString().contains("2026-08-23T00:00:00Z"));
+        assertEquals("a",requests.get(1).at("/aggs/activity/filters/filters/s0/term/service.name").asText());
+    }
+
+    @Test
+    void shouldRejectRepeatedPagesAndMissingActivityBuckets() throws Exception {
+        var response = new java.util.concurrent.atomic.AtomicReference<String>(oneHit("2026-08-22T23:59:00Z",true));
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
+        server.createContext("/workhub-logs-*/_pit", e -> respond(e,200,"{\"id\":\"pit-1\"}"));
+        server.createContext("/_search",e -> respond(e,200,response.get()));
+        server.createContext("/_pit",e -> respond(e,200,"{}")); server.start();
+        var properties=properties(); properties.setPageSize(1);
+        assertThrows(IllegalStateException.class,()->query(new ElasticsearchSystemAlertClient(properties),List.of()));
+        assertThrows(IllegalStateException.class,()->new ElasticsearchSystemAlertClient(properties).readErrors(null,List.of(),"TEST",Instant.EPOCH,ignored->{}));
+        response.set(completeEmpty());
+        assertThrows(IllegalStateException.class,()->query(new ElasticsearchSystemAlertClient(properties()),List.of("a")));
+    }
+
+    @Test
+    void shouldMarkTruncatedLogContent() throws Exception {
+        var json=new com.fasterxml.jackson.databind.ObjectMapper();
+        var response=(com.fasterxml.jackson.databind.node.ObjectNode)json.readTree(oneHit("2026-08-22T23:59:00Z",true));
+        ((com.fasterxml.jackson.databind.node.ObjectNode)response.at("/hits/hits/0/_source")).put("error", "unused").put("message","x".repeat(8001));
+        server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
+        server.createContext("/workhub-logs-*/_pit",e->respond(e,200,"{\"id\":\"pit-1\"}"));
+        server.createContext("/_search",e->respond(e,200,response.toString()));
+        server.createContext("/_pit",e->respond(e,200,"{}")); server.start();
+        assertTrue(query(new ElasticsearchSystemAlertClient(properties()),List.of()).truncated());
+    }
+
+    private ElasticsearchSystemAlertClient.LogSearchResult query(ElasticsearchSystemAlertClient client,List<String> services) {
+        return client.searchLogs(null,services,"TEST",List.of("ERROR"),Instant.parse("2026-08-22T23:50:00Z"),Instant.parse("2026-08-23T00:00:00Z"),null,null,null,10);
+    }
+    private String completeEmpty() { return """
+        {"timed_out":false,"_shards":{"total":1,"successful":1,"failed":0},"pit_id":"pit-2","hits":{"hits":[]}}
+        """; }
+    private String oneHit(String time,boolean sort) throws Exception {
+        var json=new com.fasterxml.jackson.databind.ObjectMapper();
+        var root=(com.fasterxml.jackson.databind.node.ObjectNode)json.readTree(completeEmpty());
+        var hit=((com.fasterxml.jackson.databind.node.ArrayNode)root.at("/hits/hits")).addObject().put("_index","logs").put("_id","one");
+        hit.putObject("_source").put("@timestamp",time).put("message","fixture");
+        if(sort) hit.putArray("sort").add(time).add(1);
+        return root.toString();
+    }
+    private String activityResponse(List<String> times) throws IOException {
+        var json=new com.fasterxml.jackson.databind.ObjectMapper();
+        var root=(com.fasterxml.jackson.databind.node.ObjectNode)json.readTree(completeEmpty()); root.put("pit_id","pit-activity");
+        var buckets=root.putObject("aggregations").putObject("activity").putObject("buckets");
+        for(int i=0;i<times.size();i++) {
+            String time=times.get(i); var bucket=buckets.putObject("s"+i).put("doc_count",time==null?0:2);
+            var hits=bucket.putObject("latest").putObject("hits").putArray("hits");
+            if(time!=null) hits.addObject().put("_index","logs").put("_id","active"+i).putObject("_source").put("@timestamp",time);
+        }
+        return root.toString();
     }
 
     private ElkAlertProperties properties() {

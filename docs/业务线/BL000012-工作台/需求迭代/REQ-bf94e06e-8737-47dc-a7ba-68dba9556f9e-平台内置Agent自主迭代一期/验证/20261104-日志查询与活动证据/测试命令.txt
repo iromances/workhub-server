@@ -1,0 +1,5 @@
+工作目录：/Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-server
+
+mvn -o -q -pl workhub-controller,workhub-job -am -Dtest=ElasticsearchSystemAlertClientTest,BusinessLogSearchServiceTest,ElkSystemAlertCollectorTest,AgentMonitoringToolsTest,AgentVerificationServiceTest,AgentDeploymentDispatcherTest,AgentReleasePlanServiceTest,AgentInspectionServiceTest -Dsurefire.failIfNoSpecifiedTests=false -DargLine=-javaagent:/Users/aslight/.m2/repository/org/mockito/mockito-core/5.20.0/mockito-core-5.20.0.jar test
+
+最终退出码0；164项通过，0失败、0错误、0跳过。controller/job及依赖编译随本次test完成。

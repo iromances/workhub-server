@@ -1,0 +1,8 @@
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+15:48:49.647 [main] INFO org.hibernate.validator.internal.util.Version -- HV000001: Hibernate Validator 9.0.1.Final
+15:48:55.194 [main] INFO cn.aslight.workhub.service.ops.ElkSystemAlertCollector -- ELK系统预警采集完成，业务线范围数=1，成功数=1，失败数=0
+15:48:55.195 [main] INFO cn.aslight.workhub.service.ops.ElkSystemAlertCollector -- ELK系统预警采集完成，业务线范围数=1，成功数=1，失败数=0
+15:48:55.195 [main] INFO cn.aslight.workhub.service.ops.ElkSystemAlertCollector -- ELK系统预警采集完成，业务线范围数=1，成功数=1，失败数=0
+15:48:55.196 [main] WARN cn.aslight.workhub.service.ops.ElkSystemAlertCollector -- ELK系统预警采集失败，scopeId=6，businessLineCode=BL000004，原因=指定子系统模式下没有启用的子系统
+15:48:55.196 [main] INFO cn.aslight.workhub.service.ops.ElkSystemAlertCollector -- ELK系统预警采集完成，业务线范围数=2，成功数=1，失败数=1
+15:48:55.197 [main] INFO cn.aslight.workhub.service.ops.ElkSystemAlertCollector -- ELK系统预警采集完成，业务线范围数=1，成功数=1，失败数=0

@@ -265,7 +265,9 @@ public class AgentVerificationService {
             if (!previous.isEmpty() && sameSources && current.entrySet().stream().anyMatch(entry ->
                     !entry.getValue().dataAt().isAfter(previousTime(preceding, entry.getKey())))) continue;
             boolean gap = !previous.isEmpty() && sameSources && current.entrySet().stream().anyMatch(entry ->
-                    Duration.between(previousTime(preceding, entry.getKey()), entry.getValue().dataAt()).compareTo(Duration.ofSeconds(check.sampleIntervalSeconds())) > 0);
+                    Duration.between(previousTime(preceding, entry.getKey()), entry.getValue().dataAt()).compareTo(Duration.ofSeconds(check.sampleIntervalSeconds())) > 0
+                            || (entry.getValue().coverageFrom() != null && preceding.get(entry.getKey()).coverageThrough() != null
+                            && entry.getValue().coverageFrom().isAfter(preceding.get(entry.getKey()).coverageThrough())));
             if (!sameSources || gap) { window.clear(); start = null; }
             if (start == null) start = facts.stream().map(AgentVerificationEvidence.Fact::dataAt).max(Comparator.naturalOrder()).orElseThrow();
             end = dataAt; previous = current; window.add(sample);

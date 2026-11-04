@@ -214,7 +214,7 @@ public class AgentMonitoringTools {
     AgentTool agentBusinessLogsTool() {
         var properties = new LinkedHashMap<>(scopeProperties());
         for (String name : List.of("serviceName", "phrase", "traceId", "from", "to")) properties.put(name, string());
-        return tool("workhub.logs", "在既有受控 ELK 范围实时检索日志。WorkHub 自检同样选择其业务线和环境，不扩大路径或日志索引权限。",
+        return tool("workhub.logs", "在既有受控 ELK 范围实时检索日志及同一快照的指定服务活动。效果复查需明确服务、连续查询区间和新鲜活动；空错误列表本身不证明恢复。WorkHub自检同样选择其业务线和环境。",
                 Set.of("ops:system-alert:view", "ops:system-alert:manage"), properties, scopeRequired(), (context, args) -> {
                     AgentScope scope = scope(context, args);
                     String service = args.optional("serviceName");

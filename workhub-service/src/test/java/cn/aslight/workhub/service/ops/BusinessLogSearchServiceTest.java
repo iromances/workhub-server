@@ -81,6 +81,41 @@ class BusinessLogSearchServiceTest {
         assertTrue(tooLong.getMessage().contains("24小时"));
     }
 
+    @Test
+    void shouldRejectEmptySelectedServicesAndChangedScopeBeforeQuery() {
+        var scopes=mock(SystemAlertScopeService.class); var client=mock(ElasticsearchSystemAlertClient.class);
+        var service=new BusinessLogSearchService(scopes,client,Clock.fixed(NOW,ZoneOffset.UTC),new SensitiveDataMasker(),mock(McpAuditLogger.class));
+        var request=new BusinessLogSearchRequest("BL000001","prod",List.of(),List.of(),null,null,null,null,null,20);
+        when(scopes.list("BL000001","prod",true)).thenReturn(List.of(new SystemAlertScopeResponse(1L,"BL000001","prod","SELECTED",List.of(),List.of("logs-*"),true,null,null,null)));
+        assertThrows(IllegalArgumentException.class,()->service.search(request));
+        when(scopes.list("BL000001","prod",true)).thenReturn(List.of(new SystemAlertScopeResponse(1L,"BL000001","TEST","ALL",List.of(),List.of("logs-*"),true,null,null,null)));
+        assertThrows(IllegalArgumentException.class,()->service.search(request));
+        org.mockito.Mockito.verifyNoInteractions(client);
+    }
+
+    @Test
+    void shouldPreserveActualExecutionAndExposeContentTruncationWithoutSensitiveFilters() {
+        var scopes=mock(SystemAlertScopeService.class); var client=mock(ElasticsearchSystemAlertClient.class);
+        when(scopes.list("BL000001","prod",true)).thenReturn(List.of(selectedScope()));
+        var receipt=new ElasticsearchSystemAlertClient.QueryReceipt("a".repeat(64),NOW,NOW,"b".repeat(64),List.of(
+                new cn.aslight.workhub.model.ops.BusinessLogQueryEvidence.Activity("scf-payment",3,NOW.minusSeconds(1),"c".repeat(64))));
+        when(client.searchLogs(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(Integer.class))).thenReturn(
+                new ElasticsearchSystemAlertClient.LogSearchResult(List.of(),false,receipt),
+                new ElasticsearchSystemAlertClient.LogSearchResult(List.of(new ElkSystemAlertLog("id","scf-payment","ERROR",null,"x".repeat(4001),null,null,null,null,NOW.minusSeconds(1))),false,receipt));
+        var service=new BusinessLogSearchService(scopes,client,Clock.fixed(NOW,ZoneOffset.UTC),new SensitiveDataMasker(),mock(McpAuditLogger.class));
+        var request=new BusinessLogSearchRequest("BL000001","prod",List.of("scf-payment"),List.of(),null,null,"private-search-value",null,null,20);
+        var response=service.search(request); var proof=response.executionEvidence();
+        assertTrue(proof.complete()); assertEquals(receipt.activities(),proof.activities()); assertEquals(NOW,proof.startedAt());
+        var json=new tools.jackson.databind.ObjectMapper();
+        assertEquals(AccountingExecutionEvidenceService.hash(json.writeValueAsString(proof.definition())),proof.definitionHash());
+        assertTrue(!json.writeValueAsString(proof).contains("private-search-value"));
+        var sanitized=new cn.aslight.workhub.service.agent.AgentToolData(json).sanitize(response);
+        var roundtrip=json.treeToValue(json.valueToTree(sanitized).path("executionEvidence"),cn.aslight.workhub.model.ops.BusinessLogQueryEvidence.class);
+        assertEquals(proof,roundtrip);
+        var cut=service.search(request); assertTrue(cut.truncated()); assertTrue(!cut.executionEvidence().complete());
+        assertEquals(4000,cut.items().getFirst().message().length());
+    }
+
     private SystemAlertScopeResponse selectedScope() {
         return new SystemAlertScopeResponse(
                 1L, "BL000001", "prod", "SELECTED",

@@ -417,8 +417,72 @@ class AgentVerificationServiceTest {
         useBusinessDetail(); String id=start(); var result=recordBusiness(id,"empty",null);
         assertEquals(0,result.at("/checks/0/distinctSamples").asInt()); assertTrue(result.at("/checks/0/constraints").toString().contains("NO_BUSINESS_ACTIVITY"));
     }
-    private void useBusinessDetail() {
-        approved=new AgentReleasePlanSnapshot(2,change,List.of(),List.of(),approved.steps(),standards("monitor.business.detail"));
+    @Test void existingSamplesWithoutLogIntervalFieldsRemainReadable() {
+        String id=completeSamples(); useLegacySampleEncoding(id);
+        assertEquals("PASSED",finish(id,"PASS",false).path("status").asText());
+    }
+    @Test void previousUnprovenTruncatedLogSamplesKeepTheirOriginalConstraints() {
+        useSource("workhub.logs"); String id=start();
+        String observed=observation("workhub.logs",json.valueToTree(Map.of("truncated",true,"items",List.of())),clock.instant());
+        var args=recordArgs(id,"old-logs",observed,"PASS",false); ((ObjectNode)args.at("/evidence/0")).put("pointer","/data");
+        invoke("verification.record",args); useLegacySampleEncoding(id);
+        var result=status(id); assertTrue(result.at("/checks/0/constraints").toString().contains("TRUNCATED_EVIDENCE"));
+    }
+    private void useLegacySampleEncoding(String id) {
+        for(var sample:verifications.samples(id,"health")) {
+            var facts=json.readTree(sample.evidenceJson());
+            for(var fact:facts) { ((ObjectNode)fact).remove("coverageFrom"); ((ObjectNode)fact).remove("coverageThrough"); }
+            String old=json.writeValueAsString(facts);
+            jdbc.update("UPDATE pm_agent_verification_sample SET evidence_json=?,evidence_hash=? WHERE id=?",old,AgentCodePolicy.hash(old),sample.id());
+        }
+    }
+
+    @Test void completeLogQueriesWithActivityForEveryServiceCanCertifyApprovedWindow() {
+        useSource("workhub.logs"); String id=start();
+        for(int i=0;i<3;i++) { if(i>0) clock.advance(10); recordLog(id,"log"+i,clock.instant(),clock.instant().minusSeconds(60),false,false,null); }
+        var result=finish(id,"PASS",false);
+        assertEquals("PASSED",result.path("status").asText()); assertEquals(20,result.at("/checks/0/observedSeconds").asLong());
+    }
+    @Test void logQueriesWithUnobservedTimeGapsCannotBeCombinedIntoContinuousWindow() {
+        useSource("workhub.logs"); String id=start();
+        for(int i=0;i<3;i++) { if(i>0) clock.advance(10); recordLog(id,"gap"+i,clock.instant(),clock.instant().minusSeconds(1),false,false,null); }
+        var result=finish(id,"PASS",false);
+        assertEquals("OBSERVING",result.path("status").asText()); assertEquals(1,result.at("/checks/0/distinctSamples").asInt());
+    }
+    @Test void refreshingLogSnapshotWithoutNewActivityDoesNotCreateSamples() {
+        useSource("workhub.logs"); String id=start(); Instant old=clock.instant();
+        for(int i=0;i<3;i++) { if(i>0) clock.advance(10); recordLog(id,"oldlog"+i,old,clock.instant().minusSeconds(60),false,false,null); }
+        assertEquals(1,finish(id,"PASS",false).at("/checks/0/distinctSamples").asInt());
+    }
+    @Test void oneSilentOrStaleServiceAndPartialLogResultsCannotCertifyRecovery() {
+        useSource("workhub.logs"); String id=start();
+        var silent=recordLog(id,"silent",clock.instant(),clock.instant().minusSeconds(60),true,false,null);
+        assertTrue(silent.at("/checks/0/constraints").toString().contains("NO_SERVICE_ACTIVITY"));
+        var stale=recordLog(id,"stale",clock.instant().minusSeconds(40),clock.instant().minusSeconds(60),false,false,null);
+        assertTrue(stale.at("/checks/0/constraints").toString().contains("DATA_STALE_AT_QUERY"));
+        var partial=recordLog(id,"partial",clock.instant(),clock.instant().minusSeconds(60),false,true,null);
+        assertTrue(partial.at("/checks/0/constraints").toString().contains("QUERY_RESULTS_INCOMPLETE"));
+        assertEquals(0,partial.at("/checks/0/distinctSamples").asInt());
+    }
+    @Test void changingLogFiltersRestartsObservationWindow() {
+        useSource("workhub.logs"); String id=start();
+        for(int i=0;i<3;i++) { if(i>0) clock.advance(10); recordLog(id,"filter"+i,clock.instant(),clock.instant().minusSeconds(60),false,false,i==0?null:"a".repeat(64)); }
+        assertEquals(2,finish(id,"PASS",false).at("/checks/0/distinctSamples").asInt());
+    }
+    private JsonNode recordLog(String id,String request,Instant activity,Instant from,boolean silent,boolean truncated,String phraseHash) {
+        var definition=new cn.aslight.workhub.model.ops.BusinessLogQueryEvidence.Definition(1L,"BL000012","TEST","SELECTED",List.of("workhub-*"),List.of("a","b"),List.of("ERROR","WARN"),phraseHash,null,null,30);
+        var activities=List.of(new cn.aslight.workhub.model.ops.BusinessLogQueryEvidence.Activity("a",1,clock.instant(),"a".repeat(64)),
+                new cn.aslight.workhub.model.ops.BusinessLogQueryEvidence.Activity("b",silent?0:1,silent?null:activity,silent?null:"b".repeat(64)));
+        var proof=new cn.aslight.workhub.model.ops.BusinessLogQueryEvidence(1,UUID.randomUUID().toString(),definition,AgentCodePolicy.hash(json.writeValueAsString(definition)),"d".repeat(64),"e".repeat(64),clock.instant(),clock.instant(),from,clock.instant(),!truncated,activities);
+        var result=new cn.aslight.workhub.model.ops.BusinessLogSearchResponse("BL000012","TEST",definition.indexPatterns(),definition.serviceNames(),definition.levels(),from,clock.instant(),30,0,truncated,true,List.of(),proof);
+        String observation=observation("workhub.logs",new AgentToolData(json).sanitize(result),clock.instant());
+        var args=recordArgs(id,request,observation,"PASS",false); ((ObjectNode)args.at("/evidence/0")).put("pointer","/data");
+        return invoke("verification.record",args);
+    }
+
+    private void useBusinessDetail() { useSource("monitor.business.detail"); }
+    private void useSource(String tool) {
+        approved=new AgentReleasePlanSnapshot(2,change,List.of(),List.of(),approved.steps(),standards(tool));
         String snapshot=json.writeValueAsString(approved), hash=AgentCodePolicy.hash(snapshot);
         jdbc.update("UPDATE pm_agent_release_plan SET snapshot_json=?,snapshot_hash=? WHERE id='plan'",snapshot,hash);
         jdbc.update("UPDATE pm_agent_release_review SET snapshot_hash=? WHERE id='review'",hash);

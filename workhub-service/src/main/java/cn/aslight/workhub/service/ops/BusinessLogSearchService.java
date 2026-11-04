@@ -3,6 +3,7 @@ package cn.aslight.workhub.service.ops;
 import cn.aslight.workhub.mcp.audit.McpAuditLogger;
 import cn.aslight.workhub.mcp.security.SensitiveDataMasker;
 import cn.aslight.workhub.model.ops.BusinessLogSearchRequest;
+import cn.aslight.workhub.model.ops.BusinessLogQueryEvidence;
 import cn.aslight.workhub.model.ops.BusinessLogSearchResponse;
 import cn.aslight.workhub.model.ops.ElkSystemAlertLog;
 import cn.aslight.workhub.model.ops.SystemAlertScopeResponse;
@@ -69,8 +70,8 @@ public class BusinessLogSearchService {
         String businessLineCode = requireText(request.businessLineCode(), "业务线不能为空");
         String environmentCode = requireText(request.environmentCode(), "环境不能为空");
         SystemAlertScopeResponse scope = resolveScope(businessLineCode, environmentCode);
-        List<String> services = resolveServices(scope, request.serviceNames());
-        List<String> levels = normalizeLevels(request.levels());
+        List<String> services = resolveServices(scope, request.serviceNames()).stream().sorted().toList();
+        List<String> levels = normalizeLevels(request.levels()).stream().sorted().toList();
         int limit = request.limit() == null ? DEFAULT_LIMIT : request.limit();
         if (limit < 1 || limit > MAX_LIMIT) {
             throw new IllegalArgumentException("日志返回条数允许范围为1-" + MAX_LIMIT);
@@ -128,9 +129,19 @@ public class BusinessLogSearchService {
                 Map.entry("hasTraceId", traceId != null),
                 Map.entry("hasRequestId", requestId != null)
         ));
+        BusinessLogQueryEvidence evidence = null;
+        if (result.receipt() != null) {
+            var receipt = result.receipt();
+            var definition = new BusinessLogQueryEvidence.Definition(scope.id(), businessLineCode, environmentCode,
+                    scope.watchMode(), List.copyOf(scope.indexPatterns()), services, levels, digest(phrase), digest(traceId), digest(requestId), limit);
+            evidence = new BusinessLogQueryEvidence(1, java.util.UUID.randomUUID().toString(), definition,
+                    AccountingExecutionEvidenceService.hash(new tools.jackson.databind.ObjectMapper().writeValueAsString(definition)),
+                    receipt.targetBindingHash(), receipt.snapshotHash(), receipt.startedAt(), receipt.finishedAt(), from, to,
+                    !truncated, receipt.activities());
+        }
         return new BusinessLogSearchResponse(
                 businessLineCode, environmentCode, scope.indexPatterns(), services, levels,
-                from, to, limit, masked.items().size(), truncated, true, masked.items());
+                from, to, limit, masked.items().size(), truncated, true, masked.items(), evidence);
     }
 
     private SystemAlertScopeResponse resolveScope(String businessLineCode, String environmentCode) {
@@ -143,6 +154,8 @@ public class BusinessLogSearchService {
             throw new IllegalArgumentException("当前业务线环境存在多个ELK日志范围，无法安全查询");
         }
         SystemAlertScopeResponse scope = scopes.getFirst();
+        if (!businessLineCode.equals(scope.businessLineCode()) || !environmentCode.equals(scope.environmentCode()) || !Boolean.TRUE.equals(scope.enabled()))
+            throw new IllegalArgumentException("ELK日志范围已变化或停用，请重新核对授权范围");
         if (scope.indexPatterns() == null || scope.indexPatterns().isEmpty()) {
             throw new IllegalArgumentException("当前业务线环境未配置ELK索引范围");
         }
@@ -158,6 +171,7 @@ public class BusinessLogSearchService {
                 .filter(item -> Boolean.TRUE.equals(item.enabled()))
                 .map(item -> item.serviceName().trim())
                 .toList();
+        if (allowed.isEmpty()) throw new IllegalArgumentException("指定服务模式下没有启用服务，不能扩大为全部服务查询");
         if (normalizedRequested.isEmpty()) {
             return allowed;
         }
@@ -223,7 +237,11 @@ public class BusinessLogSearchService {
     private MaskResult maskAndBound(List<ElkSystemAlertLog> source) {
         List<ElkSystemAlertLog> items = new ArrayList<>();
         int characters = 0;
+        boolean truncated = false;
         for (ElkSystemAlertLog item : source) {
+            truncated |= textLength(item.serviceName()) > 255 || textLength(item.level()) > 32 || textLength(item.title()) > 500
+                    || textLength(item.message()) > 4000 || textLength(item.errorType()) > 255 || textLength(item.stackTrace()) > 12000
+                    || textLength(item.traceId()) > 128 || textLength(item.requestId()) > 128;
             ElkSystemAlertLog masked = new ElkSystemAlertLog(
                     item.sourceEventId(),
                     truncate(mask(item.serviceName()), 255),
@@ -245,8 +263,10 @@ public class BusinessLogSearchService {
             characters += itemCharacters;
             items.add(masked);
         }
-        return new MaskResult(List.copyOf(items), false);
+        return new MaskResult(List.copyOf(items), truncated);
     }
+
+    private String digest(String value) { return value == null ? null : AccountingExecutionEvidenceService.hash(value); }
 
     private String mask(String value) {
         if (value == null) {
