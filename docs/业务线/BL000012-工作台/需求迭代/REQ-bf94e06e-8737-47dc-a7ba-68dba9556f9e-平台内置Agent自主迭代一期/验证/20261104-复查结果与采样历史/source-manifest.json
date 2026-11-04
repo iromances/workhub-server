@@ -1,0 +1,61 @@
+{
+  "backendBase": "8ff7645",
+  "frontendCommit": "133ff6a",
+  "files": [
+    {
+      "repository": "server",
+      "path": "workhub-controller/src/main/java/cn/aslight/workhub/controller/agent/AgentReleaseController.java",
+      "sha256": "3b280c8dee1b2749b63ab29d05366ad70bdb6cc614c6948967dc1ab255c89365"
+    },
+    {
+      "repository": "server",
+      "path": "workhub-controller/src/test/java/cn/aslight/workhub/controller/agent/AgentVerificationReadControllerTest.java",
+      "sha256": "bac3801fc4f59fa31a6c250bceb470d29adc898ab22e79886bb5d2cac0ec860a"
+    },
+    {
+      "repository": "server",
+      "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/agent/AgentVerificationMapper.java",
+      "sha256": "335b0a23488baba0be6d9aaecb403c41f2eeab7b1a31a504e112e8a09968de2b"
+    },
+    {
+      "repository": "server",
+      "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentVerificationService.java",
+      "sha256": "483cacb626b941912ee8dd3e9dfb9f70b33452144e7cdb935fb3831ca17de635"
+    },
+    {
+      "repository": "server",
+      "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentVerificationServiceTest.java",
+      "sha256": "45f44424c1491a90b80c28ba730151cfd160de3f1fb965abef2a1918944437ad"
+    },
+    {
+      "repository": "web",
+      "path": "src/api/agentRelease.ts",
+      "sha256": "3c18b9bc508bbb3a270fa5151505f325a13531dadfd3e1c0301130db35ff757b"
+    },
+    {
+      "repository": "web",
+      "path": "src/types/agentRelease.ts",
+      "sha256": "13ed701e9edb3f6a3a7293220b37cd66c4feddc57e487c7348916bb9ebd3c24f"
+    },
+    {
+      "repository": "web",
+      "path": "src/views/agent/AgentReleasesPanel.vue",
+      "sha256": "9d33ef58d6d1b8ed302d754e2ea2778ccf41877f1d35be4bd1dfe85df22807a3"
+    },
+    {
+      "repository": "web",
+      "path": "src/views/agent/AgentReleaseVerificationPanel.vue",
+      "sha256": "9ef0ff54a95ad061f0c3dc1d66d36c2bd073b07d1ed655b15df9e7f12e4ab334"
+    },
+    {
+      "repository": "web",
+      "path": "src/views/agent/AgentVerificationResultsPanel.vue",
+      "sha256": "4d1515ce78f7e0dcbdfd9c771e3077ab9db4acf4eae4f0217847f996caa4bcda"
+    },
+    {
+      "repository": "web",
+      "path": "src/views/agent/agentVerificationPresentation.ts",
+      "sha256": "7ade8823e531a6e9063f6eb45ced5598d587befd31c7251985f22aa127603c04"
+    }
+  ]
+}

@@ -169,7 +169,45 @@ public class AgentVerificationService {
     }
 
     /** 人类可查看原运行历史；不要求运行仍持有租约，但当前来源查看权及范围仍需保留。 */
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public JsonNode detailForUser(String planId, String user) {
+        var read = authorizeUser(planId, user);
+        return read.row() == null ? json.nullNode() : view(read.context(), read.row(), true);
+    }
+
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public JsonNode samplesForUser(String planId,String user,String checkId,long afterOrder,Long throughOrder,int pageSize) {
+        var read = authorizeUser(planId,user); var row = requireHistory(read); var frozen = frozen(row);
+        var check = check(frozen,checkId);
+        long upper = throughOrder == null ? row.version() : throughOrder;
+        if (afterOrder < 0 || upper < afterOrder || upper > row.version() || pageSize < 1 || pageSize > 20)
+            throw new IllegalArgumentException("采样历史游标或分页无效");
+        var found = mapper.samplePage(row.id(),checkId,afterOrder,upper,pageSize+1);
+        boolean more = found.size() > pageSize;
+        var page = found.subList(0,Math.min(found.size(),pageSize));
+        var items = page.stream().map(sample -> new SampleView(sample.id(),sample.checkId(),sample.sampleOrder(),sample.assessment(),
+                sample.reason(),sample.historicalDataPending(),sample.createdAt().toInstant(ZoneOffset.UTC),
+                facts(read.context(),row,frozen,check,sample))).toList();
+        return json.valueToTree(new SamplePage(planId,row.id(),checkId,afterOrder,upper,pageSize,items,more,
+                page.isEmpty()?afterOrder:page.getLast().sampleOrder()));
+    }
+
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public JsonNode evidenceForUser(String planId,String user,String sampleId,String observationId,String pointer) {
+        var read = authorizeUser(planId,user); var row = requireHistory(read); var frozen = frozen(row);
+        var sample = mapper.sample(row.id(),sampleId);
+        if (sample == null) throw new IllegalArgumentException("采样记录不属于本发布计划");
+        var check = check(frozen,sample.checkId());
+        var matched = facts(read.context(),row,frozen,check,sample).stream()
+                .filter(fact -> Objects.equals(observationId,fact.observationId()) && Objects.equals(pointer,fact.pointer())).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("监测证据不属于指定采样引用"));
+        var observation = observations.observation(matched.observationId());
+        return json.valueToTree(new EvidenceView(planId,row.id(),sample.id(),sample.checkId(),observation.id(),matched.pointer(),
+                observation.contentHash(),observation.toolCode(),observation.sourceType(),check.scope(),
+                observation.observedAt().toInstant(ZoneOffset.UTC),json.readTree(observation.payloadJson())));
+    }
+
+    private UserRead authorizeUser(String planId, String user) {
         var plan = plans.find(planId); if (plan == null) throw new IllegalArgumentException("发布计划不存在");
         var actor = access.actor(user); actor.require("agent:task:view"); actor.require("agent:code:use");
         var run = runs.get(plan.runId()); var agent = agents.findAgent(run.agentId()); access.requireAgent(actor, agent);
@@ -182,7 +220,15 @@ public class AgentVerificationService {
             if (permissions(check.toolCode()).stream().noneMatch(actor::has)) throw new AccessDeniedException("缺少该复查监测来源的查看权限");
         }
         var row = mapper.forPlan(planId);
-        return row == null ? json.nullNode() : view(context, row);
+        return new UserRead(context,row);
+    }
+    private AgentVerificationEntity requireHistory(UserRead read) {
+        if (read.row() == null) throw new IllegalArgumentException("本发布计划尚未开始复查");
+        return read.row();
+    }
+    private AgentReleaseVerificationPlan.Check check(Frozen frozen,String id) {
+        return frozen.plan().checks().stream().filter(value -> value.id().equals(id)).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("复查项不属于本发布计划"));
     }
 
     public List<String> due() { return mapper.due(now()); }
@@ -210,15 +256,19 @@ public class AgentVerificationService {
         return true;
     }
 
-    private JsonNode view(AgentToolContext context, AgentVerificationEntity row) {
+    private JsonNode view(AgentToolContext context, AgentVerificationEntity row) { return view(context,row,false); }
+    private JsonNode view(AgentToolContext context, AgentVerificationEntity row,boolean human) {
         var frozen = frozen(row);
+        var checks = progress(context,row,frozen);
         var value = new LinkedHashMap<String, Object>();
         value.put("id", row.id()); value.put("planId", row.planId()); value.put("status", row.status()); value.put("version", row.version());
-        value.put("constraintsCheckedAt", clock.instant());
+        value.put("runId",row.runId()); value.put("changeSetId",row.changeSetId()); value.put("stage",row.stage());
+        value.put("manifestHash",row.manifestHash()); value.put("approvedSnapshotHash",row.approvedSnapshotHash());
+        value.put("constraintsCheckedAt", clock.instant()); value.put("currentConstraintsSatisfied",checks.stream().allMatch(check -> check.constraints().isEmpty()));
         value.put("deployedAt", frozen.deployedAt()); value.put("verificationPlan", frozen.plan()); value.put("nextCheckAt", row.nextCheckAt());
-        value.put("artifactId", row.artifactId()); value.put("checks", progress(context, row, frozen).stream().map(this::compact).toList());
+        value.put("artifactId", row.artifactId()); value.put("checks", checks.stream().map(this::compact).toList());
         JsonNode conclusion = row.conclusionJson() == null ? json.nullNode() : json.readTree(row.conclusionJson());
-        if (conclusion.isObject()) {
+        if (!human && conclusion.isObject()) {
             var copy = (tools.jackson.databind.node.ObjectNode) conclusion;
             copy.remove("checks");
             String reason = copy.path("reason").asText(); copy.put("reason", preview(reason, 1000)); copy.put("reasonTruncated", reason.length() > 1000);
@@ -245,14 +295,9 @@ public class AgentVerificationService {
         var issues = new LinkedHashSet<String>();
         for (var sample : samples) {
             latest = sample;
-            if (!AgentCodePolicy.hash(sample.evidenceJson()).equals(sample.evidenceHash())) throw new IllegalStateException("复查采样证据摘要不一致");
-            var facts = Arrays.asList(json.readValue(sample.evidenceJson(), AgentVerificationEvidence.Fact[].class));
+            var facts = facts(context,row,frozen,check,sample);
             var current = new TreeMap<String, AgentVerificationEvidence.Fact>(); issues.clear();
             for (var fact : facts) {
-                var observation = observations.observation(fact.observationId());
-                if (observation == null || !fact.contentHash().equals(observation.contentHash())) throw new IllegalStateException("复查原始监测证据已缺失或变化");
-                var verified = inspector.inspect(observation, context, check, fact.pointer(), frozen.deployedAt(), sample.createdAt().toInstant(ZoneOffset.UTC));
-                if (!verified.equals(fact)) throw new IllegalStateException("复查采样与原始监测证据不一致");
                 current.put(fact.sourceKey(), fact); issues.addAll(fact.problems());
             }
             if (!"PASS".equals(sample.assessment())) issues.add("AGENT_NOT_PASS");
@@ -281,6 +326,19 @@ public class AgentVerificationService {
         return new CheckProgress(check.id(), latest == null ? "INCONCLUSIVE" : latest.assessment(), latest == null ? "" : latest.reason(),
                 latest != null && latest.historicalDataPending(), window.size(), observedSeconds, start, end, List.copyOf(issues),
                 latest == null ? null : latest.id(), evidenceRoot);
+    }
+    private List<AgentVerificationEvidence.Fact> facts(AgentToolContext context,AgentVerificationEntity row,Frozen frozen,
+            AgentReleaseVerificationPlan.Check check,AgentVerificationSample sample) {
+        if (!row.id().equals(sample.verificationId()) || !check.id().equals(sample.checkId())
+                || !AgentCodePolicy.hash(sample.evidenceJson()).equals(sample.evidenceHash())) throw new IllegalStateException("复查采样证据摘要或归属不一致");
+        var facts = Arrays.asList(json.readValue(sample.evidenceJson(),AgentVerificationEvidence.Fact[].class));
+        for (var fact : facts) {
+            var observation = observations.observation(fact.observationId());
+            if (observation == null || !fact.contentHash().equals(observation.contentHash())) throw new IllegalStateException("复查原始监测证据已缺失或变化");
+            var verified = inspector.inspect(observation,context,check,fact.pointer(),frozen.deployedAt(),sample.createdAt().toInstant(ZoneOffset.UTC));
+            if (!verified.equals(fact)) throw new IllegalStateException("复查采样与原始监测证据不一致");
+        }
+        return facts;
     }
     private static Instant previousTime(Map<String, AgentVerificationEvidence.Fact> previous, String key) { return previous.get(key).dataAt(); }
 
@@ -361,6 +419,13 @@ public class AgentVerificationService {
     private static String id() { return UUID.randomUUID().toString(); }
     private LocalDateTime now() { return LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC); }
 
+    private record UserRead(AgentToolContext context,AgentVerificationEntity row) { }
+    public record SampleView(String id,String checkId,long sampleOrder,String assessment,String reason,boolean historicalDataPending,
+            Instant createdAt,List<AgentVerificationEvidence.Fact> evidence) { }
+    public record SamplePage(String planId,String verificationId,String checkId,long afterOrder,long throughOrder,int pageSize,
+            List<SampleView> items,boolean hasMore,long nextAfterOrder) { }
+    public record EvidenceView(String planId,String verificationId,String sampleId,String checkId,String observationId,String pointer,
+            String contentHash,String toolCode,String sourceType,AgentScope scope,Instant observedAt,JsonNode payload) { }
     public record DeploymentProof(String requestId, String receiptHash, Instant finishedAt) { }
     public record Frozen(String reviewId, AgentReleaseVerificationPlan plan, List<DeploymentProof> deployments, Instant deployedAt) { }
     public record CheckProgress(String checkId, String assessment, String reason, boolean historicalDataPending,

@@ -28,6 +28,15 @@ public interface AgentVerificationMapper {
     int update(AgentVerificationEntity value);
     @Select("SELECT * FROM pm_agent_verification_sample WHERE verification_id=#{id} AND check_id=#{checkId} ORDER BY sample_order")
     List<AgentVerificationSample> samples(@Param("id") String id, @Param("checkId") String checkId);
+    @Select("""
+            SELECT * FROM pm_agent_verification_sample
+            WHERE verification_id=#{id} AND check_id=#{checkId} AND sample_order>#{after} AND sample_order<=#{through}
+            ORDER BY sample_order LIMIT #{limit}
+            """)
+    List<AgentVerificationSample> samplePage(@Param("id") String id,@Param("checkId") String checkId,
+            @Param("after") long after,@Param("through") long through,@Param("limit") int limit);
+    @Select("SELECT * FROM pm_agent_verification_sample WHERE verification_id=#{id} AND id=#{sampleId}")
+    AgentVerificationSample sample(@Param("id") String id,@Param("sampleId") String sampleId);
     @Select("SELECT * FROM pm_agent_verification_sample WHERE verification_id=#{id} AND request_key=#{key}")
     AgentVerificationSample sampleByKey(@Param("id") String id, @Param("key") String key);
     @Insert("""

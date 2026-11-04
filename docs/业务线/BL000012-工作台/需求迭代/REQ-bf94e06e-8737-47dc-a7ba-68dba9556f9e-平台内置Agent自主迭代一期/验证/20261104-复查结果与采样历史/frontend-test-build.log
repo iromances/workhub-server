@@ -1,0 +1,66 @@
+
+> workhub-web@0.1.0 build
+> vue-tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && vite build --mode test --outDir /private/tmp/workhub-verification-history-dist
+
+vite v6.4.1 building for test...
+
+(!) outDir /private/tmp/workhub-verification-history-dist is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+transforming...
+✓ 1783 modules transformed.
+rendering chunks...
+computing gzip size...
+../../../../../private/tmp/workhub-verification-history-dist/index.html                                   0.97 kB │ gzip:   0.40 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/DeveloperResourceView-CdanulhI.css    0.09 kB │ gzip:   0.09 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/AuditLogView-Mt_sJ4Hb.css             0.09 kB │ gzip:   0.09 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/UserManagementView-BI4truik.css       0.13 kB │ gzip:   0.11 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/SystemConfigView-CZvzVovc.css         0.13 kB │ gzip:   0.11 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/RoleManagementView-FETkdOfP.css       0.29 kB │ gzip:   0.18 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/ForbiddenView-Bh_BmPKs.css            0.32 kB │ gzip:   0.21 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/index-BjESXWbU.css                    0.61 kB │ gzip:   0.43 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/LoginView-DVql81uF.css                0.71 kB │ gzip:   0.39 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/WorkItemListView-CE6_sPJa.css         0.71 kB │ gzip:   0.33 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/OpsMonitorView-CP2Zr_0G.css           1.11 kB │ gzip:   0.47 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/SystemAlertView-DREwuLo-.css          1.65 kB │ gzip:   0.57 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/ProjectListView-hSG3noOy.css          1.86 kB │ gzip:   0.58 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/AccountingMonitorView-BI__Z05Z.css    2.21 kB │ gzip:   0.75 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/McpResourceView-vxJXdOFv.css          2.58 kB │ gzip:   0.83 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/DashboardView-DDkyTBE4.css            2.92 kB │ gzip:   0.86 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/AiConfigView-BM5erttj.css             3.52 kB │ gzip:   1.05 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/PaymentConfigView-B5fOOcZ4.css        4.29 kB │ gzip:   1.11 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/AppLayout-Cyg6G6AD.css                5.03 kB │ gzip:   1.27 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/AgentWorkbenchView-DyLXp_rl.css      12.80 kB │ gzip:   2.57 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/IntakeListView-DRtMD7x2.css          17.29 kB │ gzip:   3.67 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/vendor-element-plus-Plm10Dc1.css    352.47 kB │ gzip:  47.25 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/system-config-BQ2Jfm5B.js             0.73 kB │ gzip:   0.26 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/ForbiddenView-DhtcQ5IU.js             0.83 kB │ gzip:   0.58 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/system-88Z5l_fT.js                    1.60 kB │ gzip:   0.42 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/ops-GPNL57aM.js                       1.72 kB │ gzip:   0.42 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/LoginView-BAmDqBUr.js                 1.82 kB │ gzip:   1.06 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/project-BK1BDTbl.js                   2.95 kB │ gzip:   0.79 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/intake-B7NGzGO7.js                    3.49 kB │ gzip:   0.98 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/AuditLogView-_X3bab6C.js              4.35 kB │ gzip:   1.50 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/DeveloperResourceView-PVziJrvj.js     5.03 kB │ gzip:   2.10 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/SystemConfigView-CCWlLQLB.js          6.50 kB │ gzip:   2.54 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/RoleManagementView-ZPAdt4Ob.js        7.47 kB │ gzip:   2.76 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/UserManagementView-BivTXRGv.js        8.85 kB │ gzip:   3.09 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/DashboardView-DTVFQ3Fh.js            11.23 kB │ gzip:   4.78 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/index-DMIcSwCo.js                    12.31 kB │ gzip:   4.16 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/AppLayout-CGQ_BdzB.js                13.63 kB │ gzip:   4.81 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/OpsMonitorView-Bwtl52KS.js           15.20 kB │ gzip:   4.90 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/WorkItemListView-Bm4RvOu6.js         18.97 kB │ gzip:   4.93 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/AccountingMonitorView-wMw1gyej.js    21.48 kB │ gzip:   6.76 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/vendor-element-icons-DHNi1yoH.js     22.62 kB │ gzip:   5.68 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/ProjectListView-CTLRxVoF.js          24.68 kB │ gzip:   6.46 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/vendor-vue-FHeDBIv3.js               29.47 kB │ gzip:  11.71 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/SystemAlertView-C1RIfBwS.js          34.40 kB │ gzip:   9.51 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/vendor-axios-BEcps5oF.js             37.14 kB │ gzip:  14.83 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/McpResourceView-1watQ4nA.js          44.32 kB │ gzip:  10.01 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/AiConfigView-CYr7UxeR.js             46.82 kB │ gzip:  12.19 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/PaymentConfigView-C-T0oK3P.js        52.58 kB │ gzip:  11.54 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/AgentWorkbenchView-BFdBFfZQ.js      105.36 kB │ gzip:  32.47 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/IntakeListView-vetN-Ii_.js          118.35 kB │ gzip:  28.68 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/vendor-BS4eNR2F.js                  209.90 kB │ gzip:  77.59 kB
+../../../../../private/tmp/workhub-verification-history-dist/assets/vendor-element-plus-Cxuz8Xag.js     756.52 kB │ gzip: 239.47 kB
+✓ built in 3.21s

@@ -1,0 +1,54 @@
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[ERROR] Tests run: 52, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 3.438 s <<< FAILURE! -- in cn.aslight.workhub.service.agent.AgentVerificationServiceTest
+[ERROR] cn.aslight.workhub.service.agent.AgentVerificationServiceTest.humanEvidenceAndHistoryRequireCurrentSourceAccessAndAgentScope -- Time elapsed: 0.032 s <<< ERROR!
+org.springframework.jdbc.BadSqlGrammarException: PreparedStatementCallback; bad SQL grammar [UPDATE pm_agent SET configuration_json=? WHERE id='agent']
+	at org.springframework.jdbc.support.SQLExceptionSubclassTranslator.doTranslate(SQLExceptionSubclassTranslator.java:112)
+	at org.springframework.jdbc.support.AbstractFallbackSQLExceptionTranslator.translate(AbstractFallbackSQLExceptionTranslator.java:102)
+	at org.springframework.jdbc.core.JdbcTemplate.translateException(JdbcTemplate.java:1549)
+	at org.springframework.jdbc.core.JdbcTemplate.execute(JdbcTemplate.java:689)
+	at org.springframework.jdbc.core.JdbcTemplate.update(JdbcTemplate.java:966)
+	at org.springframework.jdbc.core.JdbcTemplate.update(JdbcTemplate.java:1010)
+	at org.springframework.jdbc.core.JdbcTemplate.update(JdbcTemplate.java:1020)
+	at cn.aslight.workhub.service.agent.AgentVerificationServiceTest.humanEvidenceAndHistoryRequireCurrentSourceAccessAndAgentScope(AgentVerificationServiceTest.java:399)
+Caused by: org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "PM_AGENT" not found; SQL statement:
+UPDATE pm_agent SET configuration_json=? WHERE id='agent' [42102-224]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:514)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	at org.h2.message.DbException.get(DbException.java:223)
+	at org.h2.message.DbException.get(DbException.java:199)
+	at org.h2.command.Parser.getTableOrViewNotFoundDbException(Parser.java:8064)
+	at org.h2.command.Parser.getTableOrViewNotFoundDbException(Parser.java:8035)
+	at org.h2.command.Parser.readTableOrView(Parser.java:8024)
+	at org.h2.command.Parser.readTableOrView(Parser.java:7990)
+	at org.h2.command.Parser.readSimpleTableFilter(Parser.java:1094)
+	at org.h2.command.Parser.parseUpdate(Parser.java:1018)
+	at org.h2.command.Parser.parsePrepared(Parser.java:765)
+	at org.h2.command.Parser.parse(Parser.java:592)
+	at org.h2.command.Parser.parse(Parser.java:564)
+	at org.h2.command.Parser.prepareCommand(Parser.java:483)
+	at org.h2.engine.SessionLocal.prepareLocal(SessionLocal.java:639)
+	at org.h2.engine.SessionLocal.prepareCommand(SessionLocal.java:559)
+	at org.h2.jdbc.JdbcConnection.prepareCommand(JdbcConnection.java:1166)
+	at org.h2.jdbc.JdbcPreparedStatement.<init>(JdbcPreparedStatement.java:93)
+	at org.h2.jdbc.JdbcConnection.prepareStatement(JdbcConnection.java:316)
+	at org.springframework.jdbc.core.JdbcTemplate$SimplePreparedStatementCreator.createPreparedStatement(JdbcTemplate.java:1710)
+	at org.springframework.jdbc.core.JdbcTemplate.execute(JdbcTemplate.java:668)
+	... 4 more
+
+[ERROR] Errors:
+[ERROR]   AgentVerificationServiceTest.humanEvidenceAndHistoryRequireCurrentSourceAccessAndAgentScope:399 » BadSqlGrammar PreparedStatementCallback; bad SQL grammar [UPDATE pm_agent SET configuration_json=? WHERE id='agent']
+[ERROR] Tests run: 52, Failures: 0, Errors: 1, Skipped: 0
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.5:test (default-test) on project workhub-service:
+[ERROR]
+[ERROR] See /Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-server/workhub-service/target/surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR]
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :workhub-service

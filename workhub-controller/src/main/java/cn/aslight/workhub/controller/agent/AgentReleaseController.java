@@ -24,6 +24,16 @@ public class AgentReleaseController {
     public ApiResponse<JsonNode> verification(Authentication auth, @PathVariable String id) {
         return ApiResponse.success(verification.detailForUser(id, auth.getName()));
     }
+    @GetMapping("/{id}/verification/samples")
+    public ApiResponse<JsonNode> verificationSamples(Authentication auth,@PathVariable String id,@RequestParam String checkId,
+            @RequestParam(defaultValue="0") long afterOrder,@RequestParam(required=false) Long throughOrder,@RequestParam(defaultValue="10") int pageSize) {
+        return ApiResponse.success(verification.samplesForUser(id,auth.getName(),checkId,afterOrder,throughOrder,pageSize));
+    }
+    @GetMapping("/{id}/verification/samples/{sampleId}/evidence")
+    public ApiResponse<JsonNode> verificationEvidence(Authentication auth,@PathVariable String id,@PathVariable String sampleId,
+            @RequestParam String observationId,@RequestParam String pointer) {
+        return ApiResponse.success(verification.evidenceForUser(id,auth.getName(),sampleId,observationId,pointer));
+    }
     @GetMapping
     public ApiResponse<List<Map<String, Object>>> list(Authentication auth, @RequestParam String changeSetId) {
         return ApiResponse.success(service.list(changeSetId, auth.getName()));

@@ -359,6 +359,73 @@ class AgentVerificationServiceTest {
         grants.remove("ops:accounting:view");
         assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> service.detailForUser("plan", "owner"));
     }
+    @Test void humanSampleHistoryUsesStableUpperBoundAndKeysetPagination() {
+        String id=start();grants.addAll(Set.of("agent:task:view","agent:code:use"));
+        for(int i=0;i<3;i++){if(i>0)clock.advance(10);record(id,"page"+i,accounting(clock.instant()),"PASS",false);}
+        var first=service.samplesForUser("plan","owner","health",0,null,2);
+        assertEquals(2,first.path("items").size());assertTrue(first.path("hasMore").asBoolean());
+        long upper=first.path("throughOrder").asLong(),after=first.path("nextAfterOrder").asLong();
+        clock.advance(10);record(id,"new",accounting(clock.instant()),"PASS",false);
+        var second=service.samplesForUser("plan","owner","health",after,upper,2);
+        assertEquals(1,second.path("items").size());assertFalse(second.path("hasMore").asBoolean());
+        assertEquals(upper,second.path("throughOrder").asLong());assertEquals(4,service.samplesForUser("plan","owner","health",0,null,20).path("items").size());
+        assertEquals(4,verifications.find(id).version());
+        assertThrows(IllegalArgumentException.class,()->service.samplesForUser("plan","owner","foreign",0,null,2));
+        for(long invalid:List.of(-1L,Long.MAX_VALUE))assertThrows(IllegalArgumentException.class,()->service.samplesForUser("plan","owner","health",invalid,null,2));
+        assertThrows(IllegalArgumentException.class,()->service.samplesForUser("plan","owner","health",0,upper+10,2));
+        assertThrows(IllegalArgumentException.class,()->service.samplesForUser("plan","owner","health",0,null,21));
+    }
+    @Test void humanHistoryPreservesFullReasonsAndReadsOnlyReferencedObservationPointer() {
+        String id=start();String observed=accounting(clock.instant());var args=recordArgs(id,"full",observed,"PASS",false);
+        String reason="本次业务判定的详细理由".repeat(250);args.put("reason",reason);invoke("verification.record",args);
+        grants.addAll(Set.of("agent:task:view","agent:code:use"));pause();
+        var page=service.samplesForUser("plan","owner","health",0,null,10);var sample=page.path("items").get(0);
+        assertEquals(reason,sample.path("reason").asText());String sampleId=sample.path("id").asText();
+        var original=service.evidenceForUser("plan","owner",sampleId,observed,"/data/0");
+        assertEquals(json.readTree(observations.observation(observed).payloadJson()),original.path("payload"));
+        assertEquals(id,original.path("verificationId").asText());
+        assertThrows(IllegalArgumentException.class,()->service.evidenceForUser("plan","owner",sampleId,observed,"/data"));
+        String other=accounting(clock.instant());assertThrows(IllegalArgumentException.class,()->service.evidenceForUser("plan","owner",sampleId,other,"/data/0"));
+        assertThrows(IllegalArgumentException.class,()->service.evidenceForUser("plan","owner","foreign",observed,"/data/0"));
+        verify(changes,atLeastOnce()).detailForUser("change","owner");
+    }
+    @Test void humanEvidenceAndHistoryRequireCurrentSourceAccessAndAgentScope() {
+        String id=start(),observed=accounting(clock.instant());record(id,"one",observed,"PASS",false);
+        String sampleId=verifications.samples(id,"health").getFirst().id();grants.addAll(Set.of("agent:task:view","agent:code:use"));
+        grants.remove("ops:accounting:view");
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,()->service.samplesForUser("plan","owner","health",0,null,10));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,()->service.evidenceForUser("plan","owner",sampleId,observed,"/data/0"));
+        grants.add("ops:accounting:view");var config=(ObjectNode)json.readTree(agents.findAgent("agent").configurationJson());config.set("scopes",json.createArrayNode());
+        jdbc.update("UPDATE pm_agent_definition SET configuration_json=? WHERE id='agent'",json.writeValueAsString(config));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,()->service.detailForUser("plan","owner"));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,()->service.samplesForUser("plan","owner","health",0,null,10));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,()->service.evidenceForUser("plan","owner",sampleId,observed,"/data/0"));
+    }
+    @Test void missingOrAlteredOriginalEvidenceIsNotAnEmptyHistory() {
+        String id=start(),observed=accounting(clock.instant());record(id,"one",observed,"PASS",false);
+        String sampleId=verifications.samples(id,"health").getFirst().id();grants.addAll(Set.of("agent:task:view","agent:code:use"));
+        jdbc.update("UPDATE pm_agent_observation SET payload_json='{}' WHERE id=?",observed);
+        assertThrows(IllegalArgumentException.class,()->service.samplesForUser("plan","owner","health",0,null,10));
+        assertThrows(IllegalArgumentException.class,()->service.evidenceForUser("plan","owner",sampleId,observed,"/data/0"));
+        jdbc.update("DELETE FROM pm_agent_observation WHERE id=?",observed);
+        assertThrows(IllegalStateException.class,()->service.samplesForUser("plan","owner","health",0,null,10));
+    }
+    @Test void historicalPassedConclusionAndCurrentStalenessRemainSeparate() {
+        String id=completeSamples();String reason="完整总体判定理由".repeat(250);
+        invoke("verification.finish",json.valueToTree(Map.of("verificationId",id,"assessment","PASS","reason",reason,"historicalDataPending",false)));
+        grants.addAll(Set.of("agent:task:view","agent:code:use"));clock.advance(100);
+        var history=service.detailForUser("plan","owner");
+        assertEquals("PASSED",history.path("status").asText());assertFalse(history.path("currentConstraintsSatisfied").asBoolean());
+        assertTrue(history.at("/conclusion/platformConstraintsSatisfied").asBoolean());assertEquals(reason,history.at("/conclusion/reason").asText());
+        assertFalse(history.at("/conclusion/checks").isEmpty());assertTrue(history.path("checks").toString().contains("LATEST_DATA_STALE"));
+        assertEquals("TEST_DEPLOY",history.path("stage").asText());assertEquals("change",history.path("changeSetId").asText());
+    }
+    @Test void missingVerificationIsNullDetailButCannotBeQueriedAsEmptySampleHistory() {
+        grants.addAll(Set.of("agent:task:view","agent:code:use"));assertTrue(service.detailForUser("plan","owner").isNull());
+        assertThrows(IllegalArgumentException.class,()->service.samplesForUser("plan","owner","health",0,null,10));
+        assertThrows(IllegalArgumentException.class,()->service.evidenceForUser("plan","owner","sample","observation","/data/0"));
+    }
+
     @Test void longReasonsKeepToolResultsUsableAndPreserveFullAuditText() {
         String id = start(); var args = recordArgs(id, "long", accounting(clock.instant()), "PASS", false);
         String reason = "实际证据".repeat(900); args.put("reason", reason);
