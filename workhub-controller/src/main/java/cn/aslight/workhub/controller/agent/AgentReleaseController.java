@@ -3,6 +3,8 @@ package cn.aslight.workhub.controller.agent;
 import cn.aslight.workhub.common.api.ApiResponse;
 import cn.aslight.workhub.model.agent.*;
 import cn.aslight.workhub.service.agent.AgentReleasePlanService;
+import cn.aslight.workhub.service.agent.AgentVerificationService;
+import tools.jackson.databind.JsonNode;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -14,7 +16,14 @@ import java.util.*;
 @PreAuthorize("hasAuthority('agent:task:view') and hasAuthority('agent:code:use')")
 public class AgentReleaseController {
     private final AgentReleasePlanService service;
-    public AgentReleaseController(AgentReleasePlanService service) { this.service = service; }
+    private final AgentVerificationService verification;
+    public AgentReleaseController(AgentReleasePlanService service, AgentVerificationService verification) {
+        this.service = service; this.verification = verification;
+    }
+    @GetMapping("/{id}/verification")
+    public ApiResponse<JsonNode> verification(Authentication auth, @PathVariable String id) {
+        return ApiResponse.success(verification.detailForUser(id, auth.getName()));
+    }
     @GetMapping
     public ApiResponse<List<Map<String, Object>>> list(Authentication auth, @RequestParam String changeSetId) {
         return ApiResponse.success(service.list(changeSetId, auth.getName()));

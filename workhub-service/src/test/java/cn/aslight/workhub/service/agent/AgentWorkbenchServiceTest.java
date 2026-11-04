@@ -1109,6 +1109,20 @@ class AgentWorkbenchServiceTest {
     }
 
     @Test
+    void committedVerificationReceiptAlsoPreventsManualOverwrite() {
+        var run = unknownTool();
+        jdbc.execute("CREATE TABLE pm_agent_verification_call(run_id VARCHAR(36),tool_key VARCHAR(180),tool_code VARCHAR(80),result_json TEXT)");
+        jdbc.update("UPDATE pm_agent_run SET external_handle=? WHERE id=?", json.writeValueAsString(Map.of("kind", "TOOL", "key", "step:1:tool", "tool", "verification.record", "readOnly", false)), run.id());
+        jdbc.update("UPDATE pm_agent_event SET payload_json=? WHERE run_id=? AND event_key='step:1:tool:request'", json.writeValueAsString(Map.of("tool", "verification.record", "arguments", Map.of())), run.id());
+        var missing = reconciliation.preview(run.taskId(), run.id(), "owner"); assertTrue(missing.canReconcile());
+        jdbc.update("INSERT INTO pm_agent_verification_call VALUES(?,?,?,?)", run.id(), "step:1:tool", "verification.record", "{\"status\":\"OBSERVING\"}");
+        var actual = reconciliation.preview(run.taskId(), run.id(), "owner");
+        assertFalse(actual.canReconcile()); assertEquals("COMMITTED_VERIFICATION_TRANSACTION", actual.calls().getFirst().receiptSource());
+        assertThrows(IllegalStateException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(missing, "late-verification", "CANCEL"), "owner"));
+        store.recoverExpired(run.id()); assertNotNull(store.event(run.id(), "step:1:tool:result")); assertEquals("QUEUED", store.get(run.id()).status());
+    }
+
+    @Test
     void manualAuditFailureRollsBackReleaseAndAllEvents() {
         var run = unknownApi(); var before = store.get(run.id()); var count = store.events(run.id()).size();
         var view = reconciliation.preview(run.taskId(), run.id(), "owner");

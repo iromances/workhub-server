@@ -1,0 +1,82 @@
+[
+  {
+    "path": "workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_154000__add_agent_verification.sql",
+    "sha256": "f7f10646ed0c6b6dec3456d6f1ca2e0d9ea3191b4a7094d97dfe0225bd3f07a3"
+  },
+  {
+    "path": "workhub-controller/src/main/java/cn/aslight/workhub/controller/agent/AgentReleaseController.java",
+    "sha256": "d077a59de14ec8cfb2bb5b2ad97707f74440d30a0d6163682ad1dc19fe130ea4"
+  },
+  {
+    "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/agent/AgentMapper.java",
+    "sha256": "923339292f94ddafa4901510c091de5941eade51910905e27366698414bc8852"
+  },
+  {
+    "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/agent/AgentVerificationMapper.java",
+    "sha256": "2a378a4baed640d1d005af69d3bfa60c8d85769171027dd64b9fa75a6fda5ad3"
+  },
+  {
+    "path": "workhub-job/src/main/java/cn/aslight/workhub/job/AgentVerificationJob.java",
+    "sha256": "80dfae310ad8eaa043a24681315fb9acc284c4135b57cc675063e3b50788fc1f"
+  },
+  {
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentVerificationCall.java",
+    "sha256": "e9b670952831251790c4961ef0d97436fb327b6b8c57ec52f7e7420137c45937"
+  },
+  {
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentVerificationEntity.java",
+    "sha256": "98780c6656fbee0a1a9b7f42f41545fa98795a8d5e6d526d4402e97635b78bfa"
+  },
+  {
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentVerificationEvidenceReference.java",
+    "sha256": "733b4ae0dbde763b0a14129698a107bb18ca07daec08b2a0397b370fc2db0365"
+  },
+  {
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentVerificationSample.java",
+    "sha256": "32f2b6d0823106b0a8d2d4816cab0cf1aaf448f873d45a1026ee148e2571a531"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentDeploymentApproval.java",
+    "sha256": "4e1ab9f9fad6e588251ff05f14f007b7e85b432e7aedb02e66c6ab57ecc037a3"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentRunReconciliationService.java",
+    "sha256": "eeb91507842392392fa21870aeea4827ed7afd8dc68913dca068f304113ddd51"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentRunStore.java",
+    "sha256": "1edbf4b122c60e2f738700606d0d514ff268e0bf2f05f9c3dc4b3d23a8d5777e"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentToolArguments.java",
+    "sha256": "2b136bafa4302ced845037c7eba401375bf55b21b0cc912788a35eac4c235835"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentVerificationEvidence.java",
+    "sha256": "8f61d26ea12d76041348c84506fa7fdca3f81f410276a4e689fcbd484a1baa0e"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentVerificationService.java",
+    "sha256": "da68b065d98a5da9479b04e5ec13e11f19a03a39aca4f2b2bb22c7714a96caca"
+  },
+  {
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentVerificationTools.java",
+    "sha256": "f47da4bc5020f24c0ad2b614253881ac5bbb4094cbaa5ab49e78421b84f681d7"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentDeploymentDispatcherTest.java",
+    "sha256": "edabef79771ef1b0c31159422d3afafa74c5548e6f11edb0eb9f182786ee48f4"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentReleasePlanServiceTest.java",
+    "sha256": "b0016317c04d01240850255a6773f4696aebd217106b9039401fc6582e43bf86"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentVerificationServiceTest.java",
+    "sha256": "22d9d9cc0506b55e5094f5a2c6b9e83c8ef36855e983e6736073214d7fb81466"
+  },
+  {
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentWorkbenchServiceTest.java",
+    "sha256": "64eb373b82da55a8c49b6b34b3fc6a5b0fb633b67a51f1bc6a423f73ca325fba"
+  }
+]

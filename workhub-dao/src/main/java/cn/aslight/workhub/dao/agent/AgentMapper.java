@@ -92,6 +92,9 @@ public interface AgentMapper {
     @Select("SELECT result_json FROM pm_agent_inspection_call WHERE run_id=#{runId} AND tool_key=#{key}")
     String findInspectionCallResult(@Param("runId") String runId, @Param("key") String key);
 
+    @Select("SELECT result_json FROM pm_agent_verification_call WHERE run_id=#{runId} AND tool_key=#{key} AND tool_code=#{tool}")
+    String findVerificationCallResult(@Param("runId") String runId, @Param("key") String key, @Param("tool") String tool);
+
     @Select("SELECT " + RUN_COLUMNS + " FROM pm_agent_run WHERE task_id=#{taskId} AND trigger_key=#{key}")
     AgentRunEntity findRunByKey(@Param("taskId") String taskId, @Param("key") String key);
 

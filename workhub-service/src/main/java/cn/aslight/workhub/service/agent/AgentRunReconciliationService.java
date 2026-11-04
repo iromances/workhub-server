@@ -166,13 +166,14 @@ public class AgentRunReconciliationService {
         proofs.add(receipt == null ? "NONE:" + receiptKey : receiptKey + ":" + receipt.kind() + ":" + digest(receipt.payloadJson()));
         String toolCode = text(handle, "tool");
         var intent = mapper.findEventByKey(run.id(), key + ":request");
-        if (!actualReceipt && "TOOL".equals(kind) && Set.of("inspection.next", "inspection.ack").contains(Objects.toString(toolCode, ""))
+        boolean inspection = Set.of("inspection.next", "inspection.ack").contains(Objects.toString(toolCode, ""));
+        if (!actualReceipt && "TOOL".equals(kind) && (inspection || AgentVerificationService.MUTATIONS.contains(Objects.toString(toolCode, "")))
                 && intent != null && "TOOL_REQUEST".equals(intent.kind())
                 && toolCode.equals(json.readTree(intent.payloadJson()).path("tool").asText())) {
-            String committed = mapper.findInspectionCallResult(run.id(), key);
+            String committed = inspection ? mapper.findInspectionCallResult(run.id(), key) : mapper.findVerificationCallResult(run.id(), key, toolCode);
             if (committed != null) {
-                if (!json.readTree(committed).isObject()) throw new IllegalStateException("已提交巡检结果格式无效，请核对原记录");
-                receiptSource = "COMMITTED_INSPECTION_TRANSACTION";
+                if (!json.readTree(committed).isObject()) throw new IllegalStateException("已提交工具结果格式无效，请核对原记录");
+                receiptSource = inspection ? "COMMITTED_INSPECTION_TRANSACTION" : "COMMITTED_VERIFICATION_TRANSACTION";
                 proofs.add(key + ":committed:" + digest(committed));
             }
         }

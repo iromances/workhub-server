@@ -86,7 +86,7 @@ class AgentDeploymentDispatcherTest {
         current.set(new AgentChangeView("change", "run", "task", 1, manifestHash, now(), true, true, List.of(), manifest));
         var changes = mock(AgentChangeService.class); when(changes.detailForUser(eq("change"), anyString())).thenAnswer(invocation -> current.get());
         addArtifact("test-proof", "TEST_REPORT", "PLATFORM_EXECUTION", "{\"fixture\":\"trusted platform test record\"}");
-        approvalGate = new AgentDeploymentApproval(mapper, agents, changes, runs, access, policies, json);
+        approvalGate = new AgentDeploymentApproval(mapper, agents, changes, runs, access, policies, mock(AgentVerificationMapper.class), json);
         var interceptor = new TransactionInterceptor(); interceptor.setTransactionManager(manager); interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
         var proxy = new ProxyFactory(new AgentDeploymentStore(mapper, agents, approvalGate, new AgentReleasePlanGate(sessions.getMapper(AgentReleasePlanMapper.class), mapper, agents, json), json, clock)); proxy.setProxyTargetClass(true); proxy.addAdvice(interceptor);
         store = (AgentDeploymentStore) proxy.getProxy();
@@ -293,14 +293,12 @@ class AgentDeploymentDispatcherTest {
         assertEquals("BLOCKED", dispatcher.advance(request.id()).status()); verify(client, never()).submit(any(), any()); assertEquals(0, locks());
     }
 
-    @Test void productionAcceptsOnlyVerifiedWholeTestReleaseAndRejectsChangedEvidence() {
+    @Test void productionRejectsVerificationArtifactWithoutPersistedCertificateEvenWithSuccessfulTestDeployment() {
         var test = building(); successBuild(); when(client.receipt(any(), eq(22L), anyString())).thenReturn(receipt(test.id(), "SUCCEEDED", Map.of("server", sha)));
         tick(); assertEquals("SUCCEEDED", dispatcher.advance(test.id()).status());
         addArtifact("verification", "VERIFICATION", "PLATFORM_VERIFICATION", json.writeValueAsString(Map.of("phase", "TEST_ENVIRONMENT", "passed", true, "changeSetId", "change", "manifestHash", manifestHash, "deploymentIds", List.of(test.id()))));
         configure("https://jenkins.example.invalid/", "PROD_DEPLOY", new AgentScope("BL000012", "PROD"));
-        var production = approved(); assertDoesNotThrow(() -> approvalGate.validate(production));
-        jdbc.update("UPDATE pm_agent_deployment SET status='UNKNOWN' WHERE id=?", test.id());
-        assertThrows(IllegalArgumentException.class, () -> approvalGate.validate(production));
+        var production = approved(); assertThrows(IllegalArgumentException.class, () -> approvalGate.validate(production));
     }
 
     @Test void receiptRejectsForeignIdentityWrongTypesTimesAndIncompleteSuccess() {

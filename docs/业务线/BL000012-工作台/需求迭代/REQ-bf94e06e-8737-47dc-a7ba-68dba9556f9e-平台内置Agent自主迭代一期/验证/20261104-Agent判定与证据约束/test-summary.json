@@ -1,0 +1,66 @@
+{
+  "verifiedAt": "2026-11-04T06:50:37.508888+00:00",
+  "baseCommit": "1a3aed0a2fa59fae21fdcaf5028ca8ca412870a4",
+  "environment": "offline Maven; H2; simulated source and deployment facts",
+  "suites": [
+    {
+      "name": "AgentVerificationServiceTest",
+      "tests": 33,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedCases": []
+    },
+    {
+      "name": "AgentDeploymentDispatcherTest",
+      "tests": 28,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedCases": []
+    },
+    {
+      "name": "AgentReleasePlanServiceTest",
+      "tests": 29,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedCases": []
+    },
+    {
+      "name": "AgentReleaseToolsTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedCases": []
+    },
+    {
+      "name": "AgentInspectionServiceTest",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "skippedCases": []
+    },
+    {
+      "name": "AgentWorkbenchServiceTest",
+      "tests": 57,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "skippedCases": [
+        {
+          "test": "installedZcodeCompletesTaskThroughProductionMcpAndStoresObservedResult(Path)",
+          "reason": "System property [workhub.test.zcode.command] does not exist"
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "tests": 176,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  }
+}

@@ -1,0 +1,1 @@
+mvn -o -q -pl workhub-controller,workhub-job -am -Dtest=AgentVerificationServiceTest,AgentDeploymentDispatcherTest,AgentReleasePlanServiceTest,AgentReleaseToolsTest,AgentInspectionServiceTest,AgentWorkbenchServiceTest -Dsurefire.failIfNoSpecifiedTests=false -DargLine=-javaagent:/Users/aslight/.m2/repository/org/mockito/mockito-core/5.20.0/mockito-core-5.20.0.jar test

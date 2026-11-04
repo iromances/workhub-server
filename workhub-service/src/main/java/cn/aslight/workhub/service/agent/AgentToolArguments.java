@@ -64,6 +64,12 @@ final class AgentToolArguments {
 
     long position(String name) { return has(name) ? version(name) : 0; }
 
+    boolean bool(String name) {
+        JsonNode node = value.get(name);
+        if (node == null || !node.isBoolean()) throw new IllegalArgumentException("布尔参数缺失或格式错误: " + name);
+        return node.asBoolean();
+    }
+
     boolean has(String name) { return value.hasNonNull(name); }
 
     int bounded(String name, int defaultValue, int min, int max) {

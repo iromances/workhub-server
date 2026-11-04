@@ -16,10 +16,11 @@ public class AgentDeploymentApproval {
     private final AgentAccessService access;
     private final AgentJenkinsPolicy policies;
     private final ObjectMapper json;
+    private final AgentVerificationMapper verifications;
     public AgentDeploymentApproval(AgentDeploymentMapper deployments, AgentMapper agents, AgentChangeService changes,
-            AgentRunStore runs, AgentAccessService access, AgentJenkinsPolicy policies, ObjectMapper json) {
+            AgentRunStore runs, AgentAccessService access, AgentJenkinsPolicy policies, AgentVerificationMapper verifications, ObjectMapper json) {
         this.deployments = deployments; this.agents = agents; this.changes = changes; this.runs = runs;
-        this.access = access; this.policies = policies; this.json = json;
+        this.access = access; this.policies = policies; this.verifications = verifications; this.json = json;
     }
 
     public AgentJenkinsPolicy.BindingSnapshot validate(AgentReleaseApprovalEntity approval) {
@@ -77,7 +78,14 @@ public class AgentDeploymentApproval {
     private boolean hasTestEnvironmentVerification(AgentChangeView change, List<AgentArtifactEntity> evidence) {
         for (var artifact : evidence) {
             if (!"VERIFICATION".equals(artifact.kind()) || !"PLATFORM_VERIFICATION".equals(artifact.provenance())) continue;
+            var certificate = verifications.forArtifact(artifact.id());
+            if (certificate == null || !"PASSED".equals(certificate.status()) || !"TEST_DEPLOY".equals(certificate.stage())
+                    || !change.runId().equals(certificate.runId()) || !change.id().equals(certificate.changeSetId())
+                    || !change.manifestHash().equals(certificate.manifestHash()) || !artifact.contentHash().equals(certificate.artifactHash())) continue;
             var value = json.readTree(artifact.payloadJson());
+            if (!certificate.id().equals(value.path("verificationId").asText()) || !certificate.planId().equals(value.path("planId").asText())
+                    || !certificate.approvedSnapshotHash().equals(value.path("approvedSnapshotHash").asText())
+                    || !certificate.snapshotHash().equals(value.path("verificationSnapshotHash").asText())) continue;
             if (!"TEST_ENVIRONMENT".equals(value.path("phase").asText()) || !value.path("passed").isBoolean() || !value.path("passed").asBoolean()
                     || !change.id().equals(value.path("changeSetId").asText()) || !change.manifestHash().equals(value.path("manifestHash").asText())
                     || !value.path("deploymentIds").isArray() || value.path("deploymentIds").isEmpty()) continue;

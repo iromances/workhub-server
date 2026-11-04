@@ -81,7 +81,7 @@ class AgentReleasePlanServiceTest {
         current.set(new AgentChangeView("change", "run", "task", 1, hash, now(), true, true, List.of(), manifest));
         var changes = mock(AgentChangeService.class); when(changes.detailForUser(eq("change"), anyString())).thenAnswer(i -> current.get());
         artifact("proof", "TEST_REPORT", "PLATFORM_EXECUTION", "{\"fixture\":true}");
-        var approval = new AgentDeploymentApproval(deployments, agents, changes, runs, access, policies, json);
+        var approval = new AgentDeploymentApproval(deployments, agents, changes, runs, access, policies, mock(AgentVerificationMapper.class), json);
         gate = new AgentReleasePlanGate(plans, deployments, agents, json);
         outbox = proxy(new AgentDeploymentStore(deployments, agents, approval, gate, json, clock), interceptor);
         service = proxy(new AgentReleasePlanService(plans, deployments, agents, changes, runs, access, policies, approval, outbox, gate, json,
