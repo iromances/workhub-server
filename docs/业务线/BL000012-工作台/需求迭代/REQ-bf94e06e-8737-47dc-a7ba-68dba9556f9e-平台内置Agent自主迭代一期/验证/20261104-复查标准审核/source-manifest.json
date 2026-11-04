@@ -1,0 +1,62 @@
+[
+  {
+    "repository": "workhub-server",
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentReleasePlanRequest.java",
+    "sha256": "d131662b278499a872ea60240cd46f2ba0feab4f085a240bdb0114e918333067"
+  },
+  {
+    "repository": "workhub-server",
+    "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentReleaseVerificationPlan.java",
+    "sha256": "291dcddb7abb7aa7ce9862e9a7ef87f5019795e9fa95b029c950012b186b49be"
+  },
+  {
+    "repository": "workhub-server",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentReleasePlanGate.java",
+    "sha256": "4ed386b8095da29182ca8a2df4b60139ec9b26b97b6d4a20a60eb6d99c7e529a"
+  },
+  {
+    "repository": "workhub-server",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentReleasePlanService.java",
+    "sha256": "3e6005e99ffd071b8fdc13c615a19f794702f3d1d0eb7d4e9baa07a16e53374f"
+  },
+  {
+    "repository": "workhub-server",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentReleasePlanSnapshot.java",
+    "sha256": "c0610fe61f96cab6ab1c43c94019232829f9910eb83adbfc70d6335a6cc2c133"
+  },
+  {
+    "repository": "workhub-server",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentReleaseTools.java",
+    "sha256": "30a11eaa86fe3b47b72bf1d77fdebcc88b409ad5ed33d07975d3c7385ab3b4f5"
+  },
+  {
+    "repository": "workhub-server",
+    "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentToolArguments.java",
+    "sha256": "f09f9ade1d0e2583f494b361df6fc73b1937eb8103d5406282589f7c4429527a"
+  },
+  {
+    "repository": "workhub-server",
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentReleasePlanServiceTest.java",
+    "sha256": "90c5f6a8d1148db54f35ab52f61ee1a25956c5ad9b02c2d76e3060b0b9ef8ced"
+  },
+  {
+    "repository": "workhub-server",
+    "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentReleaseToolsTest.java",
+    "sha256": "60ed4693e226dde52f370bdd57ac9a1bac485e435888676e8fc66892917341c8"
+  },
+  {
+    "repository": "workhub-web",
+    "path": "src/types/agentRelease.ts",
+    "sha256": "d5063dddb301a5426430cd6d81ec719e563dbe6c7a9cfdcd8f487084d83ab4a3"
+  },
+  {
+    "repository": "workhub-web",
+    "path": "src/views/agent/AgentReleaseVerificationPanel.vue",
+    "sha256": "bd7c1f9efa72acc89aeab125fcb2bfe71ce25c1ded9feb0b303d2bf013ace903"
+  },
+  {
+    "repository": "workhub-web",
+    "path": "src/views/agent/AgentReleasesPanel.vue",
+    "sha256": "5853ecf982880d87c4c3d7d0b29f7bb1d4b9e5d0bc5fde7bdf44a9c721bb8c91"
+  }
+]

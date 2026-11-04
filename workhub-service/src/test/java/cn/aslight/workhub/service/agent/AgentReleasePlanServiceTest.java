@@ -218,7 +218,7 @@ class AgentReleasePlanServiceTest {
         var original = policies.current().bindings();
         setBindings(original.stream().map(b -> new AgentJenkinsPolicy.JobBinding(b.id(), b.name(), b.instanceId(), new AgentScope("BL000012", "PROD"), b.systemName(), "PROD_DEPLOY",
                 b.jobSegments(), b.commitParameters(), b.correlationParameter(), b.manifestParameter(), b.environmentParameter(), b.fixedParameters(), b.receiptPath(), true)).toList());
-        String plan = (String) service.prepare(new AgentReleasePlanRequest("prod", "change", "PROD_DEPLOY", List.of("server", "web"), List.of()), "owner").get("id");
+        String plan = (String) service.prepare(new AgentReleasePlanRequest("prod", "change", "PROD_DEPLOY", List.of("server", "web"), List.of(), verification(new AgentScope("BL000012", "PROD"), 3600)), "owner").get("id");
         assertTrue(gate.snapshot(plans.find(plan)).blockers().contains("TEST_ENVIRONMENT_VERIFICATION_MISSING")); assertThrows(IllegalArgumentException.class, () -> approve(plan));
     }
     @Test void stageMismatchAndInvalidInputNeverCreatePlans() {
@@ -256,7 +256,92 @@ class AgentReleasePlanServiceTest {
         assertEquals("CANCELLED", plans.find(plan).status()); assertEquals(0, count("pm_agent_release_resource"));
     }
 
-    private AgentReleasePlanRequest request(String key, List<String> bindings, List<AgentReleasePlanRequest.Dependency> dependencies) { return new AgentReleasePlanRequest(key, "change", "TEST_DEPLOY", bindings, dependencies); }
+    @Test void verificationStandardsAreImmutableAndBoundToRequestAndHumanSnapshot() {
+        var id = prepare("standards");
+        var snapshot = gate.snapshot(plans.find(id));
+        assertEquals(2, snapshot.schemaVersion());
+        assertEquals(verification(scope, 3600), snapshot.verificationPlan());
+        var altered = new AgentReleasePlanRequest("standards", "change", "TEST_DEPLOY", List.of("server", "web"), List.of(), verification(scope, 7200));
+        assertThrows(IllegalArgumentException.class, () -> service.prepare(altered, "owner"));
+        var next = (String) service.prepare(new AgentReleasePlanRequest("revised", "change", "TEST_DEPLOY", List.of("server", "web"), List.of(), altered.verificationPlan()), "owner").get("id");
+        assertNotEquals(plans.find(id).snapshotHash(), plans.find(next).snapshotHash());
+        var oldDecision = decision(id, "APPROVED");
+        assertThrows(IllegalStateException.class, () -> service.review(next, oldDecision, "reviewer"));
+        approve(id);
+        assertEquals(plans.find(id).snapshotHash(), plans.reviews(id).getFirst().snapshotHash());
+        assertEquals(false, service.detail(id, "reviewer").get("businessVerified"));
+        var payload = (tools.jackson.databind.node.ObjectNode) json.readTree(plans.find(id).snapshotJson());
+        ((tools.jackson.databind.node.ObjectNode) payload.at("/verificationPlan/checks/0")).put("observationSeconds", 1);
+        jdbc.update("UPDATE pm_agent_release_plan SET snapshot_json=? WHERE id=?", json.writeValueAsString(payload), id);
+        assertThrows(IllegalArgumentException.class, () -> gate.snapshot(plans.find(id)));
+    }
+
+    @Test void missingAndLegacyStandardsRemainVisibleButCannotBeApproved() {
+        var missing = (String) service.prepare(new AgentReleasePlanRequest("missing", "change", "TEST_DEPLOY", List.of("server", "web"), List.of()), "owner").get("id");
+        assertTrue(((List<?>) service.detail(missing, "owner").get("blockers")).contains("VERIFICATION_PLAN_MISSING"));
+        assertEquals(false, service.detail(missing, "owner").get("readyForReview"));
+        assertThrows(IllegalArgumentException.class, () -> approve(missing));
+        var legacy = prepare("legacy"); legacy(legacy);
+        assertEquals(1, gate.snapshot(plans.find(legacy)).schemaVersion());
+        assertEquals(false, service.detail(legacy, "owner").get("readyForReview"));
+        assertThrows(IllegalArgumentException.class, () -> approve(legacy));
+        service.review(legacy, decision(legacy, "REJECTED"), "reviewer");
+        assertEquals("REJECTED", plans.find(legacy).status());
+        assertEquals(0, count("pm_agent_deployment"));
+    }
+
+    @Test void legacyApprovedPlanBlocksUnsentJobsAndPreservesInFlightRequest() {
+        var id = prepare("legacy-approved"); approve(id);
+        var sent = outbox.intent(outbox.claim(step(id, "server")));
+        legacy(id);
+        assertNull(outbox.claim(step(id, "web")));
+        assertEquals("BLOCKED", deployments.find(step(id, "web")).status());
+        assertEquals("SUBMITTING", deployments.find(sent.id()).status());
+        assertEquals("STOPPING", plans.find(id).status());
+        assertTrue(count("pm_agent_release_resource") > 0);
+        outbox.finish(sent, "UNKNOWN", null, null, null, null, "原请求仍待核对");
+        assertEquals("NEEDS_ATTENTION", plans.find(id).status());
+        assertTrue(count("pm_agent_release_resource") > 0);
+    }
+
+    @Test void invalidVerificationScopeCoverageToolsAndTimingCannotCreatePlans() {
+        var check = verification(scope, 3600).checks().getFirst();
+        var invalid = new ArrayList<AgentReleaseVerificationPlan>();
+        invalid.add(verification(new AgentScope("BL000012", "PROD"), 3600));
+        invalid.add(new AgentReleaseVerificationPlan(List.of(check, check), "历史数据单独处理", "失败返回修复"));
+        invalid.add(new AgentReleaseVerificationPlan(List.of(), "历史数据单独处理", "失败返回修复"));
+        for (long[] timing : List.of(new long[]{0,60,300,2}, new long[]{3600,7200,300,2}, new long[]{3600,60,300,100}, new long[]{3600,60,0,2})) {
+            invalid.add(new AgentReleaseVerificationPlan(List.of(new AgentReleaseVerificationPlan.Check("check", scope, check.toolCode(),
+                    check.monitoringItem(), check.passCondition(), timing[0], timing[1], timing[2], timing[3], check.evidenceRequirements())), "历史数据单独处理", "失败返回修复"));
+        }
+        invalid.add(new AgentReleaseVerificationPlan(List.of(new AgentReleaseVerificationPlan.Check("check", scope, "code.apply",
+                check.monitoringItem(), check.passCondition(), 3600, 60, 300, 2, check.evidenceRequirements())), "历史数据单独处理", "失败返回修复"));
+        var tooLarge = new ArrayList<AgentReleaseVerificationPlan.Check>();
+        for (int n = 0; n < 20; n++) tooLarge.add(new AgentReleaseVerificationPlan.Check("check-" + n, scope, check.toolCode(),
+                check.monitoringItem(), "很长的标准".repeat(300), 3600, 60, 300, 2, check.evidenceRequirements()));
+        invalid.add(new AgentReleaseVerificationPlan(tooLarge, "历史数据单独处理", "失败返回修复"));
+        int i = 0;
+        for (var value : invalid) {
+            var request = new AgentReleasePlanRequest("invalid-" + i++, "change", "TEST_DEPLOY", List.of("server", "web"), List.of(), value);
+            assertThrows(IllegalArgumentException.class, () -> service.prepare(request, "owner"));
+            assertEquals(0, count("pm_agent_release_plan"));
+        }
+    }
+
+    private AgentReleaseVerificationPlan verification(AgentScope target, long window) {
+        return new AgentReleaseVerificationPlan(List.of(new AgentReleaseVerificationPlan.Check("original-error", target, "workhub.logs",
+                "原问题服务的 ERROR 日志与采集状态", "采集完整且没有原错误复发", window, 60, 300, 2,
+                "保存实际查询、覆盖时间与数据时间，缺数据不能通过")), "历史异常数据另建待办并保留未处理状态", "保留证据并返回修复，不自动回滚");
+    }
+    private void legacy(String id) {
+        var payload = (tools.jackson.databind.node.ObjectNode) json.readTree(plans.find(id).snapshotJson());
+        payload.put("schemaVersion", 1); payload.remove("verificationPlan");
+        String encoded = json.writeValueAsString(payload), hash = AgentCodePolicy.hash(encoded);
+        jdbc.update("UPDATE pm_agent_release_plan SET snapshot_json=?,snapshot_hash=? WHERE id=?", encoded, hash, id);
+        jdbc.update("UPDATE pm_agent_release_review SET snapshot_hash=? WHERE plan_id=?", hash, id);
+    }
+
+    private AgentReleasePlanRequest request(String key, List<String> bindings, List<AgentReleasePlanRequest.Dependency> dependencies) { return new AgentReleasePlanRequest(key, "change", "TEST_DEPLOY", bindings, dependencies, verification(scope, 3600)); }
     private String prepare(String key) { return (String) service.prepare(request(key, List.of("server", "web"), List.of()), "owner").get("id"); }
     private AgentReleaseReviewRequest decision(String id, String decision) { var plan = plans.find(id); return new AgentReleaseReviewRequest("review-1", plan.version(), plan.snapshotHash(), decision, "审核意见"); }
     private void approve(String id) { service.review(id, decision(id, "APPROVED"), "reviewer"); }

@@ -1,0 +1,21 @@
+Browser tab: 7, Title: "业务复查审核本地样本", URL: "http://127.0.0.1:19541/".
+0 AXWebArea 业务复查审核本地样本, URL: 127.0.0.1:19541/
+	1 container
+		2 text 本地隔离样本 · 不连接业务系统
+		3 container
+			4 text 场景 
+			5 pop up button (collapsed, settable) Description: 场景, Value: 详情延迟6秒, Secondary Actions: Expand
+				6 menu
+					7 完整复查标准
+					8 旧计划缺少标准
+					9 详情读取失败
+					10 (selected) 详情延迟6秒
+		11 button 切换候选
+		12 button 切换查看权限
+		13 button 切换审核权限
+		14 button 切换页面激活
+		18 text change-one-4 · delay
+		16 heading Agent 发布与业务复查审核, Value: 2
+			17 text Agent 发布与业务复查审核
+
+The focused UI element is 12 button 切换查看权限

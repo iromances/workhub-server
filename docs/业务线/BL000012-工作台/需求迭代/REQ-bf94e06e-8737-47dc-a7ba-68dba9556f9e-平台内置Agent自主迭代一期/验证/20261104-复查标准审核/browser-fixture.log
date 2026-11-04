@@ -1,0 +1,26 @@
+
+  VITE v6.4.1  ready in 276 ms
+
+  ➜  Local:   http://127.0.0.1:19541/
+{"method":"GET","path":"/api/agent-release-plans","mode":"normal"}
+{"method":"GET","path":"/api/agent-release-plans/plan-change-one-1","mode":"normal"}
+{"method":"POST","path":"/api/agent-release-plans/plan-change-one-1/reviews","mode":"normal"}
+{"review":{"requestKey":"152512a061b09adbf54ab55649c5c42f","expectedVersion":0,"snapshotHash":"d07ae1ab26169ce60cafc22eb2f1a3c6f25e82500016705b624a1a2df37dc89d","decision":"APPROVED","comment":"本地样本：核对两项复查标准与观察时长"},"planId":"plan-change-one-1"}
+{"method":"GET","path":"/api/agent-release-plans","mode":"legacy"}
+{"method":"GET","path":"/api/agent-release-plans/plan-change-one-2","mode":"legacy"}
+{"method":"GET","path":"/api/agent-release-plans","mode":"error"}
+{"method":"GET","path":"/api/agent-release-plans/plan-change-one-3","mode":"error"}
+{"method":"GET","path":"/api/agent-release-plans","mode":"delay"}
+{"method":"GET","path":"/api/agent-release-plans/plan-change-one-4","mode":"delay"}
+{"method":"GET","path":"/api/agent-release-plans","mode":"normal"}
+{"method":"GET","path":"/api/agent-release-plans/plan-change-one-5","mode":"normal"}
+{"method":"GET","path":"/api/agent-release-plans","mode":"normal"}
+{"method":"GET","path":"/api/agent-release-plans/plan-change-one-5","mode":"normal"}
+{"method":"GET","path":"/api/agent-release-plans","mode":"normal"}
+{"method":"GET","path":"/api/agent-release-plans/plan-change-one-5","mode":"normal"}
+{"method":"GET","path":"/api/agent-release-plans","mode":"delay"}
+{"method":"GET","path":"/api/agent-release-plans/plan-change-one-6","mode":"delay"}
+{"method":"GET","path":"/api/agent-release-plans","mode":"delay"}
+{"method":"GET","path":"/api/agent-release-plans/plan-change-two-6","mode":"delay"}
+{"method":"GET","path":"/api/agent-release-plans","mode":"normal"}
+{"method":"GET","path":"/api/agent-release-plans/plan-change-two-7","mode":"normal"}

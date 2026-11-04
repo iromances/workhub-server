@@ -46,9 +46,11 @@ public class AgentReleasePlanService {
         access.actor(user).require("agent:code:deliver");
         var change = changes.detailForUser(request.changeSetId(), user); agents.lockRun(change.runId());
         if (new HashSet<>(request.bindingIds()).size() != request.bindingIds().size()) throw new IllegalArgumentException("发布 Job 绑定重复");
-        String definition = AgentCodePolicy.hash(json.writeValueAsString(Map.of("changeSetId", request.changeSetId(), "stage", request.stage(),
+        var definitionValue = new TreeMap<String, Object>(Map.of("changeSetId", request.changeSetId(), "stage", request.stage(),
                 "bindings", request.bindingIds().stream().sorted().toList(), "dependencies", request.dependencies().stream()
-                        .sorted(Comparator.comparing(AgentReleasePlanRequest.Dependency::bindingId).thenComparing(AgentReleasePlanRequest.Dependency::dependsOn)).distinct().toList())));
+                        .sorted(Comparator.comparing(AgentReleasePlanRequest.Dependency::bindingId).thenComparing(AgentReleasePlanRequest.Dependency::dependsOn)).distinct().toList()));
+        if (request.verificationPlan() != null) definitionValue.put("verificationPlan", request.verificationPlan());
+        String definition = AgentCodePolicy.hash(json.writeValueAsString(definitionValue));
         var previous = plans.byKey(change.runId(), request.requestKey());
         if (previous != null) {
             if (!previous.definitionHash().equals(definition) || !previous.createdBy().equals(user)) throw new IllegalArgumentException("发布计划请求标识已使用，内容或创建人不一致");
@@ -64,7 +66,9 @@ public class AgentReleasePlanService {
             evidence = material.evidence(); blockers.addAll(material.blockers());
             steps.add(new AgentReleasePlanSnapshot.Step(requestId, id(), material.binding(), material.parameters(), List.of()));
         }
-        var snapshot = new AgentReleasePlanSnapshot(1, change, evidence, List.copyOf(blockers), AgentReleasePlanGraph.order(change, steps, request.dependencies()));
+        if (request.verificationPlan() == null) blockers.add("VERIFICATION_PLAN_MISSING");
+        else validateVerification(request.verificationPlan(), steps);
+        var snapshot = new AgentReleasePlanSnapshot(2, change, evidence, List.copyOf(blockers), AgentReleasePlanGraph.order(change, steps, request.dependencies()), request.verificationPlan());
         String payload = json.writeValueAsString(snapshot);
         if (payload.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 4 * 1024 * 1024) throw new IllegalArgumentException("整组审核材料超过4 MiB，请减少本次变更规模");
         var plan = new AgentReleasePlanEntity(id(), change.runId(), change.id(), request.requestKey(), definition, change.manifestHash(), request.stage(), payload,
@@ -91,6 +95,7 @@ public class AgentReleasePlanService {
         if (!"WAITING_REVIEW".equals(plan.status()) || plan.version() != request.expectedVersion() || !plan.snapshotHash().equals(request.snapshotHash())) throw new IllegalStateException("审核材料或状态已变化，请重新打开当前计划");
         var snapshot = gate.snapshot(plan);
         if ("APPROVED".equals(request.decision())) {
+            validateVerification(snapshot.verificationPlan(), snapshot.steps());
             for (var step : snapshot.steps()) {
                 var current = approval.material(plan.changeSetId(), step.bindingId(), step.requestId(), user); approval.requireReady(current);
                 if (!json.readTree(json.writeValueAsString(snapshot.material(step))).equals(json.readTree(json.writeValueAsString(current.snapshot())))) throw new IllegalStateException("审核材料已过期，请基于当前证据准备新计划");
@@ -119,6 +124,7 @@ public class AgentReleasePlanService {
     public Map<String, Object> detail(String id, String user) {
         var plan = visible(id, user); var snapshot = gate.snapshot(plan); var value = new LinkedHashMap<>(summary(plan));
         var blockers = new LinkedHashSet<>(snapshot.blockers());
+        if (snapshot.verificationPlan() == null) blockers.add("VERIFICATION_PLAN_MISSING");
         boolean current = true;
         for (var step : snapshot.steps()) {
             try {
@@ -165,6 +171,23 @@ public class AgentReleasePlanService {
     private void event(AgentReleasePlanEntity plan, String suffix, String kind, Object payload, String actor) {
         agents.insertEvent(new AgentEventEntity(id(), plan.runId(), "release:" + plan.id() + ":" + suffix, agents.nextEventOrdinal(plan.runId()), kind,
                 json.writeValueAsString(payload), actor, now()));
+    }
+    private void validateVerification(AgentReleaseVerificationPlan plan, List<AgentReleasePlanSnapshot.Step> steps) {
+        if (plan == null) throw new IllegalArgumentException("缺少业务复查标准，请由 Agent 补充后重新准备发布计划");
+        valid(plan);
+        if (json.writeValueAsString(plan).getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 24 * 1024)
+            throw new IllegalArgumentException("业务复查标准超过24 KiB，请精简描述后重新准备");
+        var ids = new HashSet<String>(); var scopes = new HashSet<AgentScope>();
+        for (var check : plan.checks()) {
+            if (!ids.add(check.id().trim())) throw new IllegalArgumentException("业务复查项标识重复");
+            if (!AgentReleaseVerificationPlan.TOOL_CODES.contains(check.toolCode())) throw new IllegalArgumentException("复查必须使用受支持的 WorkHub 监测工具");
+            if (check.sampleIntervalSeconds() > check.observationSeconds()
+                    || check.minimumSamples() > check.observationSeconds() / check.sampleIntervalSeconds() + 1)
+                throw new IllegalArgumentException("复查窗口、采样间隔与最少样本数量不一致");
+            scopes.add(check.scope());
+        }
+        var targets = new HashSet<>(steps.stream().map(step -> step.binding().binding().scope()).toList());
+        if (!scopes.equals(targets)) throw new IllegalArgumentException("业务复查必须覆盖本组全部目标范围，且不能添加其他环境");
     }
     private void valid(Object value) { if (value == null || !validator.validate(value).isEmpty()) throw new IllegalArgumentException("发布请求字段缺失或不符合约束"); }
     private static void changed(int count) { if (count != 1) throw new IllegalStateException("发布计划已变化"); }

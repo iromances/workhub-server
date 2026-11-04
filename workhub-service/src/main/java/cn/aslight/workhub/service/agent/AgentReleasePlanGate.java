@@ -22,7 +22,8 @@ public class AgentReleasePlanGate {
     public AgentReleasePlanSnapshot snapshot(AgentReleasePlanEntity plan) {
         if (!AgentCodePolicy.hash(plan.snapshotJson()).equals(plan.snapshotHash())) throw new IllegalArgumentException("整组发布材料摘要不一致");
         var snapshot = json.readValue(plan.snapshotJson(), AgentReleasePlanSnapshot.class);
-        if (snapshot.schemaVersion() != 1 || !snapshot.change().id().equals(plan.changeSetId()) || !snapshot.change().runId().equals(plan.runId())
+        if (!Set.of(1, 2).contains(snapshot.schemaVersion()) || (snapshot.schemaVersion() == 1 && snapshot.verificationPlan() != null)
+                || !snapshot.change().id().equals(plan.changeSetId()) || !snapshot.change().runId().equals(plan.runId())
                 || !snapshot.change().manifestHash().equals(plan.manifestHash())) throw new IllegalArgumentException("整组发布材料身份不一致");
         return snapshot;
     }
@@ -31,6 +32,7 @@ public class AgentReleasePlanGate {
         if (plan == null) return approval.requestId();
         if (!"APPROVED".equals(plan.status())) throw new IllegalArgumentException("整组发布尚未获人工批准");
         var snapshot = snapshot(plan); var step = step(snapshot, approval.requestId());
+        if (snapshot.verificationPlan() == null) throw new IllegalArgumentException("发布计划缺少已审核的业务复查标准");
         if (!step.approvalId().equals(approval.id()) || !plan.runId().equals(approval.runId())
                 || !json.readTree(json.writeValueAsString(snapshot.material(step))).equals(json.readTree(approval.snapshotJson()))) throw new IllegalArgumentException("单项审核与整组批准材料不一致");
         return plan.id();
@@ -63,8 +65,9 @@ public class AgentReleasePlanGate {
         var run = agents.lockRun(plan.runId());
         boolean cancelled = run.cancelRequested() || "CANCELLED".equals(run.status());
         boolean failed = rows.stream().anyMatch(row -> TERMINAL.contains(row.status()) && !"SUCCEEDED".equals(row.status()));
-        if (cancelled || failed) {
-            for (var row : rows) if (plans.blockUnsent(row.id(), cancelled ? "原任务已停止，未发出此 Job" : "整组已有失败步骤，未发出此 Job", now) == 1) {
+        boolean missingVerification = snapshot.verificationPlan() == null;
+        if (cancelled || failed || missingVerification) {
+            for (var row : rows) if (plans.blockUnsent(row.id(), cancelled ? "原任务已停止，未发出此 Job" : missingVerification ? "旧计划缺少已审核的业务复查标准，请重新准备计划" : "整组已有失败步骤，未发出此 Job", now) == 1) {
                 journal(plan.runId(), "release-blocked:" + row.id(), "DEPLOYMENT", AgentDeploymentDispatcher.view(deployments.find(row.id())), now);
             }
             rows = snapshot.steps().stream().map(step -> deployments.find(step.requestId())).toList();
@@ -74,7 +77,7 @@ public class AgentReleasePlanGate {
             status = rows.stream().allMatch(row -> "SUCCEEDED".equals(row.status())) ? "SUCCEEDED" : cancelled ? "CANCELLED" : "FAILED";
             deployments.release(plan.id());
         } else if (rows.stream().anyMatch(row -> "UNKNOWN".equals(row.status()))) status = "NEEDS_ATTENTION";
-        else if (cancelled || failed) status = "STOPPING";
+        else if (cancelled || failed || missingVerification) status = "STOPPING";
         else status = rows.stream().allMatch(row -> "PREPARED".equals(row.status())) ? "APPROVED" : "EXECUTING";
         if (!status.equals(plan.status())) {
             if (plans.status(plan.id(), plan.version(), status, now) != 1) throw new IllegalStateException("整组发布状态已变化");

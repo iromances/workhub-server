@@ -28,12 +28,12 @@ public class AgentReleaseTools {
                 });
     }
     @Bean AgentTool agentReleasePrepareTool() {
-        return tool("release.prepare", "准备整组 Jenkins 发布审核材料，覆盖候选清单全部仓库。明确多个 Job 的先后依赖；共享部署资源必须有顺序。缺少实测时只能形成未就绪草案。不能批准或触发发布。成功后等待人工审核，证据更新需用新 requestKey 重建计划。", false,
+        return tool("release.prepare", "准备整组 Jenkins 发布审核材料，覆盖候选清单全部仓库。明确多个 Job 的先后依赖；共享部署资源必须有顺序。缺少实测时只能形成未就绪草案。同时提出各目标环境的业务复查标准、观察与采样要求、历史数据处置和失败处理，随发布一起审核；标准本身不是验证结果。不能批准或触发发布。成功后等待人工审核，证据更新需用新 requestKey 重建计划。", false,
                 Map.of("requestKey", string(64), "changeSetId", string(36), "stage", Map.of("type", "string", "enum", List.of("TEST_DEPLOY", "PROD_DEPLOY")),
                         "bindingIds", Map.of("type", "array", "minItems", 1, "maxItems", 20, "items", string(64)),
                         "dependencies", Map.of("type", "array", "maxItems", 100, "items", Map.of("type", "object", "properties", Map.of("bindingId", string(64), "dependsOn", string(64)),
-                                "required", List.of("bindingId", "dependsOn"), "additionalProperties", false))),
-                List.of("requestKey", "changeSetId", "stage", "bindingIds", "dependencies"), (context, args) -> {
+                                "required", List.of("bindingId", "dependsOn"), "additionalProperties", false)), "verificationPlan", verificationSchema()),
+                List.of("requestKey", "changeSetId", "stage", "bindingIds", "dependencies", "verificationPlan"), (context, args) -> {
                     changes.detail(context, args.required("changeSetId"));
                     var ids = new ArrayList<String>();
                     for (var id : args.array("bindingIds", 20)) { if (!id.isString()) throw new IllegalArgumentException("绑定标识必须为字符串"); ids.add(id.asText()); }
@@ -42,7 +42,7 @@ public class AgentReleaseTools {
                         var item = new AgentToolArguments(edge, Set.of("bindingId", "dependsOn"));
                         edges.add(new AgentReleasePlanRequest.Dependency(item.required("bindingId"), item.required("dependsOn")));
                     }
-                    return compact(service.prepare(new AgentReleasePlanRequest(args.required("requestKey"), args.required("changeSetId"), args.required("stage"), ids, edges), context.requestedBy()));
+                    return compact(service.prepare(new AgentReleasePlanRequest(args.required("requestKey"), args.required("changeSetId"), args.required("stage"), ids, edges, verification(args.object("verificationPlan"))), context.requestedBy()));
                 });
     }
     @Bean AgentTool agentReleaseStatusTool() {
@@ -57,6 +57,7 @@ public class AgentReleaseTools {
     private Map<String, Object> compact(Map<String, Object> detail) {
         var result = new LinkedHashMap<>(detail); result.remove("snapshot");
         var snapshot = (AgentReleasePlanSnapshot) detail.get("snapshot");
+        result.put("verificationPlan", snapshot.verificationPlan());
         result.put("steps", snapshot.steps().stream().map(step -> Map.of("bindingId", step.bindingId(), "requestId", step.requestId(),
                 "scope", step.binding().binding().scope(), "dependsOn", step.dependsOn(), "repositories", step.binding().binding().commitParameters().keySet())).toList());
         return result;
@@ -76,5 +77,35 @@ public class AgentReleaseTools {
             }
         };
     }
+    private Map<String, Object> verificationSchema() {
+        var fields = new LinkedHashMap<String, Object>();
+        fields.put("id", string(64));
+        fields.put("scope", Map.of("type", "object", "properties", Map.of("businessLineCode", string(32), "environmentCode", string(64)),
+                "required", List.of("businessLineCode", "environmentCode"), "additionalProperties", false));
+        fields.put("toolCode", Map.of("type", "string", "enum", AgentReleaseVerificationPlan.TOOL_CODES));
+        fields.put("monitoringItem", string(2000)); fields.put("passCondition", string(4000));
+        fields.put("observationSeconds", integer(2592000)); fields.put("sampleIntervalSeconds", integer(86400));
+        fields.put("maxDataAgeSeconds", integer(2592000)); fields.put("minimumSamples", integer(10000));
+        fields.put("evidenceRequirements", string(4000));
+        return Map.of("type", "object", "properties", Map.of("checks", Map.of("type", "array", "minItems", 1, "maxItems", 20,
+                        "items", Map.of("type", "object", "properties", fields, "required", List.copyOf(fields.keySet()), "additionalProperties", false)),
+                "historicalDataHandling", string(4000), "failureHandling", string(4000)),
+                "required", List.of("checks", "historicalDataHandling", "failureHandling"), "additionalProperties", false);
+    }
+    private AgentReleaseVerificationPlan verification(JsonNode value) {
+        var args = new AgentToolArguments(value, Set.of("checks", "historicalDataHandling", "failureHandling"));
+        var checks = new ArrayList<AgentReleaseVerificationPlan.Check>();
+        for (var row : args.array("checks", 20)) {
+            var item = new AgentToolArguments(row, Set.of("id", "scope", "toolCode", "monitoringItem", "passCondition", "observationSeconds",
+                    "sampleIntervalSeconds", "maxDataAgeSeconds", "minimumSamples", "evidenceRequirements"));
+            var scope = new AgentToolArguments(item.object("scope"), Set.of("businessLineCode", "environmentCode"));
+            checks.add(new AgentReleaseVerificationPlan.Check(item.required("id"),
+                    new AgentScope(scope.required("businessLineCode"), scope.required("environmentCode")), item.required("toolCode"),
+                    item.content("monitoringItem", 2000), item.content("passCondition", 4000), item.id("observationSeconds"),
+                    item.id("sampleIntervalSeconds"), item.id("maxDataAgeSeconds"), item.id("minimumSamples"), item.content("evidenceRequirements", 4000)));
+        }
+        return new AgentReleaseVerificationPlan(checks, args.content("historicalDataHandling", 4000), args.content("failureHandling", 4000));
+    }
+    private Map<String, Object> integer(int max) { return Map.of("type", "integer", "minimum", 1, "maximum", max); }
     private Map<String, Object> string(int max) { return Map.of("type", "string", "maxLength", max); }
 }

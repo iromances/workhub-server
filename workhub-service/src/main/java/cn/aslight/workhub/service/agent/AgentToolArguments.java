@@ -40,6 +40,12 @@ final class AgentToolArguments {
         return node.asLong();
     }
 
+    JsonNode object(String name) {
+        JsonNode node = value.get(name);
+        if (node == null || !node.isObject()) throw new IllegalArgumentException("对象参数缺失或格式错误: " + name);
+        return node;
+    }
+
     JsonNode array(String name, int max) {
         JsonNode node = value.get(name);
         if (node == null || !node.isArray() || node.size() > max) throw new IllegalArgumentException("列表参数缺失或超过上限: " + name);
