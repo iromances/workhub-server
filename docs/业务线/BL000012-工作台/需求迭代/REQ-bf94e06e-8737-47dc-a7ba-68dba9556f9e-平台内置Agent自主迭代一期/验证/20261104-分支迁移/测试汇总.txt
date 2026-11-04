@@ -1,0 +1,29 @@
+新分支实际离线回归：288 tests / 0 failures / 0 errors / 0 skipped；23 suites。
+controller/job 及依赖编译通过。
+前端 vue-tsc --noEmit 与 vite build --mode test 通过。
+原后端恢复后 mvn -o -q -pl workhub-bootstrap,workhub-job -am -DskipTests clean compile 通过。
+使用本地模拟服务、H2、临时 Git 和已安装 ZCode；未调用真实 Jenkins 或生产环境。
+
+AgentBugToolsTest: tests=4, failures=0, errors=0, skipped=0
+AgentChangeServiceTest: tests=29, failures=0, errors=0, skipped=0
+AgentCodeWorkspaceServiceTest: tests=12, failures=0, errors=0, skipped=0
+AgentDeploymentDispatcherTest: tests=28, failures=0, errors=0, skipped=0
+AgentGitLabClientTest: tests=11, failures=0, errors=0, skipped=0
+AgentGitPublishTest: tests=2, failures=0, errors=0, skipped=0
+AgentInspectionServiceTest: tests=25, failures=0, errors=0, skipped=0
+AgentJenkinsClientTest: tests=12, failures=0, errors=0, skipped=0
+AgentJenkinsPolicyTest: tests=8, failures=0, errors=0, skipped=0
+AgentMonitorReadMapperTest: tests=3, failures=0, errors=0, skipped=0
+AgentMonitoringToolsTest: tests=14, failures=0, errors=0, skipped=0
+AgentReleasePlanServiceTest: tests=25, failures=0, errors=0, skipped=0
+AgentScheduleTest: tests=3, failures=0, errors=0, skipped=0
+AgentWorkbenchServiceTest: tests=38, failures=0, errors=0, skipped=0
+AutonomyCaseServiceTest: tests=13, failures=0, errors=0, skipped=0
+AutonomyEvidenceTest: tests=7, failures=0, errors=0, skipped=0
+CodexAgentCliProtocolTest: tests=3, failures=0, errors=0, skipped=0
+AiProviderConfigServiceTest: tests=15, failures=0, errors=0, skipped=0
+AiUseCaseConfigServiceTest: tests=4, failures=0, errors=0, skipped=0
+DefaultAiGatewayClientTest: tests=13, failures=0, errors=0, skipped=0
+ZCodeCliClientTest: tests=7, failures=0, errors=0, skipped=0
+ZCodeCliLocalProtocolTest: tests=4, failures=0, errors=0, skipped=0
+ZCodeTaskConversationTest: tests=8, failures=0, errors=0, skipped=0

@@ -1,0 +1,18 @@
+{
+  "server": {
+    "restoredFeatureFiles": 202,
+    "unchangedOtherFiles": 1112,
+    "indexPreserved": true,
+    "originalBranch": "codex/development-20261102",
+    "originalHead": "4412e13387f0eb9cb6294b65c67433f057155af2",
+    "featureCommit": "ed197072af0f8e48828f4d478b74326c13b0240e"
+  },
+  "web": {
+    "restoredFeatureFiles": 23,
+    "unchangedOtherFiles": 76,
+    "indexPreserved": true,
+    "originalBranch": "codex/development-20261103",
+    "originalHead": "1a52cd93a3fcc07bd5c713c074574d6a037818d0",
+    "featureCommit": "8aa86477d3e96e66088c8ac2496bbc6529bb4b8f"
+  }
+}

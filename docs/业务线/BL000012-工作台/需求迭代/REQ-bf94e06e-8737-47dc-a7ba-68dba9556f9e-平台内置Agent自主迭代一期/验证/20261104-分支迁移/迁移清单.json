@@ -1,0 +1,1654 @@
+{
+  "branch": "codex/agent-workbench-autonomy",
+  "scope": "Agent 工作台、自主迭代、ZCode，以及本轮缺陷关联；共享基础依赖仅复制到新分支，不从原工作区移除。",
+  "repos": {
+    "server": {
+      "root": "/Users/aslight/IDEAWorkspace/workhub-server",
+      "targetRoot": "/Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-server",
+      "head": "4412e13387f0eb9cb6294b65c67433f057155af2",
+      "originalBranch": "codex/development-20261102",
+      "featureCommit": "ed197072af0f8e48828f4d478b74326c13b0240e",
+      "prerequisites": [
+        {
+          "path": "docs/业务线/BL000012-工作台/现状.md",
+          "hash": "9a07a569503acba0c28d32abc1ef8d904baedddb752fdd786d7770dc0ef5b59f",
+          "origin": "existing staged documentation relocation"
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/迭代日志.md",
+          "hash": "f3a1e39dca2348b58cee45d52408341913af9d01c93bf2558c2b454c29cb2caa",
+          "origin": "existing staged documentation relocation"
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/project/BusinessLineEntity.java",
+          "hash": "47aed90b6b090f149a74fbddc59ed6f84b74342f1f5a9b52f6ca40e4133e960b",
+          "origin": "existing shared prerequisite retained on original branch"
+        },
+        {
+          "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/project/BusinessLineMapper.java",
+          "hash": "d187286e19db7934cec98623c5ff242ee5e0f07c134a91329ae13a635cc5caed",
+          "origin": "existing shared prerequisite retained on original branch"
+        },
+        {
+          "path": "workhub-bootstrap/src/main/resources/db/schema/mysql/V20261103_140000__business_line_supported_environments_and_uppercase.sql",
+          "hash": "058a0b4016941fc676eb148521f96c10da6af7f3e2897c65ba7e237838247f13",
+          "origin": "existing shared prerequisite retained on original branch"
+        },
+        {
+          "path": "workhub-mcp-server/src/main/java/cn/aslight/workhub/mcp/security/ServerFileContentMasker.java",
+          "hash": "e19dbefd1c4dfbc0a22523d6441bc94f447d762567d0a4b2b6c8b6df820cb9a6",
+          "origin": "existing shared prerequisite retained on original branch"
+        },
+        {
+          "path": "workhub-mcp-server/src/test/java/cn/aslight/workhub/mcp/security/ServerFileContentMaskerTest.java",
+          "hash": "3b573a7b6a4c89be0c81608361418243618e03fc2889ddeb0d79e1845e9ad1b2",
+          "origin": "existing shared prerequisite retained on original branch"
+        },
+        {
+          "path": "workhub-mcp-server/src/main/java/cn/aslight/workhub/mcp/security/SensitiveDataMasker.java",
+          "hash": "3ac1b9cb8fa447d9feb2aa349a07df46062440a9be476a1eb58b0e9ad0cf9a6e",
+          "origin": "existing shared prerequisite retained on original branch"
+        },
+        {
+          "path": "docs/业务线/AGENTS.md",
+          "hash": "0f22cbd7d15ab0bc9a2c83b00768984098861ff1feed9a8faac3b85c423b3579",
+          "origin": "existing staged documentation relocation"
+        }
+      ],
+      "prerequisiteDeletes": [
+        "docs/requirements/AGENTS.md",
+        "docs/system/系统设计.md",
+        "docs/system/迭代日志.md"
+      ],
+      "files": [
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/design.md",
+          "before": "5949bbdeee7ef87ecc584760accc3d9e18ccf1da44871f3ec5a1c9c0081dd1d0",
+          "target": "5949bbdeee7ef87ecc584760accc3d9e18ccf1da44871f3ec5a1c9c0081dd1d0",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/proposal.md",
+          "before": "89973f5ef254b823637e15918af9cf8eb28ae34f2f1ffd5d14a3e262e1b9232e",
+          "target": "89973f5ef254b823637e15918af9cf8eb28ae34f2f1ffd5d14a3e262e1b9232e",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/tasks.md",
+          "before": "7654ff6a76e9610aa381437b5363235c096f8d1bbb61ab23ed19f930bf717c16",
+          "target": "7654ff6a76e9610aa381437b5363235c096f8d1bbb61ab23ed19f930bf717c16",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/历史版本/v2-20261104-目标重新对齐前/design.md",
+          "before": "662e3ba52283c617c0b72c8b478ff89316f6253f6ade54e8540c11f6b3d1ff27",
+          "target": "662e3ba52283c617c0b72c8b478ff89316f6253f6ade54e8540c11f6b3d1ff27",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/历史版本/v2-20261104-目标重新对齐前/proposal.md",
+          "before": "c4a6995d44dd01e5d8fc82b3791cdd4c1d676e91728f2778aa0c67bfbb221613",
+          "target": "c4a6995d44dd01e5d8fc82b3791cdd4c1d676e91728f2778aa0c67bfbb221613",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/历史版本/v2-20261104-目标重新对齐前/tasks.md",
+          "before": "63043f4cf4f203ac340625c1f088beba45f0264ce1c7167f4348c459069dc604",
+          "target": "63043f4cf4f203ac340625c1f088beba45f0264ce1c7167f4348c459069dc604",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/历史版本/v3-20261104-Agent上层任务主体修订前/design.md",
+          "before": "a702fcaace6042c7f54a0d4cfd8a6c7fc8ce9dab1348b40aa1e1c440757970f0",
+          "target": "a702fcaace6042c7f54a0d4cfd8a6c7fc8ce9dab1348b40aa1e1c440757970f0",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/历史版本/v3-20261104-Agent上层任务主体修订前/proposal.md",
+          "before": "be814d7a39414c9de93ac5a68042d93cb112ed9500a3b1a065001e6e312f4c6d",
+          "target": "be814d7a39414c9de93ac5a68042d93cb112ed9500a3b1a065001e6e312f4c6d",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/历史版本/v3-20261104-Agent上层任务主体修订前/tasks.md",
+          "before": "be726100da692d7b91e395ca0f7c9167992b4ebce6948996545a90744c6409b5",
+          "target": "be726100da692d7b91e395ca0f7c9167992b4ebce6948996545a90744c6409b5",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/核查记录-20261103.md",
+          "before": "f4737fd222daa0fbe9a70f8fbe271b459fc025e634fc5f4967f667f50ac22008",
+          "target": "f4737fd222daa0fbe9a70f8fbe271b459fc025e634fc5f4967f667f50ac22008",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/目标澄清.md",
+          "before": "230a378152a6754d9db02fe96fe3ed1b53042d5da7d516bee2e2d75682fce09e",
+          "target": "230a378152a6754d9db02fe96fe3ed1b53042d5da7d516bee2e2d75682fce09e",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/20261104-ZCode与任务恢复/测试汇总.txt",
+          "before": "2cadedd95e2f592095b65756c1695f1d7b1a4ba10dc524a60b966843ab6b67af",
+          "target": "2cadedd95e2f592095b65756c1695f1d7b1a4ba10dc524a60b966843ab6b67af",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/20261104-ZCode与任务恢复/源码与CLI摘要.sha256",
+          "before": "0954d49605c8bec03fe6442eebfbb7f4742b3a1a19119045513cafea6e47a271",
+          "target": "0954d49605c8bec03fe6442eebfbb7f4742b3a1a19119045513cafea6e47a271",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/20261104-ZCode与任务恢复/验证说明.md",
+          "before": "18c38d54507d6ba134fa9a096f1c7f699be262bc14bc2ac8997a814d0edfe59c",
+          "target": "18c38d54507d6ba134fa9a096f1c7f699be262bc14bc2ac8997a814d0edfe59c",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/20261104-巡检回执恢复/测试汇总.txt",
+          "before": "5e32ddd2203747b40a382ed5f822dc49d7e35634698a1bb0688c8bf298cf2402",
+          "target": "5e32ddd2203747b40a382ed5f822dc49d7e35634698a1bb0688c8bf298cf2402",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/20261104-巡检回执恢复/源码摘要.sha256",
+          "before": "9aade4256f75720fdb6b65cf518491b8fba2e2392607e869353fb4e2f3fbdf37",
+          "target": "9aade4256f75720fdb6b65cf518491b8fba2e2392607e869353fb4e2f3fbdf37",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/20261104-巡检回执恢复/验证说明.md",
+          "before": "2f233b67e25cb343af6bd92641a7a6e6a63b0a1ace900a6c15e7284ea0e279ff",
+          "target": "2f233b67e25cb343af6bd92641a7a6e6a63b0a1ace900a6c15e7284ea0e279ff",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/20261104-巡检读取与缺陷线索/测试汇总.txt",
+          "before": "1d5e7f77d1926c38add1f01a4d317fba7045ece3078be5088ccf95a05f5d400f",
+          "target": "1d5e7f77d1926c38add1f01a4d317fba7045ece3078be5088ccf95a05f5d400f",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/20261104-巡检读取与缺陷线索/源码摘要.sha256",
+          "before": "77e915f38f8709c68238499fc096836536968541a09f0b0a8c9c3088332cffb8",
+          "target": "77e915f38f8709c68238499fc096836536968541a09f0b0a8c9c3088332cffb8",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/20261104-巡检读取与缺陷线索/验证说明.md",
+          "before": "dbf02a4657706f9e5751b55b7d444f80c653afb42c4fdc5a9386d64c7e2cbb22",
+          "target": "dbf02a4657706f9e5751b55b7d444f80c653afb42c4fdc5a9386d64c7e2cbb22",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/20261104-跨运行巡检进度/测试汇总.txt",
+          "before": "3e10340c5f12193a87089193ee9a7d049b609b67804cad82bce525d59edd67f3",
+          "target": "3e10340c5f12193a87089193ee9a7d049b609b67804cad82bce525d59edd67f3",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/20261104-跨运行巡检进度/源码摘要.sha256",
+          "before": "3092196c859009e006d4c287eb5c9fb59df7fbd52bef76e6c20002c5e0131861",
+          "target": "3092196c859009e006d4c287eb5c9fb59df7fbd52bef76e6c20002c5e0131861",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/20261104-跨运行巡检进度/验证说明.md",
+          "before": "bc60cc31bf4373f8dfcd50ea972a398e7b73366c9ffeb7c456d3c24b2b6b1484",
+          "target": "bc60cc31bf4373f8dfcd50ea972a398e7b73366c9ffeb7c456d3c24b2b6b1484",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/GitLab交付-测试汇总.txt",
+          "before": "2640baccf6506e4fc4d2db387c8b13be2a9da2705b8b7dbe803923fd60996435",
+          "target": "2640baccf6506e4fc4d2db387c8b13be2a9da2705b8b7dbe803923fd60996435",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/Jenkins出站-测试汇总.txt",
+          "before": "cb14c29c29eb702c6d01ca395a832a2333528b86976774d3f36c55e937e84c7b",
+          "target": "cb14c29c29eb702c6d01ca395a832a2333528b86976774d3f36c55e937e84c7b",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/候选变更-本地样本.jpg",
+          "before": "dca75636168e7f06fa88e7cb4e04759ba5e8ed569c1e7171e16c0495a763bccb",
+          "target": "dca75636168e7f06fa88e7cb4e04759ba5e8ed569c1e7171e16c0495a763bccb",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/发布审核-本地样本.jpg",
+          "before": "9cf5a8c2a1d62abd9a59c3cbf355b6b09bc43acbc8d85badad3481f016e69924",
+          "target": "9cf5a8c2a1d62abd9a59c3cbf355b6b09bc43acbc8d85badad3481f016e69924",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/巡检问题-本地样本.jpg",
+          "before": "a7e668cea8667d94b0e997e21875151e49e47bdb642f67077c9c6558e1410ff0",
+          "target": "a7e668cea8667d94b0e997e21875151e49e47bdb642f67077c9c6558e1410ff0",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/整组发布审核-测试汇总.txt",
+          "before": "8de02cd71280d202ccde946fdc0e978b3b8f88ecd6418b3829a060c7422ecdd9",
+          "target": "8de02cd71280d202ccde946fdc0e978b3b8f88ecd6418b3829a060c7422ecdd9",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/远端交付-本地样本.jpg",
+          "before": "ae52032317d5d04e1221e2d6b747a5e5944f82ffc99285d06ee5ffa9b2415330",
+          "target": "ae52032317d5d04e1221e2d6b747a5e5944f82ffc99285d06ee5ffa9b2415330",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_014200__add_agent_workbench.sql",
+          "before": "01d48587531c013cd54d4485f19a356341625459f62457d2b14f381bcef4777d",
+          "target": "01d48587531c013cd54d4485f19a356341625459f62457d2b14f381bcef4777d",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_031917__add_agent_code_workspaces.sql",
+          "before": "040da69779771738497a46a2091287e8e77627cb2bff011984fab3c175f5babc",
+          "target": "040da69779771738497a46a2091287e8e77627cb2bff011984fab3c175f5babc",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_035107__add_agent_observations_and_cases.sql",
+          "before": "4cb40dbf6a383430d8d28d9b18ba3a6264534b7260e049bd0d87d7602e5a02e1",
+          "target": "4cb40dbf6a383430d8d28d9b18ba3a6264534b7260e049bd0d87d7602e5a02e1",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_043000__add_agent_change_sets.sql",
+          "before": "a65c372d34ba69a642f21f5ca18bd9eb48ac435216292429a9eaa2bdf25b5dce",
+          "target": "a65c372d34ba69a642f21f5ca18bd9eb48ac435216292429a9eaa2bdf25b5dce",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_045500__add_agent_gitlab_delivery.sql",
+          "before": "ae849c8ada74625071791cdce5b779d1239a7e6080dc30208cac7722f73c2011",
+          "target": "ae849c8ada74625071791cdce5b779d1239a7e6080dc30208cac7722f73c2011",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_054000__add_agent_deployment_outbox.sql",
+          "before": "2d95c81ee71d573f74c3c61579ba1f37514aadb5ca52f1aa97dc75d945f10760",
+          "target": "2d95c81ee71d573f74c3c61579ba1f37514aadb5ca52f1aa97dc75d945f10760",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_061500__add_agent_release_plans.sql",
+          "before": "3d1162a6778e308fe9d18f0a877c840c6ffe985aec2bbed5995f69dea01ffd0f",
+          "target": "3d1162a6778e308fe9d18f0a877c840c6ffe985aec2bbed5995f69dea01ffd0f",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_094232__add_agent_inspection_progress.sql",
+          "before": "cc67a28d410c666a42c52f2552efa685f23c5a4e0beedb136fa0c2c3e0982f7f",
+          "target": "cc67a28d410c666a42c52f2552efa685f23c5a4e0beedb136fa0c2c3e0982f7f",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_094500__add_zcode_cli_configuration.sql",
+          "before": "a6935a17e14f01e7715f2f5ca0986e93ad80b68d0e23854c4c111e7dbba2d9fb",
+          "target": "a6935a17e14f01e7715f2f5ca0986e93ad80b68d0e23854c4c111e7dbba2d9fb",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_103540__add_autonomy_bug_links.sql",
+          "before": "3f28dc4c4e8881e65f613e675f89afd2f760f833130e7f85252f9ca39b327daf",
+          "target": "3f28dc4c4e8881e65f613e675f89afd2f760f833130e7f85252f9ca39b327daf",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-controller/src/main/java/cn/aslight/workhub/controller/agent/AgentChangeController.java",
+          "before": "3aea96c047eedd0ff228b8c09f85b8b7a0aded52b726923f86ff94668124fca6",
+          "target": "3aea96c047eedd0ff228b8c09f85b8b7a0aded52b726923f86ff94668124fca6",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-controller/src/main/java/cn/aslight/workhub/controller/agent/AgentController.java",
+          "before": "113bf7e8147c7a49c1f8cac389dcc9bbd3280ad12b0a61f209bd6c3eadc54a2e",
+          "target": "113bf7e8147c7a49c1f8cac389dcc9bbd3280ad12b0a61f209bd6c3eadc54a2e",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-controller/src/main/java/cn/aslight/workhub/controller/agent/AgentReleaseController.java",
+          "before": "97594ae11e7e5e3e302ef6d5f706024a646bc1d69d7637cdd1e918e6dc5e5c25",
+          "target": "97594ae11e7e5e3e302ef6d5f706024a646bc1d69d7637cdd1e918e6dc5e5c25",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-controller/src/main/java/cn/aslight/workhub/controller/agent/AgentTaskController.java",
+          "before": "c99cfb8413b74498c3d26e755032d76d221848c000a47f26ec5e10328c40c622",
+          "target": "c99cfb8413b74498c3d26e755032d76d221848c000a47f26ec5e10328c40c622",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-controller/src/main/java/cn/aslight/workhub/controller/agent/AutonomyCaseController.java",
+          "before": "499af4a857e427fe6f499e7de8d683c1acd2debf370167acef12e7a92a732d93",
+          "target": "499af4a857e427fe6f499e7de8d683c1acd2debf370167acef12e7a92a732d93",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/agent/AgentChangeMapper.java",
+          "before": "71cf2d8d82ed6f2a58939e6f1981d033d4d61dad96597f4c782b8b243822b66c",
+          "target": "71cf2d8d82ed6f2a58939e6f1981d033d4d61dad96597f4c782b8b243822b66c",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/agent/AgentCodeMapper.java",
+          "before": "1dd47d2fc612cb60de163874b4f830c42e68558ea1818ea26f244561d8e34c29",
+          "target": "1dd47d2fc612cb60de163874b4f830c42e68558ea1818ea26f244561d8e34c29",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/agent/AgentDeliveryMapper.java",
+          "before": "6f4dc966f5e88c2eb4b60fd923b58e284cc0b9dfd753e4524bae17ea88b66faa",
+          "target": "6f4dc966f5e88c2eb4b60fd923b58e284cc0b9dfd753e4524bae17ea88b66faa",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/agent/AgentDeploymentMapper.java",
+          "before": "e0080b0cf4d71519d641b9b38991c8c9f1710417bf7a341fd744fe561f78bf4d",
+          "target": "e0080b0cf4d71519d641b9b38991c8c9f1710417bf7a341fd744fe561f78bf4d",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/agent/AgentInspectionMapper.java",
+          "before": "b3212a3d85017fd7a3756b33dc066574844e1aaf857766099060707dd2cacc17",
+          "target": "b3212a3d85017fd7a3756b33dc066574844e1aaf857766099060707dd2cacc17",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/agent/AgentMapper.java",
+          "before": "979c97c422835583de8c33a9508a813278797d4320ab084f03ccdbf66efe714c",
+          "target": "979c97c422835583de8c33a9508a813278797d4320ab084f03ccdbf66efe714c",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/agent/AgentMonitorReadMapper.java",
+          "before": "ffc4613a2ac3a14cace5725fc4c70b515ad300bcabf2c71ef655216654bea3fc",
+          "target": "ffc4613a2ac3a14cace5725fc4c70b515ad300bcabf2c71ef655216654bea3fc",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/agent/AgentReleasePlanMapper.java",
+          "before": "b06baa92752d1015d6087488732a9f5643f8b1cb7a31d82cc1c7e67e256c31f8",
+          "target": "b06baa92752d1015d6087488732a9f5643f8b1cb7a31d82cc1c7e67e256c31f8",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/ai/AiProviderConfigMapper.java",
+          "before": "229cc8da07c024200c17e864bce18ac26021037b1708d57d5346f1a095efdb06",
+          "target": "229cc8da07c024200c17e864bce18ac26021037b1708d57d5346f1a095efdb06",
+          "restored": "6be76a5e499379481c6fd8d82bc2c86e543d1865372480fdc7690fabd108e466",
+          "mode": 420
+        },
+        {
+          "path": "workhub-dao/src/main/java/cn/aslight/workhub/dao/autonomy/AutonomyMapper.java",
+          "before": "40dc4cedd9276dd74188b965b4ac54dc67268c02ae38eac0643b4fe0a24b9d7a",
+          "target": "40dc4cedd9276dd74188b965b4ac54dc67268c02ae38eac0643b4fe0a24b9d7a",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-job/src/main/java/cn/aslight/workhub/job/AgentExecutionJob.java",
+          "before": "7a1bb376f5c25554e1f5c4a9b1113e2c540e5a53e0787156fa47c740a6791c06",
+          "target": "7a1bb376f5c25554e1f5c4a9b1113e2c540e5a53e0787156fa47c740a6791c06",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-job/src/main/java/cn/aslight/workhub/job/AgentReleaseJob.java",
+          "before": "e20ae80a9d1e960868ce95b9fb96a6abad2095e4c5a66308a262d4da307dd6d0",
+          "target": "e20ae80a9d1e960868ce95b9fb96a6abad2095e4c5a66308a262d4da307dd6d0",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentArtifactEntity.java",
+          "before": "f35222e5f94715cbacaa2fdf3cb25b0f52d8bcbc3a93b589add4df81bbeadc11",
+          "target": "f35222e5f94715cbacaa2fdf3cb25b0f52d8bcbc3a93b589add4df81bbeadc11",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentBugRecord.java",
+          "before": "9f2e5e6f342e9eca5c44e36bf335c75dd425e91e151181e8c62b74f6116bc421",
+          "target": "9f2e5e6f342e9eca5c44e36bf335c75dd425e91e151181e8c62b74f6116bc421",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentChangeManifest.java",
+          "before": "cb422b4e66a2149d22b1f2bb499b1ba1885f06d2d6d00cf39441d0a6afa43b5e",
+          "target": "cb422b4e66a2149d22b1f2bb499b1ba1885f06d2d6d00cf39441d0a6afa43b5e",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentChangePlan.java",
+          "before": "84fb55f232a77b6ee14ff11cb7850eafbc8573d1fedd3ade6636077bb8417fd1",
+          "target": "84fb55f232a77b6ee14ff11cb7850eafbc8573d1fedd3ade6636077bb8417fd1",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentChangeSetEntity.java",
+          "before": "e6e6af0a92df5fdce5d2617e7f6344252e057b044464956f213987a612bc243c",
+          "target": "e6e6af0a92df5fdce5d2617e7f6344252e057b044464956f213987a612bc243c",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentChangeView.java",
+          "before": "02f58493986c0b19b7d9038d9db96cbcf4bbee5dfd68e55659b8e134a06f68cf",
+          "target": "02f58493986c0b19b7d9038d9db96cbcf4bbee5dfd68e55659b8e134a06f68cf",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentCodeOperationEntity.java",
+          "before": "714ef576bc3437f045008b5df6b5b525553b1a8f01993cf43c06b5694c9bdcd5",
+          "target": "714ef576bc3437f045008b5df6b5b525553b1a8f01993cf43c06b5694c9bdcd5",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentCodeWorkspaceEntity.java",
+          "before": "e515a2d9acb26b785efbbc6a25077bbb8b64175a0fb43d0e29293681805b4725",
+          "target": "e515a2d9acb26b785efbbc6a25077bbb8b64175a0fb43d0e29293681805b4725",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentConfiguration.java",
+          "before": "5e3f783d7008613e4a9be8a4ee2cfc55bcc50f12137980e02e8af11c25755e00",
+          "target": "5e3f783d7008613e4a9be8a4ee2cfc55bcc50f12137980e02e8af11c25755e00",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentDefinitionEntity.java",
+          "before": "aba8eb93679e7f08c53fb2bc412d066bf71adc5234d64e5044f9369d9cd81309",
+          "target": "aba8eb93679e7f08c53fb2bc412d066bf71adc5234d64e5044f9369d9cd81309",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentDefinitionResponse.java",
+          "before": "67e2db5a57c4d9c36b0d8ebb7ebed61d892e09e321fa31b6e5029d265ec6d55b",
+          "target": "67e2db5a57c4d9c36b0d8ebb7ebed61d892e09e321fa31b6e5029d265ec6d55b",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentDeliveryEntity.java",
+          "before": "45182333417fd44cc16bbde4eafa7c13308facf53013824ac8ac24ca17682d07",
+          "target": "45182333417fd44cc16bbde4eafa7c13308facf53013824ac8ac24ca17682d07",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentDeploymentEntity.java",
+          "before": "acdf58cd3a338f507136ec16d68f15b9b6f42ff64af2b03995fe59efb976ebd9",
+          "target": "acdf58cd3a338f507136ec16d68f15b9b6f42ff64af2b03995fe59efb976ebd9",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentEventEntity.java",
+          "before": "85474d2754b06e19272c17a3a48c0b6de990d1d1a74dd503dc2876b59623f1ef",
+          "target": "85474d2754b06e19272c17a3a48c0b6de990d1d1a74dd503dc2876b59623f1ef",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentInspectionAnalysis.java",
+          "before": "3195602bbd74d44834077842563bc77163727b52f52d5c59eb01b3f2cd261cd2",
+          "target": "3195602bbd74d44834077842563bc77163727b52f52d5c59eb01b3f2cd261cd2",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentInspectionCall.java",
+          "before": "8a049603d83da34aaab1acbb4afc6896fdf118929a12bf8e869d279554fff8e3",
+          "target": "8a049603d83da34aaab1acbb4afc6896fdf118929a12bf8e869d279554fff8e3",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentInspectionItem.java",
+          "before": "b7be496875d3dd926c7f9807751910a4200dfa3e6cbce9ed38e576c3b88eb25e",
+          "target": "b7be496875d3dd926c7f9807751910a4200dfa3e6cbce9ed38e576c3b88eb25e",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentInspectionStream.java",
+          "before": "c2853ee2594fa051a0de9ce57ba098dedb25be1544b0bfbb9168c2137ed83c72",
+          "target": "c2853ee2594fa051a0de9ce57ba098dedb25be1544b0bfbb9168c2137ed83c72",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentMessageRequest.java",
+          "before": "348973cbdb0fa1a45da6c1e96dafd4c8951c156d774c0310daae7ef9edfcac0c",
+          "target": "348973cbdb0fa1a45da6c1e96dafd4c8951c156d774c0310daae7ef9edfcac0c",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentOptionsResponse.java",
+          "before": "bb2d75ea5522c39a0a4b20e2371e69ab98d9413af9e69541dd6b7127d8024632",
+          "target": "bb2d75ea5522c39a0a4b20e2371e69ab98d9413af9e69541dd6b7127d8024632",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentPage.java",
+          "before": "d60f9f0f1eb6fe60fe7b89e33bc2859c576b5fafd7fd876a208ee92d1dcb4dcd",
+          "target": "d60f9f0f1eb6fe60fe7b89e33bc2859c576b5fafd7fd876a208ee92d1dcb4dcd",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentProviderBinding.java",
+          "before": "e82369664957134ebb448176abe3bb45b1fe782d85a8177f4023ed558ba8624e",
+          "target": "e82369664957134ebb448176abe3bb45b1fe782d85a8177f4023ed558ba8624e",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentReleaseApprovalEntity.java",
+          "before": "ae4678b153f8573fd2f0d5af4913bd162ce68e04319e804fb0104f1e7dc67ce0",
+          "target": "ae4678b153f8573fd2f0d5af4913bd162ce68e04319e804fb0104f1e7dc67ce0",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentReleasePlanEntity.java",
+          "before": "99b7b164f5aad471eacb6ec26f34e310491bcbced1942ce8839a9504a0c51d35",
+          "target": "99b7b164f5aad471eacb6ec26f34e310491bcbced1942ce8839a9504a0c51d35",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentReleasePlanRequest.java",
+          "before": "559f621d1c667840ce57f7c34d52df532582d10729028f0370677d340cb8cb93",
+          "target": "559f621d1c667840ce57f7c34d52df532582d10729028f0370677d340cb8cb93",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentReleaseReviewEntity.java",
+          "before": "9917e9cf3831183071c724dea00997a31a0e8f8c6d21621e1f89bfdfe19d44b1",
+          "target": "9917e9cf3831183071c724dea00997a31a0e8f8c6d21621e1f89bfdfe19d44b1",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentReleaseReviewRequest.java",
+          "before": "89c1fa0bc20e3cafcd3c6daf76ed322bebac44493e7bbfcde0255e86daff202c",
+          "target": "89c1fa0bc20e3cafcd3c6daf76ed322bebac44493e7bbfcde0255e86daff202c",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentRepositoryChange.java",
+          "before": "665c811d958224442797b03a2835a096444305ccfe5fd172b4a9a3bf98cea825",
+          "target": "665c811d958224442797b03a2835a096444305ccfe5fd172b4a9a3bf98cea825",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentRunDetailResponse.java",
+          "before": "b98c78b59bce6edd02858a9ea0ee674749e0ddc18802bd90e96e885ac717a850",
+          "target": "b98c78b59bce6edd02858a9ea0ee674749e0ddc18802bd90e96e885ac717a850",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentRunEntity.java",
+          "before": "bdfb4d8f0cfd50d4253b3597609f621c68f6430286049cfaf88e1c5497d55ce6",
+          "target": "bdfb4d8f0cfd50d4253b3597609f621c68f6430286049cfaf88e1c5497d55ce6",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentRunRequest.java",
+          "before": "f6e77e266478f5ea569ea1d2d6cd923dd9e6e81bfede1e5a8855d97d24edeb81",
+          "target": "f6e77e266478f5ea569ea1d2d6cd923dd9e6e81bfede1e5a8855d97d24edeb81",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentRunResponse.java",
+          "before": "af4fa443e08b7cbd2be3a7ab6ea0e3595e511aeecf12d3091520e88e81326bed",
+          "target": "af4fa443e08b7cbd2be3a7ab6ea0e3595e511aeecf12d3091520e88e81326bed",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentSaveRequest.java",
+          "before": "4110fd0884dd2198edc291bc40b92b3c42d5531ba35a2b7c60490abd0eb6b6c5",
+          "target": "4110fd0884dd2198edc291bc40b92b3c42d5531ba35a2b7c60490abd0eb6b6c5",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentScheduleRequest.java",
+          "before": "ed6331963c38de23ca0d93998db5079b5274070941044425141568bfcad6aba8",
+          "target": "ed6331963c38de23ca0d93998db5079b5274070941044425141568bfcad6aba8",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentScope.java",
+          "before": "5553af9901b9993d920aed592d3a2387096ba706c1568b646caf7456dee281e5",
+          "target": "5553af9901b9993d920aed592d3a2387096ba706c1568b646caf7456dee281e5",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentTaskCreateRequest.java",
+          "before": "4c552696a67fbe0aa9d37bb044eedce3ade932c7c282c7c96ac4e546089ebfd9",
+          "target": "4c552696a67fbe0aa9d37bb044eedce3ade932c7c282c7c96ac4e546089ebfd9",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentTaskEntity.java",
+          "before": "98ed6f2a0d006e96cccb3c83268b5e973408fc685ff91f72fe0d9d22fb02d383",
+          "target": "98ed6f2a0d006e96cccb3c83268b5e973408fc685ff91f72fe0d9d22fb02d383",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentTaskResponse.java",
+          "before": "840ae7b333f890e9278605bf1a59e1d11e0e59cb769724e470fb985a2e494043",
+          "target": "840ae7b333f890e9278605bf1a59e1d11e0e59cb769724e470fb985a2e494043",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentTaskSpecification.java",
+          "before": "ad0ed5112e7b7c212514d2414155ed262e805eef1496821fe1cb1574361057e0",
+          "target": "ad0ed5112e7b7c212514d2414155ed262e805eef1496821fe1cb1574361057e0",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/agent/AgentVersionRequest.java",
+          "before": "8d327b48ba547fa20d1b75b994507ac8b403a59c44ceace9e57eaa804341590a",
+          "target": "8d327b48ba547fa20d1b75b994507ac8b403a59c44ceace9e57eaa804341590a",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/ai/AiProviderConfigEntity.java",
+          "before": "c1827008c0dfc4dec28a25297f40b6002ea64bad1368a087538d9c3b9831a844",
+          "target": "c1827008c0dfc4dec28a25297f40b6002ea64bad1368a087538d9c3b9831a844",
+          "restored": "b283eacf9a6f095c95520c82953cf71aebeda024c386c47df2d9a104a7eb7740",
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/ai/AiProviderConfigRequest.java",
+          "before": "4ead45878e7fad674665dbdf19817ce829742b9491307c4668b481fd80923f87",
+          "target": "4ead45878e7fad674665dbdf19817ce829742b9491307c4668b481fd80923f87",
+          "restored": "1f064a4f40835d5483ad427addbbdde4de3cb9ea4c400281125e54e57967028e",
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/ai/AiProviderConfigResponse.java",
+          "before": "a00ecbea53121cf56654ec98ce988c391e3fc64229fdd055e2d497ad976603d6",
+          "target": "a00ecbea53121cf56654ec98ce988c391e3fc64229fdd055e2d497ad976603d6",
+          "restored": "45dbc665e2b3ad3f7d7aa79acde0a77797769252c0ed068a1eb708eee429bb3d",
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/autonomy/AgentObservationEntity.java",
+          "before": "2b2d078f91ca75add6b5333d6c8686214571ebada438e2e476279aa04e4bf941",
+          "target": "2b2d078f91ca75add6b5333d6c8686214571ebada438e2e476279aa04e4bf941",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/autonomy/AutonomyBugLinkEntity.java",
+          "before": "1ad55d83e7e641c2b957b33a1727126f13bd208443a778405beb2402e4141592",
+          "target": "1ad55d83e7e641c2b957b33a1727126f13bd208443a778405beb2402e4141592",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/autonomy/AutonomyBugLinkRequest.java",
+          "before": "d4f943b7c287268afdc499b8544ad9c02e78875f28719ebcba7d70b134833e4c",
+          "target": "d4f943b7c287268afdc499b8544ad9c02e78875f28719ebcba7d70b134833e4c",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/autonomy/AutonomyBugLinkView.java",
+          "before": "634d07d9f2c108052472138ddd571391ed61a96140e5b33903b078d8f0a6a25a",
+          "target": "634d07d9f2c108052472138ddd571391ed61a96140e5b33903b078d8f0a6a25a",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/autonomy/AutonomyCaseDetailResponse.java",
+          "before": "8c45f9430981dd90b1a89d24730beea4d440f52afb8ddaf7fc37284cdfcd1f22",
+          "target": "8c45f9430981dd90b1a89d24730beea4d440f52afb8ddaf7fc37284cdfcd1f22",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/autonomy/AutonomyCaseEntity.java",
+          "before": "04796acfb1a791cc3b43e26a1d3e1f92a30e6179f451c622706ffa82d7f363c9",
+          "target": "04796acfb1a791cc3b43e26a1d3e1f92a30e6179f451c622706ffa82d7f363c9",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/autonomy/AutonomyCaseRunEntity.java",
+          "before": "5df4f15233c567d598a65d9a738cf0a411adb78af4e7331d1d63993551dba1ae",
+          "target": "5df4f15233c567d598a65d9a738cf0a411adb78af4e7331d1d63993551dba1ae",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/autonomy/AutonomyProposal.java",
+          "before": "2a4ff05f83fe22be8292c01a9a0182d0633b32f136f19c01023a6683cab43e1a",
+          "target": "2a4ff05f83fe22be8292c01a9a0182d0633b32f136f19c01023a6683cab43e1a",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/autonomy/AutonomyProposalEntity.java",
+          "before": "eb19231b008405825d9377038aafc38b96a25706932f1b74de8b635ea4829001",
+          "target": "eb19231b008405825d9377038aafc38b96a25706932f1b74de8b635ea4829001",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-model/src/main/java/cn/aslight/workhub/model/autonomy/AutonomySignalEntity.java",
+          "before": "ebab7498620ef5bfe75c9604c60a69f00a215af5e3b8117606b92f613e8a3b32",
+          "target": "ebab7498620ef5bfe75c9604c60a69f00a215af5e3b8117606b92f613e8a3b32",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentAccessService.java",
+          "before": "fad853ace8a31da80cb37720b0ff9f6d326e89d334191247232a28257210e335",
+          "target": "fad853ace8a31da80cb37720b0ff9f6d326e89d334191247232a28257210e335",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentApiDecision.java",
+          "before": "1b3fdd52eb693b1804c3e9c4ccddc5692e2fa812bb2953950ad59e69b86e6f33",
+          "target": "1b3fdd52eb693b1804c3e9c4ccddc5692e2fa812bb2953950ad59e69b86e6f33",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentApiExecutionAdapter.java",
+          "before": "7bb5a3aca664e67b5e29e61720fd07697ee1e23f2807331302c311a0e9cd63dd",
+          "target": "7bb5a3aca664e67b5e29e61720fd07697ee1e23f2807331302c311a0e9cd63dd",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentBugTools.java",
+          "before": "256ea5a89212b3a1cf280d468293ec9a180205571a7f259c1ca47c03eba45d70",
+          "target": "256ea5a89212b3a1cf280d468293ec9a180205571a7f259c1ca47c03eba45d70",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentChangeService.java",
+          "before": "1df6ee508c6cc94dbd4e0caac502d3ae51f53715e5845c927b058cc995eea571",
+          "target": "1df6ee508c6cc94dbd4e0caac502d3ae51f53715e5845c927b058cc995eea571",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentChangeStore.java",
+          "before": "7c7e094a81692e3d8de1ed8663021771f64c7b5509852cff8766599a51444921",
+          "target": "7c7e094a81692e3d8de1ed8663021771f64c7b5509852cff8766599a51444921",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentChangeTools.java",
+          "before": "2bfb81a1a0ca7071ed6d8aba91adc470f9cf9ff53a411f12075dd04c78a5a2d8",
+          "target": "2bfb81a1a0ca7071ed6d8aba91adc470f9cf9ff53a411f12075dd04c78a5a2d8",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentCliProtocol.java",
+          "before": "9de482a7bb79509114094d0315816af55eee685c190ffec788947c31c3929b48",
+          "target": "9de482a7bb79509114094d0315816af55eee685c190ffec788947c31c3929b48",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentCodeGit.java",
+          "before": "363ffec4826ad52d2747dc50710b5286d9cc170c3c1719f37f175a0df444dcf8",
+          "target": "363ffec4826ad52d2747dc50710b5286d9cc170c3c1719f37f175a0df444dcf8",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentCodePolicy.java",
+          "before": "eebb97ad334ba0e60d561119f4336fb33635110871bde78ef676edbdb844087f",
+          "target": "eebb97ad334ba0e60d561119f4336fb33635110871bde78ef676edbdb844087f",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentCodeStore.java",
+          "before": "803d3bd80a6c2509f6773cf5e0edead10eac4bc676cc5233fe7b46208c396fae",
+          "target": "803d3bd80a6c2509f6773cf5e0edead10eac4bc676cc5233fe7b46208c396fae",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentCodeTools.java",
+          "before": "e41e5a74c8afdff49d7344264d42959d0568b1098c1a16b95175f8cd9e25f571",
+          "target": "e41e5a74c8afdff49d7344264d42959d0568b1098c1a16b95175f8cd9e25f571",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentCodeWorkspaceService.java",
+          "before": "a631f04c48d27ffead971cb9097b26ad2d2f58b26c4366064b641b99237774d1",
+          "target": "a631f04c48d27ffead971cb9097b26ad2d2f58b26c4366064b641b99237774d1",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentDeliveryService.java",
+          "before": "1b7eaaf59b8af84af67f36f3efe13991d3245d46b2885e1f69ea42adff0ab173",
+          "target": "1b7eaaf59b8af84af67f36f3efe13991d3245d46b2885e1f69ea42adff0ab173",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentDeliveryStore.java",
+          "before": "5686a3c7865475d9e7ae3ff46895abb093799b5d2c01526e4c394365ca89a27e",
+          "target": "5686a3c7865475d9e7ae3ff46895abb093799b5d2c01526e4c394365ca89a27e",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentDeliveryTools.java",
+          "before": "343dc42c768c4797be45138c43f7087f75a906ec968cc44fe394d78a9784bfc0",
+          "target": "343dc42c768c4797be45138c43f7087f75a906ec968cc44fe394d78a9784bfc0",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentDeploymentApproval.java",
+          "before": "4af966d4201a49392a247678acbb693c0b3c4545a34ba32c62f9e92aa5bb5ba5",
+          "target": "4af966d4201a49392a247678acbb693c0b3c4545a34ba32c62f9e92aa5bb5ba5",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentDeploymentDispatcher.java",
+          "before": "7a189bf9e7424d243576ca5af919baebc72ec9ede0796c660d80fc9c521904b5",
+          "target": "7a189bf9e7424d243576ca5af919baebc72ec9ede0796c660d80fc9c521904b5",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentDeploymentReceipt.java",
+          "before": "f796572661f14d49028f095701f0727ffc342878a31a55604d17c8de16a89997",
+          "target": "f796572661f14d49028f095701f0727ffc342878a31a55604d17c8de16a89997",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentDeploymentStore.java",
+          "before": "32163ed6fe83b3d09b527f9dd8c48ec5f7afb4065b7f084f09bee1a59bc2dc49",
+          "target": "32163ed6fe83b3d09b527f9dd8c48ec5f7afb4065b7f084f09bee1a59bc2dc49",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentExecutionAdapter.java",
+          "before": "7c2caf1e06f9a5229f1c245a31f9af784622b666412bef938dd55f1f660c835d",
+          "target": "7c2caf1e06f9a5229f1c245a31f9af784622b666412bef938dd55f1f660c835d",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentExecutionCoordinator.java",
+          "before": "fafd452e07acf1769d1b63cad373b452ce0569a816cb8250e7cfc9f5173affb6",
+          "target": "fafd452e07acf1769d1b63cad373b452ce0569a816cb8250e7cfc9f5173affb6",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentGitLabClient.java",
+          "before": "0aac99c0db450030db813e1c30196a2f6bcdbd1814279f8660b6d2f589b06785",
+          "target": "0aac99c0db450030db813e1c30196a2f6bcdbd1814279f8660b6d2f589b06785",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentGitLabPolicy.java",
+          "before": "f2c0a55359169fd61dd16525003a9d9704309419fb453ff0afd8074d6033d590",
+          "target": "f2c0a55359169fd61dd16525003a9d9704309419fb453ff0afd8074d6033d590",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentInspectionService.java",
+          "before": "a358a7a6edf252dc78e01120008f967bbcba3a839a05c0c9041b7903b0821b5c",
+          "target": "a358a7a6edf252dc78e01120008f967bbcba3a839a05c0c9041b7903b0821b5c",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentInspectionTools.java",
+          "before": "efb989f80f480018c3d5f8061d0348437bd5589a08adfd8b84afea7ade07edec",
+          "target": "efb989f80f480018c3d5f8061d0348437bd5589a08adfd8b84afea7ade07edec",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentJenkinsClient.java",
+          "before": "95c907ff80e9f7e04185e07ab18b1b57434c8cab132972a77421ca76049b23ff",
+          "target": "95c907ff80e9f7e04185e07ab18b1b57434c8cab132972a77421ca76049b23ff",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentJenkinsPolicy.java",
+          "before": "6a1cda2a59490c59d73a984acae39c83dd6ab8d874c5762fff2c9914bb954818",
+          "target": "6a1cda2a59490c59d73a984acae39c83dd6ab8d874c5762fff2c9914bb954818",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentJenkinsTools.java",
+          "before": "c114bbb12ef76b5b989ff040f6a6427ef6f69a28e6a2a204b186849a9321a219",
+          "target": "c114bbb12ef76b5b989ff040f6a6427ef6f69a28e6a2a204b186849a9321a219",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentMcpBridge.java",
+          "before": "15ebd48c675e64cadfc0c9e1482b3b6f6dc5c4b63f92ef86e682d411daf5e1be",
+          "target": "15ebd48c675e64cadfc0c9e1482b3b6f6dc5c4b63f92ef86e682d411daf5e1be",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentMonitoringTools.java",
+          "before": "b8aff9845325969d8d41bc4b0387f46d6b116a5be4e67c13b72ec9d8bcd28257",
+          "target": "b8aff9845325969d8d41bc4b0387f46d6b116a5be4e67c13b72ec9d8bcd28257",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentNativeCliAdapter.java",
+          "before": "51d859ea427f9423e657d15e730a05865a86fd0ccdefdb5974dfe18f483c852c",
+          "target": "51d859ea427f9423e657d15e730a05865a86fd0ccdefdb5974dfe18f483c852c",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentOptionsService.java",
+          "before": "9c97e7efa92bf2d35f3d5a9c21952d470d79e7af3a592e50d2716a9c3f9c84c4",
+          "target": "9c97e7efa92bf2d35f3d5a9c21952d470d79e7af3a592e50d2716a9c3f9c84c4",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentReleaseCoordinator.java",
+          "before": "73112817e91dbaa1aa8b719dc612e129669e38924110126ae7ed9ef34bfeca7f",
+          "target": "73112817e91dbaa1aa8b719dc612e129669e38924110126ae7ed9ef34bfeca7f",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentReleasePlanGate.java",
+          "before": "0c68c1a0bbe7459bbda5e1a5e200c224ea79cef6f4ea1366e3a8e4df80e9efff",
+          "target": "0c68c1a0bbe7459bbda5e1a5e200c224ea79cef6f4ea1366e3a8e4df80e9efff",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentReleasePlanGraph.java",
+          "before": "abaf676106e9d2d1e51809570722f5503f90a36594b7108562c1c64d6f8cfb7d",
+          "target": "abaf676106e9d2d1e51809570722f5503f90a36594b7108562c1c64d6f8cfb7d",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentReleasePlanService.java",
+          "before": "ca901984ee55b21d5fc304d6bb31f361fe86ba57ce3547f67c035e2093ce8542",
+          "target": "ca901984ee55b21d5fc304d6bb31f361fe86ba57ce3547f67c035e2093ce8542",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentReleasePlanSnapshot.java",
+          "before": "8a3dc0eccf48cda365dfbd4aa986510c833f91fd1f9b95623c6b37b6ee30d560",
+          "target": "8a3dc0eccf48cda365dfbd4aa986510c833f91fd1f9b95623c6b37b6ee30d560",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentReleaseTools.java",
+          "before": "008e285a49f86cdcd6ec444a54428f75ba7958fb87e762df5c46875e19ecde29",
+          "target": "008e285a49f86cdcd6ec444a54428f75ba7958fb87e762df5c46875e19ecde29",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentRunStore.java",
+          "before": "6841f442de5d1ee0abd5a7e151df184664b5ee6cf67fdc798aec0cab0ad96aa9",
+          "target": "6841f442de5d1ee0abd5a7e151df184664b5ee6cf67fdc798aec0cab0ad96aa9",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentSchedule.java",
+          "before": "b94d00b2815765c5c0726a4fa8795e011cec3ab43c572ce2620a8c9e8e9a0dd9",
+          "target": "b94d00b2815765c5c0726a4fa8795e011cec3ab43c572ce2620a8c9e8e9a0dd9",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentTool.java",
+          "before": "3c9e841adcbc9ce2596ba052ebbeec97c338978d3f8510b10a19bf3b6bbde550",
+          "target": "3c9e841adcbc9ce2596ba052ebbeec97c338978d3f8510b10a19bf3b6bbde550",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentToolArguments.java",
+          "before": "aa6add611b32ae84dd9ae822a97c709acddbc0f1b6e8f7a466a45c7773275ae8",
+          "target": "aa6add611b32ae84dd9ae822a97c709acddbc0f1b6e8f7a466a45c7773275ae8",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentToolCatalog.java",
+          "before": "021c9da7058d125ad93d3380ce0d25949037fe0756fa356433ebab5109dfd27a",
+          "target": "021c9da7058d125ad93d3380ce0d25949037fe0756fa356433ebab5109dfd27a",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentToolContext.java",
+          "before": "781c51532603e7b8b4dd8951b71a0246a4a61078e0a7e5685c522be07f408ca9",
+          "target": "781c51532603e7b8b4dd8951b71a0246a4a61078e0a7e5685c522be07f408ca9",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentToolData.java",
+          "before": "270680d6bb1197e59da779d889429f831208ee48e81a0e198245348f6d0a87f7",
+          "target": "270680d6bb1197e59da779d889429f831208ee48e81a0e198245348f6d0a87f7",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentToolReplies.java",
+          "before": "ae2b73f316da58c1bb599898772d21338901e89dc95a688b32f0088d41f398cb",
+          "target": "ae2b73f316da58c1bb599898772d21338901e89dc95a688b32f0088d41f398cb",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AgentWorkbenchService.java",
+          "before": "fe540b8c0ec697954f06d07baefa5252596b66330236aec908c18c6dbb262965",
+          "target": "fe540b8c0ec697954f06d07baefa5252596b66330236aec908c18c6dbb262965",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AutonomyCaseTools.java",
+          "before": "15355c623cedef7b94244b9957130495ae1f1bb621603b375bd2c173c37d7bea",
+          "target": "15355c623cedef7b94244b9957130495ae1f1bb621603b375bd2c173c37d7bea",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/CodexAgentCliProtocol.java",
+          "before": "cadcfc2f14af79a5464919fba57439a3868c04c79fc7458e9121b2ce262f88e9",
+          "target": "cadcfc2f14af79a5464919fba57439a3868c04c79fc7458e9121b2ce262f88e9",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/agent/ZCodeAgentCliProtocol.java",
+          "before": "0cfb2ab86346f66251bed7c0d519577488e3d94a85a276619ebce9795a51dc73",
+          "target": "0cfb2ab86346f66251bed7c0d519577488e3d94a85a276619ebce9795a51dc73",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ai/AiAgentApiRequest.java",
+          "before": "b1d1d22182770af99d01751dfdfc8e27f5f9d7c1482083388921b17e9132d342",
+          "target": "b1d1d22182770af99d01751dfdfc8e27f5f9d7c1482083388921b17e9132d342",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ai/AiCliType.java",
+          "before": "8cff61cd365e4f7baab13c180d4b8bbbe547c03453f3099bccc40b53865c1c3a",
+          "target": "8cff61cd365e4f7baab13c180d4b8bbbe547c03453f3099bccc40b53865c1c3a",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ai/AiGatewayClient.java",
+          "before": "f8fc35aff5afd9c0ed13bb09fce3c8be9aa956d321add5d2d118bdebf52269a1",
+          "target": "f8fc35aff5afd9c0ed13bb09fce3c8be9aa956d321add5d2d118bdebf52269a1",
+          "restored": "ea3b30e7b217c581485387619582de03da70d4ad40b7c57ad570df391e4b6fef",
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ai/AiProviderConfigService.java",
+          "before": "b40ffb49871279b7d76308000981906bdc96ea6061f2ea1cf2f5cc7409cc4b13",
+          "target": "b40ffb49871279b7d76308000981906bdc96ea6061f2ea1cf2f5cc7409cc4b13",
+          "restored": "0909c0c1b31c4d0c8f1a6cb3f708e43f7989361fe38fb5526ad9327482636c65",
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ai/AiUseCaseConfigService.java",
+          "before": "98716de34cac758c0290964a1c55423d3846a56c9ff1cbc6a6fd3c049497b361",
+          "target": "98716de34cac758c0290964a1c55423d3846a56c9ff1cbc6a6fd3c049497b361",
+          "restored": "9c7dbe506a9d2a5b9fe0ceb8cad39d8d8a4023928cc8b20686eed9764d3bef33",
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ai/CliTaskConversation.java",
+          "before": "aa4efa12a4ee8824dd0fd7718aa8a63b6883200d68bc613b499da56dfc6aefd4",
+          "target": "aa4efa12a4ee8824dd0fd7718aa8a63b6883200d68bc613b499da56dfc6aefd4",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ai/CliTaskLaunch.java",
+          "before": "cf6578544d9feb4028ff261ddd7b99c21a4e7d915b6bb8ab6e6ad64e73ca9643",
+          "target": "cf6578544d9feb4028ff261ddd7b99c21a4e7d915b6bb8ab6e6ad64e73ca9643",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ai/DefaultAiGatewayClient.java",
+          "before": "5ca4bdc2f6e56ebaddc2d114bea81f0baa4fcb5058ae6fa328893a39c7a47fb6",
+          "target": "5ca4bdc2f6e56ebaddc2d114bea81f0baa4fcb5058ae6fa328893a39c7a47fb6",
+          "restored": "4db9a06e2e6c314cb2d68e87b30e6ce0eb1827bced84156771b66d7eea0b02e6",
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ai/ZCodeCliClient.java",
+          "before": "52b3358896d48cab05366624618bdb0769eabb9abf78a5859027bc299bfc24b7",
+          "target": "52b3358896d48cab05366624618bdb0769eabb9abf78a5859027bc299bfc24b7",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/ai/ZCodeTaskConversation.java",
+          "before": "437a124efc3bac778433dfe0d9ace8f7bb7b186512272e49c3da567286efc604",
+          "target": "437a124efc3bac778433dfe0d9ace8f7bb7b186512272e49c3da567286efc604",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/autonomy/AgentObservationService.java",
+          "before": "35258dafa20c7dfe8fccb4f61a37829ec40b8fffdfa1a0d1f19fad948e17ad26",
+          "target": "35258dafa20c7dfe8fccb4f61a37829ec40b8fffdfa1a0d1f19fad948e17ad26",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/autonomy/AutonomyCaseService.java",
+          "before": "6a4540c15584d77453d251f42e09635ce839e3818c9107581e77d8c311c8321a",
+          "target": "6a4540c15584d77453d251f42e09635ce839e3818c9107581e77d8c311c8321a",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/autonomy/AutonomyEvidence.java",
+          "before": "0eca4fe69a3507a1845a4330c49e74c464aebf63ac787545ff82e7d81b1b0fc8",
+          "target": "0eca4fe69a3507a1845a4330c49e74c464aebf63ac787545ff82e7d81b1b0fc8",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/main/java/cn/aslight/workhub/service/system/SysConfigService.java",
+          "before": "7920d6d785f6701d4291c03233c42162985f34d60398545864bcc94ac86dbc97",
+          "target": "7920d6d785f6701d4291c03233c42162985f34d60398545864bcc94ac86dbc97",
+          "restored": "515891c06ab30cbb37653b7887ec7f70ff1e1cc98b3cb0f70584b1272895bafc",
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentBugToolsTest.java",
+          "before": "535363a1097f2c8d199fee56329babdf4f714b3a3af9163fc6405db6ef1bab2c",
+          "target": "535363a1097f2c8d199fee56329babdf4f714b3a3af9163fc6405db6ef1bab2c",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentChangeServiceTest.java",
+          "before": "5163c84256a1fd82a76dedb562a0e1adade7da7f63242607bcec605d04cbe04a",
+          "target": "5163c84256a1fd82a76dedb562a0e1adade7da7f63242607bcec605d04cbe04a",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentCodeWorkspaceServiceTest.java",
+          "before": "565a494b166b56dce374eada288f3a20cb950811363a6cdf46cd3fc0eceac759",
+          "target": "565a494b166b56dce374eada288f3a20cb950811363a6cdf46cd3fc0eceac759",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentDeploymentDispatcherTest.java",
+          "before": "77f8dab7247275994d61ebfb3e43cdd8dfb8e8c488b5607934035508fcf2bba9",
+          "target": "77f8dab7247275994d61ebfb3e43cdd8dfb8e8c488b5607934035508fcf2bba9",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentGitLabClientTest.java",
+          "before": "99c72e81d92e5907293070950e97e28fa990a1b618c22fa8d7720d61c5928fd5",
+          "target": "99c72e81d92e5907293070950e97e28fa990a1b618c22fa8d7720d61c5928fd5",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentGitPublishTest.java",
+          "before": "74b88084916c732d5d2b8b4d422ce21bc99511789498e4184c86f80189e2a9cf",
+          "target": "74b88084916c732d5d2b8b4d422ce21bc99511789498e4184c86f80189e2a9cf",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentInspectionServiceTest.java",
+          "before": "62a267f26b829eb42d9a078b18c53a757ced77bdaeb9c50a9016bb4686c6437a",
+          "target": "62a267f26b829eb42d9a078b18c53a757ced77bdaeb9c50a9016bb4686c6437a",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentJenkinsClientTest.java",
+          "before": "f6f01f2ae8db89067e7c9fd04feb1b8905d42ee3e7e2faa10128a29739d96039",
+          "target": "f6f01f2ae8db89067e7c9fd04feb1b8905d42ee3e7e2faa10128a29739d96039",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentJenkinsPolicyTest.java",
+          "before": "1e504ae0ad5f983666480dd49b953c4ab9cfc14ee63889cc7eb35e4461ccee35",
+          "target": "1e504ae0ad5f983666480dd49b953c4ab9cfc14ee63889cc7eb35e4461ccee35",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentMonitorReadMapperTest.java",
+          "before": "379f1ebfa4393c1f413f21e01541f33eac91c26233a0426483e3831d57539f43",
+          "target": "379f1ebfa4393c1f413f21e01541f33eac91c26233a0426483e3831d57539f43",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentMonitoringToolsTest.java",
+          "before": "361876297c815bcc05ec5358cbababa72f91881262159d501ba4222e66515911",
+          "target": "361876297c815bcc05ec5358cbababa72f91881262159d501ba4222e66515911",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentReleasePlanServiceTest.java",
+          "before": "5ce172141a28cf68e25a05f8b3eeb681f94af435a527e8a30a5469d4fb115bd2",
+          "target": "5ce172141a28cf68e25a05f8b3eeb681f94af435a527e8a30a5469d4fb115bd2",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentScheduleTest.java",
+          "before": "60644c9d3074d092fdf6af683d18eed5d1f4bb3cc3a9e3197f633426111945a9",
+          "target": "60644c9d3074d092fdf6af683d18eed5d1f4bb3cc3a9e3197f633426111945a9",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentWorkbenchServiceTest.java",
+          "before": "8aca2b563cf39d3fc1d15087c27d47e077f1fa929bd4640a04e2168448b3c580",
+          "target": "8aca2b563cf39d3fc1d15087c27d47e077f1fa929bd4640a04e2168448b3c580",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AutonomyCaseServiceTest.java",
+          "before": "2d8d563ea6ff4adba8ab3885b46c9ede66badd887dc2f6a4aeaa613ee680abb2",
+          "target": "2d8d563ea6ff4adba8ab3885b46c9ede66badd887dc2f6a4aeaa613ee680abb2",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AutonomyEvidenceTest.java",
+          "before": "27523a2c8306a6a394d2c9c4c1e2f82dfebeb5c91bd627d7ebd7bf56af2b3987",
+          "target": "27523a2c8306a6a394d2c9c4c1e2f82dfebeb5c91bd627d7ebd7bf56af2b3987",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/CodexAgentCliProtocolTest.java",
+          "before": "633301aa9fcd28533d9f160ef77eac73ce5fa33e0fec421d228d234b84a09743",
+          "target": "633301aa9fcd28533d9f160ef77eac73ce5fa33e0fec421d228d234b84a09743",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/agent/FakeAgentCliProcess.java",
+          "before": "c9171ddafc276bfdaf0cdfa88fc50ae956129e3835e90568bdc817671828bde7",
+          "target": "c9171ddafc276bfdaf0cdfa88fc50ae956129e3835e90568bdc817671828bde7",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/ai/AiProviderConfigServiceTest.java",
+          "before": "65d7b1bfbaba49c295b108747ca962a101f36276e9c525a193ff8f4a3c8472f8",
+          "target": "65d7b1bfbaba49c295b108747ca962a101f36276e9c525a193ff8f4a3c8472f8",
+          "restored": "a5bbbda2fb30fcefd820347d4666098833337e73f9d7ded2c0bd6121f8e1cf90",
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/ai/DefaultAiGatewayClientTest.java",
+          "before": "19de6b1cd0958e7a17b6dd7afa7390a6d7d9e6ea077e13c9291dd76ea6352d96",
+          "target": "19de6b1cd0958e7a17b6dd7afa7390a6d7d9e6ea077e13c9291dd76ea6352d96",
+          "restored": "6637e8990d236250b95ca0dff5abae66ea4034fa44f5ccc58a15ec8f687aed3a",
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/ai/ZCodeCliClientTest.java",
+          "before": "def33e95abb0da1a359af16f4cbda5683a6ba4885a999755a665d8e134650101",
+          "target": "def33e95abb0da1a359af16f4cbda5683a6ba4885a999755a665d8e134650101",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/ai/ZCodeCliLocalProtocolTest.java",
+          "before": "9aeeab0e191451ffbd609e4320e9a7f406694517e54009ae4ffce35c1f0e575e",
+          "target": "9aeeab0e191451ffbd609e4320e9a7f406694517e54009ae4ffce35c1f0e575e",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/ai/ZCodeTaskConversationTest.java",
+          "before": "554efbc8699417c0324da4fdfd6761e8472d88a8aa583b4dfb2b2918d8a90148",
+          "target": "554efbc8699417c0324da4fdfd6761e8472d88a8aa583b4dfb2b2918d8a90148",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "workhub-service/src/test/java/cn/aslight/workhub/service/system/SysConfigServiceTest.java",
+          "before": "59a6666518252410458c543ce2dc765ef11c681368e9f015dd9e54143b67f6d2",
+          "target": "59a6666518252410458c543ce2dc765ef11c681368e9f015dd9e54143b67f6d2",
+          "restored": "68a4932588fdcb66e27192ad12ad350a1b6af0b144fd6e11edfe95e864881b42",
+          "mode": 420
+        },
+        {
+          "path": "docs/notes.md",
+          "before": "27a7fc536b8caff45c1ac9ecd730fcb8c04f65e5232f71e5ec4b764b543b57c8",
+          "target": "57d1eabea98b040f4a94467eb68008228e398f637c679bce804168433da8ed63",
+          "restored": "a2a39fef704c96cb6cd6ef0c1b37aa03f5f9cb5bbf853cdd7578f56a8e084d42",
+          "mode": 384
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/现状.md",
+          "before": "6e17097bc7570e22eab4c3ba5d1e95f5de2d748a54dc8b2131a15f86733ac875",
+          "target": "aa0574e9a3bba5d74069bf5b63b6a5f144fd901a05e077d715dbccffccaa4edd",
+          "restored": "e0027fa5dd08842ff41c4fef44b8281e69b83648613edccd086a93f77e86d0ba",
+          "mode": 420
+        },
+        {
+          "path": "docs/业务线/BL000012-工作台/迭代日志.md",
+          "before": "9d4e2c9124e1ccdb368e5f7721e5e54a9aee3e768c7cdbeee1d197ad07214d0c",
+          "target": "c4d75260922168576441606bc655f23b3d2015d620189c69cfd6de5a3086487f",
+          "restored": "1f8339599909105b63decb9e9764894ba4568d88efd64be7472a1d9273090827",
+          "mode": 420
+        }
+      ],
+      "prerequisiteCommit": "7b006c63c9980c4d3a61685a2cf94b49f549f45a"
+    },
+    "web": {
+      "root": "/Users/aslight/IDEAWorkspace/workhub-web",
+      "targetRoot": "/Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-web",
+      "head": "1a52cd93a3fcc07bd5c713c074574d6a037818d0",
+      "originalBranch": "codex/development-20261103",
+      "featureCommit": "8aa86477d3e96e66088c8ac2496bbc6529bb4b8f",
+      "prerequisites": [],
+      "prerequisiteDeletes": [],
+      "files": [
+        {
+          "path": "docs/frontend-architecture.md",
+          "before": "c9ce164172c6ae14324ab3bbec53eee50f89483c2697a0f8598c898138d4cdd3",
+          "target": "c9ce164172c6ae14324ab3bbec53eee50f89483c2697a0f8598c898138d4cdd3",
+          "restored": "bd3c0b2897df80fa8e12e04ab6236a592c89624fa96e8cae9e2fdf1363fbe596",
+          "mode": 420
+        },
+        {
+          "path": "docs/project-charter.md",
+          "before": "61fb15cd08b2429ee3df0a72829c9e1b7fe24d36ab007f391b3da8320ab64a6f",
+          "target": "61fb15cd08b2429ee3df0a72829c9e1b7fe24d36ab007f391b3da8320ab64a6f",
+          "restored": "977f8467e79190da3aac59776f9340a86965e1775876bb7d49a8d91e90df4cd2",
+          "mode": 420
+        },
+        {
+          "path": "src/api/agent.ts",
+          "before": "a0318f543733a0a7453bbbfa65653f516938e31cab6cc54963cc5055e71344c5",
+          "target": "a0318f543733a0a7453bbbfa65653f516938e31cab6cc54963cc5055e71344c5",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/api/agentChange.ts",
+          "before": "8515f5a99301c6281c1a052217fc10bba7cb2c7ec3ba7140475f4239071d03d4",
+          "target": "8515f5a99301c6281c1a052217fc10bba7cb2c7ec3ba7140475f4239071d03d4",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/api/agentRelease.ts",
+          "before": "2677fd2c68c0c88e35870aac89c8b2321ea01d239ae62770aae312c930a67c7a",
+          "target": "2677fd2c68c0c88e35870aac89c8b2321ea01d239ae62770aae312c930a67c7a",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/api/autonomy.ts",
+          "before": "8387a9ece579f0e5f9861750d9a6f4dcd0496678ef64ec45258beeb5ae009d9c",
+          "target": "8387a9ece579f0e5f9861750d9a6f4dcd0496678ef64ec45258beeb5ae009d9c",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/types/agent.ts",
+          "before": "8b366bdec8c2fb12c4444817233b78942fdab2f38ede6bd321625d23649f4f39",
+          "target": "8b366bdec8c2fb12c4444817233b78942fdab2f38ede6bd321625d23649f4f39",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/types/agentChange.ts",
+          "before": "e6e83e2a4231ee951ff64d2e020b9d0a60ee171724e80b5bf6d9e37300addc57",
+          "target": "e6e83e2a4231ee951ff64d2e020b9d0a60ee171724e80b5bf6d9e37300addc57",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/types/agentRelease.ts",
+          "before": "04d1f295b2058a418a6177d9b37b6ec835bdcefcb2345baaa6dd1d2cc5330887",
+          "target": "04d1f295b2058a418a6177d9b37b6ec835bdcefcb2345baaa6dd1d2cc5330887",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/types/ai-config.ts",
+          "before": "64dc8d01717e2521068eb5a5646210ed768383e6b26f71883340c4d49819f752",
+          "target": "64dc8d01717e2521068eb5a5646210ed768383e6b26f71883340c4d49819f752",
+          "restored": "81dc5a6242d46000eccb94cc5afb47ce14bf6f3cd0a9741e7148caf2c7cfb78f",
+          "mode": 420
+        },
+        {
+          "path": "src/types/autonomy.ts",
+          "before": "62dfb8b728ede7d9208706cdb81321861ec7d0051db487840ff71e2cb08818b6",
+          "target": "62dfb8b728ede7d9208706cdb81321861ec7d0051db487840ff71e2cb08818b6",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/views/agent/AgentCasesPanel.vue",
+          "before": "d82716460812d8813480bd767cb2c567a5ca0f77a174f26fa4a6c6707601cc8d",
+          "target": "d82716460812d8813480bd767cb2c567a5ca0f77a174f26fa4a6c6707601cc8d",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/views/agent/AgentChangesPanel.vue",
+          "before": "a0b54ab19f38671c0ac9d0520a9c84b95e59832fc7017ea4dde091a42c4dd01f",
+          "target": "a0b54ab19f38671c0ac9d0520a9c84b95e59832fc7017ea4dde091a42c4dd01f",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/views/agent/AgentConfigDialog.vue",
+          "before": "31cc0444b36083a6b55f484ac70a86007f3dca8585fba9fedc187c948090f06c",
+          "target": "31cc0444b36083a6b55f484ac70a86007f3dca8585fba9fedc187c948090f06c",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/views/agent/AgentReleasesPanel.vue",
+          "before": "8e102f19c966afa92a0cf5d16f2c66a218e6128c56033f9d50fefe96a7af9bda",
+          "target": "8e102f19c966afa92a0cf5d16f2c66a218e6128c56033f9d50fefe96a7af9bda",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/views/agent/AgentRunPanel.vue",
+          "before": "c90833ad1c5b9b8698fd598f81d31c251d35ed9d70b941e845822585eb36f26a",
+          "target": "c90833ad1c5b9b8698fd598f81d31c251d35ed9d70b941e845822585eb36f26a",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/views/agent/AgentTaskDialog.vue",
+          "before": "65eba4e7694b8175c2edc36531a616fa4b8b226539261f74d5500d2197726d26",
+          "target": "65eba4e7694b8175c2edc36531a616fa4b8b226539261f74d5500d2197726d26",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/views/agent/AgentWorkbenchView.vue",
+          "before": "f83155b5fad7dd901c2a84a4cf1ae6dc587114a0c6cc722434f653799c1c3322",
+          "target": "f83155b5fad7dd901c2a84a4cf1ae6dc587114a0c6cc722434f653799c1c3322",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/views/agent/agentPresentation.ts",
+          "before": "1519f0b5a31d7393314a34cce291af084f52c1e5e977539e8840bb3b1f2edf4b",
+          "target": "1519f0b5a31d7393314a34cce291af084f52c1e5e977539e8840bb3b1f2edf4b",
+          "restored": null,
+          "mode": 420
+        },
+        {
+          "path": "src/views/system/AiConfigView.vue",
+          "before": "b4183c271443fcdedadf19acfd9b254ebfde71139c7f32056ba404d37d6e6544",
+          "target": "b4183c271443fcdedadf19acfd9b254ebfde71139c7f32056ba404d37d6e6544",
+          "restored": "ee58b7cae0db7a0d79462a7c1a29d1a1d1e4f1338c6418373d40465365ccdefa",
+          "mode": 420
+        },
+        {
+          "path": "src/constants/menu.ts",
+          "before": "5589a7c09bfc9e2343753a02410f9a2a029679040ff9331e535c5076c72c2b0b",
+          "target": "0ced22a3e66cc173ba004d25baa8096534617851267a041ebcb3bb4a716accaa",
+          "restored": "8374bd780f24465e11c1dcdf003fd81a224ee3cc667452abc887ba85ceae7345",
+          "mode": 420
+        },
+        {
+          "path": "src/router/index.ts",
+          "before": "834f37af8b2a0fe7faa12cac8fb6385191fb1e3b3a48878e1bc6cab5a77fd4bb",
+          "target": "3945134440aaadd4973959db1edfa59bc1c45baf809faac69c0f0cb36ba53ee1",
+          "restored": "0e3975a6610da5ea88aa6e5076125a92d71d214ac22c79cf1df3f92397e9e733",
+          "mode": 420
+        },
+        {
+          "path": "docs/implementation-roadmap.md",
+          "before": "df1f3f39f7d5580c9672783182c69801f4849f039293899e4cd6f681a03f4d47",
+          "target": "b313cb21917b6a8de515239c273e3e04c63d505471a8b62d466afedbc726e011",
+          "restored": "001db1f8e4b95edd7c21acc07bfdae20f51a105ffed78b57a2a82d3f9ea32e1f",
+          "mode": 420
+        }
+      ]
+    }
+  }
+}

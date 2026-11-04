@@ -6,7 +6,7 @@
 - 所属业务线：BL000012-工作台；目标覆盖 WorkHub 自身与全部实际目标业务线。
 - 涉及仓库：workhub-server（agent/ops/ai/intake/release/autonomy/model/dao/controller/job/schema）、workhub-web（Agent 管理/任务分派/运行记录/监测/审核/配置）。
 - Proposal / Design 版本：v4 已确认；v1–v3 仅历史，不据其缩小范围或固定 Agent 行动顺序。
-- 核查环境/分支：本地 server `codex/development-20261102`，web `codex/development-20261103`；真实试点的环境/分支/Jenkins 映射另行核实。
+- 当前开发分支：前后端均为 `codex/agent-workbench-autonomy`，工作区在 `/Users/aslight/IDEAWorkspace/workhub-agent-autonomy/`；原开发分支本次 Agent 改动已恢复。此前验证记录中的原分支名保留历史含义；真实试点的环境/分支/Jenkins 映射另行核实。
 - 状态：**用户已于 2026-11-04 明确回复“按 v4 开始实施”；实施进行中**。
 - 负责人/评审人：用户。
 
@@ -271,3 +271,11 @@
 - CLI仍分别核对工具完成和进程停止证明，证据不全保持占位。取消保留已提交的分析，旧所有者不能覆盖恢复后的运行；无结果、跨运行/调用键或工具意图不符不推断完成。恢复使用READ_COMMITTED避免等待事务后读取旧快照。
 - 人工补充指令时保留已执行事实，修正将“已提交但回执迟到”的工具错误描述为“未发出”的轨迹。新增6项测试，巡检集成现20项；完整282项相关回归全部通过（0失败/错误/跳过），controller/job离线编译通过。
 - [验证说明](验证/20261104-巡检回执恢复/验证说明.md)保存命令、结果和6份源码摘要。没有新增迁移、安装、真实配置修改或部署；Jenkins继续暂缓。其他未知执行的统一人工对账、缺陷环境/问题关联、外部来源持续补漏、产物/业务效果验收及真实接入仍待完成，总体目标保持进行中。
+
+
+### 独立开发分支与缺陷关联进度（2026-11-04）
+
+- 用户要求将本次改动转到独立分支并恢复原分支；前后端均已保存到 `codex/agent-workbench-autonomy`。当前开发工作区分别为 `/Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-server` 与 `/Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-web`；原后端/前端分支和 HEAD 保持不变，Agent差异已撤回，其他改动及暂存内容逐项核验保留。
+- 后端新增 `case.link_bug/case.bugs` 与关联历史接口，工具共40项。以缺陷完整原文版本及实际监测信号保存AI关联判断，环境限制随证据保存；重复请求不重复建记录，缺陷修订使旧方案/候选失效。缺陷巡检 FINDING 由服务端引用已保存的关联，不修改原工作项。关联前端页面仍待接入。
+- 新分支288项相关测试全部通过，controller/job离线编译与前端类型检查、test模式构建通过。新增缺陷关联迁移仅在H2验证，真实MySQL未执行；原后端已clean并离线重编译，移除本次遗留组件/迁移产物。
+- 完整目标继续进行；Jenkins保持暂缓，实际业务联调和效果验收尚未完成。[迁移及验证证据](验证/20261104-分支迁移/验证说明.md)。
