@@ -1,0 +1,17 @@
+[
+  {
+    "path": "src/views/intake/intakeDateColumns.test.ts",
+    "unchangedFromHead": true,
+    "sha256": "66884236622e1f7743bb615d655e44f713bcd5844005822dc9d608542b9a490c"
+  },
+  {
+    "path": "src/views/intake/IntakeListView.vue",
+    "unchangedFromHead": true,
+    "sha256": "e4eedf583014fb09facc676fa23f7820a4cb346d0b9450a1ec1d346480ed0979"
+  },
+  {
+    "path": "src/views/project/ProjectListView.vue",
+    "unchangedFromHead": true,
+    "sha256": "54f7452ef0051fae5462ad74e5a35e27e8df688ad0e9d168bf4df424d68574ef"
+  }
+]

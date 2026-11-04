@@ -1,0 +1,14 @@
+Browser tab: 3, Title: "Agent 缺陷关联：本地样本验证", URL: "http://127.0.0.1:19538/".
+0 AXWebArea Agent 缺陷关联：本地样本验证, URL: 127.0.0.1:19538/
+	1 container 问题证据与分析
+		2 container
+			3 heading 问题证据与分析, Value: 2, ID: el-id-5787-4
+				4 text 问题证据与分析
+			5 button Close this dialog
+		6 container el-id-5787-5
+			7 button 刷新详情
+			8 container
+				9 image
+				10 text 缺少缺陷查看权限，无法查看含缺陷关联的问题详情。
+
+The focused UI element is 0 AXWebArea Agent 缺陷关联：本地样本验证, URL: 127.0.0.1:19538/

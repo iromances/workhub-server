@@ -1,0 +1,106 @@
+Browser tab: 2, Title: "Agent 缺陷关联：本地样本验证", URL: "http://127.0.0.1:19538/".
+0 AXWebArea Agent 缺陷关联：本地样本验证, URL: 127.0.0.1:19538/
+	1 container
+		2 text 本地样本验证 · 不连接业务系统
+		3 container
+			4 text 样本响应
+			5 pop up button (collapsed, settable) Description: 样本响应, Value: 正常, Secondary Actions: Expand
+				6 menu
+					7 (selected) 正常
+					8 读取失败
+					9 延迟12秒
+		10 button 切换 Agent
+		11 button 切换缺陷查看权限
+		12 button 切换页面激活
+		13 text 已应用：normal · agent-two
+		14 heading 巡检问题, Value: 3
+			15 text 巡检问题
+		16 text 查看授权范围内的监测证据、AI 分析与处理进度。
+		17 button 刷新问题
+		18 text 业务范围
+		19 container
+			20 combo box (collapsed, settable) 业务范围, ID: case-scope, Secondary Actions: Expand
+			21 text 本地样本工作台 / TEST
+			22 image
+		23 container
+			24 table
+				25 row
+					26 cell
+						27 text 问题
+					28 cell
+						29 text 来源
+					30 cell
+						31 text 状态
+					32 cell
+						33 text 证据次数
+					34 cell
+						35 text 最近发生
+					36 cell
+						37 text 操作
+			38 table
+				39 row
+					40 cell
+						41 button 本地样本：第二个 Agent 的问题
+						42 text 应用异常
+					43 cell
+						44 text 系统预警
+					45 cell
+						46 text 分析中
+					47 cell
+						48 text 1
+					49 cell
+						50 text 2026/11/4 11:00:00
+					51 cell
+						52 button 证据与分析
+		53 text Total 1
+		54 button (disabled) Go to previous page
+		55 content list
+			56 container page 1
+				57 text 1
+		58 button (disabled) Go to next page
+		59 container 问题证据与分析
+			60 container
+				61 heading 问题证据与分析, Value: 2, ID: el-id-3765-39
+					62 text 问题证据与分析
+				63 button Close this dialog
+			64 container el-id-3765-40
+				65 button 刷新详情
+				66 heading 本地样本：第二个 Agent 的问题, Value: 3
+					67 text 本地样本：第二个 Agent 的问题
+				68 text 分析中
+				69 text 系统预警
+				70 text 本地样本工作台 / TEST · 处理版本 9
+				71 table
+					72 row
+						73 cell
+							74 text 首次发生
+						75 cell
+							76 text 2026/11/4 11:00:00
+						77 cell
+							78 text 最近发生
+						79 cell
+							80 text 2026/11/4 11:00:00
+					81 row
+						82 cell
+							83 text 最近观察
+						84 cell
+							85 text 2026/11/4 11:10:00
+						86 cell
+							87 text 去重后证据
+						88 cell
+							89 text 1 条
+				90 tab group
+					91 tab (selected, settable, boolean) AI 分析（0）, Value: 1, ID: tab-analysis
+					92 tab (selectable, settable, boolean) 监测证据（0）, Value: 0, ID: tab-evidence
+					93 tab (selectable, settable, boolean) 关联运行（0）, Value: 0, ID: tab-runs
+				94 container Description: AI 分析（0）, ID: pane-analysis
+					95 text 以下内容为 Agent 的分析建议，实际修复、测试和发布结果需另行核实。
+					96 text 尚未形成分析方案
+					97 text Total 0
+					98 button (disabled) Go to previous page
+					99 content list
+						100 container page 1
+							101 text 1
+					102 button (disabled) Go to next page
+
+The focused UI element is 11 button 切换缺陷查看权限

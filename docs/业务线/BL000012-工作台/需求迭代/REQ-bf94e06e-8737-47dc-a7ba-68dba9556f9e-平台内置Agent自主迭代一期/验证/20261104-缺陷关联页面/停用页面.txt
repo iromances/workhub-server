@@ -1,0 +1,15 @@
+Browser tab: 2, Title: "Agent 缺陷关联：本地样本验证", URL: "http://127.0.0.1:19538/".
+0 AXWebArea Agent 缺陷关联：本地样本验证, URL: 127.0.0.1:19538/
+	1 container
+		2 text 本地样本验证 · 不连接业务系统 样本响应
+		3 pop up button (collapsed, settable) Description: 样本响应, Value: 延迟12秒, Secondary Actions: Expand
+			4 menu
+				5 正常
+				6 读取失败
+				7 (selected) 延迟12秒
+		8 button 切换 Agent
+		9 button 切换缺陷查看权限
+		10 button 切换页面激活
+		11 text 已应用：delay · agent-one
+
+The focused UI element is 10 button 切换页面激活

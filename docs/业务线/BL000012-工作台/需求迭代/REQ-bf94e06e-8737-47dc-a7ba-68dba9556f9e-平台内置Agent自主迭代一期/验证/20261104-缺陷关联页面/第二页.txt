@@ -1,0 +1,88 @@
+Browser tab: 2, Title: "Agent 缺陷关联：本地样本验证", URL: "http://127.0.0.1:19538/".
+0 AXWebArea Agent 缺陷关联：本地样本验证, URL: 127.0.0.1:19538/
+	1 container 问题证据与分析
+		3 container
+			4 heading 问题证据与分析, Value: 2, ID: el-id-3765-4
+				5 text 问题证据与分析
+			6 button Close this dialog
+		7 container el-id-3765-5
+			8 button 刷新详情
+			9 heading 本地样本：巡检发现业务错误, Value: 3
+				10 text 本地样本：巡检发现业务错误
+			11 text 分析中
+			12 text 系统预警
+			13 text 本地样本工作台 / TEST · 处理版本 9
+			14 table
+				15 row
+					16 cell
+						17 text 首次发生
+					18 cell
+						19 text 2026/11/4 11:00:00
+					20 cell
+						21 text 最近发生
+					22 cell
+						23 text 2026/11/4 11:00:00
+				24 row
+					25 cell
+						26 text 最近观察
+					27 cell
+						28 text 2026/11/4 11:10:00
+					29 cell
+						30 text 去重后证据
+					31 cell
+						32 text 1 条
+			33 container
+				34 image
+				35 text 关联缺陷的需求依据已变化，已有方案与候选代码需要重新核对。 1 项缺陷原文已变化，1 项原缺陷当前不可用；请在关联缺陷中核对历史与证据。
+			36 tab group
+				37 tab (selectable, settable, boolean) AI 分析（2）, Value: 0, ID: tab-analysis
+				38 tab (selectable, settable, boolean) 监测证据（0）, Value: 0, ID: tab-evidence
+				39 tab (selected, settable, boolean) 关联缺陷（3）, Value: 1, ID: tab-bugs
+				40 tab (selectable, settable, boolean) 关联运行（0）, Value: 0, ID: tab-runs
+			41 container Description: 关联缺陷（3）, ID: pane-bugs
+				42 container
+					43 text 保留关联时的缺陷原文和证据。关联为 AI 判断，需由人审核。
+					44 button 刷新关联
+					223 text BUG-DEMO-1 · 第六条历史关联，仅第二页可见
+					224 text 历史关联
+					225 text 缺陷原文已变化
+					226 text 关联时处理版本 2 · 2026/11/4 11:10:00
+					227 table
+						228 row
+							229 cell
+								230 text 所属项目
+							231 cell
+								232 text 本地样本项目
+							233 cell
+								234 text 关联时状态
+							235 cell
+								236 text 处理中 · P1
+						237 row
+							238 cell
+								239 text 证据范围
+							240 cell
+								241 text BL000012 / TEST
+					242 text 缺陷自身未记录环境；此处范围来自所引用的监测或日志证据。
+					243 definition list
+						244 container AI 关联依据
+							245 text AI 关联依据
+						246 text 本地样本：缺陷描述与运行证据相符，待人审核（关联 1）。
+					247 definition list
+						248 container 关联时的缺陷描述
+							249 text 关联时的缺陷描述
+						250 text 关联时记录的复现步骤。
+						251 container 关联时的验收要求
+							252 text 关联时的验收要求
+						253 text 核对修复后的实际业务结果。
+					254 button (collapsed) 查看证据引用与原文版本, Secondary Actions: Expand
+						255 text 查看证据引用与原文版本
+					215 text Total 6
+					216 button Go to previous page
+					217 content list
+						218 container page 1
+							219 text 1
+						220 container page 2
+							221 text 2
+					222 button (disabled) Go to next page
+
+The focused UI element is 0 AXWebArea Agent 缺陷关联：本地样本验证, URL: 127.0.0.1:19538/

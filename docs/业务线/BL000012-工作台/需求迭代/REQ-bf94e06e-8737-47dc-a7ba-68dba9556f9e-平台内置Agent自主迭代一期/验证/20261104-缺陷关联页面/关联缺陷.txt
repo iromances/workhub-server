@@ -1,0 +1,3 @@
+Browser tab: 2, Title: "Agent 缺陷关联：本地样本验证", URL: "http://127.0.0.1:19538/".
+There has been no change in the accessibility tree.
+The focused UI element is 39 tab (selected, settable, boolean) 关联缺陷（3）, Value: 1, ID: tab-bugs

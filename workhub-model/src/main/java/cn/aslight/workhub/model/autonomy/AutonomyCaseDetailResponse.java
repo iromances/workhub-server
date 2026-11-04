@@ -5,4 +5,4 @@ import java.util.List;
 
 public record AutonomyCaseDetailResponse(AutonomyCaseEntity caseInfo, AgentPage<AutonomySignalEntity> signals,
                                           AgentPage<AutonomyProposalEntity> proposals,
-                                          List<AutonomyCaseRunEntity> relatedRuns, long relatedRunTotal) { }
+                                          List<AutonomyCaseRunEntity> relatedRuns, long relatedRunTotal, AutonomyBugContext bugContext) { }

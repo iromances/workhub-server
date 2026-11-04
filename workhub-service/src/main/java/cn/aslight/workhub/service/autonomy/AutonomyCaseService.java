@@ -276,7 +276,17 @@ public class AutonomyCaseService {
         return new AutonomyCaseDetailResponse(value,
                 new AgentPage<>(mapper.countSignals(value.id()), mapper.signals(value.id(), evidenceOffset, size)),
                 new AgentPage<>(mapper.countProposals(value.id()), mapper.proposals(value.id(), proposalOffset, size)),
-                mapper.relatedRuns(value.id()), mapper.countRuns(value.id()));
+                mapper.relatedRuns(value.id()), mapper.countRuns(value.id()), bugContext(value));
+    }
+    private AutonomyBugContext bugContext(AutonomyCaseEntity problem) {
+        var links = mapper.currentBugLinks(problem.id());
+        long changed = 0, unavailable = 0;
+        for (var link : links) {
+            String state = bugSourceState(problem, link);
+            if ("CHANGED".equals(state)) changed++;
+            else if ("UNAVAILABLE".equals(state)) unavailable++;
+        }
+        return new AutonomyBugContext(mapper.countBugLinks(problem.id()), links.size(), changed, unavailable);
     }
     private List<String> sources(String user, String agentId) {
         var requester = access.actor(user);

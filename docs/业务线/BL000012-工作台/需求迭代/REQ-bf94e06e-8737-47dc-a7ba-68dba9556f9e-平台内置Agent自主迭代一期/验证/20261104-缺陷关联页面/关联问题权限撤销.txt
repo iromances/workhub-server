@@ -1,0 +1,87 @@
+Browser tab: 3, Title: "Agent 缺陷关联：本地样本验证", URL: "http://127.0.0.1:19538/".
+0 AXWebArea Agent 缺陷关联：本地样本验证, URL: 127.0.0.1:19538/
+	1 container
+		2 text 本地样本验证 · 不连接业务系统
+		3 container
+			4 text 样本响应
+			5 pop up button (collapsed, settable) Description: 样本响应, Value: 正常, Secondary Actions: Expand
+				6 menu
+					7 (selected) 正常
+					8 读取失败
+					9 延迟12秒
+		10 button 切换 Agent
+		11 button 切换缺陷查看权限
+		12 button 切换页面激活
+		13 text 已应用：normal · agent-one
+		14 heading 巡检问题, Value: 3
+			15 text 巡检问题
+		16 text 查看授权范围内的监测证据、AI 分析与处理进度。
+		17 button 刷新问题
+		18 text 业务范围
+		19 container
+			20 combo box (collapsed, settable) 业务范围, ID: case-scope, Secondary Actions: Expand
+			21 text 本地样本工作台 / TEST
+			22 image
+		23 container
+			24 table
+				25 row
+					26 cell
+						27 text 问题
+					28 cell
+						29 text 来源
+					30 cell
+						31 text 状态
+					32 cell
+						33 text 证据次数
+					34 cell
+						35 text 最近发生
+					36 cell
+						37 text 操作
+			38 table
+				39 container
+					40 row
+						41 cell
+							42 button 本地样本：巡检发现业务错误
+							43 text 应用异常
+						44 cell
+							45 text 系统预警
+						46 cell
+							47 text 分析中
+						48 cell
+							49 text 1
+						50 cell
+							51 text 2026/11/4 11:00:00
+						52 cell
+							53 button 证据与分析
+					54 row
+						55 cell
+							56 button 本地样本：尚无缺陷关联
+							57 text 应用异常
+						58 cell
+							59 text 系统预警
+						60 cell
+							61 text 分析中
+						62 cell
+							63 text 1
+						64 cell
+							65 text 2026/11/4 11:00:00
+						66 cell
+							67 button 证据与分析
+		68 text Total 2
+		69 button (disabled) Go to previous page
+		70 content list
+			71 container page 1
+				72 text 1
+		73 button (disabled) Go to next page
+		74 container 问题证据与分析
+			75 container
+				76 heading 问题证据与分析, Value: 2, ID: el-id-5787-4
+					77 text 问题证据与分析
+				78 button Close this dialog
+			79 container el-id-5787-5
+				80 button 刷新详情
+				81 container
+					82 image
+					83 text 缺少缺陷查看权限，无法查看含缺陷关联的问题详情。
+
+The focused UI element is 11 button 切换缺陷查看权限

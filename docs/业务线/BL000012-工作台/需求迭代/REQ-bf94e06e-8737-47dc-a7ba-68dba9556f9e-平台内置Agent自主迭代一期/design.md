@@ -8,7 +8,10 @@
 - 新增 `case.bugs` 和 `GET /api/autonomy/cases/{id}/bugs?agentId&page&pageSize` 分页读取关联历史、当前版本标记及来源状态（CURRENT/CHANGED/UNAVAILABLE）。需要原监测来源权限和 `work-item:view`，同时校验 Agent 所有者与请求人；已有缺陷关联的问题详情/方案/交付也遵守这一权限交集。
 - `inspection.ack` 的缺陷 FINDING 必须匹配已保存的关联及巡检记录版本，证据引用由服务端从关联读取。关联只是 AI 判断，不自动关闭缺陷、生成正式需求或证明问题已修复。缺陷被编辑、移走、删除或改为非缺陷时，提交新方案/候选清单前重新核对；已有候选显示 `BUG_CONTEXT_CHANGED`，沿用现有审核前验证入口。
 - 迁移落点仍为 WorkHub 实际 Flyway 目录 `workhub-bootstrap/src/main/resources/db/schema/mysql/`，新增 `V20261104_103540__add_autonomy_bug_links.sql`，在已有问题表之后创建关联及幂等请求两表；不修改原工作项或角色授权。新增版本仅执行一次，回退应用保留两表历史。执行前核对 `SHOW TABLES LIKE 'pm_autonomy_bug_link%'`，执行后检查 `SHOW CREATE TABLE pm_autonomy_bug_link` / `pm_autonomy_bug_link_request` 及 `SELECT case_id,case_version,COUNT(*) FROM pm_autonomy_bug_link GROUP BY case_id,case_version HAVING COUNT(*)>1`；真实数据库执行仍待获准部署。
-- 本地验证覆盖真实 Mapper/事务、缺陷巡检到信号关联再确认、重复与修订、过期版本/跨业务线/跨运行证据/权限撤销拒绝、候选版本失效及历史回读；不访问 Jenkins 或生产环境。
+- 问题详情及 `case.detail` SUMMARY 增加 `bugContext`：`historyCount/bugCount/changedCount/unavailableCount`。按每个缺陷的最新关联与实际工作项核对，历史版本不误计为当前变化；汇总覆盖所有关联，不依赖历史分页。无关联时均为0，不增加迁移。
+- 工作台详情增加“关联缺陷”，有 `work-item:view` 才展示入口；分页展示脱敏原文快照、AI理由、关联时处理版本、运行/观察记录/信号引用、最新与历史标记及当前原文状态。页面保留账务历史环境未核实等限制；源记录读取失败显示失败，不能当作空列表。切换问题/Agent、关闭或停用页面使旧请求失效。
+- 分析区先显示跨页的缺陷依据变化提示，区分当前/历史方案；候选变更把 `BUG_CONTEXT_CHANGED` 显示为“关联缺陷的需求依据已变化”。所有内容按文本显示，关联不会更改工作项或开放发布操作。
+- 本地验证覆盖真实 Mapper/事务、缺陷巡检到信号关联再确认、重复与修订、过期版本/跨业务线/跨运行证据/权限撤销拒绝、跨页汇总、候选版本失效及历史回读；前端使用test构建和隔离HTTP样本核对分页、错误、迟到响应、权限与环境限制；不访问 Jenkins 或生产环境。
 
 | 项目 | 内容 |
 | --- | --- |
@@ -397,3 +400,7 @@ Jenkins 策略使用既有系统配置 `agent.jenkins/policy`（TEXT）。`insta
 - AC-12/13/14/15→§2.1/2.2、§3.1/3.2 与 Agent 工作台 API。
 - 完整 v4 规格已由用户于 2026-11-04 按仓库 SDD 确认实施；该确认是建设本功能，不是给未来每条常规自主问题增加人工规格审批。
 - [Proposal](proposal.md) · [Tasks](tasks.md) · [用户答复与代码事实](目标澄清.md)。
+
+### 前端验证补充（2026-11-04）
+
+缺陷关联页面须覆盖原文变化、不可用、分页、权限撤销、迟到响应与 KeepAlive 恢复；撤销缺陷查看权限时，无关联问题移除关联页签并返回 AI 分析；含关联问题清空全部详情，未获权限时到达的详情回执也不展示，与服务端授权一致。交付类型检查显式指定 `tsconfig.app.json` 与 `tsconfig.node.json`；根 tsconfig 仅含 project references，裸 `vue-tsc --noEmit` 不能作为全应用检查证据。本轮显式检查发现基线需求/项目页面的 10 处类型错误，修复限于已有可空响应、显示选项与类型契约，不改变生命周期或实际权限；标准 build 也修正为显式检查两个子项目，随后重跑全应用类型检查和 test 模式构建。

@@ -53,7 +53,7 @@ public class AutonomyCaseTools {
                         case "EVIDENCE" -> Map.of("caseId", result.caseInfo().id(), "signals", result.signals());
                         case "PROPOSALS" -> Map.of("caseId", result.caseInfo().id(), "proposals", result.proposals(), "source", "AI_ANALYSIS");
                         default -> Map.of("caseInfo", result.caseInfo(), "evidenceTotal", result.signals().total(), "proposalTotal", result.proposals().total(),
-                                "relatedRuns", result.relatedRuns(), "relatedRunTotal", result.relatedRunTotal());
+                                "relatedRuns", result.relatedRuns(), "relatedRunTotal", result.relatedRunTotal(), "bugContext", result.bugContext());
                     };
                 });
     }

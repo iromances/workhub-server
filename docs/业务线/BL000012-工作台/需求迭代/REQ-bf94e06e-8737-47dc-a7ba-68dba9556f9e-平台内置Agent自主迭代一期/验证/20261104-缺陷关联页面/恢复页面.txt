@@ -1,0 +1,121 @@
+Browser tab: 2, Title: "Agent 缺陷关联：本地样本验证", URL: "http://127.0.0.1:19538/".
+0 AXWebArea Agent 缺陷关联：本地样本验证, URL: 127.0.0.1:19538/
+	1 container
+		2 text 本地样本验证 · 不连接业务系统
+		3 container
+			4 text 样本响应
+			5 pop up button (collapsed, settable) Description: 样本响应, Value: 读取失败, Secondary Actions: Expand
+				6 menu
+					7 正常
+					8 (selected) 读取失败
+					9 延迟12秒
+		10 button 切换 Agent
+		11 button 切换缺陷查看权限
+		12 button 切换页面激活
+		13 text 已应用：error · agent-one
+		14 heading 巡检问题, Value: 3
+			15 text 巡检问题
+		16 text 查看授权范围内的监测证据、AI 分析与处理进度。
+		17 button 刷新问题
+		18 text 业务范围
+		19 container
+			20 combo box (collapsed, settable) 业务范围, ID: case-scope, Secondary Actions: Expand
+			21 text 本地样本工作台 / TEST
+			22 image
+		23 container
+			24 table
+				25 row
+					26 cell
+						27 text 问题
+					28 cell
+						29 text 来源
+					30 cell
+						31 text 状态
+					32 cell
+						33 text 证据次数
+					34 cell
+						35 text 最近发生
+					36 cell
+						37 text 操作
+			38 table
+				39 container
+					40 row
+						41 cell
+							42 button 本地样本：巡检发现业务错误
+							43 text 应用异常
+						44 cell
+							45 text 系统预警
+						46 cell
+							47 text 分析中
+						48 cell
+							49 text 1
+						50 cell
+							51 text 2026/11/4 11:00:00
+						52 cell
+							53 button 证据与分析
+					54 row
+						55 cell
+							56 button 本地样本：尚无缺陷关联
+							57 text 应用异常
+						58 cell
+							59 text 系统预警
+						60 cell
+							61 text 分析中
+						62 cell
+							63 text 1
+						64 cell
+							65 text 2026/11/4 11:00:00
+						66 cell
+							67 button 证据与分析
+		68 text Total 2
+		69 button (disabled) Go to previous page
+		70 content list
+			71 container page 1
+				72 text 1
+		73 button (disabled) Go to next page
+		74 container 问题证据与分析
+			75 container
+				76 heading 问题证据与分析, Value: 2, ID: el-id-3765-39
+					77 text 问题证据与分析
+				78 button Close this dialog
+			79 container el-id-3765-40
+				80 button 刷新详情
+				81 heading 本地样本：巡检发现业务错误, Value: 3
+					82 text 本地样本：巡检发现业务错误
+				83 text 分析中
+				84 text 系统预警
+				85 text 本地样本工作台 / TEST · 处理版本 9
+				86 table
+					87 row
+						88 cell
+							89 text 首次发生
+						90 cell
+							91 text 2026/11/4 11:00:00
+						92 cell
+							93 text 最近发生
+						94 cell
+							95 text 2026/11/4 11:00:00
+					96 row
+						97 cell
+							98 text 最近观察
+						99 cell
+							100 text 2026/11/4 11:10:00
+						101 cell
+							102 text 去重后证据
+						103 cell
+							104 text 1 条
+				105 container
+					106 image
+					107 text 关联缺陷的需求依据已变化，已有方案与候选代码需要重新核对。 1 项缺陷原文已变化，1 项原缺陷当前不可用；请在关联缺陷中核对历史与证据。
+				108 tab group
+					109 tab (selectable, settable, boolean) AI 分析（2）, Value: 0, ID: tab-analysis
+					110 tab (selectable, settable, boolean) 监测证据（0）, Value: 0, ID: tab-evidence
+					111 tab (selected, settable, boolean) 关联缺陷（3）, Value: 1, ID: tab-bugs
+					112 tab (selectable, settable, boolean) 关联运行（0）, Value: 0, ID: tab-runs
+				113 container Description: 关联缺陷（3）, ID: pane-bugs
+					114 container
+						115 text 保留关联时的缺陷原文和证据。关联为 AI 判断，需由人审核。
+						116 button 刷新关联
+						117 text 关联缺陷读取失败：本地模拟：关联读取暂不可用
+
+The focused UI element is 12 button 切换页面激活

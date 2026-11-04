@@ -1,0 +1,4 @@
+Command: node /Users/aslight/IDEAWorkspace/workhub-web/node_modules/typescript/bin/tsc --outDir /private/tmp/workhub-agent-bug-ui-date-tests --module commonjs --moduleResolution node --target ES2023 --skipLibCheck src/views/intake/intakeDateColumns.test.ts
+Exit: 0
+Command: node /private/tmp/workhub-agent-bug-ui-date-tests/views/intake/intakeDateColumns.test.js
+Exit: 0

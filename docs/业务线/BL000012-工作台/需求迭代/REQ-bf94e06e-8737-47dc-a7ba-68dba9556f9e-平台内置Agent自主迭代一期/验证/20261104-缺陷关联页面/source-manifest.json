@@ -1,0 +1,24 @@
+{
+  "backend": {
+    "workhub-model/src/main/java/cn/aslight/workhub/model/autonomy/AutonomyBugContext.java": "7d0b6aa2dc89d31c8ac55e0ca1a7126d7e352bf877b336e3030389399d82cf45",
+    "workhub-model/src/main/java/cn/aslight/workhub/model/autonomy/AutonomyCaseDetailResponse.java": "88979795ab3da8b633cc0fd3f0a479d3d2f3171cdde6e68a596394fbc2f78fb9",
+    "workhub-service/src/main/java/cn/aslight/workhub/service/autonomy/AutonomyCaseService.java": "3da0f858aa38bcdccf96495741115f646c4b9b0aa1049281a14bd6f41a1dd073",
+    "workhub-service/src/main/java/cn/aslight/workhub/service/agent/AutonomyCaseTools.java": "40f9f854464f7fc5487924a8e16884f961e8d670cd549147c5ffd81d800708cf",
+    "workhub-service/src/test/java/cn/aslight/workhub/service/agent/AgentInspectionServiceTest.java": "93e0b1d31b3b244fd289192f5b6fd23ef5d79f0f9349f9bef30466b91624e71a"
+  },
+  "frontend": {
+    "package.json": "2954868f83fa4c4aa19ab0ae669273acc1edf13d71cd5efcb23a94b327c76fee",
+    "src/api/autonomy.ts": "6f0d2b7de5247d3a7c6124d135bed757d489b0cc44835597f184ca570ff12a3a",
+    "src/types/autonomy.ts": "8a618f68aac6c285a5bb70ef34cab2bf73d7b115d121c5a8f006569c85f9386f",
+    "src/views/agent/AgentCaseBugsPanel.vue": "e72ff9c2f763cac145531dc4264a17eb800fdc29d079d8e525cf4520f858423d",
+    "src/views/agent/AgentCasesPanel.vue": "46270e6510fce3e6941046096264a733d3333c9c6bd5218bc9d79d563cc5a198",
+    "src/views/agent/AgentChangesPanel.vue": "3d46ef415c38f94683ac9bbee14359741240ede667c9b9765da7f90ee5f90915",
+    "src/views/intake/IntakeListView.vue": "8f64c3b5a1ca4c4f87786745832aa98bb465e483380e699f30799da477810873",
+    "src/views/intake/intakeDateColumns.test.ts": "e31d3c13249cfd4718aa7c697261e56d3ff7917bc7221c7dce8c0ba7d691fae2",
+    "src/views/project/ProjectListView.vue": "ca6b2cb69d86d52d6119d35f683089911dd66a2893621eec6db44c2574fec677"
+  },
+  "baseHeads": {
+    "backend": "3adbd115ad9d636b08cb1959771a7b865416577b",
+    "frontend": "22cdaa40c18cc7b8ac558a0638fed6cb7e18c67c"
+  }
+}

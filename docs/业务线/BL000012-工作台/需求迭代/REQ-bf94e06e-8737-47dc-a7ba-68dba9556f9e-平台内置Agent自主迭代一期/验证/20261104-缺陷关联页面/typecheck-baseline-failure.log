@@ -1,0 +1,21 @@
+Command: node /Users/aslight/IDEAWorkspace/workhub-web/node_modules/vue-tsc/bin/vue-tsc.js --noEmit -p tsconfig.app.json
+src/views/intake/intakeDateColumns.test.ts(52,3): error TS2322: Type '{ id: number; sourceType: string; sourceChannel: string; senderName: string; developmentOwnerUserName: string | null; receivedAt: string; demandStatus: string; proposerName: string | null; ... 34 more ...; activeTodoCount?: number | undefined; }' is not assignable to type 'IntakeSummary'.
+  Types of property 'priority' are incompatible.
+    Type 'string | null | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
+src/views/intake/IntakeListView.vue(774,68): error TS2345: Argument of type 'DevelopmentAnalysisResponse | null' is not assignable to parameter of type 'DevelopmentAnalysisResponse'.
+  Type 'null' is not assignable to type 'DevelopmentAnalysisResponse'.
+src/views/intake/IntakeListView.vue(859,32): error TS2345: Argument of type '{ id: number; systemScope: "PROJECT_GROUP"; projectGroup: string; systemName: string; description: null; enabled: false; sortOrder: number; createdAt: string; updatedAt: string; }' is not assignable to parameter of type 'ProjectInvolvedSystem'.
+  Type '{ id: number; systemScope: "PROJECT_GROUP"; projectGroup: string; systemName: string; description: null; enabled: false; sortOrder: number; createdAt: string; updatedAt: string; }' is missing the following properties from type 'ProjectInvolvedSystem': businessLineCode, businessLine
+src/views/intake/IntakeListView.vue(2399,12): error TS18049: 'value' is possibly 'null' or 'undefined'.
+src/views/intake/IntakeListView.vue(2414,12): error TS18049: 'value' is possibly 'null' or 'undefined'.
+src/views/intake/IntakeListView.vue(2442,22): error TS18049: 'value' is possibly 'null' or 'undefined'.
+src/views/intake/IntakeListView.vue(3799,52): error TS2339: Property 'tag' does not exist on type '{ label: string; value: string | null; } | { label: string; value: string | null; } | { label: string; value: string | null; tag: string; type: string; }'.
+  Property 'tag' does not exist on type '{ label: string; value: string | null; }'.
+src/views/intake/IntakeListView.vue(3799,84): error TS2339: Property 'type' does not exist on type '{ label: string; value: string | null; } | { label: string; value: string | null; } | { label: string; value: string | null; tag: string; type: string; }'.
+  Property 'type' does not exist on type '{ label: string; value: string | null; }'.
+src/views/intake/IntakeListView.vue(3800,43): error TS2339: Property 'tag' does not exist on type '{ label: string; value: string | null; } | { label: string; value: string | null; } | { label: string; value: string | null; tag: string; type: string; }'.
+  Property 'tag' does not exist on type '{ label: string; value: string | null; }'.
+src/views/project/ProjectListView.vue(336,3): error TS2322: Type '"PROJECT_GROUP" | "BUSINESS_LINE" | "MIDDLE_PLATFORM"' is not assignable to type '"PROJECT_GROUP" | "MIDDLE_PLATFORM"'.
+  Type '"BUSINESS_LINE"' is not assignable to type '"PROJECT_GROUP" | "MIDDLE_PLATFORM"'.
+Exit: 2

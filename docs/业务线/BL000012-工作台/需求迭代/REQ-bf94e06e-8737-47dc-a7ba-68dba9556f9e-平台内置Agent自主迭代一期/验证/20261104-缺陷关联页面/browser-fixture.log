@@ -1,0 +1,28 @@
+
+  VITE v6.4.1   test   ready in 279 ms
+
+  ➜  Local:   http://127.0.0.1:19538/
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"normal"}
+{"kind":"fixture-request","caseId":"case-main","page":"2","mode":"normal"}
+11:50:25 AM [vite] (client) hmr update /Harness.vue, /Harness.vue?vue&type=style&index=0&lang.css
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"normal"}
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"error"}
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"normal"}
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"delay"}
+{"kind":"fixture-request","caseId":"case-empty","page":"1","mode":"normal"}
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"normal"}
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"delay"}
+{"kind":"fixture-request","caseId":"case-empty","page":"1","mode":"delay"}
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"normal"}
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"delay"}
+{"kind":"fixture-request","caseId":"case-two","page":"1","mode":"delay"}
+11:53:52 AM [vite] (client) hmr update /@fs/Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-web/src/views/agent/AgentCasesPanel.vue
+{"kind":"fixture-request","caseId":"case-two","page":"1","mode":"normal"}
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"normal"}
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"delay"}
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"error"}
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"error"}
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"normal"}
+12:00:16 PM [vite] (client) hmr update /@fs/Users/aslight/IDEAWorkspace/workhub-agent-autonomy/workhub-web/src/views/agent/AgentCasesPanel.vue
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"normal"}
+{"kind":"fixture-request","caseId":"case-main","page":"1","mode":"normal"}

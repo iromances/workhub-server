@@ -497,6 +497,8 @@ class AgentInspectionServiceTest {
         propose(run, caseId, "original-plan");
         jdbc.update("UPDATE pm_work_item SET description='新的复现步骤与验收范围' WHERE id=1");
         assertTrue(cases.bugContextChanged(autonomy.find(caseId)));
+        var staleSummary = cases.detailForUser(agent.id(), caseId, "owner", 1, 1, 1).bugContext();
+        assertEquals(1, staleSummary.bugCount()); assertEquals(1, staleSummary.changedCount()); assertEquals(0, staleSummary.unavailableCount());
         assertEquals("CHANGED", invoke(run, "case.bugs", json.valueToTree(Map.of("caseId", caseId))).at("/items/0/sourceState").asText());
         assertThrows(AgentTool.Rejected.class, () -> propose(run, caseId, "stale-plan"));
         assertThrows(AgentTool.Rejected.class, () -> invoke(run, "case.link_bug", linkArgs(caseId, item, observed, "stale-link")));
@@ -508,6 +510,9 @@ class AgentInspectionServiceTest {
         var history = cases.bugsForUser(agent.id(), caseId, "owner", 1, 5);
         assertEquals(2, history.total()); assertTrue(history.items().getFirst().latest()); assertFalse(history.items().getLast().latest());
         assertEquals(original.snapshotJson(), history.items().getLast().link().snapshotJson());
+        var revisedSummary = cases.detailForUser(agent.id(), caseId, "owner", 1, 1, 1).bugContext();
+        assertEquals(2, revisedSummary.historyCount()); assertEquals(1, revisedSummary.bugCount());
+        assertEquals(0, revisedSummary.changedCount()); // 旧关联原文不同不应令最新已重核的方案继续失效。
         var finding = ackArgs(item, "FINDING"); finding.put("caseId", caseId);
         assertThrows(AgentTool.Rejected.class, () -> invoke(run, "inspection.ack", finding));
         ack(run, item, "NEEDS_INPUT");
@@ -518,7 +523,27 @@ class AgentInspectionServiceTest {
         jdbc.update("UPDATE pm_work_item SET project_id=2 WHERE id=1");
         assertTrue(cases.bugContextChanged(autonomy.find(caseId)));
         assertEquals("UNAVAILABLE", cases.bugsForUser(agent.id(), caseId, "owner", 1, 1).items().getFirst().sourceState());
+        assertEquals(1, cases.detailForUser(agent.id(), caseId, "owner", 1, 1, 1).bugContext().unavailableCount());
         assertThrows(AgentTool.Rejected.class, () -> propose(run, caseId, "moved-plan"));
+    }
+
+    @Test void bugContextSummaryCoversLatestAssociationsBeyondVisibleHistoryPage() {
+        for (int id = 1; id <= 6; id++) bug(id, 1, "缺陷" + id);
+        alert(1, "TEST", "同一运行问题"); var run = run(null); var observed = next(run, SYSTEM_ALERT);
+        String caseId = record(run, observed.at("/observation/observationId").asText(), "/data/events/0", "APPLICATION_ERROR");
+        claim(run, caseId);
+        assertEquals(0, cases.detailForUser(agent.id(), caseId, "owner", 1, 1, 1).bugContext().historyCount());
+        for (int id = 1; id <= 6; id++) {
+            var item = next(run, BUG);
+            invoke(run, "case.link_bug", linkArgs(caseId, item, observed, "link-" + id));
+            var finding = ackArgs(item, "FINDING"); finding.put("caseId", caseId); invoke(run, "inspection.ack", finding);
+        }
+        jdbc.update("UPDATE pm_work_item SET description='已修改' WHERE id=1");
+        jdbc.update("UPDATE pm_work_item SET work_item_type='需求' WHERE id=2");
+        assertEquals(6, cases.bugsForUser(agent.id(), caseId, "owner", 1, 1).items().getFirst().link().workItemId());
+        var summary = cases.detailForUser(agent.id(), caseId, "owner", 1, 1, 1).bugContext();
+        assertEquals(6, summary.bugCount()); assertEquals(6, summary.historyCount());
+        assertEquals(1, summary.changedCount()); assertEquals(1, summary.unavailableCount());
     }
 
     @Test void bugAssociationRejectsForeignSourceAndRechecksBothPermissions() {

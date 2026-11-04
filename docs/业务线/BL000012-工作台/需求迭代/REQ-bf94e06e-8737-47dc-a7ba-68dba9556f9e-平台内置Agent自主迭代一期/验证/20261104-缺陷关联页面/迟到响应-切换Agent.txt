@@ -1,0 +1,46 @@
+Browser tab: 2, Title: "Agent 缺陷关联：本地样本验证", URL: "http://127.0.0.1:19538/".
+0 AXWebArea Agent 缺陷关联：本地样本验证, URL: 127.0.0.1:19538/
+	1 container 问题证据与分析
+		2 container
+			3 heading 问题证据与分析, Value: 2, ID: el-id-3765-12
+				4 text 问题证据与分析
+			5 button Close this dialog
+		6 container el-id-3765-13
+			7 button 刷新详情
+			8 heading 本地样本：第二个 Agent 的问题, Value: 3
+				9 text 本地样本：第二个 Agent 的问题
+			10 text 分析中
+			11 text 系统预警
+			12 text 本地样本工作台 / TEST · 处理版本 9
+			13 table
+				14 row
+					15 cell
+						16 text 首次发生
+					17 cell
+						18 text 2026/11/4 11:00:00
+					19 cell
+						20 text 最近发生
+					21 cell
+						22 text 2026/11/4 11:00:00
+				23 row
+					24 cell
+						25 text 最近观察
+					26 cell
+						27 text 2026/11/4 11:10:00
+					28 cell
+						29 text 去重后证据
+					30 cell
+						31 text 1 条
+			32 tab group
+				33 tab (selectable, settable, boolean) AI 分析（0）, Value: 0, ID: tab-analysis
+				34 tab (selectable, settable, boolean) 监测证据（0）, Value: 0, ID: tab-evidence
+				35 tab (selected, settable, boolean) 关联缺陷（0）, Value: 1, ID: tab-bugs
+				36 tab (selectable, settable, boolean) 关联运行（0）, Value: 0, ID: tab-runs
+			37 container Description: 关联缺陷（0）, ID: pane-bugs
+				38 container
+					39 text 保留关联时的缺陷原文和证据。关联为 AI 判断，需由人审核。
+					40 button 刷新关联
+					41 image
+					42 text 尚无缺陷关联记录
+
+The focused UI element is 35 tab (selected, settable, boolean) 关联缺陷（0）, Value: 1, ID: tab-bugs

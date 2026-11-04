@@ -1,0 +1,226 @@
+Browser tab: 3, Title: "Agent 缺陷关联：本地样本验证", URL: "http://127.0.0.1:19538/".
+0 AXWebArea Agent 缺陷关联：本地样本验证, URL: 127.0.0.1:19538/
+	1 container 问题证据与分析
+		2 container
+			3 heading 问题证据与分析, Value: 2, ID: el-id-5787-4
+				4 text 问题证据与分析
+			5 button Close this dialog
+		6 container el-id-5787-5
+			7 button 刷新详情
+			8 heading 本地样本：巡检发现业务错误, Value: 3
+				9 text 本地样本：巡检发现业务错误
+			10 text 分析中
+			11 text 系统预警
+			12 text 本地样本工作台 / TEST · 处理版本 9
+			13 table
+				14 row
+					15 cell
+						16 text 首次发生
+					17 cell
+						18 text 2026/11/4 11:00:00
+					19 cell
+						20 text 最近发生
+					21 cell
+						22 text 2026/11/4 11:00:00
+				23 row
+					24 cell
+						25 text 最近观察
+					26 cell
+						27 text 2026/11/4 11:10:00
+					28 cell
+						29 text 去重后证据
+					30 cell
+						31 text 1 条
+			32 container
+				33 image
+				34 text 关联缺陷的需求依据已变化，已有方案与候选代码需要重新核对。 1 项缺陷原文已变化，1 项原缺陷当前不可用；请在关联缺陷中核对历史与证据。
+			35 tab group
+				36 tab (selectable, settable, boolean) AI 分析（2）, Value: 0, ID: tab-analysis
+				37 tab (selectable, settable, boolean) 监测证据（0）, Value: 0, ID: tab-evidence
+				38 tab (selected, settable, boolean) 关联缺陷（3）, Value: 1, ID: tab-bugs
+				39 tab (selectable, settable, boolean) 关联运行（0）, Value: 0, ID: tab-runs
+			40 container Description: 关联缺陷（3）, ID: pane-bugs
+				41 container
+					42 text 保留关联时的缺陷原文和证据。关联为 AI 判断，需由人审核。
+					43 button 刷新关联
+					44 text BUG-DEMO-3 · 本地样本缺陷
+					45 text 最新关联
+					46 text 与当前缺陷内容一致
+					47 text 关联时处理版本 7 · 2026/11/4 11:10:00
+					48 table
+						49 row
+							50 cell
+								51 text 所属项目
+							52 cell
+								53 text 本地样本项目
+							54 cell
+								55 text 关联时状态
+							56 cell
+								57 text 处理中 · P1
+						58 row
+							59 cell
+								60 text 证据范围
+							61 cell
+								62 text BL000012 / TEST
+					63 text 缺陷自身未记录环境；此处范围来自所引用的监测或日志证据。
+					64 container
+						65 image
+						66 text 此证据按当前监测配置定位，历史记录的实际环境仍待核实。
+					67 definition list
+						68 container AI 关联依据
+							69 text AI 关联依据
+						70 text 本地样本：缺陷描述与运行证据相符，待人审核（关联 6）。
+					71 definition list
+						72 container 关联时的缺陷描述
+							73 text 关联时的缺陷描述
+						74 text 异常发生时请求中断。
+<img src=x onerror=alert(1)> 为原始描述文字。
+						75 container 关联时的验收要求
+							76 text 关联时的验收要求
+						77 text 核对修复后的实际业务结果。
+					78 button (collapsed) 查看证据引用与原文版本, Secondary Actions: Expand
+						79 text 查看证据引用与原文版本
+					80 text BUG-DEMO-2 · 本地样本缺陷
+					81 text 最新关联
+					82 text 原缺陷当前不可用
+					83 text 关联时处理版本 6 · 2026/11/4 11:10:00
+					84 text 需求依据已变化，已有方案和候选代码需要重新核对。
+					85 table
+						86 row
+							87 cell
+								88 text 所属项目
+							89 cell
+								90 text 本地样本项目
+							91 cell
+								92 text 关联时状态
+							93 cell
+								94 text 处理中 · P1
+						95 row
+							96 cell
+								97 text 证据范围
+							98 cell
+								99 text BL000012 / TEST
+					100 text 缺陷自身未记录环境；此处范围来自所引用的监测或日志证据。
+					101 definition list
+						102 container AI 关联依据
+							103 text AI 关联依据
+						104 text 本地样本：缺陷描述与运行证据相符，待人审核（关联 5）。
+					105 definition list
+						106 container 关联时的缺陷描述
+							107 text 关联时的缺陷描述
+						108 text 关联时记录的复现步骤。
+						109 container 关联时的验收要求
+							110 text 关联时的验收要求
+						111 text 核对修复后的实际业务结果。
+					112 button (collapsed) 查看证据引用与原文版本, Secondary Actions: Expand
+						113 text 查看证据引用与原文版本
+					114 text BUG-DEMO-1 · 本地样本缺陷
+					115 text 最新关联
+					116 text 缺陷原文已变化
+					117 text 关联时处理版本 5 · 2026/11/4 11:10:00
+					118 text 需求依据已变化，已有方案和候选代码需要重新核对。
+					119 table
+						120 row
+							121 cell
+								122 text 所属项目
+							123 cell
+								124 text 本地样本项目
+							125 cell
+								126 text 关联时状态
+							127 cell
+								128 text 处理中 · P1
+						129 row
+							130 cell
+								131 text 证据范围
+							132 cell
+								133 text BL000012 / TEST
+					134 text 缺陷自身未记录环境；此处范围来自所引用的监测或日志证据。
+					135 definition list
+						136 container AI 关联依据
+							137 text AI 关联依据
+						138 text 本地样本：缺陷描述与运行证据相符，待人审核（关联 4）。
+					139 definition list
+						140 container 关联时的缺陷描述
+							141 text 关联时的缺陷描述
+						142 text 关联时记录的复现步骤。
+						143 container 关联时的验收要求
+							144 text 关联时的验收要求
+						145 text 核对修复后的实际业务结果。
+					146 button (collapsed) 查看证据引用与原文版本, Secondary Actions: Expand
+						147 text 查看证据引用与原文版本
+					148 text BUG-DEMO-1 · 本地样本缺陷
+					149 text 历史关联
+					150 text 缺陷原文已变化
+					151 text 关联时处理版本 4 · 2026/11/4 11:10:00
+					152 table
+						153 row
+							154 cell
+								155 text 所属项目
+							156 cell
+								157 text 本地样本项目
+							158 cell
+								159 text 关联时状态
+							160 cell
+								161 text 处理中 · P1
+						162 row
+							163 cell
+								164 text 证据范围
+							165 cell
+								166 text BL000012 / TEST
+					167 text 缺陷自身未记录环境；此处范围来自所引用的监测或日志证据。
+					168 definition list
+						169 container AI 关联依据
+							170 text AI 关联依据
+						171 text 本地样本：缺陷描述与运行证据相符，待人审核（关联 3）。
+					172 definition list
+						173 container 关联时的缺陷描述
+							174 text 关联时的缺陷描述
+						175 text 关联时记录的复现步骤。
+						176 container 关联时的验收要求
+							177 text 关联时的验收要求
+						178 text 核对修复后的实际业务结果。
+					179 button (collapsed) 查看证据引用与原文版本, Secondary Actions: Expand
+						180 text 查看证据引用与原文版本
+					181 text BUG-DEMO-2 · 本地样本缺陷
+					182 text 历史关联
+					183 text 原缺陷当前不可用
+					184 text 关联时处理版本 3 · 2026/11/4 11:10:00
+					185 table
+						186 row
+							187 cell
+								188 text 所属项目
+							189 cell
+								190 text 本地样本项目
+							191 cell
+								192 text 关联时状态
+							193 cell
+								194 text 处理中 · P1
+						195 row
+							196 cell
+								197 text 证据范围
+							198 cell
+								199 text BL000012 / TEST
+					200 text 缺陷自身未记录环境；此处范围来自所引用的监测或日志证据。
+					201 definition list
+						202 container AI 关联依据
+							203 text AI 关联依据
+						204 text 本地样本：缺陷描述与运行证据相符，待人审核（关联 2）。
+					205 definition list
+						206 container 关联时的缺陷描述
+							207 text 关联时的缺陷描述
+						208 text 关联时记录的复现步骤。
+						209 container 关联时的验收要求
+							210 text 关联时的验收要求
+						211 text 核对修复后的实际业务结果。
+					212 button (collapsed) 查看证据引用与原文版本, Secondary Actions: Expand
+						213 text 查看证据引用与原文版本
+					214 text Total 6
+					215 button (disabled) Go to previous page
+					216 content list
+						217 container page 1
+							218 text 1
+						219 container page 2
+							220 text 2
+					221 button Go to next page
+
+The focused UI element is 38 tab (selected, settable, boolean) 关联缺陷（3）, Value: 1, ID: tab-bugs
