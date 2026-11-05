@@ -124,7 +124,9 @@ public class AgentNativeCliAdapter implements AgentExecutionAdapter {
                 if (readerFailure.get() != null) throw new IllegalStateException("CLI 未返回有效协议结果", readerFailure.get());
                 if (process.exitValue() != 0) throw new IllegalStateException("CLI 执行失败，退出码 " + process.exitValue());
                 if (!Files.isRegularFile(output, LinkOption.NOFOLLOW_LINKS) || Files.size(output) > 24000) throw new IllegalStateException("CLI 未返回有界的最终产物");
-                JsonNode result = json.reader().with(tools.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS).readTree(Files.readString(output));
+                JsonNode result;
+                try { result = json.reader().with(tools.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS).readTree(Files.readString(output)); }
+                catch (tools.jackson.core.JacksonException ex) { throw new IllegalArgumentException("CLI 最终结果不是有效 JSON；未确认任务完成，请查看执行记录", ex); }
                 if (!result.isObject() || result.size() != 2 || !Set.of("RESULT", "NEEDS_INPUT").contains(result.path("type").asText())
                         || !result.path("summary").isString() || result.path("summary").asText().isBlank() || result.path("summary").asText().length() > 16000) {
                     throw new IllegalArgumentException("CLI 最终结果格式无效");

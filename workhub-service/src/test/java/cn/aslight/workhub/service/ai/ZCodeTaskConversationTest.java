@@ -16,9 +16,10 @@ class ZCodeTaskConversationTest {
     private ZCodeTaskConversation conversation;
     private String inputId;
 
-    private void create() throws Exception {
+    private void create() throws Exception { create(null); }
+    private void create(String finalResultSchema) throws Exception {
         conversation = new ZCodeTaskConversation(json, directory, directory.resolve("result.json"), "执行指定任务", model,
-                List.of("mcp__workhub_task__monitor_read"), "http://127.0.0.1:12345/mcp", "ephemeral-token");
+                List.of("mcp__workhub_task__monitor_read"), "http://127.0.0.1:12345/mcp", "ephemeral-token", finalResultSchema);
         conversation.start(sent);
         var request = json.readTree(sent.toString().lines().findFirst().orElseThrow());
         assertEquals("session/create", request.path("method").asText());
@@ -40,6 +41,59 @@ class ZCodeTaskConversationTest {
                 "seq", sequence, "type", type, "payload", payload)));
     }
     private void started() throws Exception { conversation.accept(event("turn.started", 1, Map.of("inputId", inputId))); }
+
+    @Test void malformedStructuredOutputGetsOneToolFreeCorrectionAndNoTaskReplay() throws Exception {
+        create("{\"type\":\"object\"}"); started();
+        String progress = conversation.accept(event("turn.completed", 2,
+                Map.of("inputId", inputId, "resultType", "success", "response", "这里只整理给定文本，负责人未提供。")));
+        assertTrue(progress.contains("校正"));
+        assertFalse(Files.exists(directory.resolve("result.json")));
+        var correction = json.readTree(sent.toString().lines().reduce((a, b) -> b).orElseThrow());
+        assertEquals("workspace/generateText", correction.path("method").asText());
+        assertEquals(json.valueToTree(model), correction.path("params").path("selection"));
+        assertEquals(json.createArrayNode(), correction.path("params").path("tools"));
+        assertEquals(8192, correction.path("params").path("maxOutputTokens").asInt());
+        assertFalse(correction.path("params").has("mcpServers"));
+        assertFalse(correction.path("params").path("prompt").asText().contains("执行指定任务"));
+        // 原任务的快速终态先于 ACK 时，ACK 不得把格式阶段退回 RUNNING。
+        response("wh-send", Map.of("sessionId", "session-1", "accepted", true));
+        response("wh-format-result", Map.of("selection", model, "finishReason", "stop", "text",
+                "{\"type\":\"RESULT\",\"summary\":\"负责人待确认\"}", "toolCalls", List.of()));
+        assertEquals("负责人待确认", json.readTree(Files.readString(directory.resolve("result.json"))).path("summary").asText());
+        assertEquals(1, sent.toString().lines().filter(line -> line.contains("\"session/send\"")).count());
+        assertEquals(1, sent.toString().lines().filter(line -> line.contains("\"workspace/generateText\"")).count());
+    }
+
+    @Test void correctionCannotLoopOrAcceptTruncatedOutput() throws Exception {
+        create("{\"type\":\"object\"}"); started();
+        conversation.accept(event("turn.completed", 2, Map.of("inputId", inputId, "resultType", "success", "response", "plain text")));
+        assertThrows(IllegalArgumentException.class, () -> response("wh-format-result",
+                Map.of("selection", model, "finishReason", "length", "text", "{}")));
+        assertThrows(IllegalArgumentException.class, () -> response("wh-format-result",
+                Map.of("selection", model, "finishReason", "stop", "text", "still not json")));
+        assertFalse(Files.exists(directory.resolve("result.json")));
+        assertEquals(1, sent.toString().lines().filter(line -> line.contains("\"workspace/generateText\"")).count());
+    }
+
+    @Test void correctionCannotChangeModelOrCallEvenAnOriginallyAuthorizedTool() throws Exception {
+        create("{\"type\":\"object\"}"); started();
+        conversation.accept(event("turn.completed", 2, Map.of("inputId", inputId, "resultType", "success", "response", "plain text")));
+        assertThrows(IllegalArgumentException.class, () -> response("wh-format-result", Map.of("selection",
+                AiCliType.selection("another/model", "low"), "finishReason", "stop", "text", "{}")));
+        assertThrows(IllegalArgumentException.class, () -> response("wh-format-result", Map.of("selection",
+                model, "finishReason", "stop", "text", "{}", "toolCalls", List.of(Map.of("toolName", "monitor_read")))));
+        assertThrows(IllegalArgumentException.class, () -> conversation.accept(event("tool.updated", 3,
+                Map.of("kind", "scheduled", "toolName", "mcp__workhub_task__monitor_read"))));
+        assertFalse(Files.exists(directory.resolve("result.json")));
+    }
+
+    @Test void validStructuredOutputDoesNotRequestCorrection() throws Exception {
+        create("{\"type\":\"object\"}"); started();
+        conversation.accept(event("turn.completed", 2, Map.of("inputId", inputId, "resultType", "success",
+                "response", "{\"type\":\"NEEDS_INPUT\",\"summary\":\"缺少资料\"}")));
+        assertEquals("NEEDS_INPUT", json.readTree(Files.readString(directory.resolve("result.json"))).path("type").asText());
+        assertFalse(sent.toString().contains("workspace/generateText"));
+    }
 
     @Test void acknowledgementDoesNotCompleteAndOnlyMatchingSuccessfulTerminalWritesResult() throws Exception {
         create(); response("wh-send", Map.of("sessionId", "session-1", "accepted", true));

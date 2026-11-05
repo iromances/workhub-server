@@ -1,0 +1,20 @@
+{
+  "logs": [
+    {
+      "rawPath": "/private/tmp/workhub-cli-fix-backport-20261105-test.log",
+      "rawSha256": "0a8c653d5b09d2a94ad588ecb2c819565680df353ee44afd08dfcacf6c976ac4",
+      "archive": "测试日志.txt",
+      "archiveSha256": "0a8c653d5b09d2a94ad588ecb2c819565680df353ee44afd08dfcacf6c976ac4",
+      "normalization": "strip trailing whitespace, LF; raw file unchanged"
+    },
+    {
+      "rawPath": "/private/tmp/workhub-cli-fix-backport-20261105-compile.log",
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archive": "编译日志.txt",
+      "archiveSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "normalization": "strip trailing whitespace, LF; raw file unchanged"
+    }
+  ],
+  "compileExitCode": 0,
+  "testExitCode": 0
+}

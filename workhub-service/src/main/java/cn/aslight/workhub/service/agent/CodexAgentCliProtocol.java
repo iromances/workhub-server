@@ -21,8 +21,7 @@ import java.util.concurrent.TimeUnit;
 public class CodexAgentCliProtocol implements AgentCliProtocol {
     static final List<String> DISABLED_FEATURES = List.of("shell_tool", "unified_exec", "shell_snapshot", "browser_use",
             "browser_use_external", "computer_use", "apps", "plugins", "remote_plugin", "hooks", "memories",
-            "multi_agent", "multi_agent_v2", "view_image", "workspace_dependencies", "skill_search", "skill_mcp_dependency_install",
-            "code_mode_host");
+            "multi_agent", "multi_agent_v2", "view_image", "workspace_dependencies", "skill_search", "skill_mcp_dependency_install");
     private final ObjectMapper json;
     public CodexAgentCliProtocol(ObjectMapper json) { this.json = json; }
 
@@ -45,7 +44,9 @@ public class CodexAgentCliProtocol implements AgentCliProtocol {
         for (String required : DISABLED_FEATURES) {
             if (!features.lines().anyMatch(line -> line.startsWith(required + " "))) throw new IllegalArgumentException("当前 CLI 无法核实工具隔离能力: " + required);
         }
-        if (!features.contains("skip_host_skill_discovery")) throw new IllegalArgumentException("当前 CLI 缺少隔离宿主技能目录的能力");
+        for (String required : List.of("skip_host_skill_discovery", "code_mode_host")) {
+            if (!features.lines().anyMatch(line -> line.startsWith(required + " "))) throw new IllegalArgumentException("当前 CLI 缺少任务 MCP 运行能力: " + required);
+        }
     }
 
     public List<String> command(AiProviderConfigEntity provider, String model, Path directory, Path schema, Path output, String mcpUrl) {
@@ -56,9 +57,13 @@ public class CodexAgentCliProtocol implements AgentCliProtocol {
         config(args, "web_search", "disabled");
         config(args, "mcp_servers.workhub_task.url", mcpUrl);
         config(args, "mcp_servers.workhub_task.bearer_token_env_var", "WORKHUB_AGENT_RUN_TOKEN");
+        // 仅当前任务桥接服务使用已分派授权；发布等人工审核仍由 WorkHub 工具校验。
+        config(args, "mcp_servers.workhub_task.default_tools_approval_mode", "approve");
         args.addAll(List.of("-c", "mcp_servers.workhub_task.required=true", "-c", "mcp_servers.workhub_task.tool_timeout_sec=300",
                 "-c", "project_doc_max_bytes=0", "-c", "skills.bundled.enabled=false", "-c", "skills.include_instructions=false",
                 "-c", "features.skip_host_skill_discovery=true"));
+        // 当前 CLI 通过 Code Mode 宿主调度 MCP；其他宿主工具仍由下列独立开关禁用。
+        args.addAll(List.of("--enable", "code_mode_host"));
         for (String feature : DISABLED_FEATURES) args.addAll(List.of("--disable", feature));
         if (provider.getDefaultReasoningLevel() != null && !provider.getDefaultReasoningLevel().isBlank()) {
             config(args, "model_reasoning_effort", provider.getDefaultReasoningLevel());

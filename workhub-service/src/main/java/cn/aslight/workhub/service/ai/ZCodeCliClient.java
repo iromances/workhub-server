@@ -39,6 +39,11 @@ public class ZCodeCliClient {
 
     public CliTaskLaunch prepare(AiProviderConfigEntity provider, String model, String reasoning, Path directory, Path output,
                           String prompt, List<String> toolNames, String mcpUrl, String token) throws IOException {
+        return prepare(provider, model, reasoning, directory, output, prompt, toolNames, mcpUrl, token, null);
+    }
+
+    public CliTaskLaunch prepare(AiProviderConfigEntity provider, String model, String reasoning, Path directory, Path output,
+                          String prompt, List<String> toolNames, String mcpUrl, String token, String finalResultSchema) throws IOException {
         if (!Set.of("Mac OS X", "Linux").contains(System.getProperty("os.name"))) throw new IllegalArgumentException("ZCode 任务隔离目前已适配 macOS/Linux");
         var selection = AiCliType.selection(model, reasoning);
         var command = new ArrayList<>(command(provider));
@@ -73,7 +78,7 @@ public class ZCodeCliClient {
         builder.environment().put("ZCODE_SESSION_DB_PATH", storage.resolve("session.db").toString());
         builder.environment().put("ZCODE_LOG_DIR", privateDirectory(directory.resolve("logs")).toString());
         builder.environment().put("ZCODE_MAX_TOOL_CONCURRENCY", "1");
-        return new CliTaskLaunch(builder, new ZCodeTaskConversation(json, work, output, prompt, selection, toolNames, mcpUrl, token));
+        return new CliTaskLaunch(builder, new ZCodeTaskConversation(json, work, output, prompt, selection, toolNames, mcpUrl, token, finalResultSchema));
     }
 
     /** 既有文本整理/连接测试也走原生协议，但没有企业工具授权。 */

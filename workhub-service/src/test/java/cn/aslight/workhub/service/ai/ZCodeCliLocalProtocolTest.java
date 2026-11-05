@@ -30,6 +30,7 @@ class ZCodeCliLocalProtocolTest {
     private volatile boolean toolsEnabled;
     private volatile boolean attack;
     private volatile boolean hang;
+    private volatile boolean formatCorrection;
 
     @BeforeEach void setup() throws Exception {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 10);
@@ -39,7 +40,8 @@ class ZCodeCliLocalProtocolTest {
                 var request = json.readTree(exchange.getRequestBody().readNBytes(1_000_001)); requests.add(request);
                 assertEquals("glm-4.6", request.path("model").asText());
                 var actualNames = new TreeSet<String>(); request.path("tools").forEach(tool -> actualNames.add(tool.path("function").path("name").asText()));
-                assertEquals(toolsEnabled ? Set.of("mcp__workhub_task__monitor_read") : Set.of(), actualNames);
+                boolean formatting = formatCorrection && requests.size() == 3;
+                assertEquals(toolsEnabled && !formatting ? Set.of("mcp__workhub_task__monitor_read") : Set.of(), actualNames);
                 if (hang) { try { Thread.sleep(10000); } catch (InterruptedException ex) { Thread.currentThread().interrupt(); } return; }
                 Object delta; String reason;
                 if ((toolsEnabled || attack) && requests.size() == 1) {
@@ -49,7 +51,16 @@ class ZCodeCliLocalProtocolTest {
                     reason = "tool_calls";
                 } else {
                     if (toolsEnabled) assertTrue(request.path("messages").toString().contains("observed-from-workhub-fixture"));
-                    delta = Map.of("role", "assistant", "content", "{\"type\":\"RESULT\",\"summary\":\"本地完整工具任务通过\"}"); reason = "stop";
+                    delta = Map.of("role", "assistant", "content", formatCorrection && requests.size() == 2
+                            ? "已读取 observed-from-workhub-fixture，任务完成。"
+                            : "{\"type\":\"RESULT\",\"summary\":\"本地完整工具任务通过\"}"); reason = "stop";
+                }
+                if (!request.path("stream").asBoolean()) {
+                    assertTrue(formatting, "只有无工具格式校正使用普通文本生成请求");
+                    byte[] body = json.writeValueAsBytes(Map.of("id", "fixture-format", "object", "chat.completion",
+                            "model", "glm-4.6", "created", 1, "choices", List.of(Map.of("index", 0, "message", delta, "finish_reason", reason))));
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(200, body.length); exchange.getResponseBody().write(body); return;
                 }
                 exchange.getResponseHeaders().set("Content-Type", "text/event-stream"); exchange.sendResponseHeaders(200, 0);
                 for (var chunk : List.of(Map.of("index", 0, "delta", delta), Map.of("index", 0, "delta", Map.of(), "finish_reason", reason))) {
@@ -101,15 +112,28 @@ class ZCodeCliLocalProtocolTest {
     @AfterEach void cleanup() { if (server != null) server.stop(0); if (executor != null) executor.shutdownNow(); }
 
     @Test void actualZcodeUsesOnlyTaskMcpAndObservesItsResultBeforeCompleting() throws Exception {
+        assertActualMcpTask();
+    }
+    @Test void actualZcodeCorrectsFormatWithNoToolsAndDoesNotReplayMcp() throws Exception {
+        formatCorrection = true; assertActualMcpTask();
+        assertTrue(events.stream().anyMatch(value -> value.contains("校正")));
+    }
+    private void assertActualMcpTask() throws Exception {
         toolsEnabled = true; client.preflight(provider);
         Path run = Files.createDirectory(directory.resolve("run")), output = run.resolve("result.json");
-        var launch = client.prepare(provider, provider.getDefaultModel(), "disabled", run, output, "使用唯一工具读取本地样本后完成任务。", List.of("mcp__workhub_task__monitor_read"), base() + "/mcp", "task-fixture-token");
+        var launch = client.prepare(provider, provider.getDefaultModel(), "disabled", run, output, "使用唯一工具读取本地样本后完成任务。", List.of("mcp__workhub_task__monitor_read"), base() + "/mcp", "task-fixture-token", formatCorrection ? "{\"type\":\"object\"}" : null);
         Process process = launch.builder().redirectError(run.resolve("stderr.log").toFile()).start(); var failure = new AtomicReference<Throwable>();
         var descendants = new LinkedHashMap<Long, ProcessHandle>();
         try {
             launch.conversation().start(process.getOutputStream());
             Thread reader = Thread.ofVirtual().start(() -> {
-                try { ZCodeCliClient.readProtocol(process.getInputStream(), launch.conversation(), events::add); }
+                try { ZCodeCliClient.readProtocol(process.getInputStream(), new CliTaskConversation() {
+                    @Override public void start(java.io.OutputStream input) throws java.io.IOException { launch.conversation().start(input); }
+                    @Override public String accept(tools.jackson.databind.JsonNode event) throws java.io.IOException {
+                        if (event.has("error")) System.out.println("ZCODE_LOCAL_PROTOCOL_ERROR " + event.path("error"));
+                        return launch.conversation().accept(event);
+                    }
+                }, events::add); }
                 catch (Throwable ex) { failure.set(ex); }
             });
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
@@ -119,7 +143,7 @@ class ZCodeCliLocalProtocolTest {
             if (failure.get() != null) throw new AssertionError("Protocol failed", failure.get());
             if (handlerFailure.get() != null) throw new AssertionError("Fixture failed: " + events, handlerFailure.get());
             assertFalse(process.isAlive(), () -> "CLI did not finish: " + events); reader.join(1000); assertFalse(reader.isAlive()); assertEquals(0, process.exitValue());
-            assertNull(handlerFailure.get()); assertEquals(1, mcpCalls.get()); assertEquals(2, requests.size());
+            assertNull(handlerFailure.get()); assertEquals(1, mcpCalls.get()); assertEquals(formatCorrection ? 3 : 2, requests.size());
             assertEquals("RESULT", json.readTree(Files.readString(output)).path("type").asText());
         } finally { assertTrue(ZCodeCliClient.stopTree(process, descendants)); }
     }

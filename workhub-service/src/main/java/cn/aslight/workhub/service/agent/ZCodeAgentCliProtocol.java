@@ -17,8 +17,9 @@ public class ZCodeAgentCliProtocol implements AgentCliProtocol {
     @Override
     public cn.aslight.workhub.service.ai.CliTaskLaunch prepare(AiProviderConfigEntity provider, String model, Path directory, Path schema, Path output,
                                          String mcpUrl, String token, List<String> toolNames, String prompt) throws IOException {
+        String finalResultSchema = java.nio.file.Files.readString(schema);
         return client.prepare(provider, model, provider.getDefaultReasoningLevel(), directory, output,
-                prompt + "\n最终输出必须是单个 JSON 对象，严格符合：\n" + java.nio.file.Files.readString(schema),
-                toolNames.stream().map(name -> "mcp__workhub_task__" + name).toList(), mcpUrl, token);
+                prompt + "\n最终输出必须是单个 JSON 对象，严格符合：\n" + finalResultSchema,
+                toolNames.stream().map(name -> "mcp__workhub_task__" + name).toList(), mcpUrl, token, finalResultSchema);
     }
 }

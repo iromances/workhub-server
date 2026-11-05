@@ -25,6 +25,9 @@ class CodexAgentCliProtocolTest {
         assertFalse(command.stream().anyMatch(arg -> arg.contains("dangerously")));
         assertTrue(command.contains("mcp_servers.workhub_task.bearer_token_env_var=\"WORKHUB_AGENT_RUN_TOKEN\""));
         assertTrue(command.contains("selected-model"));
+        assertTrue(command.contains("mcp_servers.workhub_task.default_tools_approval_mode=\"approve\""));
+        assertTrue(command.contains("approval_policy=\"never\""));
+        assertEquals("--enable", command.get(command.indexOf("code_mode_host") - 1));
         for (String feature : CodexAgentCliProtocol.DISABLED_FEATURES) {
             int index = command.indexOf(feature);
             assertEquals("--disable", command.get(index - 1));
