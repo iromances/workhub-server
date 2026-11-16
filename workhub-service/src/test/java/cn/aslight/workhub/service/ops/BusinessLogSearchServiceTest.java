@@ -31,7 +31,7 @@ class BusinessLogSearchServiceTest {
         SystemAlertScopeService scopeService = mock(SystemAlertScopeService.class);
         ElasticsearchSystemAlertClient client = mock(ElasticsearchSystemAlertClient.class);
         McpAuditLogger auditLogger = mock(McpAuditLogger.class);
-        when(scopeService.list("BL000001", "prod", true)).thenReturn(List.of(selectedScope()));
+        when(scopeService.list("BL000001", "PROD", true)).thenReturn(List.of(selectedScope()));
         when(client.searchLogs(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(Integer.class)))
                 .thenReturn(new ElasticsearchSystemAlertClient.LogSearchResult(List.of(new ElkSystemAlertLog(
                         "event-1", "scf-payment", "INFO", "BcmEventServer",
@@ -56,7 +56,7 @@ class BusinessLogSearchServiceTest {
         assertTrue(message.contains("************7890"));
         assertTrue(message.contains("10.20.30.***"));
         verify(client).searchLogs(
-                eq("scf-payment-*,scf-saps-*"), eq(List.of("scf-payment")), eq("prod"), eq(List.of("INFO")),
+                eq("scf-payment-*,scf-saps-*"), eq(List.of("scf-payment")), eq("PROD"), eq(List.of("INFO")),
                 eq(Instant.parse("2026-08-22T23:50:00Z")), eq(NOW), eq("查询当日交易明细"),
                 eq(null), eq(null), eq(20));
         verify(auditLogger).record(any());
@@ -65,7 +65,7 @@ class BusinessLogSearchServiceTest {
     @Test
     void shouldRejectServiceOutsideSelectedScopeAndLongInfoRange() {
         SystemAlertScopeService scopeService = mock(SystemAlertScopeService.class);
-        when(scopeService.list("BL000001", "prod", true)).thenReturn(List.of(selectedScope()));
+        when(scopeService.list("BL000001", "PROD", true)).thenReturn(List.of(selectedScope()));
         BusinessLogSearchService service = new BusinessLogSearchService(
                 scopeService, mock(ElasticsearchSystemAlertClient.class), Clock.fixed(NOW, ZoneOffset.UTC),
                 new SensitiveDataMasker(), mock(McpAuditLogger.class));
@@ -118,7 +118,7 @@ class BusinessLogSearchServiceTest {
 
     private SystemAlertScopeResponse selectedScope() {
         return new SystemAlertScopeResponse(
-                1L, "BL000001", "prod", "SELECTED",
+                1L, "BL000001", "PROD", "SELECTED",
                 List.of(
                         new SystemAlertScopeServiceResponse(1L, "支付", "scf-payment", true),
                         new SystemAlertScopeServiceResponse(2L, "账务", "scf-saps", true),

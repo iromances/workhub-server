@@ -576,3 +576,23 @@ Agent读取系统预警时，在同一只读数据库快照中取得事件、范
 多业务线混合目标按阶段核对整组仓库覆盖：TEST 阶段覆盖 TEST 目标及 PROD 前置涉及的全部业务线仓库，PROD 阶段只覆盖明确选择生产的业务线仓库。每个所需业务线必须有候选仓库，不允许省略同一阶段的仓库，也不允许发布额外业务线。若当前阶段的仓库依赖落在未选择该环境的业务线，明确阻止并要求调整任务/候选；不能默许跨环境依赖或自动扩大目标。普通单业务线、多仓库的整体发布语义保持。
 
 本轮先实现动作边界及本地验证，逐目标环境的实际 DEPLOYMENT/VERIFICATION 最终验收继续接通；Jenkins 实际接入、测试和生产发布均不在本轮执行。
+
+### T-01/T-06 系统预警采集窗口边界容差与失败升级（2026-11-12）
+
+**缺陷事实**：本地采集实例 2026-11-12 WARN 刷屏；数据库核实 scope 8（BL000001/PROD）与 scope 10（BL000003/PROD）自 2026-11-09 起 `status=ERROR`、`position_json=NULL`、`page_number=0`，同一窗口首页确定性失败并被 10 秒续读与每分钟轮次无限重试，两条业务线 PROD 错误预警漏采 3 天。根因：`claim()` 以微秒精度 `now()` 固定窗口边界（如 `09:35:00.287476`）；ES 毫秒级 date 字段对 range 边界按包含方向取整（gte 向下、lte 向上），落在边界毫秒上的真实错误文档被 ES 合法返回；`readErrorPage` 与 `commit()` 按全精度严格校验并整页失败；`fail(restart=false)` 保留窗口与位置，而 `claim()` 仅在定义变更或 COMPLETE 时重开窗口，形成确定性死循环。
+
+**修复方案（三个互补组件）**：
+
+1. **窗口边界毫秒对齐**：`claim()` 产生或推进窗口时，`from_time`/`to_time` 一律截断到整毫秒，覆盖 fresh、coveredUntil 回退与 legacy 同步时间全部推导路径。新窗口不再产生亚毫秒边界，ES date（毫秒）与 date_nanos 字段下均不发生边界放大。
+2. **边界容差校验**：`readErrorPage` 与 `commit()` 的区间校验放宽 ±1ms，接受 ES 毫秒字段取整造成的合法边界偏差并继续入库（边界文档是真实错误事件，不能丢弃）；偏差超过 1ms 仍整页硬失败，保留对 PIT/位置错乱等真异常的防护。容差常量定义在 `SystemAlertLogSource` 契约中供读侧与提交侧共用。既有微秒边界卡死窗口部署后首个重试周期即恢复，无需手工数据修正。
+3. **连续失败升级**：`ops_system_alert_collection_state` 新增 `consecutive_failures INT NOT NULL DEFAULT 0` 与 `last_failure_message VARCHAR(1000) NULL`；`fail()` 递增并记录摘要（含 RestartRequired 路径，PIT 反复过期同样累计），`commit()` 成功清零；`claim()` 发现 `ERROR` 且连续失败 ≥5 次时按 fresh 路径重开窗口（重算毫秒对齐边界、新 windowId、清位置、清零计数），为任何未知的确定性失败类提供有界重试与自愈，防止再次形成永久中毒。
+
+**明确不改**：`searchLogs`/`readErrors` 手动查询路径的同款严格校验（API 边界通常为秒/毫秒精度，先观察）；补账窗口吞吐（单线程调度、每 10 秒一页）另立优化；不回填、不修改历史窗口、页面回执与事件数据。升级重开后的大跨度补账窗口沿用既有覆盖语义（coveredUntil−回溯时长起扫、按 source_event_id 去重），积压量由停采时长决定。
+
+**数据与迁移**：新增 `V20261112__add_system_alert_collection_failure_escalation.sql`，仅对 `ops_system_alert_collection_state` 追加两列，兼容 H2 与 MySQL；`SystemAlertCollectionState` 记录与 `SystemAlertCollectionMapper` 的 INSERT/UPDATE/SELECT 同步扩展。真实迁移前核对现有表结构与 Flyway 历史；回滚仅还原代码，保留新列，无数据损失。
+
+**验证**：Store 测试覆盖毫秒对齐（fresh/covered/legacy 三路径）、±1ms 容差提交与超限回滚、连续 5 次失败升级与成功清零；Client HTTP 夹具测试覆盖边界毫秒文档接受与超容差拒绝；跑全部相关套件回归。证据归档 `验证/20261112-预警采集边界容差与失败升级/`。
+
+**部署后自愈预期**：scope 8/10 在容差生效后首个 10 秒续读周期恢复续读并逐步完成卡死窗口；如遇其他确定性失败，最迟约 50 秒（5 次 × 10 秒）升级重开。WARN 刷屏停止。
+
+**本轮结果（2026-11-12）**：已实现并通过相关套件 50/50、全量 1044 项与基线一致（零新增失败）；实现时确认 MyBatis 对记录按位置做构造器自动映射，`SystemAlertCollectionState` 新字段序须与 `ALTER TABLE ADD COLUMN` 追加后的物理列序一致（置于 `version/updatedAt` 之后），该约束已固化在记录注释。实际结果与证据见[验证说明](验证/20261112-预警采集边界容差与失败升级/验证说明.md)。

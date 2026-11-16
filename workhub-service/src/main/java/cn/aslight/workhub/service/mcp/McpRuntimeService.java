@@ -1,13 +1,19 @@
 package cn.aslight.workhub.service.mcp;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import cn.aslight.workhub.dao.project.BusinessLineAccessConfigMapper;
 import cn.aslight.workhub.mcp.config.McpResourceCatalog;
 import cn.aslight.workhub.mcp.tool.McpToolRegistry;
+import cn.aslight.workhub.model.attachment.AttachmentEntity;
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
 import cn.aslight.workhub.model.project.BusinessLineAccessConfigEntity;
 import cn.aslight.workhub.model.ops.BusinessLogSearchRequest;
+import cn.aslight.workhub.service.attachment.AttachmentService;
+import cn.aslight.workhub.service.attachment.AttachmentTextExtractionService;
 import cn.aslight.workhub.service.intake.GitlabRepositoryService;
 import cn.aslight.workhub.service.intake.IntakeService;
 import cn.aslight.workhub.service.ops.BusinessLogSearchService;
@@ -22,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,6 +41,8 @@ import java.util.Set;
 @Service
 public class McpRuntimeService {
 
+    private static final Logger log = LoggerFactory.getLogger(McpRuntimeService.class);
+
     private static final String LATEST_PROTOCOL_VERSION = "2025-11-25";
     private static final Set<String> SUPPORTED_PROTOCOL_VERSIONS = Set.of(
             "2026-07-28",
@@ -42,7 +51,7 @@ public class McpRuntimeService {
             "2025-03-26"
     );
     private static final String SERVER_INSTRUCTIONS = """
-            WorkHub 提供受控的需求、业务线、本地代码工作区、数据库和服务器只读诊断工具。业务代码统一位于 /Users/aslight/IDEAWorkspace/{gitlabGroupName}；涉及业务线排查或测试时，必须先确认业务线、环境和分支；生产日志排查首选 search_business_logs 实时查询受控 ELK 范围，服务器日志作为补充，尤其在生产服务器需要堡垒机时；数据库只允许只读 SQL，查询结果和日志结果会在服务端脱敏；不得尝试绕过资源白名单、时间与行数限制、日志路径限制或安全策略。
+            WorkHub 提供受控的需求、业务线、本地代码工作区、数据库和服务器只读诊断工具。业务代码统一位于 /Users/aslight/IDEAWorkspace/{gitlabGroupName}；涉及业务线排查或测试时，必须先确认业务线、环境和分支；生产日志排查首选 search_business_logs 实时查询受控 ELK 范围，服务器日志作为补充，尤其在生产服务器需要堡垒机时；数据库只允许只读 SQL，查询结果和日志结果会在服务端脱敏；目录和文本文件仅通过 list_server_directory/read_server_file 在统一 allowedLogPaths 范围内只读访问，默认 /mnt，空白名单关闭，其他目录必须先经用户明确授权后配置，AI 不得自行扩展；不得执行所读取脚本；不得尝试绕过资源白名单、时间、行数与字节限制、路径限制或安全策略。
             """.strip();
 
     private final McpResourceService mcpResourceService;
@@ -50,12 +59,16 @@ public class McpRuntimeService {
     private final GitlabRepositoryService gitlabRepositoryService;
     private final BusinessLineAccessConfigMapper businessLineAccessConfigMapper;
     private final BusinessLogSearchService businessLogSearchService;
+    private final AttachmentService attachmentService;
+    private final AttachmentTextExtractionService attachmentTextExtractionService;
+    private final McpCryptoService mcpCryptoService;
     private final ObjectMapper objectMapper;
+    private RepositoryFileService repositoryFileService;
 
     public McpRuntimeService(McpResourceService mcpResourceService,
                              IntakeService intakeService,
                              GitlabRepositoryService gitlabRepositoryService) {
-        this(mcpResourceService, intakeService, gitlabRepositoryService, null, null);
+        this(mcpResourceService, intakeService, gitlabRepositoryService, null, null, null, null, null);
     }
 
     public McpRuntimeService(McpResourceService mcpResourceService,
@@ -63,7 +76,16 @@ public class McpRuntimeService {
                              GitlabRepositoryService gitlabRepositoryService,
                              BusinessLineAccessConfigMapper businessLineAccessConfigMapper) {
         this(mcpResourceService, intakeService, gitlabRepositoryService,
-                businessLineAccessConfigMapper, null);
+                businessLineAccessConfigMapper, null, null, null, null);
+    }
+
+    public McpRuntimeService(McpResourceService mcpResourceService,
+                             IntakeService intakeService,
+                             GitlabRepositoryService gitlabRepositoryService,
+                             BusinessLineAccessConfigMapper businessLineAccessConfigMapper,
+                             BusinessLogSearchService businessLogSearchService) {
+        this(mcpResourceService, intakeService, gitlabRepositoryService,
+                businessLineAccessConfigMapper, businessLogSearchService, null, null, null);
     }
 
     @Autowired
@@ -71,15 +93,42 @@ public class McpRuntimeService {
                              IntakeService intakeService,
                              GitlabRepositoryService gitlabRepositoryService,
                              BusinessLineAccessConfigMapper businessLineAccessConfigMapper,
-                             BusinessLogSearchService businessLogSearchService) {
+                             BusinessLogSearchService businessLogSearchService,
+                             AttachmentService attachmentService,
+                             AttachmentTextExtractionService attachmentTextExtractionService,
+                             McpCryptoService mcpCryptoService) {
         this.mcpResourceService = mcpResourceService;
         this.intakeService = intakeService;
         this.gitlabRepositoryService = gitlabRepositoryService;
         this.businessLineAccessConfigMapper = businessLineAccessConfigMapper;
         this.businessLogSearchService = businessLogSearchService;
+        this.attachmentService = attachmentService;
+        this.attachmentTextExtractionService = attachmentTextExtractionService;
+        this.mcpCryptoService = mcpCryptoService;
         this.objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setRepositoryFileService(RepositoryFileService repositoryFileService) {
+        this.repositoryFileService = repositoryFileService;
+    }
+
+    private cn.aslight.workhub.service.system.IntegrationQueryService integrationQueryService;
+
+    /** 系统集成只读查询工具由查询服务装配；未装配时 tools/list 不出现相关工具。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setIntegrationQueryService(cn.aslight.workhub.service.system.IntegrationQueryService integrationQueryService) {
+        this.integrationQueryService = integrationQueryService;
+    }
+
+    private cn.aslight.workhub.integration.wecom.WecomRobotMessageSender wecomRobotMessageSender;
+
+    /** 数字员工企微机器人发送工具由发送组件装配；未装配时 tools/list 不出现该工具。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setWecomRobotMessageSender(cn.aslight.workhub.integration.wecom.WecomRobotMessageSender wecomRobotMessageSender) {
+        this.wecomRobotMessageSender = wecomRobotMessageSender;
     }
 
     public String handle(String rawRequest) {
@@ -167,6 +216,13 @@ public class McpRuntimeService {
         return result;
     }
 
+    /** 数字员工 CLI 运行时按此清单放开平台 MCP 工具，AI 依据职责描述自行选择。 */
+    public List<String> toolNames() {
+        List<String> names = new ArrayList<>();
+        registry().listTools().forEach(node -> names.add(node.path("name").asText()));
+        return List.copyOf(names);
+    }
+
     private ObjectNode toolsCallResult(JsonNode params) {
         ObjectNode result = objectMapper.createObjectNode();
         ArrayNode content = objectMapper.createArrayNode();
@@ -175,7 +231,11 @@ public class McpRuntimeService {
         try {
             String name = requireText(params, "name");
             JsonNode arguments = params.path("arguments");
-            text.put("text", renderText(registry().call(name, arguments)));
+            long startedAt = System.currentTimeMillis();
+            Object outcome = registry().call(name, arguments);
+            log.info("MCP tool call completed. tool={}, argsSize={}, durationMs={}",
+                    name, arguments == null ? 0 : arguments.size(), System.currentTimeMillis() - startedAt);
+            text.put("text", renderText(outcome));
         } catch (Exception ex) {
             text.put("text", ex.getMessage() == null ? "MCP 工具执行失败" : ex.getMessage());
             result.put("isError", true);
@@ -194,7 +254,42 @@ public class McpRuntimeService {
         registerIntakeTools(registry, catalog);
         registerGitlabTools(registry);
         registerBusinessLogTools(registry, catalog);
+        registerRepositoryFileTools(registry);
+        registerIntegrationQueryTools(registry);
+        registerWecomRobotTools(registry);
         return registry;
+    }
+
+    private Object repositoryCall(RepositoryFileService.IOCall call) {
+        try {
+            return call.run();
+        } catch (java.io.IOException ex) {
+            throw new IllegalArgumentException("仓库文件访问失败：" + ex.getMessage(), ex);
+        }
+    }
+
+    /** 仓库只读文件工具：白名单关闭时不注册，tools/list 可见缺失。 */
+    private void registerRepositoryFileTools(McpToolRegistry registry) {
+        if (repositoryFileService == null || !repositoryFileService.enabled()) {
+            return;
+        }
+        registry.register("list_repository_files", "List files and directories below a configured repository-read-roots root. Bounded depth and entries; never follows symbolic links. Other directories require explicit user authorization; never expand the allowlist automatically.",
+                objectSchema(List.of("path"), "maxDepth", "maxEntries"),
+                args -> repositoryCall(() -> repositoryFileService.list(
+                        requireText(args, "path"),
+                        args.hasNonNull("maxDepth") ? args.get("maxDepth").asInt() : null,
+                        args.hasNonNull("maxEntries") ? args.get("maxEntries").asInt() : null)));
+        registry.register("read_repository_text_file", "Read a bounded UTF-8 text file below a configured repository-read-roots root. Rejects symbolic links, special files and binary data; never executes the file. Other directories require explicit user authorization; never expand the allowlist automatically.",
+                objectSchema(List.of("path"), "maxBytes"),
+                args -> repositoryCall(() -> repositoryFileService.readTextFile(
+                        requireText(args, "path"),
+                        args.hasNonNull("maxBytes") ? args.get("maxBytes").asInt() : null)));
+        registry.register("search_repository_text", "Search a fixed keyword (no regex) in UTF-8 text files below a configured repository-read-roots root. Bounded match count; skips binary and oversized files.",
+                objectSchema(List.of("path", "keyword"), "maxMatches"),
+                args -> repositoryCall(() -> repositoryFileService.searchText(
+                        requireText(args, "path"),
+                        requireText(args, "keyword"),
+                        args.hasNonNull("maxMatches") ? args.get("maxMatches").asInt() : null)));
     }
 
     private void registerBusinessLogTools(McpToolRegistry registry, McpResourceCatalog catalog) {
@@ -227,10 +322,28 @@ public class McpRuntimeService {
         ));
     }
 
+    /** 数字员工唯一的企微出口：webhook 服务端配置，AI 只提供 markdown 内容。 */
+    private void registerWecomRobotTools(McpToolRegistry registry) {
+        if (wecomRobotMessageSender == null) {
+            return;
+        }
+        registry.register("send_wecom_robot_markdown",
+                "Send one markdown message to the configured WeCom group robot (system config wecom.agent.webhook, server-side only). "
+                        + "content is the markdown body, UTF-8 bytes must be 1-4096; use for digital-employee patrol summaries, at most one summary per run.",
+                objectSchema(List.of("content")),
+                args -> wecomRobotMessageSender.send(requireText(args, "content")));
+    }
+
     private void registerIntakeTools(McpToolRegistry registry, McpResourceCatalog catalog) {
         registry.register("get_intake_detail", "Read one requirement-management intake detail by intakeId.",
                 objectSchema(List.of("intakeId")),
                 args -> intakeService.detail(requireLong(args, "intakeId"), null, false));
+        if (attachmentService != null && attachmentTextExtractionService != null) {
+            registry.register("get_intake_attachment",
+                    "Read one intake attachment's text content extracted in memory from the database (no local file cache); documents are server-side text-extracted with a size cap, images return metadata only.",
+                    objectSchema(List.of("attachmentId"), "intakeId"),
+                    this::intakeAttachmentText);
+        }
         registry.register("search_intakes", "Search requirement-management intakes by approvalCode, requirementName and/or keyword in requirement digest/summary.",
                 objectSchema(List.of(), "approvalCode", "requirementName", "keyword", "limit"),
                 this::searchIntakes);
@@ -246,6 +359,72 @@ public class McpRuntimeService {
         registry.register("sync_gitlab_group_repositories", "Locate all accessible repositories in /Users/aslight/IDEAWorkspace/{gitlabGroupName}; clone missing repositories and safely fetch existing repositories without resetting local work.",
                 objectSchema(List.of("businessLine")),
                 this::syncGitlabGroupRepositories);
+    }
+
+    /** 系统集成只读查询工具（禅道/Jenkins）：地址与凭据取自系统集成配置，AI 不能提供；全部只读，不触发构建。 */
+    private void registerIntegrationQueryTools(McpToolRegistry registry) {
+        if (integrationQueryService == null) {
+            return;
+        }
+        registry.register("search_zentao_bugs", "Search ZenTao bugs read-only. Optional productId/executionId scopes the query (falls back to the global list with field filtering when the scoped endpoint is missing); keyword matches title/keywords/id case-insensitively.",
+                objectSchema(List.of(), "productId", "executionId", "keyword", "limit"),
+                args -> integrationQueryService.searchZentaoBugs(
+                        optionalIdLong(args, "productId"), optionalIdLong(args, "executionId"),
+                        optionalText(args, "keyword"), optionalPositiveInt(args, "limit")));
+        registry.register("get_zentao_bug", "Read one ZenTao bug detail by bugId.",
+                objectSchema(List.of("bugId")),
+                args -> integrationQueryService.getZentaoBug(requireText(args, "bugId")));
+        registry.register("get_zentao_story", "Read one ZenTao story detail by storyId.",
+                objectSchema(List.of("storyId")),
+                args -> integrationQueryService.getZentaoStory(requireText(args, "storyId")));
+        registry.register("get_zentao_task", "Read one ZenTao task detail by taskId.",
+                objectSchema(List.of("taskId")),
+                args -> integrationQueryService.getZentaoTask(requireText(args, "taskId")));
+        registry.register("get_zentao_execution", "Read one ZenTao execution detail by executionId, including its project and product.",
+                objectSchema(List.of("executionId")),
+                args -> integrationQueryService.getZentaoExecution(requireText(args, "executionId")));
+        registry.register("list_jenkins_jobs", "List Jenkins jobs at the instance root or below a folder path. Read-only; never triggers builds. Optional instanceId defaults to the first enabled instance configured in system integration.",
+                objectSchema(List.of(), "instanceId", "folder", "limit"),
+                args -> integrationQueryService.listJenkinsJobs(
+                        optionalText(args, "instanceId"), optionalText(args, "folder"), optionalPositiveInt(args, "limit")));
+        registry.register("get_jenkins_job", "Read one Jenkins job detail (buildable, health, last build) by jobPath like folder/job. Read-only; never triggers builds.",
+                objectSchema(List.of("jobPath"), "instanceId"),
+                args -> integrationQueryService.getJenkinsJob(optionalText(args, "instanceId"), requireText(args, "jobPath")));
+        registry.register("get_jenkins_build", "Read one Jenkins build detail (result, parameters, duration) by jobPath and buildNumber. Read-only; never triggers builds.",
+                objectSchema(List.of("jobPath", "buildNumber"), "instanceId"),
+                args -> integrationQueryService.getJenkinsBuild(
+                        optionalText(args, "instanceId"), requireText(args, "jobPath"), requireText(args, "buildNumber")));
+        registry.register("get_jenkins_build_log", "Read a bounded console-log tail of one Jenkins build by jobPath and buildNumber. Read-only; never triggers builds.",
+                objectSchema(List.of("jobPath", "buildNumber"), "instanceId", "lines", "maxBytes"),
+                args -> integrationQueryService.getJenkinsBuildLog(
+                        optionalText(args, "instanceId"), requireText(args, "jobPath"), requireText(args, "buildNumber"),
+                        optionalPositiveInt(args, "lines"), optionalPositiveInt(args, "maxBytes")));
+    }
+
+    /** 可选正整数 ID 参数：缺省返回 null；非法、零或负数拒绝。 */
+    private Long optionalIdLong(JsonNode node, String field) {
+        Long value = optionalLong(node, field);
+        if (value != null && value < 1) {
+            throw new IllegalArgumentException("MCP 参数必须为正整数：" + field);
+        }
+        return value;
+    }
+
+    /** 可选数值参数（整数字符串）：缺省返回 null；非法、零或负数拒绝，超出上限由服务收敛。 */
+    private Integer optionalPositiveInt(JsonNode node, String field) {
+        String value = optionalText(node, field);
+        if (value == null) {
+            return null;
+        }
+        try {
+            int parsed = Integer.parseInt(value);
+            if (parsed < 1) {
+                throw new IllegalArgumentException("MCP 参数必须为正整数：" + field);
+            }
+            return parsed;
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("MCP 参数必须是数字：" + field);
+        }
     }
 
     private Map<String, Object> searchIntakes(JsonNode args) {
@@ -444,6 +623,12 @@ public class McpRuntimeService {
         summary.put("endpointUrl", config.getEndpointUrl());
         summary.put("pathPrefix", config.getPathPrefix());
         summary.put("effectiveUrl", resolveEffectiveUrl(config.getEndpointUrl(), config.getPathPrefix()));
+        if (config.getLoginUsername() != null) {
+            summary.put("loginUsername", config.getLoginUsername());
+        }
+        if (config.getLoginPasswordEncrypted() != null && mcpCryptoService != null) {
+            summary.put("loginPassword", mcpCryptoService.decrypt(config.getLoginPasswordEncrypted()));
+        }
         return summary;
     }
 
@@ -510,10 +695,17 @@ public class McpRuntimeService {
         Map<String, Object> context = new LinkedHashMap<>(catalog.knowledge());
         Object documentPath = context.get("projectDocumentPath");
         if (documentPath != null) {
-            context.put("businessLineWikiRoot", documentPath + "/requirements/" + firstNonBlank(businessLine.code(), businessLine.name()));
+            context.put("businessLineWikiRoot", documentPath + "/业务线/" + businessLineDirSegment(businessLine));
             context.put("businessLineRawRoot", documentPath + "/requirement-sources/" + firstNonBlank(businessLine.code(), businessLine.name()));
         }
         return context;
+    }
+
+    /** 业务线文档目录统一为 {业务线编码}-{业务线名称}；无编码或编码与名称相同时退回名称。 */
+    private String businessLineDirSegment(McpResourceCatalog.BusinessLine businessLine) {
+        String code = firstNonBlank(businessLine.code(), null);
+        String name = firstNonBlank(businessLine.name(), code);
+        return code == null || code.equals(name) ? name : code + "-" + name;
     }
 
     private Map<String, Object> databaseTargetSummary(McpResourceCatalog.DatabaseTarget target) {
@@ -571,6 +763,7 @@ public class McpRuntimeService {
                 "需求测试优先以需求关联业务线解析 SERVER/DB 资源；环境未指定时必须先确认环境后再请求服务或查库。",
                 "数据库仅使用 run_readonly_query 和 readonly profile 查询；不得写库或修改测试数据。",
                 "不通过网关时，先用 serverTargets 的 targetKey/profile/allowedServices/allowedLogPaths 确认服务状态和日志入口，再直接请求对应服务。",
+                "读取部署目录或启动脚本时，先确认 serverTargets.allowedLogPaths，再调用 list_server_directory/read_server_file；默认 /mnt，其他目录须用户明确授权，空白名单关闭，不执行文件。",
                 "分支为空或部署版本不明时，先结合需求 developmentBranchName、服务日志和部署信息确认测试环境是否已发对应分支。"
         );
     }
@@ -689,12 +882,64 @@ public class McpRuntimeService {
         return value;
     }
 
+    /** 数据库附件的空中读取：内存取内容并提取文本，不写本地缓存。 */
+    private Map<String, Object> intakeAttachmentText(JsonNode args) {
+        long attachmentId = requireLong(args, "attachmentId");
+        Long intakeId = optionalLong(args, "intakeId");
+        AttachmentService.AttachmentResource resource = attachmentService.loadAsResource(attachmentId);
+        AttachmentEntity entity = resource.entity();
+        boolean intakeMaterial = entity.getBizType() != null && entity.getBizType().startsWith("INTAKE_");
+        if (intakeId != null && (!intakeMaterial || !intakeId.equals(entity.getBizId()))) {
+            throw new IllegalArgumentException("附件不属于当前需求");
+        }
+        byte[] content;
+        try (InputStream input = resource.resource().getInputStream()) {
+            content = input.readAllBytes();
+        } catch (IOException ex) {
+            throw new IllegalStateException("附件内容读取失败：" + entity.getFileName(), ex);
+        }
+        var context = new AttachmentService.AttachmentFileContext(entity.getId(), entity.getBizType(), entity.getFileName(),
+                entity.getStoragePath(), entity.getContentType(), content, entity.getFileSize(), entity.getFileSha256());
+        AttachmentTextExtractionService.InMemoryAttachmentText extracted =
+                attachmentTextExtractionService.extractTextInMemory(context);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("attachmentId", entity.getId());
+        result.put("intakeId", entity.getBizId());
+        result.put("bizType", entity.getBizType());
+        result.put("fileName", entity.getFileName());
+        result.put("contentType", entity.getContentType());
+        result.put("fileSize", entity.getFileSize());
+        result.put("fileSha256", entity.getFileSha256());
+        result.put("fileType", extracted.fileType());
+        result.put("image", extracted.image());
+        if (extracted.text() != null) {
+            result.put("text", extracted.text());
+            result.put("truncated", extracted.truncated());
+        }
+        if (extracted.note() != null) {
+            result.put("note", extracted.note());
+        }
+        return result;
+    }
+
     private Long requireLong(JsonNode node, String field) {
         String value = requireText(node, field);
         try {
             return Long.parseLong(value);
         } catch (NumberFormatException ex) {
             throw new IllegalArgumentException("MCP 参数必须是数字：" + field, ex);
+        }
+    }
+
+    private Long optionalLong(JsonNode args, String name) {
+        String value = optionalText(args, name);
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("MCP 参数必须是数字：" + name, ex);
         }
     }
 

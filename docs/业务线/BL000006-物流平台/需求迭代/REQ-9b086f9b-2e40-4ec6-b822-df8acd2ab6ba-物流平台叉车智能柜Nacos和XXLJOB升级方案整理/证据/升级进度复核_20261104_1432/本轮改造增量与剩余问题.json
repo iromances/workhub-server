@@ -1,0 +1,39 @@
+{
+  "cashloan": {
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "a76c0fb1db0b28a0ea13fa5ef1854a031f685b51",
+    "jobs": "7/7无参void，repayApplyJob读取getJobParam，空参数handleFail，业务调用顺序保留",
+    "parent": "0.0.2-SNAPSHOT",
+    "runtime": "Nacos两个应用名均未见；XXL无地址",
+    "tests": "升级分支新增4个JUnit测试；本轮仅审阅源码，未执行，不能计作测试通过"
+  },
+  "etcIssue": {
+    "sha": "9302f07d29292b60cc2179ac60484205d1f43c3c",
+    "jobs": "1/1无参void + getJobParam",
+    "parent": "0.0.2-SNAPSHOT，已移除schedule显式旧版本",
+    "runtime": "Nacos/XXL均在线"
+  },
+  "checker": {
+    "sha": "ecf86d92763bbe64b406117b6c8c4e9021ffe309",
+    "springApplicationName": "thctay-saps-checkbill，release已修正",
+    "sitExecutorAppName": "thctay-saps（application-sit.yml:86，仍残留）",
+    "runtime": "thctay-saps-checkbill独立服务及执行器在线，PID19487，/mnt/etc-server/checkBill/saps-checkBill-0.0.1-SNAPSHOT.jar",
+    "gap": "实际部署配置与仓库sit声明不一致，需核配置覆盖来源"
+  },
+  "crm": {
+    "sha": "0a46480b6e8d816236b13de8e38f6a617913dac4",
+    "status": "与13:34提交一致，手工上下文及失败反馈问题未改；不重复执行上轮隔离用例"
+  },
+  "additionalReleaseBranches": {
+    "thctay-account": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 ee7618f41beec3f76678d12bd747244db3e040b6"
+    ],
+    "thctay-eas": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 e035ea9d8b3e7d4018898b93266c019fa96c8658"
+    ],
+    "thctay-payment": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 e78d3e05410ea6e453429d3c9d27c5682ad705e9"
+    ]
+  },
+  "branchChoice": "新增release优先用于checker核对；账户/业财/支付保留先前feature主口径，新增release差异仅在dev调度配置，不代表TEST最终部署分支。"
+}

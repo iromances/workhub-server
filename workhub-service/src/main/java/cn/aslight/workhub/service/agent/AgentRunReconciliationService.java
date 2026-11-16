@@ -24,7 +24,6 @@ public class AgentRunReconciliationService {
     private final AgentMapper mapper;
     private final AgentAccessService access;
     private final AgentRunStore store;
-    private final AgentToolCatalog tools;
     private final AgentToolData data;
     private final AgentCliProcessProbe processes;
     private final ObjectMapper json;
@@ -32,13 +31,13 @@ public class AgentRunReconciliationService {
 
     @Autowired
     public AgentRunReconciliationService(AgentMapper mapper, AgentAccessService access, AgentRunStore store,
-            AgentToolCatalog tools, AgentToolData data, AgentCliProcessProbe processes, ObjectMapper json) {
-        this(mapper, access, store, tools, data, processes, json, Clock.systemUTC());
+            AgentToolData data, AgentCliProcessProbe processes, ObjectMapper json) {
+        this(mapper, access, store, data, processes, json, Clock.systemUTC());
     }
 
     AgentRunReconciliationService(AgentMapper mapper, AgentAccessService access, AgentRunStore store,
-            AgentToolCatalog tools, AgentToolData data, AgentCliProcessProbe processes, ObjectMapper json, Clock clock) {
-        this.mapper = mapper; this.access = access; this.store = store; this.tools = tools;
+            AgentToolData data, AgentCliProcessProbe processes, ObjectMapper json, Clock clock) {
+        this.mapper = mapper; this.access = access; this.store = store;
         this.data = data; this.processes = processes; this.json = json; this.clock = clock;
     }
 
@@ -214,7 +213,6 @@ public class AgentRunReconciliationService {
         var context = store.context(run);
         access.requireRunAuthorization(context);
         store.requireProvider(run);
-        for (var code : context.specification().toolCodes()) access.requireExecution(context, tools.require(code));
         for (var scope : context.specification().scopes()) access.requireScope(context, scope);
         if (run.stepCount() >= context.configuration().maxSteps()
                 || run.elapsedMillis() >= context.configuration().maxRunSeconds() * 1000L) {

@@ -15,6 +15,8 @@ public class DevelopmentAnalysisEntity {
     private String repositoryUrl;
     private String analysisStatus;
     private String analysisMessage;
+    private LocalDateTime startedAt;
+    private LocalDateTime finishedAt;
     private String draftJson;
     private String zentaoSyncStatus;
     private String zentaoSyncMessage;
@@ -85,6 +87,22 @@ public class DevelopmentAnalysisEntity {
 
     public void setAnalysisMessage(String analysisMessage) {
         this.analysisMessage = analysisMessage;
+    }
+
+    public LocalDateTime getStartedAt() {
+        return startedAt;
+    }
+
+    public void setStartedAt(LocalDateTime startedAt) {
+        this.startedAt = startedAt;
+    }
+
+    public LocalDateTime getFinishedAt() {
+        return finishedAt;
+    }
+
+    public void setFinishedAt(LocalDateTime finishedAt) {
+        this.finishedAt = finishedAt;
     }
 
     public String getDraftJson() {

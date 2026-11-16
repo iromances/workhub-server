@@ -18,6 +18,7 @@ import cn.aslight.workhub.dao.project.ProjectInvolvedSystemMapper;
 import cn.aslight.workhub.dao.project.ProjectMapper;
 import cn.aslight.workhub.model.project.ProjectEntity;
 import cn.aslight.workhub.service.intake.GitlabRepositoryService;
+import cn.aslight.workhub.service.mcp.McpCryptoService;
 import cn.aslight.workhub.service.intake.GitlabRepositoryService.GitlabProjectSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,24 +49,27 @@ public class ProjectService {
     private static final String BUSINESS_LINE_CODE_PREFIX = "BL";
     private static final int BUSINESS_LINE_CODE_WIDTH = 6;
     private static final Set<String> ACCESS_ENDPOINT_TYPES = Set.of("OPERATIONS", "CLIENT", "GATEWAY", "OTHER");
-    private static final Pattern ENVIRONMENT_CODE_PATTERN = Pattern.compile("[a-z0-9][a-z0-9_-]{0,63}");
+    private static final Pattern ENVIRONMENT_CODE_PATTERN = Pattern.compile("[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}");
 
     private final ProjectMapper projectMapper;
     private final BusinessLineMapper businessLineMapper;
     private final BusinessLineAccessConfigMapper businessLineAccessConfigMapper;
     private final ProjectInvolvedSystemMapper involvedSystemMapper;
     private final GitlabRepositoryService gitlabRepositoryService;
+    private final McpCryptoService mcpCryptoService;
 
     public ProjectService(ProjectMapper projectMapper,
                           BusinessLineMapper businessLineMapper,
                           BusinessLineAccessConfigMapper businessLineAccessConfigMapper,
                           ProjectInvolvedSystemMapper involvedSystemMapper,
-                          GitlabRepositoryService gitlabRepositoryService) {
+                          GitlabRepositoryService gitlabRepositoryService,
+                          McpCryptoService mcpCryptoService) {
         this.projectMapper = projectMapper;
         this.businessLineMapper = businessLineMapper;
         this.businessLineAccessConfigMapper = businessLineAccessConfigMapper;
         this.involvedSystemMapper = involvedSystemMapper;
         this.gitlabRepositoryService = gitlabRepositoryService;
+        this.mcpCryptoService = mcpCryptoService;
     }
 
     public List<ProjectSummaryResponse> list(String status, String keyword, String businessLine) {
@@ -138,7 +142,8 @@ public class ProjectService {
         BusinessLineEntity entity = toBusinessLineEntity(new BusinessLineEntity(), request);
         entity.setBusinessLineCode(nextBusinessLineCode());
         businessLineMapper.insert(entity);
-        replaceAccessConfigs(entity.getBusinessLineCode(), request.getAccessConfigs());
+        replaceAccessConfigs(entity.getBusinessLineCode(), request.getAccessConfigs(),
+                Set.copyOf(parseSupportedEnvironments(entity.getSupportedEnvironments())));
         log.info("Business line created. businessLineCode={}, accessConfigCount={}",
                 entity.getBusinessLineCode(), accessConfigCount(request.getAccessConfigs()));
         return businessLineResponse(entity.getId());
@@ -228,8 +233,12 @@ public class ProjectService {
         BusinessLineEntity entity = toBusinessLineEntity(new BusinessLineEntity(), request);
         entity.setId(id);
         entity.setBusinessLineCode(existing.getBusinessLineCode());
+        Set<String> supportedEnvironments = Set.copyOf(parseSupportedEnvironments(entity.getSupportedEnvironments()));
+        if (request.getAccessConfigs() == null) {
+            ensureAccessConfigsWithinEnvironments(existing.getBusinessLineCode(), supportedEnvironments);
+        }
         businessLineMapper.update(entity);
-        replaceAccessConfigs(existing.getBusinessLineCode(), request.getAccessConfigs());
+        replaceAccessConfigs(existing.getBusinessLineCode(), request.getAccessConfigs(), supportedEnvironments);
         log.info("Business line updated. businessLineCode={}, accessConfigsChanged={}, accessConfigCount={}",
                 existing.getBusinessLineCode(), request.getAccessConfigs() != null, accessConfigCount(request.getAccessConfigs()));
         return businessLineResponse(id);
@@ -321,6 +330,7 @@ public class ProjectService {
         entity.setBusinessLineName(request.getBusinessLineName().trim());
         entity.setGitlabGroupName(trimToNull(request.getGitlabGroupName()));
         entity.setDescription(trimToNull(request.getDescription()));
+        entity.setSupportedEnvironments(normalizeSupportedEnvironments(request.getSupportedEnvironments()));
         entity.setEnabled(request.getEnabled() == null || request.getEnabled());
         return entity;
     }
@@ -344,23 +354,42 @@ public class ProjectService {
                 entity.getGitlabGroupName(),
                 entity.getDescription(),
                 entity.getEnabled(),
+                parseSupportedEnvironments(entity.getSupportedEnvironments()),
                 accessConfigs,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
     }
 
-    private void replaceAccessConfigs(String businessLineCode, List<BusinessLineAccessConfigRequest> requests) {
+    private void replaceAccessConfigs(String businessLineCode,
+                                      List<BusinessLineAccessConfigRequest> requests,
+                                      Set<String> supportedEnvironments) {
         if (requests == null) {
             return;
         }
-        List<BusinessLineAccessConfigEntity> configs = normalizeAccessConfigs(businessLineCode, requests);
+        Map<String, String> existingPasswords = existingLoginPasswords(businessLineCode);
+        List<BusinessLineAccessConfigEntity> configs =
+                normalizeAccessConfigs(businessLineCode, requests, supportedEnvironments, existingPasswords);
         businessLineAccessConfigMapper.deleteByBusinessLineCode(businessLineCode);
         configs.forEach(businessLineAccessConfigMapper::insert);
     }
 
+    private Map<String, String> existingLoginPasswords(String businessLineCode) {
+        Map<String, String> passwords = new LinkedHashMap<>();
+        for (BusinessLineAccessConfigEntity config : businessLineAccessConfigMapper
+                .findByBusinessLineCodes(List.of(businessLineCode))) {
+            if (config.getLoginPasswordEncrypted() != null) {
+                passwords.put(accessConfigIdentity(config.getEnvironmentCode(), config.getEndpointType(),
+                        config.getEndpointName()), config.getLoginPasswordEncrypted());
+            }
+        }
+        return passwords;
+    }
+
     private List<BusinessLineAccessConfigEntity> normalizeAccessConfigs(String businessLineCode,
-                                                                        List<BusinessLineAccessConfigRequest> requests) {
+                                                                        List<BusinessLineAccessConfigRequest> requests,
+                                                                        Set<String> supportedEnvironments,
+                                                                        Map<String, String> existingPasswords) {
         List<BusinessLineAccessConfigEntity> configs = new ArrayList<>();
         Set<String> identities = new LinkedHashSet<>();
         for (int index = 0; index < requests.size(); index++) {
@@ -369,9 +398,12 @@ public class ProjectService {
                 throw new IllegalArgumentException("访问地址配置不能为空");
             }
             String environmentCode = normalizeEnvironmentCode(request.getEnvironmentCode());
+            if (!supportedEnvironments.contains(environmentCode)) {
+                throw new IllegalArgumentException("访问地址环境 " + environmentCode + " 不在业务线支持环境内");
+            }
             String endpointType = normalizeEndpointType(request.getEndpointType());
             String endpointName = normalizeEndpointName(request.getEndpointName(), endpointType);
-            String identity = environmentCode + "\u0000" + endpointType + "\u0000" + endpointName.toLowerCase(Locale.ROOT);
+            String identity = accessConfigIdentity(environmentCode, endpointType, endpointName);
             if (!identities.add(identity)) {
                 throw new IllegalArgumentException("同一环境下的访问地址类型和名称不能重复");
             }
@@ -383,6 +415,8 @@ public class ProjectService {
             entity.setEndpointName(endpointName);
             entity.setEndpointUrl(normalizeEndpointUrl(request.getEndpointUrl()));
             entity.setPathPrefix(normalizePathPrefix(request.getPathPrefix(), endpointType));
+            entity.setLoginUsername(normalizeLoginUsername(request.getLoginUsername()));
+            entity.setLoginPasswordEncrypted(resolveLoginPassword(request.getLoginPassword(), identity, existingPasswords));
             entity.setSortOrder(request.getSortOrder() == null ? index * 10 : request.getSortOrder());
             entity.setEnabled(request.getEnabled() == null || request.getEnabled());
             configs.add(entity);
@@ -390,16 +424,74 @@ public class ProjectService {
         return configs;
     }
 
+    private String accessConfigIdentity(String environmentCode, String endpointType, String endpointName) {
+        return environmentCode + "\u0000" + endpointType + "\u0000" + endpointName.toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeLoginUsername(String loginUsername) {
+        String normalized = trimToNull(loginUsername);
+        if (normalized == null) {
+            return null;
+        }
+        if (normalized.length() > 128) {
+            throw new IllegalArgumentException("登录账号不能超过 128 个字符");
+        }
+        return normalized;
+    }
+
+    private String resolveLoginPassword(String loginPassword, String identity, Map<String, String> existingPasswords) {
+        String plain = trimToNull(loginPassword);
+        if (plain != null) {
+            return mcpCryptoService.encrypt(plain);
+        }
+        return existingPasswords.get(identity);
+    }
+
     private String normalizeEnvironmentCode(String environmentCode) {
         String normalized = trimToNull(environmentCode);
         if (normalized == null) {
-            throw new IllegalArgumentException("访问地址环境不能为空");
+            throw new IllegalArgumentException("环境编码不能为空");
         }
-        normalized = normalized.toLowerCase(Locale.ROOT);
+        normalized = normalized.toUpperCase(Locale.ROOT);
         if (!ENVIRONMENT_CODE_PATTERN.matcher(normalized).matches()) {
-            throw new IllegalArgumentException("访问地址环境编码不合法");
+            throw new IllegalArgumentException("环境编码不合法：" + normalized);
         }
         return normalized;
+    }
+
+    private String normalizeSupportedEnvironments(List<String> environments) {
+        if (environments == null || environments.isEmpty()) {
+            throw new IllegalArgumentException("支持环境不能为空");
+        }
+        Set<String> codes = new LinkedHashSet<>();
+        for (String environment : environments) {
+            String code = normalizeEnvironmentCode(environment);
+            if (!codes.add(code)) {
+                throw new IllegalArgumentException("支持环境不能重复：" + code);
+            }
+        }
+        return String.join(",", codes);
+    }
+
+    private List<String> parseSupportedEnvironments(String supportedEnvironments) {
+        if (supportedEnvironments == null || supportedEnvironments.isBlank()) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(supportedEnvironments.split(","))
+                .map(String::trim)
+                .filter(code -> !code.isEmpty())
+                .toList();
+    }
+
+    private void ensureAccessConfigsWithinEnvironments(String businessLineCode, Set<String> supportedEnvironments) {
+        for (BusinessLineAccessConfigEntity config : businessLineAccessConfigMapper
+                .findByBusinessLineCodes(List.of(businessLineCode))) {
+            String environmentCode = trimToNull(config.getEnvironmentCode());
+            if (environmentCode != null && !supportedEnvironments.contains(environmentCode)) {
+                throw new IllegalArgumentException("存量访问地址环境 " + environmentCode
+                        + " 不在业务线支持环境内，请同步调整访问地址配置");
+            }
+        }
     }
 
     private String normalizeEndpointType(String endpointType) {
@@ -476,6 +568,8 @@ public class ProjectService {
                 entity.getEndpointName(),
                 entity.getEndpointUrl(),
                 entity.getPathPrefix(),
+                entity.getLoginUsername(),
+                entity.getLoginPasswordEncrypted() != null,
                 entity.getSortOrder(),
                 entity.getEnabled(),
                 entity.getCreatedAt(),

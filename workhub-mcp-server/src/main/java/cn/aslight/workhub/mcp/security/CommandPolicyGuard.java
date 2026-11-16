@@ -30,6 +30,7 @@ public class CommandPolicyGuard {
             case "tail_log_file" -> List.of("tail", "-n", normalizeLines(args.get("lines"), profile.maxOutputLines()),
                     requireAllowedLogPath(target, args));
             case "search_log_file" -> buildSearchLogCommand(target, profile, args);
+            case "list_server_directory", "read_server_file" -> ServerFilePolicy.buildCommand(target, profile, commandKey, args);
             default -> throw new IllegalArgumentException("不支持的诊断命令：" + commandKey);
         };
     }
@@ -72,13 +73,7 @@ public class CommandPolicyGuard {
         if (!SAFE_LOG_PATH.matcher(logPath).matches()) {
             throw new IllegalArgumentException("日志路径包含不允许的字符：" + logPath);
         }
-        if (!target.allowedLogPaths().isEmpty() && target.allowedLogPaths().stream().noneMatch(path -> {
-            String allowedDirectory = normalizeAbsoluteLogPath(path, "日志目录白名单必须配置绝对路径");
-            return Path.of(logPath).startsWith(Path.of(allowedDirectory));
-        })) {
-            throw new IllegalArgumentException("日志路径不在目录白名单中：" + logPath);
-        }
-        return logPath;
+        return ServerFilePolicy.requireAllowedPath(target, logPath);
     }
 
     private String normalizeAbsoluteLogPath(String value, String message) {

@@ -35,15 +35,15 @@ public record AiGatewayRequest(String useCaseCode,
                 null, null, null, null, null, null);
     }
 
-    public static AiGatewayRequest structured(String useCaseCode,
-                                              String prompt,
-                                              Path workingDirectory,
-                                              List<String> allowedDirectories,
-                                              List<String> imagePaths,
-                                              String outputSchema) {
+    public static AiGatewayRequest withVariables(String useCaseCode,
+                                                 Map<String, Object> variables,
+                                                 Path workingDirectory,
+                                                 List<String> allowedDirectories,
+                                                 List<String> imagePaths,
+                                                 String outputSchema) {
         return new AiGatewayRequest(
                 useCaseCode,
-                Map.of("prompt", prompt == null ? "" : prompt),
+                variables,
                 workingDirectory,
                 allowedDirectories,
                 imagePaths,

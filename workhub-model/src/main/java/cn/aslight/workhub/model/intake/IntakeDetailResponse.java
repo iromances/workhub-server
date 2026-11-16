@@ -15,6 +15,7 @@ public record IntakeDetailResponse(Long id,
                                    String externalMessageId,
                                    String senderName,
                                    String developmentOwnerUserName,
+                                   String developmentStandard,
                                    LocalDateTime receivedAt,
                                    String demandStatus,
                                    String pausePreviousDemandStatus,
@@ -63,7 +64,7 @@ public record IntakeDetailResponse(Long id,
                                    Long convertedWorkItemId,
                                    LocalDateTime createdAt,
                                    LocalDateTime updatedAt) {
-        this(id, sourceType, sourceChannel, externalMessageId, senderName, developmentOwnerUserName, receivedAt, demandStatus, pausePreviousDemandStatus, pauseReason, pauseDate, rawContent, structuredData, involvedSystems, relatedWorkItems, histories, status, enrichmentStatus, enrichmentErrorSummary, enrichmentUpdatedAt, aiDraft, attachments, todos, convertedWorkItemId, createdAt, updatedAt, null);
+        this(id, sourceType, sourceChannel, externalMessageId, senderName, developmentOwnerUserName, null, receivedAt, demandStatus, pausePreviousDemandStatus, pauseReason, pauseDate, rawContent, structuredData, involvedSystems, relatedWorkItems, histories, status, enrichmentStatus, enrichmentErrorSummary, enrichmentUpdatedAt, aiDraft, attachments, todos, convertedWorkItemId, createdAt, updatedAt, null);
     }
 
     public IntakeDetailResponse(Long id,
@@ -96,6 +97,7 @@ public record IntakeDetailResponse(Long id,
                 externalMessageId,
                 senderName,
                 developmentOwnerUserName,
+                null,
                 receivedAt,
                 demandStatus,
                 null,
@@ -115,7 +117,8 @@ public record IntakeDetailResponse(Long id,
                 todos,
                 convertedWorkItemId,
                 createdAt,
-                updatedAt
+                updatedAt,
+                null
         );
     }
 
@@ -148,6 +151,7 @@ public record IntakeDetailResponse(Long id,
                 externalMessageId,
                 senderName,
                 developmentOwnerUserName,
+                null,
                 receivedAt,
                 demandStatus,
                 null,
@@ -167,7 +171,8 @@ public record IntakeDetailResponse(Long id,
                 List.of(),
                 convertedWorkItemId,
                 createdAt,
-                updatedAt
+                updatedAt,
+                null
         );
     }
 
@@ -199,6 +204,7 @@ public record IntakeDetailResponse(Long id,
                 externalMessageId,
                 senderName,
                 developmentOwnerUserName,
+                null,
                 receivedAt,
                 demandStatus,
                 null,
@@ -218,7 +224,8 @@ public record IntakeDetailResponse(Long id,
                 List.of(),
                 convertedWorkItemId,
                 createdAt,
-                updatedAt
+                updatedAt,
+                null
         );
     }
 }

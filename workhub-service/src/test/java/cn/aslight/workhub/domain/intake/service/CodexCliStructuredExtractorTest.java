@@ -42,9 +42,9 @@ class CodexCliStructuredExtractorTest {
         assertEquals(2, batch.summaries().size());
         var extractor = new CodexCliStructuredExtractor(new RecordingAiGatewayClient(), new ObjectMapper());
         var invocation = extractor.buildInvocation("需求录入", "", attachments, batch.summaries());
-        assertTrue(invocation.prompt().contains("回购限制"));
-        assertTrue(invocation.prompt().contains("逾期账单未还总额"));
-        assertTrue(invocation.prompt().contains("需求名称：提前买断与回购优化"));
+        assertTrue(joinedVariables(invocation.variables()).contains("回购限制"));
+        assertTrue(joinedVariables(invocation.variables()).contains("逾期账单未还总额"));
+        assertTrue(joinedVariables(invocation.variables()).contains("需求名称：提前买断与回购优化"));
         assertTrue(batch.warnings().getFirst().contains("图片、交互及部分备注未识别"));
     }
 
@@ -72,9 +72,9 @@ class CodexCliStructuredExtractorTest {
 
         assertTrue(invocation.imagePaths().contains("/tmp/workhub-test/approval.png"));
         assertTrue(invocation.addDirs().contains("/tmp/workhub-test"));
-        assertTrue(invocation.prompt().contains("非图片附件文本摘要"));
-        assertTrue(invocation.prompt().contains("requirement.docx"));
-        assertTrue(invocation.prompt().contains("需求名称：绑卡需求"));
+        assertTrue(joinedVariables(invocation.variables()).contains("非图片附件文本摘要"));
+        assertTrue(joinedVariables(invocation.variables()).contains("requirement.docx"));
+        assertTrue(joinedVariables(invocation.variables()).contains("需求名称：绑卡需求"));
 
         CodexCliStructuredExtractor.CodexCliExtractionResult result = extractor.extract(
                 "企业微信审批",
@@ -232,10 +232,12 @@ class CodexCliStructuredExtractorTest {
                 List.of(new AttachmentService.AttachmentFileContext(1L, "截图", "demand.png", "/tmp/workhub-sql/demand.png", "image/png"))
         );
 
-        assertTrue(invocation.prompt().contains("只能生成只读 SELECT 查询"));
-        assertTrue(invocation.prompt().contains("questions"));
-        assertTrue(invocation.prompt().contains("支付失败订单导出"));
-        assertTrue(invocation.prompt().contains("筛选条件：支付失败"));
+        String renderedPrompt = cn.aslight.workhub.service.ai.TestPromptTemplates.render(
+                "intake.sql-draft.generate", invocation.variables());
+        assertTrue(renderedPrompt.contains("只能生成只读 SELECT 查询"));
+        assertTrue(renderedPrompt.contains("questions"));
+        assertTrue(renderedPrompt.contains("支付失败订单导出"));
+        assertTrue(renderedPrompt.contains("筛选条件：支付失败"));
         assertTrue(invocation.imagePaths().contains("/tmp/workhub-sql/demand.png"));
         assertTrue(invocation.addDirs().contains("/tmp/workhub-sql"));
 
@@ -247,6 +249,14 @@ class CodexCliStructuredExtractorTest {
 
         assertTrue(result.succeeded());
         assertEquals("intake.sql-draft.generate", aiGatewayClient.capturedRequest.useCaseCode());
+    }
+
+    private static String joinedVariables(java.util.Map<String, Object> variables) {
+        StringBuilder joined = new StringBuilder();
+        for (Object value : variables.values()) {
+            joined.append(String.valueOf(value)).append('\n');
+        }
+        return joined.toString();
     }
 
     private static class RecordingAiGatewayClient implements AiGatewayClient {

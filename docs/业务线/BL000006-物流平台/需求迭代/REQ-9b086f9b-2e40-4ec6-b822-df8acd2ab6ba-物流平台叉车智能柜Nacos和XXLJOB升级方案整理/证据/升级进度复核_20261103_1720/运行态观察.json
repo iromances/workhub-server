@@ -1,0 +1,47 @@
+{
+  "businessLine": "BL000006",
+  "environment": "TEST",
+  "sourceRefresh": "2026-11-03 17:20 +08:00",
+  "nacos": {
+    "address": "10.10.116.110:8848",
+    "version": "2.5.4",
+    "namespace": "bae98fd5-aa76-427b-a5fc-c32f81befa38",
+    "hideEmpty": false,
+    "services": [
+      {
+        "name": "thctay-intfbank",
+        "ip": "10.10.116.19",
+        "port": 5556,
+        "healthy": true
+      },
+      {
+        "name": "thctay-front-gateway",
+        "ip": "10.10.116.19",
+        "port": 29990,
+        "healthy": true
+      }
+    ]
+  },
+  "xxl": {
+    "address": "10.10.116.110:28080",
+    "version": "2.5.0",
+    "jobs": 245,
+    "executorDefinitions": 20,
+    "onlineMachines": 0,
+    "triggerCount": 0
+  },
+  "server": {
+    "targetKey": "bl000006-test-server-10-10-116-19-22",
+    "profile": "diagnostic",
+    "crmPid": 25868,
+    "crmProfile": "test",
+    "oldNacosPid": 31101,
+    "oldXxlPid": 32625,
+    "oldXxlPort": 38080
+  },
+  "limits": [
+    "实例在线不证明部署包对应源码SHA",
+    "未运行构建或触发业务任务",
+    "Nacos服务列表是瞬时观察，SAPS此前曾在线，本次未见"
+  ]
+}

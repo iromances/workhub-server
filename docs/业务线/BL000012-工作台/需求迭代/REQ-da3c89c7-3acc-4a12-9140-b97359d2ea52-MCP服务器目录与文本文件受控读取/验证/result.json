@@ -1,0 +1,74 @@
+{
+  "version": "v2.0",
+  "tests": 63,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "suites": [
+    {
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testClass": "cn.aslight.workhub.mcp.security.CommandPolicyGuardTest"
+    },
+    {
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testClass": "cn.aslight.workhub.mcp.security.ServerFilePolicyTest"
+    },
+    {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testClass": "cn.aslight.workhub.mcp.security.ServerFileContentMaskerTest"
+    },
+    {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testClass": "cn.aslight.workhub.mcp.security.SensitiveDataMaskerTest"
+    },
+    {
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testClass": "cn.aslight.workhub.mcp.server.ServerDiagnosticServiceTest"
+    },
+    {
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testClass": "cn.aslight.workhub.mcp.tool.McpToolRegistryTest"
+    },
+    {
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testClass": "cn.aslight.workhub.service.mcp.McpFileResourceServiceTest"
+    },
+    {
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testClass": "cn.aslight.workhub.service.mcp.McpRuntimeServiceTest"
+    }
+  ],
+  "offlineCompilePassed": true,
+  "frontendBuildPassed": true,
+  "defaultReadRoots": [
+    "/mnt"
+  ],
+  "sharedField": "allowedLogPaths",
+  "migrationExecuted": false,
+  "deployed": false,
+  "remoteVerified": false
+}

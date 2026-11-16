@@ -91,7 +91,7 @@ public class AgentDeliveryService {
                     }
                     record = store.intent(context, record, "MR_CREATING");
                     String summary = change.manifest().plan().summary();
-                    String title = "Draft: [WorkHub] " + summary.substring(0, Math.min(200, summary.length()));
+                    String title = "Draft: " + summary.substring(0, Math.min(200, summary.length()));
                     client.create(target, record.sourceBranch(), record.targetBranch(), title, description(record, change));
                     // 使用独立 GET 核对；创建响应本身不替代远端结果。
                     matches = client.find(target, record.sourceBranch(), record.targetBranch());
@@ -100,7 +100,9 @@ public class AgentDeliveryService {
                 }
             }
             String expectedMarker = marker(record);
-            if (!mergeRequest.description().lines().anyMatch(line -> line.equals(expectedMarker)) || !"opened".equals(mergeRequest.state())) {
+            String legacyMarker = legacyMarker(record);
+            if (!mergeRequest.description().lines().anyMatch(line -> line.equals(expectedMarker) || line.equals(legacyMarker))
+                    || !"opened".equals(mergeRequest.state())) {
                 throw new AgentGitLabClient.Conflict("MR 关联标记或状态与候选交付不符，未修改原 MR");
             }
             if (mergeRequest.sha() == null) return view(store.receipt(context, record, "MR_UNKNOWN", mergeRequest.iid(), mergeRequest.webUrl(), "MR 的实际提交尚未生成，等待再次核对", null));
@@ -135,11 +137,13 @@ public class AgentDeliveryService {
         result.put("remoteConfirmed", confirmed(value)); result.put("tested", false); result.put("readyForReview", false);
         return result;
     }
-    private static String marker(AgentDeliveryEntity value) { return "WorkHub-Delivery: " + value.id(); }
+    private static String marker(AgentDeliveryEntity value) { return "Delivery-Ref: " + value.id(); }
+    // 2026-11-13 前创建的 MR 描述携带旧标记，核验时两者皆认
+    private static String legacyMarker(AgentDeliveryEntity value) { return "WorkHub-Delivery: " + value.id(); }
     private static String description(AgentDeliveryEntity value, AgentChangeView change) {
         var plan = change.manifest().plan();
         return marker(value) + "\nManifest: " + change.manifestHash() + "\nCandidate: " + value.resultSha()
-                + "\n\n" + plan.summary() + "\n\n影响范围：\n" + plan.impact() + "\n\n验收建议（实际结果以 WorkHub 记录为准）：\n"
+                + "\n\n" + plan.summary() + "\n\n影响范围：\n" + plan.impact() + "\n\n验收建议：\n"
                 + plan.acceptance() + "\n\n回退建议：\n" + plan.rollback() + "\n\n候选代码，尚未获得发布批准。";
     }
     private static LocalDateTime now() { return LocalDateTime.now(ZoneOffset.UTC); }

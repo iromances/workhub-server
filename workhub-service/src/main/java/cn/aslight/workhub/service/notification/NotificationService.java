@@ -6,6 +6,7 @@ import cn.aslight.workhub.model.notification.NotificationResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class NotificationService {
@@ -46,7 +47,7 @@ public class NotificationService {
         entity.setTitle(requireText(title, "通知标题不能为空"));
         entity.setContent(content);
         entity.setBusinessLineCode(trimToNull(businessLineCode));
-        entity.setEnvironmentCode(trimToNull(environmentCode));
+        entity.setEnvironmentCode(upperToNull(environmentCode));
         entity.setDedupeKey(requireText(dedupeKey, "通知去重 key 不能为空"));
         notificationMapper.insertIgnore(entity);
     }
@@ -86,6 +87,11 @@ public class NotificationService {
             throw new IllegalArgumentException(message);
         }
         return normalized;
+    }
+
+    private String upperToNull(String value) {
+        String normalized = trimToNull(value);
+        return normalized == null ? null : normalized.toUpperCase(Locale.ROOT);
     }
 
     private String trimToNull(String value) {

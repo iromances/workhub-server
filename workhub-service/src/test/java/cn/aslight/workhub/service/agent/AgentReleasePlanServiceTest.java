@@ -68,8 +68,8 @@ class AgentReleasePlanServiceTest {
         var interceptor = new TransactionInterceptor(); interceptor.setTransactionManager(manager); interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
         var configs = mock(SysConfigService.class); when(configs.findPlainValue("agent.jenkins", "policy")).thenAnswer(i -> policyText.get());
         policies = new AgentJenkinsPolicy(configs, json); setBindings(List.of(binding("server", "server", "server"), binding("web", "web", "web")));
-        var task = new AgentTaskSpecification("修复", "", "真实验证", List.of("DEPLOYMENT"), List.of(scope, new AgentScope("BL000012", "PROD")), List.of(), List.of(scope, new AgentScope("BL000012", "PROD")));
-        configuration = new AgentConfiguration("Agent", "repair", 1L, "fixture", task.scopes(), List.of(), 50, 600, 1);
+        var task = new AgentTaskSpecification("修复", "", "真实验证", List.of("DEPLOYMENT"), List.of(scope, new AgentScope("BL000012", "PROD")), List.of(scope, new AgentScope("BL000012", "PROD")));
+        configuration = new AgentConfiguration("Agent", "repair", 1L, "fixture", task.scopes(), 50, 600, 1);
         agents.insertAgent(new AgentDefinitionEntity("agent", "Agent", json.writeValueAsString(configuration), true, "owner", 0, now(), now()));
         agents.insertRun(new AgentRunEntity("run", "task", "agent", "manual", "owner", json.writeValueAsString(configuration), json.writeValueAsString(task), "{}", "WAITING_INPUT", 1, 0,
                 false, null, null, null, null, null, 0, now(), now()));
@@ -169,7 +169,7 @@ class AgentReleasePlanServiceTest {
     }
     @Test void currentTargetScopeRevocationHidesPlanHistoryAndPreventsReview() {
         var plan = prepare("plan"); var decision = decision(plan, "APPROVED");
-        var reduced = new AgentConfiguration(configuration.name(), configuration.instructions(), configuration.providerConfigId(), configuration.model(), List.of(), configuration.toolCodes(), 50, 600, 1);
+        var reduced = new AgentConfiguration(configuration.name(), configuration.instructions(), configuration.providerConfigId(), configuration.model(), List.of(), 50, 600, 1);
         jdbc.update("UPDATE pm_agent_definition SET configuration_json=? WHERE id='agent'", json.writeValueAsString(reduced));
         assertThrows(AccessDeniedException.class, () -> service.detail(plan, "reviewer"));
         assertThrows(AccessDeniedException.class, () -> service.review(plan, decision, "reviewer"));
@@ -378,7 +378,7 @@ class AgentReleasePlanServiceTest {
     private void taskTargets(List<AgentScope> targets, boolean testAuthorized) {
         var old = json.readValue(agents.findRun("run").specificationJson(), AgentTaskSpecification.class);
         var scopes = testAuthorized ? old.scopes() : List.of(new AgentScope("BL000012", "PROD"));
-        var next = new AgentTaskSpecification(old.objective(), old.context(), old.acceptanceCriteria(), old.expectedArtifacts(), scopes, old.toolCodes(), targets);
+        var next = new AgentTaskSpecification(old.objective(), old.context(), old.acceptanceCriteria(), old.expectedArtifacts(), scopes, targets);
         jdbc.update("UPDATE pm_agent_run SET specification_json=? WHERE id='run'", json.writeValueAsString(next));
     }
 

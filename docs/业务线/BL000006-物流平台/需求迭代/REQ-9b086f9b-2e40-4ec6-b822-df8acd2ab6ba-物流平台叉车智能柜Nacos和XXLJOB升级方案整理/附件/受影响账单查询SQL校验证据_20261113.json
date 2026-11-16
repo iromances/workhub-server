@@ -1,0 +1,80 @@
+{
+  "叉车": {
+    "tool": "run_readonly_query",
+    "arguments": {
+      "targetKey": "db-prod",
+      "profileKey": "readonly",
+      "sql": "SELECT COUNT(*) AS bill_count,COUNT(DISTINCT bill_no) AS distinct_bills,SUM(fee_20261112) AS fee_12,SUM(fee_20261113) AS fee_13,SUM(total_added_fee) AS total_fee,SUM(total_added_fee=0) AS zero_fee_bills,SUM(fee_record_count) AS fee_records FROM (SELECT\n    b.id AS bill_id,\n    b.bill_no,\n    b.customer_code,\n    b.customer_name,\n    b.application_no,\n    b.financial_contract_no,\n    b.product_code,\n    b.product_type,\n    b.period,\n    b.total_period,\n    b.last_pay_date,\n    b.last_grace_date,\n    b.overdue_day AS current_overdue_days,\n    b.settlement_status AS current_settlement_status,\n    b.settlement_time AS current_settlement_time,\n    b.total_amount AS current_total_amount,\n    b.paid_amount AS current_paid_amount,\n    b.unpaid_amount AS current_unpaid_amount,\n    f.fee_20261112,\n    f.fee_20261113,\n    f.total_added_fee,\n    f.recalculated_days,\n    f.fee_record_count,\n    f.first_record_time,\n    f.last_record_time\nFROM lease_saps.customer_bill b\nJOIN (\n    SELECT\n        bill_no,\n        SUM(CASE WHEN end_date = '2026-11-12' THEN fee_amount ELSE 0 END) AS fee_20261112,\n        SUM(CASE WHEN end_date = '2026-11-13' THEN fee_amount ELSE 0 END) AS fee_20261113,\n        SUM(fee_amount) AS total_added_fee,\n        COUNT(DISTINCT end_date) AS recalculated_days,\n        COUNT(*) AS fee_record_count,\n        MIN(create_time) AS first_record_time,\n        MAX(create_time) AS last_record_time\n    FROM lease_saps.bill_fee_record\n    WHERE is_delete = 0\n      AND is_cancel = 0\n      AND subject_no IN ('103', '10301', '10302')\n      AND (\n          (start_date = '2026-11-12' AND end_date = '2026-11-12'\n           AND create_time >= '2026-11-13 14:43:54'\n           AND create_time < '2026-11-13 14:43:56')\n          OR\n          (start_date = '2026-11-13' AND end_date = '2026-11-13'\n           AND create_time >= '2026-11-13 14:45:40'\n           AND create_time < '2026-11-13 14:45:42')\n      )\n    GROUP BY bill_no\n) f ON f.bill_no = b.bill_no\nWHERE b.is_delete = 0) q LIMIT 1"
+    },
+    "retrievedAt": "2026-11-13T14:56:48.075582+08:00",
+    "data": {
+      "targetKey": "db-prod",
+      "dataMasked": true,
+      "profileKey": "readonly",
+      "result": {
+        "truncatedByBytes": false,
+        "dataMasked": true,
+        "rows": [
+          {
+            "bill_count": 60,
+            "distinct_bills": 60,
+            "fee_12": 207.89,
+            "fee_13": 207.89,
+            "total_fee": 415.78,
+            "zero_fee_bills": 7,
+            "fee_records": 236
+          }
+        ],
+        "columns": [
+          "bill_count",
+          "distinct_bills",
+          "fee_12",
+          "fee_13",
+          "total_fee",
+          "zero_fee_bills",
+          "fee_records"
+        ]
+      },
+      "sql": "SELECT COUNT(*) AS bill_count,COUNT(DISTINCT bill_no) AS distinct_bills,SUM(fee_20261112) AS fee_12,SUM(fee_20261113) AS fee_13,SUM(total_added_fee) AS total_fee,SUM(total_added_fee=0) AS zero_fee_bills,SUM(fee_record_count) AS fee_records FROM (SELECT b.id AS bill_id, b.bill_no, b.customer_code, b.customer_name, b.application_no, b.financial_contract_no, b.product_code, b.product_type, b.period, b.total_period, b.last_pay_date, b.last_grace_date, b.overdue_day AS current_overdue_days, b.settlement_status AS current_settlement_status, b.settlement_time AS current_settlement_time, b.total_amount AS current_total_amount, b.paid_amount AS current_paid_amount, b.unpaid_amount AS current_unpaid_amount, f.fee_20261112, f.fee_20261113, f.total_added_fee, f.recalculated_days, f.fee_record_count, f.first_record_time, f.last_record_time FROM lease_saps.customer_bill b JOIN ( SELECT bill_no, SUM(CASE WHEN end_date = '***' THEN fee_amount ELSE 0 END) AS fee_20261112, SUM(CASE WHEN end_date = '***'"
+    }
+  },
+  "智能柜": {
+    "tool": "run_readonly_query",
+    "arguments": {
+      "targetKey": "db-prod",
+      "profileKey": "readonly",
+      "sql": "SELECT COUNT(*) AS bill_count,COUNT(DISTINCT bill_no) AS distinct_bills,SUM(fee_20261112) AS fee_12,SUM(fee_20261113) AS fee_13,SUM(total_added_fee) AS total_fee,SUM(total_added_fee=0) AS zero_fee_bills,SUM(fee_record_count) AS fee_records FROM (SELECT\n    b.id AS bill_id,\n    b.bill_no,\n    b.customer_code,\n    b.customer_name,\n    b.application_no,\n    b.financial_contract_no,\n    b.product_code,\n    b.product_type,\n    b.period,\n    b.total_period,\n    b.last_pay_date,\n    b.last_grace_date,\n    b.overdue_day AS current_overdue_days,\n    b.settlement_status AS current_settlement_status,\n    b.settlement_time AS current_settlement_time,\n    b.total_amount AS current_total_amount,\n    b.paid_amount AS current_paid_amount,\n    b.unpaid_amount AS current_unpaid_amount,\n    f.fee_20261112,\n    f.fee_20261113,\n    f.total_added_fee,\n    f.recalculated_days,\n    f.fee_record_count,\n    f.first_record_time,\n    f.last_record_time\nFROM ol_saps.customer_bill b\nJOIN (\n    SELECT\n        bill_no,\n        SUM(CASE WHEN end_date = '2026-11-12' THEN fee_amount ELSE 0 END) AS fee_20261112,\n        SUM(CASE WHEN end_date = '2026-11-13' THEN fee_amount ELSE 0 END) AS fee_20261113,\n        SUM(fee_amount) AS total_added_fee,\n        COUNT(DISTINCT end_date) AS recalculated_days,\n        COUNT(*) AS fee_record_count,\n        MIN(create_time) AS first_record_time,\n        MAX(create_time) AS last_record_time\n    FROM ol_saps.bill_fee_record\n    WHERE is_delete = 0\n      AND is_cancel = 0\n      AND subject_no IN ('10301')\n      AND (\n          (start_date = '2026-11-12' AND end_date = '2026-11-12'\n           AND create_time >= '2026-11-13 14:37:38'\n           AND create_time < '2026-11-13 14:37:41')\n          OR\n          (start_date = '2026-11-13' AND end_date = '2026-11-13'\n           AND create_time >= '2026-11-13 14:41:11'\n           AND create_time < '2026-11-13 14:41:14')\n      )\n    GROUP BY bill_no\n) f ON f.bill_no = b.bill_no\nWHERE b.is_delete = 0) q LIMIT 1"
+    },
+    "retrievedAt": "2026-11-13T14:56:48.119690+08:00",
+    "data": {
+      "targetKey": "db-prod",
+      "dataMasked": true,
+      "profileKey": "readonly",
+      "result": {
+        "truncatedByBytes": false,
+        "dataMasked": true,
+        "rows": [
+          {
+            "bill_count": 887,
+            "distinct_bills": 887,
+            "fee_12": 495.9,
+            "fee_13": 497.46,
+            "total_fee": 993.36,
+            "zero_fee_bills": 0,
+            "fee_records": 1770
+          }
+        ],
+        "columns": [
+          "bill_count",
+          "distinct_bills",
+          "fee_12",
+          "fee_13",
+          "total_fee",
+          "zero_fee_bills",
+          "fee_records"
+        ]
+      },
+      "sql": "SELECT COUNT(*) AS bill_count,COUNT(DISTINCT bill_no) AS distinct_bills,SUM(fee_20261112) AS fee_12,SUM(fee_20261113) AS fee_13,SUM(total_added_fee) AS total_fee,SUM(total_added_fee=0) AS zero_fee_bills,SUM(fee_record_count) AS fee_records FROM (SELECT b.id AS bill_id, b.bill_no, b.customer_code, b.customer_name, b.application_no, b.financial_contract_no, b.product_code, b.product_type, b.period, b.total_period, b.last_pay_date, b.last_grace_date, b.overdue_day AS current_overdue_days, b.settlement_status AS current_settlement_status, b.settlement_time AS current_settlement_time, b.total_amount AS current_total_amount, b.paid_amount AS current_paid_amount, b.unpaid_amount AS current_unpaid_amount, f.fee_20261112, f.fee_20261113, f.total_added_fee, f.recalculated_days, f.fee_record_count, f.first_record_time, f.last_record_time FROM ol_saps.customer_bill b JOIN ( SELECT bill_no, SUM(CASE WHEN end_date = '***' THEN fee_amount ELSE 0 END) AS fee_20261112, SUM(CASE WHEN end_date = '***' TH"
+    }
+  }
+}

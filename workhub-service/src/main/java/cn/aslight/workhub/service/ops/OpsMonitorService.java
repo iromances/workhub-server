@@ -2,6 +2,8 @@ package cn.aslight.workhub.service.ops;
 
 import cn.aslight.workhub.dao.ops.OpsMonitorMapper;
 import cn.aslight.workhub.dao.project.BusinessLineMapper;
+import cn.aslight.workhub.model.ops.MqDashboardResponse;
+import cn.aslight.workhub.model.ops.MqMessagePageResponse;
 import cn.aslight.workhub.model.ops.OpsMonitorCheckResponse;
 import cn.aslight.workhub.model.ops.OpsMonitorEntity;
 import cn.aslight.workhub.model.ops.OpsMonitorResponse;
@@ -29,6 +31,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -39,25 +42,30 @@ import java.util.StringJoiner;
 public class OpsMonitorService {
 
     private static final int DEFAULT_XXL_JOB_LOG_DAYS = 7;
+    private static final int DEFAULT_MQ_LOG_DAYS = 7;
     private static final String XXL_JOB = "XXL_JOB";
+    private static final String MQ = "MQ";
 
     private final OpsMonitorMapper opsMonitorMapper;
     private final BusinessLineMapper businessLineMapper;
     private final OpsMonitorSchemaInitializer schemaInitializer;
     private final McpCryptoService mcpCryptoService;
     private final XxlJobMonitorCollector xxlJobMonitorCollector;
+    private final MqMonitorCollector mqMonitorCollector;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public OpsMonitorService(OpsMonitorMapper opsMonitorMapper,
                              BusinessLineMapper businessLineMapper,
                              OpsMonitorSchemaInitializer schemaInitializer,
                              McpCryptoService mcpCryptoService,
-                             XxlJobMonitorCollector xxlJobMonitorCollector) {
+                             XxlJobMonitorCollector xxlJobMonitorCollector,
+                             MqMonitorCollector mqMonitorCollector) {
         this.opsMonitorMapper = opsMonitorMapper;
         this.businessLineMapper = businessLineMapper;
         this.schemaInitializer = schemaInitializer;
         this.mcpCryptoService = mcpCryptoService;
         this.xxlJobMonitorCollector = xxlJobMonitorCollector;
+        this.mqMonitorCollector = mqMonitorCollector;
     }
 
     public List<OpsMonitorResponse> list(String monitorType,
@@ -65,12 +73,25 @@ public class OpsMonitorService {
                                          String environmentCode,
                                          String keyword,
                                          boolean enabledOnly) {
+        return list(monitorType, businessLineCode, environmentCode, keyword, enabledOnly, null, null);
+    }
+
+    /** REQ-9f3c2a84：列表新增上次状态/启用状态筛选（与看板同口径）。 */
+    public List<OpsMonitorResponse> list(String monitorType,
+                                         String businessLineCode,
+                                         String environmentCode,
+                                         String keyword,
+                                         boolean enabledOnly,
+                                         String lastStatus,
+                                         Boolean enabled) {
         schemaInitializer.ensureInitialized();
         return opsMonitorMapper.findAll(normalizeMonitorTypeOrNull(monitorType),
                         trimToNull(businessLineCode),
                         trimToNull(environmentCode),
                         trimToNull(keyword),
-                        enabledOnly)
+                        enabledOnly,
+                        normalizeLastStatusOrNull(lastStatus),
+                        enabled)
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -116,11 +137,10 @@ public class OpsMonitorService {
     public OpsMonitorCheckResponse check(Long id) {
         schemaInitializer.ensureInitialized();
         OpsMonitorEntity entity = requireExisting(id);
-        if (!XXL_JOB.equals(entity.getMonitorType())) {
-            throw new IllegalArgumentException("MQ 监测采集下一步接入");
-        }
         try {
-            OpsMonitorCheckResponse response = xxlJobMonitorCollector.check(entity);
+            OpsMonitorCheckResponse response = MQ.equals(entity.getMonitorType())
+                    ? mqMonitorCollector.check(entity)
+                    : xxlJobMonitorCollector.check(entity);
             opsMonitorMapper.updateCheckResult(id, response.status(), truncate(response.message(), 1000));
             return response;
         } catch (Exception ex) {
@@ -141,12 +161,23 @@ public class OpsMonitorService {
     public List<XxlJobDashboardResponse> dashboard(String businessLineCode,
                                                    String environmentCode,
                                                    boolean enabledOnly) {
+        return dashboard(businessLineCode, environmentCode, enabledOnly, null, null);
+    }
+
+    /** REQ-9f3c2a84：看板新增上次状态（UP/ERROR/UNCHECKED）与启用状态筛选。 */
+    public List<XxlJobDashboardResponse> dashboard(String businessLineCode,
+                                                   String environmentCode,
+                                                   boolean enabledOnly,
+                                                   String lastStatus,
+                                                   Boolean enabled) {
         schemaInitializer.ensureInitialized();
         return opsMonitorMapper.findAll(XXL_JOB,
                         trimToNull(businessLineCode),
                         trimToNull(environmentCode),
                         null,
-                        enabledOnly)
+                        enabledOnly,
+                        normalizeLastStatusOrNull(lastStatus),
+                        enabled)
                 .stream()
                 .map(this::toDashboardConfig)
                 .toList();
@@ -192,7 +223,7 @@ public class OpsMonitorService {
         schemaInitializer.ensureInitialized();
         OpsMonitorEntity entity = requireExisting(id);
         if (!XXL_JOB.equals(entity.getMonitorType())) {
-            throw new IllegalArgumentException("MQ 监测详情下一步接入");
+            throw new IllegalArgumentException("该监测配置不是 XXL-JOB 类型");
         }
         LocalDate normalizedEndDate = endDate == null ? LocalDate.now() : endDate;
         LocalDate normalizedStartDate = startDate == null
@@ -231,7 +262,7 @@ public class OpsMonitorService {
     private XxlJobLogPageResponse xxlJobLogs(OpsMonitorEntity entity, LocalDate startDate, LocalDate endDate,
             int page, int pageSize, String author, String executorAppName, String logStatus) {
         if (!XXL_JOB.equals(entity.getMonitorType())) {
-            throw new IllegalArgumentException("MQ 监测详情下一步接入");
+            throw new IllegalArgumentException("该监测配置不是 XXL-JOB 类型");
         }
         LocalDate normalizedEndDate = endDate == null ? LocalDate.now() : endDate;
         LocalDate normalizedStartDate = startDate == null
@@ -257,6 +288,153 @@ public class OpsMonitorService {
                     List.of()
             );
         }
+    }
+
+    public List<MqDashboardResponse> mqDashboard(String businessLineCode,
+                                                 String environmentCode,
+                                                 boolean enabledOnly) {
+        schemaInitializer.ensureInitialized();
+        return opsMonitorMapper.findAll(MQ,
+                        trimToNull(businessLineCode),
+                        trimToNull(environmentCode),
+                        null,
+                        enabledOnly,
+                        null,
+                        null)
+                .stream()
+                .map(this::toMqDashboardConfig)
+                .toList();
+    }
+
+    public MqDashboardResponse mqDetail(Long id,
+                                        LocalDate startDate,
+                                        LocalDate endDate,
+                                        int page,
+                                        int pageSize,
+                                        String logType,
+                                        String exchangeKeyword,
+                                        String queueKeyword) {
+        schemaInitializer.ensureInitialized();
+        OpsMonitorEntity entity = requireExisting(id);
+        if (!MQ.equals(entity.getMonitorType())) {
+            throw new IllegalArgumentException("该监测配置不是 MQ 类型");
+        }
+        LocalDate[] window = defaultWindow(startDate, endDate, DEFAULT_MQ_LOG_DAYS);
+        try {
+            return mqMonitorCollector.collect(entity, window[0], window[1], page, pageSize, logType, exchangeKeyword, queueKeyword);
+        } catch (Exception ex) {
+            String message = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+            return mqDashboardError(entity, message, page, pageSize);
+        }
+    }
+
+    public MqMessagePageResponse mqMessages(Long id,
+                                            LocalDate startDate,
+                                            LocalDate endDate,
+                                            int page,
+                                            int pageSize,
+                                            String logType,
+                                            String exchangeKeyword,
+                                            String queueKeyword) {
+        schemaInitializer.ensureInitialized();
+        OpsMonitorEntity entity = requireExisting(id);
+        if (!MQ.equals(entity.getMonitorType())) {
+            throw new IllegalArgumentException("该监测配置不是 MQ 类型");
+        }
+        LocalDate[] window = defaultWindow(startDate, endDate, DEFAULT_MQ_LOG_DAYS);
+        try {
+            return mqMonitorCollector.collectMessages(entity, window[0], window[1], page, pageSize, logType, exchangeKeyword, queueKeyword);
+        } catch (Exception ex) {
+            String message = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+            return new MqMessagePageResponse(
+                    entity.getId(),
+                    entity.getMonitorKey(),
+                    entity.getBusinessLineCode(),
+                    entity.getEnvironmentCode(),
+                    entity.getName(),
+                    "ERROR",
+                    message,
+                    LocalDateTime.now(),
+                    0,
+                    page,
+                    pageSize,
+                    List.of()
+            );
+        }
+    }
+
+    private LocalDate[] defaultWindow(LocalDate startDate, LocalDate endDate, int defaultDays) {
+        LocalDate normalizedEndDate = endDate == null ? LocalDate.now() : endDate;
+        LocalDate normalizedStartDate = startDate == null ? normalizedEndDate.minusDays(defaultDays - 1L) : startDate;
+        return new LocalDate[]{normalizedStartDate, normalizedEndDate};
+    }
+
+    private MqDashboardResponse toMqDashboardConfig(OpsMonitorEntity entity) {
+        String status = trimToNull(entity.getLastStatus());
+        if (status == null) {
+            status = Boolean.FALSE.equals(entity.getEnabled()) ? "DISABLED" : "CONFIGURED";
+        }
+        String message = trimToNull(entity.getLastMessage());
+        if (message == null) {
+            message = "仅展示本地 MQ 监测配置";
+        }
+        return new MqDashboardResponse(
+                entity.getId(),
+                entity.getMonitorKey(),
+                entity.getBusinessLineCode(),
+                entity.getEnvironmentCode(),
+                entity.getName(),
+                status,
+                message,
+                entity.getLastCheckedAt(),
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                List.of(),
+                0,
+                1,
+                0,
+                List.of(),
+                entity.getMqTopic(),
+                entity.getMqConsumerGroup(),
+                entity.getMqLagThreshold(),
+                entity.getRemark()
+        );
+    }
+
+    private MqDashboardResponse mqDashboardError(OpsMonitorEntity entity, String message, int page, int pageSize) {
+        return new MqDashboardResponse(
+                entity.getId(),
+                entity.getMonitorKey(),
+                entity.getBusinessLineCode(),
+                entity.getEnvironmentCode(),
+                entity.getName(),
+                "ERROR",
+                message,
+                LocalDateTime.now(),
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                List.of(),
+                0,
+                page,
+                pageSize,
+                List.of(),
+                entity.getMqTopic(),
+                entity.getMqConsumerGroup(),
+                entity.getMqLagThreshold(),
+                entity.getRemark()
+        );
     }
 
     private XxlJobDashboardResponse toDashboardConfig(OpsMonitorEntity entity) {
@@ -286,10 +464,14 @@ public class OpsMonitorService {
                 0,
                 0,
                 0,
+                0,
+                0,
+                0,
                 null,
                 0,
                 1,
                 0,
+                List.of(),
                 List.of()
         );
     }
@@ -317,10 +499,14 @@ public class OpsMonitorService {
                 0,
                 0,
                 0,
+                0,
+                0,
+                0,
                 "",
                 0,
                 page,
                 pageSize,
+                List.of(),
                 List.of()
         );
     }
@@ -473,14 +659,17 @@ public class OpsMonitorService {
 
     private OpsMonitorEntity toEntity(OpsMonitorEntity entity, OpsMonitorSaveRequest request) {
         String monitorType = normalizeMonitorType(request.getMonitorType());
-        if (!XXL_JOB.equals(monitorType)) {
-            throw new IllegalArgumentException("MQ 监测采集下一步接入");
-        }
         entity.setMonitorType(monitorType);
         String businessLineCode = requireValue(request.getBusinessLineCode(), "业务线不能为空");
-        String environmentCode = requireValue(request.getEnvironmentCode(), "环境不能为空");
+        String environmentCode = requireValue(request.getEnvironmentCode(), "环境不能为空").toUpperCase(Locale.ROOT);
         entity.setBusinessLineCode(businessLineCode);
         entity.setEnvironmentCode(environmentCode);
+        entity.setEnabled(request.getEnabled() == null || request.getEnabled());
+        entity.setRemark(trimToNull(request.getRemark()));
+        if (MQ.equals(monitorType)) {
+            fillMqEntity(entity, request, businessLineCode, environmentCode);
+            return entity;
+        }
         entity.setMonitorKey(defaultValue(request.getMonitorKey(), businessLineCode + ":" + environmentCode + ":XXL_JOB"));
         entity.setName(defaultValue(request.getName(), businessLineCode + " " + environmentCode + " XXL-JOB"));
         entity.setAdminBaseUrl(trimToNull(request.getAdminBaseUrl()));
@@ -493,9 +682,63 @@ public class OpsMonitorService {
         entity.setMqTopic(null);
         entity.setMqConsumerGroup(null);
         entity.setMqLagThreshold(null);
-        entity.setEnabled(request.getEnabled() == null || request.getEnabled());
-        entity.setRemark(trimToNull(request.getRemark()));
+        entity.setStaleThresholdMinutes(normalizeStaleThresholdMinutes(request.getStaleThresholdMinutes()));
         return entity;
+    }
+
+    private void fillMqEntity(OpsMonitorEntity entity, OpsMonitorSaveRequest request, String businessLineCode, String environmentCode) {
+        entity.setMonitorKey(defaultValue(request.getMonitorKey(), businessLineCode + ":" + environmentCode + ":MQ"));
+        entity.setName(defaultValue(request.getName(), businessLineCode + " " + environmentCode + " MQ 消息"));
+        entity.setAdminBaseUrl(null);
+        entity.setUsername(null);
+        entity.setPasswordEncrypted(null);
+        entity.setXxlJobDatabaseName(null);
+        entity.setExecutorAppName(null);
+        entity.setJobHandler(null);
+        entity.setJobDesc(null);
+        entity.setMqTopic(normalizeKeywordList(request.getMqTopic(), "MQ 关注交换机"));
+        entity.setMqConsumerGroup(normalizeKeywordList(request.getMqConsumerGroup(), "MQ 关注队列"));
+        entity.setMqLagThreshold(normalizeLagThreshold(request.getMqLagThreshold()));
+        entity.setStaleThresholdMinutes(null);
+    }
+
+    private String normalizeKeywordList(String value, String label) {
+        String normalized = trimToNull(value);
+        if (normalized == null) {
+            return null;
+        }
+        Set<String> keywords = new LinkedHashSet<>();
+        for (String item : normalized.split(",")) {
+            String keyword = trimToNull(item);
+            if (keyword == null) {
+                continue;
+            }
+            if (!keyword.matches("[A-Za-z0-9_.-]+")) {
+                throw new IllegalArgumentException(label + "只允许字母、数字、下划线、中划线和点号");
+            }
+            keywords.add(keyword);
+        }
+        return keywords.isEmpty() ? null : String.join(",", keywords);
+    }
+
+    private Integer normalizeLagThreshold(Integer lagThreshold) {
+        if (lagThreshold == null) {
+            return null;
+        }
+        if (lagThreshold < 1) {
+            throw new IllegalArgumentException("MQ 积压阈值必须大于等于 1 分钟");
+        }
+        return lagThreshold;
+    }
+
+    private Integer normalizeStaleThresholdMinutes(Integer staleThresholdMinutes) {
+        if (staleThresholdMinutes == null) {
+            return null;
+        }
+        if (staleThresholdMinutes < 1) {
+            throw new IllegalArgumentException("卡死阈值必须大于等于 1 分钟");
+        }
+        return staleThresholdMinutes;
     }
 
     private OpsMonitorResponse toResponse(OpsMonitorEntity entity) {
@@ -630,6 +873,19 @@ public class OpsMonitorService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    /** REQ-9f3c2a84：看板上次状态筛选口径：UP / ERROR / UNCHECKED（启用但从未巡检）。 */
+    private String normalizeLastStatusOrNull(String lastStatus) {
+        String normalized = trimToNull(lastStatus);
+        if (normalized == null) {
+            return null;
+        }
+        String upper = normalized.toUpperCase(Locale.ROOT);
+        if (!"UP".equals(upper) && !"ERROR".equals(upper) && !"UNCHECKED".equals(upper)) {
+            throw new IllegalArgumentException("上次状态只支持 UP、ERROR 或 UNCHECKED");
+        }
+        return upper;
     }
 
     private String truncate(String value, int maxLength) {

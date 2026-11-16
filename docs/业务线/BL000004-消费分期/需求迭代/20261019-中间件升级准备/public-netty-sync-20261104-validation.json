@@ -1,0 +1,71 @@
+{
+  "thctay": {
+    "compile": "passed",
+    "effectivePom": "passed",
+    "bomManagedNettyModules": 44,
+    "upgradedModuleNettyResolvedVersions": {
+      "thctay-schedule": "4.1.140.Final",
+      "thctay-mq": "4.1.140.Final"
+    },
+    "retainedLegacyManagementEntries": {
+      "('io.netty', 'netty-example', 'jar', '')": "4.1.51.Final",
+      "('io.netty', 'netty-transport-native-unix-common', 'jar', 'linux-aarch64')": "4.1.51.Final",
+      "('io.netty', 'netty-transport-native-epoll', 'jar', 'linux-aarch64')": "4.1.51.Final"
+    },
+    "unmodifiedModulesUsingOldNetty": [],
+    "head": "4252fe537d3c64700b715ebf7d2287b52d5a10c8",
+    "workingTreeNettyLines": [
+      28,
+      50
+    ],
+    "baseHead": "d44d555c252b751af4d367fdea656fdb1fda41cb",
+    "remoteSha": "4252fe537d3c64700b715ebf7d2287b52d5a10c8",
+    "worktreeClean": true,
+    "committedFiles": [
+      "thctay-dependencies/pom.xml"
+    ]
+  },
+  "lease": {
+    "compile": "passed",
+    "effectivePom": "passed",
+    "bomManagedNettyModules": 44,
+    "upgradedModuleNettyResolvedVersions": {
+      "lease-schedule": "4.1.140.Final",
+      "lease-mq": "4.1.140.Final"
+    },
+    "retainedLegacyManagementEntries": {
+      "('io.netty', 'netty-example', 'jar', '')": "4.1.51.Final",
+      "('io.netty', 'netty-transport-native-unix-common', 'jar', 'linux-aarch64')": "4.1.51.Final",
+      "('io.netty', 'netty-transport-native-epoll', 'jar', 'linux-aarch64')": "4.1.51.Final"
+    },
+    "unmodifiedModulesUsingOldNetty": [
+      "lease-cache"
+    ],
+    "head": "cf290f0fec83cffe47456d0841e1045b146d35a9",
+    "workingTreeNettyLines": [
+      28,
+      50
+    ],
+    "baseHead": "86e2721313671b452a85869c8188e71bee2b9dab",
+    "remoteSha": "cf290f0fec83cffe47456d0841e1045b146d35a9",
+    "worktreeClean": true,
+    "committedFiles": [
+      "lease-dependencies/pom.xml"
+    ]
+  },
+  "source": {
+    "branch": "release/nacos-2.5.4-xxljob-2.5.0_20261027-v2",
+    "sha": "71494aa9133c1a973c2cf0a48ecc11004e31a6e8",
+    "scope": "Netty property and first dependencyManagement BOM import only"
+  },
+  "delivery": {
+    "date": "2026-11-04",
+    "targetBranch": "release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "status": "committed and pushed",
+    "dependenciesInstalled": false,
+    "runtimeValidation": false,
+    "productionConfigurationRead": false,
+    "userAuthorization": "把这两个仓库的改动提交并推送到对应的升级分支",
+    "remoteVerification": "local HEAD equals live remote branch SHA for both repositories"
+  }
+}

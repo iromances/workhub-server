@@ -1,0 +1,11 @@
+{
+  "flywayVersion" : "11.14.1",
+  "database" : "workhub",
+  "warnings" : [ ],
+  "operation" : "validate",
+  "errorDetails" : null,
+  "invalidMigrations" : [ ],
+  "validationSuccessful" : true,
+  "validateCount" : 45,
+  "allErrorMessages" : ""
+}

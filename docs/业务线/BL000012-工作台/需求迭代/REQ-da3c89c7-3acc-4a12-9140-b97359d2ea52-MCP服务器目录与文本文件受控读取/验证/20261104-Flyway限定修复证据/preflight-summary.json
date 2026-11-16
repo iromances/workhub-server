@@ -1,0 +1,60 @@
+{
+  "checkedAt" : "2026-11-04T03:43:55.074882Z",
+  "target" : "10.10.116.53:3308/workhub",
+  "flywayVersion" : "11.14.1",
+  "historyRows" : 43,
+  "migrationFiles" : 46,
+  "nonSuccessStates" : [ {
+    "version" : "1",
+    "state" : "BASELINE_IGNORED",
+    "description" : "init",
+    "script" : "V1__init.sql",
+    "installedRank" : null,
+    "checksumMatching" : true,
+    "descriptionMatching" : true,
+    "typeMatching" : true,
+    "appliedChecksum" : null,
+    "resolvedChecksum" : -403810499
+  }, {
+    "version" : "20261103.190110",
+    "state" : "MISSING_SUCCESS",
+    "description" : "mcp server file read paths",
+    "script" : "V20261103_190110__mcp_server_file_read_paths.sql",
+    "installedRank" : 43,
+    "checksumMatching" : true,
+    "descriptionMatching" : true,
+    "typeMatching" : true,
+    "appliedChecksum" : 1496732278,
+    "resolvedChecksum" : null
+  }, {
+    "version" : "20261103.193242",
+    "state" : "PENDING",
+    "description" : "unify mcp ai read paths default mnt",
+    "script" : "V20261103_193242__unify_mcp_ai_read_paths_default_mnt.sql",
+    "installedRank" : null,
+    "checksumMatching" : true,
+    "descriptionMatching" : true,
+    "typeMatching" : true,
+    "appliedChecksum" : null,
+    "resolvedChecksum" : 1506032370
+  } ],
+  "validationSuccessful" : false,
+  "validationIssues" : [ {
+    "version" : "20261103.190110",
+    "description" : "mcp server file read paths",
+    "filepath" : "",
+    "errorDetails" : {
+      "errorCode" : "APPLIED_VERSIONED_MIGRATION_NOT_RESOLVED",
+      "errorMessage" : "Detected applied migration not resolved locally: 20261103.190110.\nIf you removed this migration intentionally, run repair to mark the migration as deleted."
+    }
+  }, {
+    "version" : "20261103.193242",
+    "description" : "unify mcp ai read paths default mnt",
+    "filepath" : "/private/tmp/workhub-flyway-limited-repair/migrations/V20261103_193242__unify_mcp_ai_read_paths_default_mnt.sql",
+    "errorDetails" : {
+      "errorCode" : "RESOLVED_VERSIONED_MIGRATION_NOT_APPLIED",
+      "errorMessage" : "Detected resolved migration not applied to database: 20261103.193242.\nTo fix this error, either run migrate, or set -ignoreMigrationPatterns='*:pending'."
+    }
+  } ],
+  "writesPerformed" : false
+}

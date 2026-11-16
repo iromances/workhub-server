@@ -1,7 +1,7 @@
 package cn.aslight.workhub.dao.ai;
 
 import cn.aslight.workhub.model.ai.AiUseCaseConfigEntity;
-import cn.aslight.workhub.model.ai.AiUseCaseConfigResponse;
+import cn.aslight.workhub.model.ai.AiUseCaseConfigRow;
 import org.apache.ibatis.annotations.*;
 import java.util.List;
 
@@ -37,12 +37,12 @@ public interface AiUseCaseConfigMapper {
             "<if test='enabled != null'>AND u.enabled=#{enabled}</if>",
             "<if test='keyword != null and keyword != \"\"'>AND (u.use_case_code LIKE CONCAT('%',#{keyword},'%') OR u.use_case_name LIKE CONCAT('%',#{keyword},'%') OR u.description LIKE CONCAT('%',#{keyword},'%'))</if>",
             "</where> ORDER BY u.domain,u.use_case_code", "</script>"})
-    List<AiUseCaseConfigResponse> findAll(@Param("domain") String domain, @Param("providerConfigId") Long providerConfigId,
+    List<AiUseCaseConfigRow> findAll(@Param("domain") String domain, @Param("providerConfigId") Long providerConfigId,
         @Param("channelType") String channelType, @Param("vendor") String vendor,
         @Param("modelProvider") String modelProvider, @Param("enabled") Boolean enabled, @Param("keyword") String keyword);
 
     @Select("SELECT " + MANAGE_COLUMNS + " FROM ai_use_case_config u LEFT JOIN ai_provider_config p ON p.id=u.provider_config_id AND p.is_delete=0 WHERE u.id=#{id} AND u.is_delete=0")
-    AiUseCaseConfigResponse findDetailById(Long id);
+    AiUseCaseConfigRow findDetailById(Long id);
     @Select("SELECT " + ENTITY_COLUMNS + " FROM ai_use_case_config WHERE id=#{id} AND is_delete=0")
     AiUseCaseConfigEntity findEntityById(Long id);
     @Select("SELECT " + ENTITY_COLUMNS + " FROM ai_use_case_config WHERE use_case_code=#{useCaseCode} AND is_delete=0 LIMIT 1")
@@ -68,4 +68,8 @@ public interface AiUseCaseConfigMapper {
       WHERE id=#{id} AND is_delete=0 AND version=#{version}
       """)
     int update(AiUseCaseConfigEntity entity);
+
+    @Update("UPDATE ai_use_case_config SET is_delete=1, delete_time=CURRENT_TIMESTAMP, delete_by=#{deleteBy}, "
+          + "updated_at=CURRENT_TIMESTAMP, version=version+1 WHERE id=#{id} AND is_delete=0 AND version=#{version}")
+    int softDelete(@Param("id") Long id, @Param("version") Integer version, @Param("deleteBy") String deleteBy);
 }

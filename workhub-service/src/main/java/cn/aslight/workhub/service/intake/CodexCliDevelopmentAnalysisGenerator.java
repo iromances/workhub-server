@@ -3,6 +3,7 @@ package cn.aslight.workhub.service.intake;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisDraft;
 import cn.aslight.workhub.model.intake.DevelopmentWorkItemDraft;
 import cn.aslight.workhub.model.intake.IntakeAttachmentSummary;
+import cn.aslight.workhub.model.intake.IntakeSddDocuments;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeStructuredField;
@@ -19,7 +20,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,15 +34,17 @@ public class CodexCliDevelopmentAnalysisGenerator {
 
     private static final String ANALYZE_USE_CASE_CODE = "intake.development.analyze";
     private static final String ADJUST_USE_CASE_CODE = "intake.development.adjust";
+    private static final String SDD_ANALYZE_USE_CASE_CODE = "intake.development.sdd-analyze";
     private static final String OUTPUT_SCHEMA = """
             {
               "type": "object",
                 "properties": {
                 "summary": { "type": ["string", "null"] },
+                "sddProposal": { "type": ["string", "null"] },
+                "sddDesign": { "type": ["string", "null"] },
+                "sddTasks": { "type": ["string", "null"] },
                 "requirementChangePoints": { "type": "array", "items": { "type": "string" } },
                 "impactedModules": { "type": "array", "items": { "type": "string" } },
-                "risks": { "type": "array", "items": { "type": "string" } },
-                "questions": { "type": "array", "items": { "type": "string" } },
                 "workItems": {
                   "type": "array",
                   "items": {
@@ -67,7 +72,7 @@ public class CodexCliDevelopmentAnalysisGenerator {
                   }
                 }
               },
-              "required": ["summary", "requirementChangePoints", "impactedModules", "risks", "questions", "workItems"],
+              "required": ["summary", "requirementChangePoints", "impactedModules", "workItems"],
               "additionalProperties": false
             }
             """;
@@ -93,10 +98,34 @@ public class CodexCliDevelopmentAnalysisGenerator {
                                              String knowledgeBaseContext) {
         return execute(
                 ANALYZE_USE_CASE_CODE,
-                buildPrompt(entity, structuredData, project, repositoryBundle, developers, requirementMarkdownContext, knowledgeBaseContext, null),
+                buildVariables(entity, structuredData, project, repositoryBundle, developers, requirementMarkdownContext, knowledgeBaseContext),
                 project,
                 repositoryBundle,
-                developers
+                developers,
+                false
+        );
+    }
+
+    /**
+     * SDD 模式评估：提示词附带知识库 SDD 流程规范，产出三件套草稿，任务负责人一律为空由人工指派。
+     */
+    public DevelopmentAnalysisDraft generateSdd(IntakeRecordEntity entity,
+                                                IntakeStructuredData structuredData,
+                                                ProjectDetailResponse project,
+                                                GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle,
+                                                List<UserOptionResponse> developers,
+                                                String requirementMarkdownContext,
+                                                String knowledgeBaseContext,
+                                                String sddProcessSpec) {
+        Map<String, Object> variables = buildVariables(entity, structuredData, project, repositoryBundle, developers, requirementMarkdownContext, knowledgeBaseContext);
+        variables.put("sddProcessSpec", value(sddProcessSpec));
+        return execute(
+                SDD_ANALYZE_USE_CASE_CODE,
+                variables,
+                project,
+                repositoryBundle,
+                developers,
+                true
         );
     }
 
@@ -107,24 +136,26 @@ public class CodexCliDevelopmentAnalysisGenerator {
                                            List<UserOptionResponse> developers) {
         return execute(
                 ADJUST_USE_CASE_CODE,
-                buildAdjustmentPrompt(currentDraft, userMessage, developers, repositoryBundle),
+                buildAdjustmentVariables(currentDraft, userMessage, developers),
                 project,
                 repositoryBundle,
-                developers
+                developers,
+                false
         );
     }
 
     private DevelopmentAnalysisDraft execute(String useCaseCode,
-                                             String prompt,
+                                             Map<String, Object> variables,
                                              ProjectDetailResponse project,
                                              GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle,
-                                             List<UserOptionResponse> developers) {
+                                             List<UserOptionResponse> developers,
+                                             boolean sddMode) {
         if (!aiGatewayClient.isConfigured(useCaseCode)) {
             throw new IllegalArgumentException("AI 场景未配置或已停用，不能执行代码影响分析");
         }
-        AiGatewayResult result = aiGatewayClient.executeStructured(AiGatewayRequest.structured(
+        AiGatewayResult result = aiGatewayClient.executeStructured(AiGatewayRequest.withVariables(
                 useCaseCode,
-                prompt,
+                variables,
                 repositoryBundle.localRoot(),
                 repositoryBundle.repositories().stream().map(item -> item.localPath().toString()).toList(),
                 List.of(),
@@ -136,6 +167,34 @@ public class CodexCliDevelopmentAnalysisGenerator {
         try {
             RawDevelopmentAnalysis raw = objectMapper.readValue(result.output(), RawDevelopmentAnalysis.class);
             List<DevelopmentWorkItemDraft> workItems = normalizeWorkItems(raw.workItems(), project, repositoryBundle);
+            if (workItems.isEmpty()) {
+                // 模型跳过代码调查直接交"过程叙述"时会被格式校正包装成空拆解，这里必须显式失败而不是保存空评估。
+                throw new IllegalArgumentException("AI 未产出任务拆解（仅返回过程叙述或空结果），已拒绝保存空评估，请重跑研发任务评估");
+            }
+            if (sddMode) {
+                workItems = workItems.stream()
+                        .map(item -> new DevelopmentWorkItemDraft(
+                                item.title(),
+                                item.description(),
+                                item.requirementChangePoint(),
+                                item.taskType(),
+                                item.targetResources(),
+                                item.changePoints(),
+                                item.systemTags(),
+                                item.evidenceRefs(),
+                                item.confidence(),
+                                item.moduleName(),
+                                item.relatedFiles(),
+                                item.estimatedEffort(),
+                                null,
+                                item.priority(),
+                                item.plannedStartDate(),
+                                item.plannedEndDate(),
+                                item.dependency(),
+                                item.risk()
+                        ))
+                        .toList();
+            }
             int totalEffortHours = sumEstimatedEffortHours(workItems);
             return new DevelopmentAnalysisDraft(
                     "DRAFT",
@@ -149,8 +208,9 @@ public class CodexCliDevelopmentAnalysisGenerator {
                     trimToNull(raw.summary()),
                     safeList(raw.requirementChangePoints()),
                     safeList(raw.impactedModules()),
-                    safeList(raw.risks()),
-                    safeList(raw.questions()),
+                    // 待确认项与风险统一由需求澄清阶段产出；评估阶段不再生成，字段仅保留兼容存量草稿。
+                    List.of(),
+                    List.of(),
                     developers.stream().map(UserOptionResponse::userName).distinct().toList(),
                     workItems,
                     totalEffortHours <= 0 ? null : totalEffortHours + "h",
@@ -164,90 +224,42 @@ public class CodexCliDevelopmentAnalysisGenerator {
                     "禅道同步接口已预留，当前不会调用禅道。",
                     LocalDateTime.now().toString(),
                     "Codex CLI",
-                    null
+                    null,
+                    sddMode ? new IntakeSddDocuments(
+                            trimToNull(raw.sddProposal()),
+                            trimToNull(raw.sddDesign()),
+                            trimToNull(raw.sddTasks())
+                    ) : null
             );
         } catch (Exception ex) {
             throw new IllegalArgumentException("代码影响分析结果解析失败：" + summarizeException(ex), ex);
         }
     }
 
-    private String buildPrompt(IntakeRecordEntity entity,
-                               IntakeStructuredData structuredData,
-                               ProjectDetailResponse project,
-                               GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle,
-                               List<UserOptionResponse> developers,
-                               String requirementMarkdownContext,
-                               String knowledgeBaseContext,
-                               String extraInstruction) {
-        return """
-                你是 WorkHub 的需求评估与交付方案架构师。
-                输出必须符合 JSON Schema，只生成评估草稿，不修改代码、不创建工作项。
-
-                工作流：
-                1. 先读需求 Markdown 和补充材料，提炼业务需求点 requirementChangePoints。
-                2. 再查业务线 Git 代码，确认现有系统、页面、接口、配置、表、定时任务和可复用逻辑；纯文案/运营需求可不查代码，但要在 evidenceRefs 说明。
-                3. 最后按可排期研发任务拆 workItems，不按 Controller/Service/DAO 这类代码层级拆。
-
-                任务要求：
-                - title 用 Jira/禅道风格，格式类似“系统名 + 动词 + 业务对象 + 能力/规则”。
-                - systemTags 只能写真实涉及系统，优先从“可选改造系统”中选择。
-                - changePoints 表示“改地点”，必须按有序列表顺序列出，覆盖配置/SQL、接口/服务、任务调度、页面/权限、导出/核销、幂等/验证等真实工作。
-                - relatedFiles/evidenceRefs 写代码或材料证据；涉及系统改造却没有代码证据时，confidence 置 LOW，并在 risks/questions 说明。
-                - questions 只写真正影响实现或验收的问题，不要把需求已明确的事实列为疑问。
-                - estimatedEffort 用小时，例如 1h、4h、8h；ownerUserName 只能从候选研发人员中选，无法判断填 null。
-
-                项目信息：
-                - 项目：%s
-                - 业务线：%s
-                - 负责人：%s
-
-                候选研发人员：
-                %s
-
-                可选改造系统：
-                %s
-
-                需求 Markdown 文件：
-                %s
-
-                需求信息（仅用于和需求 Markdown 交叉校验，不作为替代输入）：
-                - 审批编号：%s
-                - 需求名称：%s
-                - 需求描述：%s
-                - 业务线：%s
-                - 备注：%s
-
-                结构化识别字段：
-                %s
-
-                附件内容摘要：
-                %s
-
-                项目知识库参考：
-                %s
-
-                原始内容：
-                %s
-
-                %s
-                """.formatted(
-                project.name(),
-                project.businessLine(),
-                project.ownerUserName(),
-                formatDevelopers(developers),
-                formatAvailableSystemTags(repositoryBundle),
-                value(requirementMarkdownContext),
-                value(structuredData.approvalCode()),
-                value(structuredData.requirementNameOrTitle()),
-                value(structuredData.requirementSummary()),
-                value(structuredData.businessLine()),
-                value(structuredData.remark()),
-                formatStructuredFields(structuredData.fields()),
-                formatAttachmentSummaries(structuredData.attachmentSummaries()),
-                value(knowledgeBaseContext),
-                entity.getRawContent() == null ? "" : entity.getRawContent(),
-                extraInstruction == null ? "" : extraInstruction
-        );
+    Map<String, Object> buildVariables(IntakeRecordEntity entity,
+                                       IntakeStructuredData structuredData,
+                                       ProjectDetailResponse project,
+                                       GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle,
+                                       List<UserOptionResponse> developers,
+                                       String requirementMarkdownContext,
+                                       String knowledgeBaseContext) {
+        Map<String, Object> variables = new LinkedHashMap<>();
+        variables.put("projectInfo", "- 项目：" + project.name()
+                + "\n- 业务线：" + project.businessLine()
+                + "\n- 负责人：" + project.ownerUserName());
+        variables.put("developers", formatDevelopers(developers));
+        variables.put("systemTags", formatAvailableSystemTags(repositoryBundle));
+        variables.put("requirementMarkdown", value(requirementMarkdownContext));
+        variables.put("intakeInfo", "- 审批编号：" + value(structuredData.approvalCode())
+                + "\n- 需求名称：" + value(structuredData.requirementNameOrTitle())
+                + "\n- 需求描述：" + value(structuredData.requirementSummary())
+                + "\n- 业务线：" + value(structuredData.businessLine())
+                + "\n- 备注：" + value(structuredData.remark()));
+        variables.put("structuredFields", formatStructuredFields(structuredData.fields()));
+        variables.put("attachmentSummaries", formatAttachmentSummaries(structuredData.attachmentSummaries()));
+        variables.put("knowledgeBase", value(knowledgeBaseContext));
+        variables.put("rawContent", entity.getRawContent() == null ? "" : entity.getRawContent());
+        return variables;
     }
 
     private String formatStructuredFields(List<IntakeStructuredField> fields) {
@@ -288,37 +300,17 @@ public class CodexCliDevelopmentAnalysisGenerator {
         return builder.isEmpty() ? "- 无" : builder.toString();
     }
 
-    private String buildAdjustmentPrompt(DevelopmentAnalysisDraft currentDraft,
-                                         String userMessage,
-                                         List<UserOptionResponse> developers,
-                                         GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle) {
+    Map<String, Object> buildAdjustmentVariables(DevelopmentAnalysisDraft currentDraft,
+                                                 String userMessage,
+                                                 List<UserOptionResponse> developers) {
         try {
-            return """
-                    你是 WorkHub 的研发拆解调整助手。
-                    根据用户反馈调整当前研发评估草稿，并重新输出完整 JSON 草稿；不要修改代码、不要创建工作项。
-
-                    调整规则：
-                    - 先修正 requirementChangePoints，再调整 workItems。
-                    - 任务按可排期交付项拆，不按 Controller/Service/DAO 等代码层拆。
-                    - title 用 Jira/禅道风格；systemTags 写真实涉及系统；changePoints 表示“改地点”，必须按有序列表顺序列出。
-                    - relatedFiles/evidenceRefs 保留或补充代码证据；删除无依据、过细或偏离需求的任务。
-                    - questions 只保留真正影响实现或验收的问题，不重复追问需求已明确的事实。
-
-                    候选研发人员：
-                    %s
-
-                    当前草稿：
-                    %s
-
-                    用户反馈：
-                    %s
-                    """.formatted(
-                    formatDevelopers(developers),
-                    objectMapper.writeValueAsString(currentDraft),
-                    userMessage
-            );
+            Map<String, Object> variables = new LinkedHashMap<>();
+            variables.put("developers", formatDevelopers(developers));
+            variables.put("currentDraft", objectMapper.writeValueAsString(currentDraft));
+            variables.put("userMessage", userMessage);
+            return variables;
         } catch (Exception ex) {
-            throw new IllegalStateException("研发拆解调整 prompt 生成失败", ex);
+            throw new IllegalStateException("研发拆解调整 prompt 变量生成失败", ex);
         }
     }
 
@@ -595,8 +587,9 @@ public class CodexCliDevelopmentAnalysisGenerator {
     private record RawDevelopmentAnalysis(String summary,
                                           List<String> requirementChangePoints,
                                           List<String> impactedModules,
-                                          List<String> risks,
-                                          List<String> questions,
-                                          List<DevelopmentWorkItemDraft> workItems) {
+                                          List<DevelopmentWorkItemDraft> workItems,
+                                          String sddProposal,
+                                          String sddDesign,
+                                          String sddTasks) {
     }
 }

@@ -14,6 +14,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,7 +52,8 @@ public class AgentRunStore {
     public AgentRunEntity claim(int globalLimit) {
         mapper.lockDispatcher();
         if (globalLimit < 1 || globalLimit > 32) throw new IllegalArgumentException("运行并发上限应为 1 到 32");
-        if (mapper.countOwnedRuns(null) >= globalLimit) return null;
+        var now = now();
+        if (mapper.countOwnedRuns(null, now) >= globalLimit) return null;
         for (String id : mapper.findQueuedRunIds()) {
             var initial = mapper.findRun(id);
             var agent = mapper.lockAgent(initial.agentId());
@@ -59,9 +61,9 @@ public class AgentRunStore {
             if (agent == null || !agent.enabled() || !"QUEUED".equals(run.status()) || run.ownerToken() != null || run.externalHandle() != null) continue;
             var current = json.readValue(agent.configurationJson(), AgentConfiguration.class);
             int limit = Math.min(current.maxConcurrentRuns(), context(run).configuration().maxConcurrentRuns());
-            if (mapper.countOwnedRuns(agent.id()) >= limit) continue;
+            if (mapper.countOwnedRuns(agent.id(), now) >= limit) continue;
             String token = UUID.randomUUID().toString();
-            changed(mapper.claimRun(id, token, now().plusSeconds(LEASE_SECONDS), now()));
+            changed(mapper.claimRun(id, token, now.plusSeconds(LEASE_SECONDS), now));
             append(id, "claim:" + token, "RUNNING", Map.of("recoveredStepCount", run.stepCount(), "elapsedMillis", run.elapsedMillis()));
             return mapper.findRun(id);
         }
@@ -81,6 +83,29 @@ public class AgentRunStore {
     }
 
     public List<AgentEventEntity> events(String runId) { return mapper.listEvents(runId); }
+
+    /** 数据范围窗口：增量任务=上一轮已完成运行以来的时间窗（首轮无基线），全量任务无窗口约束。 */
+    public Map<String, Object> dataWindow(AgentToolContext context) {
+        var to = clock.instant();
+        var window = new LinkedHashMap<String, Object>();
+        if (!"INCREMENTAL".equals(context.specification().analysisScope())) {
+            window.put("scope", "FULL");
+            window.put("rule", "全量分析：查询与结论不受时间窗限制");
+            return window;
+        }
+        window.put("scope", "INCREMENTAL");
+        window.put("to", to.toString());
+        var from = mapper.lastCompletedRunStart(context.taskId(), context.runId());
+        if (from == null) {
+            window.put("from", null);
+            window.put("rule", "无上一轮基线：本轮可全量分析并建立基线；后续轮次只分析窗口内新增或变化的数据");
+        } else {
+            // 宁可少量重叠也不漏：基线取上一轮运行开始时间（含边界）。
+            window.put("from", from.toInstant(ZoneOffset.UTC).toString());
+            window.put("rule", "只分析 from（含）之后至 to 新增或变化的数据；数据查询必须带时间条件，窗口外数据只作背景不改结论");
+        }
+        return window;
+    }
 
     public AgentToolContext contextForOwner(String runId, String owner) {
         return context(owned(get(runId), owner, false));
@@ -146,47 +171,6 @@ public class AgentRunStore {
     public void record(String runId, String owner, String key, String kind, Object payload) {
         owned(mapper.lockRun(runId), owner, true);
         append(runId, key, kind, payload);
-    }
-
-    @Transactional
-    public void beginTool(String runId, String owner, String key, AgentTool tool, JsonNode arguments, boolean consumesStep) {
-        var run = owned(mapper.lockRun(runId), owner, false);
-        requireBudget(run);
-        var nativeHandle = nativeHandleWithoutActiveTool(run);
-        if (nativeHandle != null) requireUnchangedInput(runId, nativeHandle.path("key").asText() + ":request");
-        access.requireExecution(context(run), tool);
-        requireProvider(run);
-        if (consumesStep) {
-            if (run.stepCount() >= context(run).configuration().maxSteps()) throw new BudgetExceeded("Agent 行动步数已达上限");
-            changed(mapper.incrementStep(runId, owner, now()));
-        }
-        JsonNode handle = json.valueToTree(Map.of("kind", "TOOL", "key", key, "tool", tool.code(), "readOnly", tool.readOnly()));
-        if (nativeHandle != null) { nativeHandle.set("activeTool", handle); handle = nativeHandle; }
-        changed(mapper.setExternalHandle(runId, owner, json.writeValueAsString(handle), now()));
-        append(runId, key + ":request", "TOOL_REQUEST", Map.of("tool", tool.code(), "arguments", arguments));
-    }
-
-    @Transactional
-    public void beginApiTool(String runId, String owner, String key, AgentTool tool, JsonNode arguments, String modelRequestKey) {
-        owned(mapper.lockRun(runId), owner, false);
-        requireUnchangedInput(runId, modelRequestKey);
-        beginTool(runId, owner, key, tool, arguments, false);
-    }
-
-    @Transactional
-    public void endTool(String runId, String owner, String key, Object result) {
-        var run = receiptOwner(mapper.lockRun(runId), owner);
-        var handle = json.readTree(run.externalHandle());
-        if ("CLI".equals(handle.path("kind").asText())) {
-            var active = handle.path("activeTool");
-            if (!"TOOL".equals(active.path("kind").asText()) || !key.equals(active.path("key").asText())) throw new IllegalStateException("CLI 工具回执不符");
-            ((tools.jackson.databind.node.ObjectNode) handle).remove("activeTool");
-        } else {
-            requireHandle(run, "TOOL", key);
-            handle = null;
-        }
-        appendReceipt(runId, key + ":result", "TOOL_RESULT", result);
-        if (liveReceipt(run)) changed(mapper.setExternalHandle(runId, owner, handle == null ? null : json.writeValueAsString(handle), now()));
     }
 
     @Transactional
@@ -418,15 +402,6 @@ public class AgentRunStore {
 
     private static void requireNoExternal(AgentRunEntity run) {
         if (run.externalHandle() != null) throw new IllegalStateException("存在尚未确认结束的外部调用");
-    }
-
-    private tools.jackson.databind.node.ObjectNode nativeHandleWithoutActiveTool(AgentRunEntity run) {
-        if (run.externalHandle() == null) return null;
-        var handle = json.readTree(run.externalHandle());
-        if (!handle.isObject() || !"CLI".equals(handle.path("kind").asText()) || handle.hasNonNull("activeTool")) {
-            throw new IllegalStateException("已有外部工具调用尚未结束");
-        }
-        return (tools.jackson.databind.node.ObjectNode) handle;
     }
 
     private void requireHandle(AgentRunEntity run, String kind, String key) {

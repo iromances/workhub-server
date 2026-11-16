@@ -14,6 +14,19 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class McpToolRegistryTest {
 
     @Test
+    void exposesBoundedFileToolsWithoutArbitraryCommandParameters() {
+        McpToolRegistry registry = McpToolRegistry.firstVersion(
+                new McpResourceCatalog(List.of(), List.of(), List.of(), List.of(), Map.of(), Map.of()), new ObjectMapper());
+        for (String name : List.of("list_server_directory", "read_server_file")) {
+            JsonNode tool = java.util.stream.StreamSupport.stream(registry.listTools().spliterator(), false)
+                    .filter(node -> name.equals(node.path("name").asText())).findFirst().orElseThrow();
+            assertEquals(3, tool.path("inputSchema").path("required").size());
+            assertEquals("path", tool.path("inputSchema").path("required").get(2).asText());
+            org.junit.jupiter.api.Assertions.assertFalse(tool.path("inputSchema").path("properties").has("command"));
+        }
+    }
+
+    @Test
     void knowledgeContextKeepsVaultReadOnlyAndResolvesArchivePathsUnderRepository() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         McpToolRegistry registry = McpToolRegistry.firstVersion(

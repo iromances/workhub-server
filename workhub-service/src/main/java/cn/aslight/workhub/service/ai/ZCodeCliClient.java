@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /** 复用已安装 ZCode 和认证材料；不安装、升级、改写用户配置或套用 Codex 参数。 */
 @Component
 public class ZCodeCliClient {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ZCodeCliClient.class);
     private final ObjectMapper json;
     public ZCodeCliClient(ObjectMapper json) { this.json = json; }
 
@@ -44,8 +45,34 @@ public class ZCodeCliClient {
 
     public CliTaskLaunch prepare(AiProviderConfigEntity provider, String model, String reasoning, Path directory, Path output,
                           String prompt, List<String> toolNames, String mcpUrl, String token, String finalResultSchema) throws IOException {
+        return prepare(provider, model, reasoning, directory, output, prompt, toolNames, mcpUrl, token, finalResultSchema, List.of());
+    }
+
+    /** 图片路径仅由会话转为 session/send 附件提交，不改变工具面与目录隔离。 */
+    public CliTaskLaunch prepare(AiProviderConfigEntity provider, String model, String reasoning, Path directory, Path output,
+                          String prompt, List<String> toolNames, String mcpUrl, String token, String finalResultSchema,
+                          List<String> imagePaths) throws IOException {
         if (!Set.of("Mac OS X", "Linux").contains(System.getProperty("os.name"))) throw new IllegalArgumentException("ZCode 任务隔离目前已适配 macOS/Linux");
         var selection = AiCliType.selection(model, reasoning);
+        var builder = prepareBuilder(provider, directory, mcpUrl != null);
+        List<String> images = imagePaths == null ? List.of() : List.copyOf(imagePaths);
+        return new CliTaskLaunch(builder, new ZCodeTaskConversation(json, directory.resolve("work"), output, prompt, selection, toolNames, mcpUrl, token, finalResultSchema, images));
+    }
+
+    /** 仓库读取场景：schema 仅用于终稿格式校正，不进入 CLI 结构化输出参数。 */
+    public CliTaskLaunch prepareStructuredWithoutCliSchema(AiProviderConfigEntity provider, String model, String reasoning, Path directory, Path output,
+                                                           String prompt, List<String> toolNames, String mcpUrl, String token,
+                                                           String schemaForFormatting, List<String> imagePaths) throws IOException {
+        if (!Set.of("Mac OS X", "Linux").contains(System.getProperty("os.name"))) throw new IllegalArgumentException("ZCode 任务隔离目前已适配 macOS/Linux");
+        var selection = AiCliType.selection(model, reasoning);
+        var builder = prepareBuilder(provider, directory, mcpUrl != null);
+        List<String> images = imagePaths == null ? List.of() : List.copyOf(imagePaths);
+        return new CliTaskLaunch(builder, ZCodeTaskConversation.structuredNoCliSchema(json, directory.resolve("work"), output, prompt,
+                selection, toolNames == null ? List.of() : List.copyOf(toolNames), mcpUrl, token, schemaForFormatting, images));
+    }
+
+    ProcessBuilder prepareBuilder(AiProviderConfigEntity provider, Path directory, boolean mcpEnabled) throws IOException {
+        if (!Set.of("Mac OS X", "Linux").contains(System.getProperty("os.name"))) throw new IllegalArgumentException("ZCode 任务隔离目前已适配 macOS/Linux");
         var command = new ArrayList<>(command(provider));
         Path taskProfile = privateDirectory(directory.resolve("profile"));
         Path configDirectory = privateDirectory(taskProfile.resolve(".zcode/cli"));
@@ -53,7 +80,7 @@ public class ZCodeCliClient {
         Path work = privateDirectory(directory.resolve("work"));
         // 独立目录作为项目边界，避免父目录的项目配置参与当前任务。
         privateDirectory(work.resolve(".git"));
-        var config = Map.of("features", Map.of("mcp", mcpUrl != null, "memory", false, "subagent", false, "skill", false, "compact", false, "rewind", false),
+        var config = Map.of("features", Map.of("mcp", mcpEnabled, "memory", false, "subagent", false, "skill", false, "compact", false, "rewind", false),
                 "memory", Map.of("use", false), "plugins", Map.of("enabled", false), "skills", Map.of("enabled", false, "includeInstructions", false),
                 "hooks", Map.of("enabled", false), "mcp", Map.of("servers", Map.of()));
         privateFile(configDirectory.resolve("config.json"), json.writeValueAsBytes(config));
@@ -78,19 +105,38 @@ public class ZCodeCliClient {
         builder.environment().put("ZCODE_SESSION_DB_PATH", storage.resolve("session.db").toString());
         builder.environment().put("ZCODE_LOG_DIR", privateDirectory(directory.resolve("logs")).toString());
         builder.environment().put("ZCODE_MAX_TOOL_CONCURRENCY", "1");
-        return new CliTaskLaunch(builder, new ZCodeTaskConversation(json, work, output, prompt, selection, toolNames, mcpUrl, token, finalResultSchema));
+        return builder;
     }
 
     /** 既有文本整理/连接测试也走原生协议，但没有企业工具授权。 */
-    public String execute(AiProviderConfigEntity provider, String model, String reasoning, String prompt, int seconds) throws IOException, InterruptedException {
+    public String execute(AiProviderConfigEntity provider, String model, String reasoning, String prompt, int seconds,
+                          List<String> imagePaths, String finalResultSchema, String mcpUrl, String mcpToken, List<String> toolNames) throws IOException, InterruptedException {
+        return execute(provider, model, reasoning, prompt, seconds, imagePaths, finalResultSchema, false, mcpUrl, mcpToken, toolNames);
+    }
+
+    /**
+     * structuredNoCliSchema：不把 schema 传进 CLI 结构化输出（避免阻断 MCP 工具调用），
+     * 但终稿必须是 JSON 对象；模型交文本时用 schema 强制格式校正一次。
+     */
+    public String executeStructuredWithoutCliSchema(AiProviderConfigEntity provider, String model, String reasoning, String prompt, int seconds,
+                                                    List<String> imagePaths, String schemaForFormatting, String mcpUrl, String mcpToken, List<String> toolNames) throws IOException, InterruptedException {
+        return execute(provider, model, reasoning, prompt, seconds, imagePaths, schemaForFormatting, true, mcpUrl, mcpToken, toolNames);
+    }
+
+    private String execute(AiProviderConfigEntity provider, String model, String reasoning, String prompt, int seconds,
+                           List<String> imagePaths, String finalResultSchema, boolean schemaOnlyForFormatting,
+                           String mcpUrl, String mcpToken, List<String> toolNames) throws IOException, InterruptedException {
         if (seconds < 1 || seconds > 14400 || prompt == null || prompt.length() > 180000) throw new IllegalArgumentException("ZCode 任务输入或时间预算无效");
+        List<String> images = imagePaths == null ? List.of() : List.copyOf(imagePaths);
         preflight(provider);
         Path directory = Files.createTempDirectory("workhub-zcode-");
         Process process = null; boolean stopped = false;
         var descendants = new LinkedHashMap<Long, ProcessHandle>();
         try {
             Path output = directory.resolve("result.json");
-            var launch = prepare(provider, model, reasoning, directory, output, prompt, List.of(), null, null);
+            var launch = schemaOnlyForFormatting
+                    ? prepareStructuredWithoutCliSchema(provider, model, reasoning, directory, output, prompt, toolNames == null ? List.of() : List.copyOf(toolNames), mcpUrl, mcpToken, finalResultSchema, images)
+                    : prepare(provider, model, reasoning, directory, output, prompt, toolNames == null ? List.of() : List.copyOf(toolNames), mcpUrl, mcpToken, finalResultSchema, images);
             process = launch.builder().start(); Process observed = process;
             var failure = new AtomicReference<Exception>();
             Thread writer = Thread.ofVirtual().start(() -> {
@@ -98,7 +144,8 @@ public class ZCodeCliClient {
                 catch (Exception ex) { failure.compareAndSet(null, ex); }
             });
             Thread reader = Thread.ofVirtual().start(() -> {
-                try { readProtocol(observed.getInputStream(), launch.conversation(), ignored -> { }); }
+                try { readProtocol(observed.getInputStream(), launch.conversation(),
+                        progress -> log.info("ZCode task progress. pid={}, message={}", observed.pid(), progress)); }
                 catch (Exception ex) { failure.set(ex); }
             });
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(seconds);
@@ -126,7 +173,7 @@ public class ZCodeCliClient {
             char[] chars = new char[2048]; var line = new StringBuilder(); int total = 0, count;
             while ((count = reader.read(chars)) >= 0) {
                 total += count;
-                if (total > 4_000_000) throw new IOException("CLI 协议输出超过上限");
+                if (total > 64_000_000) throw new IOException("CLI 协议输出超过上限");
                 for (int i = 0; i < count; i++) {
                     if (chars[i] == '\n') {
                         if (!line.isEmpty()) {

@@ -44,6 +44,13 @@ public class AgentJenkinsClient {
         return new Probe(value.path("fullName").asText(), value.path("buildable").asBoolean(), List.copyOf(names));
     }
 
+    /** 只读检查实例连通性，返回 Jenkins 版本；不依赖任何具体 Job。 */
+    public InstanceProbe probeInstance(Target target) {
+        var value = get(target, target.instanceUri("api/json"), false);
+        String version = value.path("version").isString() ? value.path("version").asText() : null;
+        return new InstanceProbe(version);
+    }
+
     /** 只发送一次；调用方遇到 SubmissionUnknown 后必须查队列/构建并保留未知状态。 */
     public long submit(Target target, Map<String, String> parameters) {
         validateParameters(parameters);
@@ -133,6 +140,57 @@ public class AgentJenkinsClient {
         return get(target, target.jobUri(number + "/artifact/" + encoded), true);
     }
 
+    // ================= MCP 只读查询（REQ-0051c0a8，全部 GET，不触发构建、不改变 Jenkins 状态） =================
+
+    private static final int MAX_LOG_BYTES = 256 * 1024;
+
+    /** 只读列出实例根目录或指定 folder 路径下的 Job；folderSegments 为空时列实例根目录。 */
+    public JsonNode listJobs(Target target, List<String> folderSegments, int limit) {
+        if (limit < 1) throw new IllegalArgumentException("Jenkins Job 列表上限必须为正整数");
+        boolean root = folderSegments == null || folderSegments.isEmpty();
+        Target scope = root ? target : new Target(target.baseUri(), folderSegments, target.userName(), target.apiToken());
+        String tree = encode("jobs[name,fullName,color,url,buildable,lastBuild[number,result]]{0," + Math.min(limit, 200) + "}");
+        URI uri = root ? scope.instanceUri("api/json?tree=" + tree) : scope.jobUri("api/json?tree=" + tree);
+        return get(target, uri, false);
+    }
+
+    /** 只读查询 Job 详情（可构建性、健康度、最近构建）。 */
+    public JsonNode jobDetail(Target target) {
+        return get(target, target.jobUri("api/json?tree=" + encode(
+                "name,fullName,description,buildable,color,lastBuild[number,result,building,timestamp,duration],healthReport[score,description]")), false);
+    }
+
+    /** 只读查询构建详情（结果、参数、时间戳与耗时）。 */
+    public JsonNode buildDetail(Target target, long number) {
+        positive(number);
+        return get(target, target.jobUri(number + "/api/json?tree=" + encode(
+                "number,url,building,result,timestamp,duration,queueId,actions[parameters[name,value]]")), false);
+    }
+
+    /** 只读尾读构建控制台日志：以 progressiveText 两跳定位末尾 maxBytes 字节。 */
+    public LogTail buildLogTail(Target target, long number, int maxBytes) {
+        positive(number);
+        if (maxBytes < 1 || maxBytes > MAX_LOG_BYTES) throw new IllegalArgumentException("Jenkins 日志字节数须在 1-" + MAX_LOG_BYTES + " 之间");
+        var first = sendLog(target, target.jobUri(number + "/logText/progressiveText?start=0"));
+        long textSize = first.headers().firstValueAsLong("X-Text-Size").orElse(-1);
+        if (textSize < 0 || textSize <= maxBytes) return new LogTail(body(first), false);
+        var tail = sendLog(target, target.jobUri(number + "/logText/progressiveText?start=" + (textSize - maxBytes)));
+        return new LogTail(body(tail), true);
+    }
+
+    public record LogTail(String content, boolean headTruncated) { }
+
+    private static String body(HttpResponse<byte[]> response) {
+        return new String(response.body(), StandardCharsets.UTF_8);
+    }
+
+    private HttpResponse<byte[]> sendLog(Target target, URI uri) {
+        var response = send(target, uri, null);
+        if (response.statusCode() == 404) throw new ClientFailure("Jenkins 构建或日志不存在（HTTP 404）");
+        if (response.statusCode() != 200) throw new ClientFailure("Jenkins 日志查询失败（HTTP " + response.statusCode() + "），未跟随重定向");
+        return response;
+    }
+
     private JsonNode get(Target target, URI uri, boolean missingAllowed) {
         var response = send(target, uri, null);
         if (response.statusCode() == 404 && missingAllowed) return null;
@@ -198,11 +256,12 @@ public class AgentJenkinsClient {
             jobSegments = List.copyOf(jobSegments); jobSegments.forEach(AgentJenkinsClient::segment);
             if (userName == null || userName.isBlank() || userName.contains(":") || apiToken == null || apiToken.isBlank()) throw new IllegalArgumentException("Jenkins API Token 认证配置缺失");
         }
-        URI instanceUri(String suffix) { return baseUri.resolve(suffix); }
-        URI jobUri(String suffix) { return instanceUri(jobSegments.stream().map(part -> "job/" + segment(part) + "/").collect(Collectors.joining()) + suffix); }
+        public URI instanceUri(String suffix) { return baseUri.resolve(suffix); }
+        public URI jobUri(String suffix) { return instanceUri(jobSegments.stream().map(part -> "job/" + segment(part) + "/").collect(Collectors.joining()) + suffix); }
         @Override public String toString() { return "JenkinsTarget[credentials=redacted]"; }
     }
     public record Probe(String jobName, boolean buildable, List<String> parameterNames) { }
+    public record InstanceProbe(String version) { }
     public record QueueState(String state, long queueId, Long buildNumber, boolean parametersMatch) { }
     public record BuildState(String state, long buildNumber, String result, boolean parametersMatch, Long queueId) { }
     public record SearchResult(String state, List<Long> queueIds, List<Long> buildNumbers, int scannedBuildLimit) { }

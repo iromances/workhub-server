@@ -15,8 +15,10 @@ import tools.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -91,9 +93,9 @@ public class CodexCliSqlDraftGenerator {
         }
         try (AttachmentTemporaryFileSet temporaryFiles = AttachmentTemporaryFileSet.materialize(attachments)) {
             SqlDraftInvocation invocation = buildInvocation(entity, structuredData, temporaryFiles.contexts());
-            AiGatewayResult result = aiGatewayClient.executeStructured(AiGatewayRequest.structured(
+            AiGatewayResult result = aiGatewayClient.executeStructured(AiGatewayRequest.withVariables(
                     USE_CASE_CODE,
-                    invocation.prompt(),
+                    invocation.variables(),
                     invocation.workingDirectory(),
                     invocation.addDirs(),
                     invocation.imagePaths(),
@@ -145,98 +147,69 @@ public class CodexCliSqlDraftGenerator {
                 workingDirectory,
                 List.copyOf(addDirs),
                 imagePaths,
-                buildPrompt(entity, structuredData, safeAttachments)
+                buildVariables(entity, structuredData, safeAttachments)
         );
     }
 
-    String buildPrompt(IntakeRecordEntity entity,
-                       IntakeStructuredData structuredData,
-                       List<AttachmentService.AttachmentFileContext> attachments) {
-        StringBuilder prompt = new StringBuilder("""
-                你是 WorkHub 的数据运维 SQL 草稿助手。
-                当前任务：根据数据提取/运维类需求，生成给人工复制执行的 SQL 草稿。
+    Map<String, Object> buildVariables(IntakeRecordEntity entity,
+                                       IntakeStructuredData structuredData,
+                                       List<AttachmentService.AttachmentFileContext> attachments) {
+        StringBuilder intakeRecord = new StringBuilder()
+                .append("- ID：").append(entity == null ? "" : entity.getId()).append('\n')
+                .append("- 来源：").append(entity == null ? "" : defaultValue(entity.getSourceType(), ""))
+                .append(" / ").append(entity == null ? "" : defaultValue(entity.getSourceChannel(), "")).append('\n')
+                .append("- 发送人：").append(entity == null ? "" : defaultValue(entity.getSenderName(), "")).append('\n')
+                .append("- 接收时间：")
+                .append(entity == null || entity.getReceivedAt() == null ? "" : entity.getReceivedAt());
 
-                严格要求：
-                1. 只生成 SQL 草稿，不要声称已经连接数据库或已经执行。
-                2. 默认 SQL 方言为 MySQL。
-                3. 只能生成只读 SELECT 查询，不要生成 INSERT、UPDATE、DELETE、DDL、CALL 或多语句。
-                4. 如果能根据需求自行推断表名、字段名和筛选条件，可以直接生成 SQL，并把推断写入 assumptions。
-                5. 如果关键表名、字段名或业务口径无法判断，请在 questions 中列出需要向需求方确认的问题；sql 可给出带 TODO 占位的草稿。
-                6. 对时间范围、商户号、用户编号、状态值等可变条件，优先使用具名占位，例如 :start_time、:end_time、:merchant_no。
-                7. riskWarnings 必须提示人工执行前确认库表环境、字段口径、数据权限和导出范围。
-                8. 不要输出 Markdown，只返回符合 JSON Schema 的对象。
-
-                需求主记录：
-                - ID：%s
-                - 来源：%s / %s
-                - 发送人：%s
-                - 接收时间：%s
-
-                原始内容：
-                %s
-                """.formatted(
-                entity == null ? "" : entity.getId(),
-                entity == null ? "" : defaultValue(entity.getSourceType(), ""),
-                entity == null ? "" : defaultValue(entity.getSourceChannel(), ""),
-                entity == null ? "" : defaultValue(entity.getSenderName(), ""),
-                entity == null || entity.getReceivedAt() == null ? "" : entity.getReceivedAt(),
-                entity == null ? "" : defaultValue(entity.getRawContent(), "")
-        ));
-
-        appendStructuredData(prompt, structuredData);
-        appendAttachmentSummaries(prompt, structuredData == null ? null : structuredData.attachmentSummaries());
-        appendAttachmentList(prompt, attachments);
-        prompt.append("\n请生成 SQL 草稿 JSON。");
-        return prompt.toString();
-    }
-
-    private void appendStructuredData(StringBuilder prompt, IntakeStructuredData structuredData) {
-        if (structuredData == null) {
-            return;
+        StringBuilder structuredDataText = new StringBuilder();
+        if (structuredData != null) {
+            structuredDataText.append("\n结构化需求：\n");
+            appendLine(structuredDataText, "审批编号", structuredData.approvalCode());
+            appendLine(structuredDataText, "提出人", structuredData.proposerName());
+            appendLine(structuredDataText, "提交时间", structuredData.submittedTime());
+            appendLine(structuredDataText, "需求类型", structuredData.requirementType());
+            appendLine(structuredDataText, "需求名称", structuredData.requirementName());
+            appendLine(structuredDataText, "需求摘要", structuredData.requirementDigest());
+            appendLine(structuredDataText, "需求描述", structuredData.requirementSummary());
+            appendLine(structuredDataText, "业务线", structuredData.businessLine());
+            appendLine(structuredDataText, "备注", structuredData.remark());
         }
-        prompt.append("""
 
-                结构化需求：
-                """);
-        appendLine(prompt, "审批编号", structuredData.approvalCode());
-        appendLine(prompt, "提出人", structuredData.proposerName());
-        appendLine(prompt, "提交时间", structuredData.submittedTime());
-        appendLine(prompt, "需求类型", structuredData.requirementType());
-        appendLine(prompt, "需求名称", structuredData.requirementName());
-        appendLine(prompt, "需求摘要", structuredData.requirementDigest());
-        appendLine(prompt, "需求描述", structuredData.requirementSummary());
-        appendLine(prompt, "业务线", structuredData.businessLine());
-        appendLine(prompt, "备注", structuredData.remark());
-    }
+        StringBuilder attachmentSummaryText = new StringBuilder();
+        List<IntakeAttachmentSummary> summaries = structuredData == null ? null : structuredData.attachmentSummaries();
+        if (summaries != null && !summaries.isEmpty()) {
+            attachmentSummaryText.append("\n附件正文摘要：\n");
+            for (IntakeAttachmentSummary summary : summaries) {
+                attachmentSummaryText.append("### ")
+                        .append(defaultValue(summary.fileName(), "未命名附件"))
+                        .append(" / ")
+                        .append(defaultValue(summary.fileType(), "未知类型"))
+                        .append('\n')
+                        .append(defaultValue(summary.summaryText(), ""))
+                        .append("\n\n");
+            }
+        }
 
-    private void appendAttachmentSummaries(StringBuilder prompt, List<IntakeAttachmentSummary> summaries) {
-        if (summaries == null || summaries.isEmpty()) {
-            return;
+        StringBuilder attachmentList = new StringBuilder();
+        if (attachments != null && !attachments.isEmpty()) {
+            attachmentList.append("\n附件清单：\n");
+            for (AttachmentService.AttachmentFileContext attachment : attachments) {
+                attachmentList.append("- ")
+                        .append(defaultValue(attachment.fileName(), "未命名附件"))
+                        .append(" / ")
+                        .append(defaultValue(attachment.contentType(), "未知类型"))
+                        .append('\n');
+            }
         }
-        prompt.append("\n附件正文摘要：\n");
-        for (IntakeAttachmentSummary summary : summaries) {
-            prompt.append("### ")
-                    .append(defaultValue(summary.fileName(), "未命名附件"))
-                    .append(" / ")
-                    .append(defaultValue(summary.fileType(), "未知类型"))
-                    .append('\n')
-                    .append(defaultValue(summary.summaryText(), ""))
-                    .append("\n\n");
-        }
-    }
 
-    private void appendAttachmentList(StringBuilder prompt, List<AttachmentService.AttachmentFileContext> attachments) {
-        if (attachments == null || attachments.isEmpty()) {
-            return;
-        }
-        prompt.append("\n附件清单：\n");
-        for (AttachmentService.AttachmentFileContext attachment : attachments) {
-            prompt.append("- ")
-                    .append(defaultValue(attachment.fileName(), "未命名附件"))
-                    .append(" / ")
-                    .append(defaultValue(attachment.contentType(), "未知类型"))
-                    .append('\n');
-        }
+        Map<String, Object> variables = new LinkedHashMap<>();
+        variables.put("intakeRecord", intakeRecord.toString());
+        variables.put("rawContent", defaultValue(entity == null ? null : entity.getRawContent(), "") + "\n");
+        variables.put("structuredData", structuredDataText.toString());
+        variables.put("attachmentSummaries", attachmentSummaryText.toString());
+        variables.put("attachmentList", attachmentList.toString());
+        return variables;
     }
 
     private void appendLine(StringBuilder prompt, String label, String value) {
@@ -294,7 +267,7 @@ public class CodexCliSqlDraftGenerator {
     record SqlDraftInvocation(Path workingDirectory,
                               List<String> addDirs,
                               List<String> imagePaths,
-                              String prompt) {
+                              Map<String, Object> variables) {
     }
 
     public record SqlDraftGenerationResult(boolean succeeded,

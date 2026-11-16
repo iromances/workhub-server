@@ -12,19 +12,23 @@ public record AgentTaskSpecification(
         @NotBlank @Size(max = 8000) String acceptanceCriteria,
         @NotEmpty @Size(max = 5) List<@Pattern(regexp = "REPORT|CHANGE_SET|TEST_REPORT|DEPLOYMENT|VERIFICATION") String> expectedArtifacts,
         @NotNull @Size(max = 100) List<@Valid AgentScope> scopes,
-        @NotNull @Size(max = 64) List<@NotBlank @Size(max = 64) String> toolCodes,
-        @Size(max = 100) List<@NotNull @Valid AgentScope> completionTargets) {
+        @Size(max = 100) List<@NotNull @Valid AgentScope> completionTargets,
+        @Pattern(regexp = "FULL|INCREMENTAL") String analysisScope) {
     public AgentTaskSpecification {
         expectedArtifacts = expectedArtifacts == null ? null : List.copyOf(expectedArtifacts);
         scopes = scopes == null ? null : List.copyOf(scopes);
-        toolCodes = toolCodes == null ? null : List.copyOf(toolCodes);
         completionTargets = completionTargets == null ? List.of() : List.copyOf(completionTargets);
+        analysisScope = analysisScope == null ? "FULL" : analysisScope;
     }
 
-    /** 旧任务读取及调用方兼容，不从授权范围推断完成目标。 */
+    /** 旧任务读取及调用方兼容，不从授权范围推断完成目标；旧规格默认全量分析。 */
     public AgentTaskSpecification(String objective, String context, String acceptanceCriteria, List<String> expectedArtifacts,
-                                  List<AgentScope> scopes, List<String> toolCodes) {
-        this(objective, context, acceptanceCriteria, expectedArtifacts, scopes, toolCodes, List.of());
+                                  List<AgentScope> scopes, List<AgentScope> completionTargets) {
+        this(objective, context, acceptanceCriteria, expectedArtifacts, scopes, completionTargets, "FULL");
+    }
+    public AgentTaskSpecification(String objective, String context, String acceptanceCriteria, List<String> expectedArtifacts,
+                                  List<AgentScope> scopes) {
+        this(objective, context, acceptanceCriteria, expectedArtifacts, scopes, List.of(), "FULL");
     }
     public boolean requiresCompletionTargets() {
         return expectedArtifacts != null && expectedArtifacts.stream().anyMatch(kind -> Set.of("DEPLOYMENT", "VERIFICATION").contains(kind));

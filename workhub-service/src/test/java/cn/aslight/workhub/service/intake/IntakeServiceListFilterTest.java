@@ -222,6 +222,38 @@ class IntakeServiceListFilterTest {
     }
 
     @Test
+    void dashboard_shouldIncludePausedAndOperationsStatusesInStageGroups() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        when(intakeMapper.findAll(null)).thenReturn(List.of(
+                intakeRecord(1L, "BL000001", "保费分期", "已暂停需求", "已暂停", "研发需求"),
+                intakeRecord(2L, "BL000001", "保费分期", "待处理运维需求", "待处理", "数据提取/运维"),
+                intakeRecord(3L, "BL000001", "保费分期", "处理中运维需求", "处理中", "数据提取/运维"),
+                intakeRecord(4L, "BL000001", "保费分期", "已完成需求", "已完成", "研发需求")
+        ));
+        IntakeService service = service(intakeMapper);
+
+        IntakeDashboardResponse response = service.dashboard("ALL");
+
+        assertEquals(List.of("not-started", "developing", "testing", "pending-release", "paused"),
+                response.demandCards().stream().map(IntakeDashboardResponse.StageCard::key).toList());
+        IntakeDashboardResponse.StageCard pausedCard = response.demandCards().getLast();
+        assertEquals("已暂停的需求", pausedCard.label());
+        assertEquals(List.of("已暂停"), pausedCard.statuses());
+        assertEquals(1, pausedCard.value());
+        assertEquals(1, response.demandCards().getFirst().value());
+        assertEquals(1, response.demandCards().get(1).value());
+        IntakeDashboardResponse.BusinessLineStats stats = response.businessLineStats().getFirst();
+        assertEquals(4, stats.demandCount());
+        assertEquals(3, stats.totalCount());
+        assertEquals(1, stats.notStartedCount());
+        assertEquals(1, stats.developingCount());
+        assertEquals(1, stats.pausedCount());
+        assertEquals("已暂停的需求", response.highlightedDemands().getLast().groupLabel());
+        assertTrue(response.progressReport().summary().stream()
+                .anyMatch(item -> "已暂停".equals(item.label()) && item.value() == 1));
+    }
+
+    @Test
     void dashboard_shouldMergeLegacyBusinessLineNameRowsWithStableBusinessLineCode() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);

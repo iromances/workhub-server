@@ -1,0 +1,267 @@
+{
+  "fullscope-job-times": {
+    "tool": "run_readonly_query",
+    "arguments": {
+      "targetKey": "db-prod",
+      "profileKey": "readonly",
+      "sql": "SELECT id,executor_handler,schedule_conf,child_jobid FROM lease_xxl_job_250.xxl_job_info WHERE id IN (10,16,43,72) LIMIT 10"
+    },
+    "retrievedAt": "2026-11-13T15:03:12.698190+08:00",
+    "data": {
+      "targetKey": "db-prod",
+      "dataMasked": true,
+      "profileKey": "readonly",
+      "result": {
+        "truncatedByBytes": false,
+        "dataMasked": true,
+        "rows": [
+          {
+            "id": 10,
+            "executor_handler": "customerBillOverdueSchedule",
+            "schedule_conf": "0 30 0 * * ?",
+            "child_jobid": ""
+          },
+          {
+            "id": 16,
+            "executor_handler": "prepaymentMarginSettleBillSchedule",
+            "schedule_conf": "10 0 3 * * ?",
+            "child_jobid": "10"
+          },
+          {
+            "id": 43,
+            "executor_handler": "customerBillOverdueFeeSchedule",
+            "schedule_conf": "0 5 0 * * ?",
+            "child_jobid": ""
+          },
+          {
+            "id": 72,
+            "executor_handler": "customerBillExtensionSchedule",
+            "schedule_conf": "0 01 0 * * ?",
+            "child_jobid": "43"
+          }
+        ],
+        "columns": [
+          "id",
+          "executor_handler",
+          "schedule_conf",
+          "child_jobid"
+        ]
+      },
+      "sql": "SELECT id,executor_handler,schedule_conf,child_jobid FROM lease_xxl_job_250.xxl_job_info WHERE id IN (10,16,43,72) LIMIT 10"
+    }
+  },
+  "fullscope-audit-lease_saps": {
+    "tool": "run_readonly_query",
+    "arguments": {
+      "targetKey": "db-prod",
+      "profileKey": "readonly",
+      "sql": "SELECT NOW() AS checked_at,COUNT(*) AS possible_bills,SUM(settlement_status=1) AS currently_settled,SUM(settlement_status=1 AND settlement_time IS NULL) AS settled_without_time,SUM(create_time IS NULL) AS create_without_time,SUM(is_delete=1) AS deleted,SUM(is_delete=1 AND delete_time IS NULL) AS deleted_without_time,SUM(create_time>='2026-11-12') AS created_since_12,SUM(modify_time>='2026-11-12') AS modified_since_12 FROM lease_saps.customer_bill WHERE last_grace_date<'2026-11-13' AND (settlement_status<>1 OR settlement_time>='2026-11-12' OR settlement_time IS NULL) AND (is_delete=0 OR delete_time>='2026-11-12' OR delete_time IS NULL) LIMIT 1"
+    },
+    "retrievedAt": "2026-11-13T15:03:13.083673+08:00",
+    "data": {
+      "targetKey": "db-prod",
+      "dataMasked": true,
+      "profileKey": "readonly",
+      "result": {
+        "truncatedByBytes": false,
+        "dataMasked": true,
+        "rows": [
+          {
+            "checked_at": "2026-11-13T15:03:12",
+            "possible_bills": 91,
+            "currently_settled": 0,
+            "settled_without_time": 0,
+            "create_without_time": 0,
+            "deleted": 31,
+            "deleted_without_time": 31,
+            "created_since_12": 0,
+            "modified_since_12": 3
+          }
+        ],
+        "columns": [
+          "checked_at",
+          "possible_bills",
+          "currently_settled",
+          "settled_without_time",
+          "create_without_time",
+          "deleted",
+          "deleted_without_time",
+          "created_since_12",
+          "modified_since_12"
+        ]
+      },
+      "sql": "SELECT NOW() AS checked_at,COUNT(*) AS possible_bills,SUM(settlement_status=1) AS currently_settled,SUM(settlement_status=1 AND settlement_time IS NULL) AS settled_without_time,SUM(create_time IS NULL) AS create_without_time,SUM(is_delete=1) AS deleted,SUM(is_delete=1 AND delete_time IS NULL) AS deleted_without_time,SUM(create_time>='***') AS created_since_12,SUM(modify_time>='***') AS modified_since_12 FROM lease_saps.customer_bill WHERE last_grace_date<'***' AND (settlement_status<>1 OR settlement_time>='***' OR settlement_time IS NULL) AND (is_delete=0 OR delete_time>='***' OR delete_time IS NULL) LIMIT 1"
+    }
+  },
+  "fullscope-audit-ol_saps": {
+    "tool": "run_readonly_query",
+    "arguments": {
+      "targetKey": "db-prod",
+      "profileKey": "readonly",
+      "sql": "SELECT NOW() AS checked_at,COUNT(*) AS possible_bills,SUM(settlement_status=1) AS currently_settled,SUM(settlement_status=1 AND settlement_time IS NULL) AS settled_without_time,SUM(create_time IS NULL) AS create_without_time,SUM(is_delete=1) AS deleted,SUM(is_delete=1 AND delete_time IS NULL) AS deleted_without_time,SUM(create_time>='2026-11-12') AS created_since_12,SUM(modify_time>='2026-11-12') AS modified_since_12 FROM ol_saps.customer_bill WHERE last_grace_date<'2026-11-13' AND (settlement_status<>1 OR settlement_time>='2026-11-12' OR settlement_time IS NULL) AND (is_delete=0 OR delete_time>='2026-11-12' OR delete_time IS NULL) LIMIT 1"
+    },
+    "retrievedAt": "2026-11-13T15:03:12.699177+08:00",
+    "data": {
+      "targetKey": "db-prod",
+      "dataMasked": true,
+      "profileKey": "readonly",
+      "result": {
+        "truncatedByBytes": false,
+        "dataMasked": true,
+        "rows": [
+          {
+            "checked_at": "2026-11-13T15:03:12",
+            "possible_bills": 1038,
+            "currently_settled": 98,
+            "settled_without_time": 0,
+            "create_without_time": 0,
+            "deleted": 53,
+            "deleted_without_time": 53,
+            "created_since_12": 0,
+            "modified_since_12": 980
+          }
+        ],
+        "columns": [
+          "checked_at",
+          "possible_bills",
+          "currently_settled",
+          "settled_without_time",
+          "create_without_time",
+          "deleted",
+          "deleted_without_time",
+          "created_since_12",
+          "modified_since_12"
+        ]
+      },
+      "sql": "SELECT NOW() AS checked_at,COUNT(*) AS possible_bills,SUM(settlement_status=1) AS currently_settled,SUM(settlement_status=1 AND settlement_time IS NULL) AS settled_without_time,SUM(create_time IS NULL) AS create_without_time,SUM(is_delete=1) AS deleted,SUM(is_delete=1 AND delete_time IS NULL) AS deleted_without_time,SUM(create_time>='***') AS created_since_12,SUM(modify_time>='***') AS modified_since_12 FROM ol_saps.customer_bill WHERE last_grace_date<'***' AND (settlement_status<>1 OR settlement_time>='***' OR settlement_time IS NULL) AND (is_delete=0 OR delete_time>='***' OR delete_time IS NULL) LIMIT 1"
+    }
+  },
+  "fullscope-validate-0": {
+    "tool": "run_readonly_query",
+    "arguments": {
+      "targetKey": "db-prod",
+      "profileKey": "readonly",
+      "sql": "SELECT COUNT(*) AS distinct_bills,SUM(affected_20261112) AS affected_12,SUM(affected_20261113) AS affected_13,SUM(current_settlement_status=1) AS currently_settled,SUM(current_settlement_status<>1) AS currently_open FROM (SELECT q.*,\n       q.affected_20261112 + q.affected_20261113 AS affected_days\nFROM (\n    SELECT\n        b.id AS bill_id,\n        b.bill_no,\n        b.customer_code,\n        b.customer_name,\n        b.application_no,\n        b.financial_contract_no,\n        b.product_code,\n        b.product_type,\n        b.period,\n        b.total_period,\n        b.create_time AS bill_created_at,\n        b.last_pay_date,\n        b.last_grace_date,\n        b.settlement_status AS current_settlement_status,\n        b.settlement_time AS current_settlement_time,\n        b.overdue_day AS current_overdue_days,\n        b.total_amount AS current_total_amount,\n        b.paid_amount AS current_paid_amount,\n        b.unpaid_amount AS current_unpaid_amount,\n        CASE WHEN b.last_grace_date < '2026-11-12'\n             AND b.create_time <= '2026-11-12 03:00:10'\n             AND (b.settlement_status <> 1 OR b.settlement_time > '2026-11-12 03:00:10')\n        THEN 1 ELSE 0 END AS affected_20261112,\n        CASE WHEN b.last_grace_date < '2026-11-13'\n             AND b.create_time <= '2026-11-13 03:00:10'\n             AND (b.settlement_status <> 1 OR b.settlement_time > '2026-11-13 03:00:10')\n        THEN 1 ELSE 0 END AS affected_20261113\n    FROM lease_saps.customer_bill b\n    WHERE b.is_delete = 0\n      AND b.last_grace_date < '2026-11-13'\n      AND b.create_time <= '2026-11-13 03:00:10'\n) q\nWHERE q.affected_20261112 = 1 OR q.affected_20261113 = 1) t LIMIT 1"
+    },
+    "retrievedAt": "2026-11-13T15:04:47.547695+08:00",
+    "data": {
+      "targetKey": "db-prod",
+      "dataMasked": true,
+      "profileKey": "readonly",
+      "result": {
+        "truncatedByBytes": false,
+        "dataMasked": true,
+        "rows": [
+          {
+            "distinct_bills": 60,
+            "affected_12": 60,
+            "affected_13": 60,
+            "currently_settled": 0,
+            "currently_open": 60
+          }
+        ],
+        "columns": [
+          "distinct_bills",
+          "affected_12",
+          "affected_13",
+          "currently_settled",
+          "currently_open"
+        ]
+      },
+      "sql": "SELECT COUNT(*) AS distinct_bills,SUM(affected_20261112) AS affected_12,SUM(affected_20261113) AS affected_13,SUM(current_settlement_status=1) AS currently_settled,SUM(current_settlement_status<>1) AS currently_open FROM (SELECT q.*, q.affected_20261112 + q.affected_20261113 AS affected_days FROM ( SELECT b.id AS bill_id, b.bill_no, b.customer_code, b.customer_name, b.application_no, b.financial_contract_no, b.product_code, b.product_type, b.period, b.total_period, b.create_time AS bill_created_at, b.last_pay_date, b.last_grace_date, b.settlement_status AS current_settlement_status, b.settlement_time AS current_settlement_time, b.overdue_day AS current_overdue_days, b.total_amount AS current_total_amount, b.paid_amount AS current_paid_amount, b.unpaid_amount AS current_unpaid_amount, CASE WHEN b.last_grace_date < '***' AND b.create_time <= '***' AND (b.settlement_status <> 1 OR b.settlement_time > '***') THEN 1 ELSE 0 END AS affected_20261112, CASE WHEN b.last_grace_date < '***' AND b."
+    }
+  },
+  "fullscope-validate-1": {
+    "tool": "run_readonly_query",
+    "arguments": {
+      "targetKey": "db-prod",
+      "profileKey": "readonly",
+      "sql": "SELECT COUNT(*) AS distinct_bills,SUM(affected_20261112) AS affected_12,SUM(affected_20261113) AS affected_13,SUM(current_settlement_status=1) AS currently_settled,SUM(current_settlement_status<>1) AS currently_open FROM (SELECT q.*,\n       q.affected_20261112 + q.affected_20261113 AS affected_days\nFROM (\n    SELECT\n        b.id AS bill_id,\n        b.bill_no,\n        b.customer_code,\n        b.customer_name,\n        b.application_no,\n        b.financial_contract_no,\n        b.product_code,\n        b.product_type,\n        b.period,\n        b.total_period,\n        b.create_time AS bill_created_at,\n        b.last_pay_date,\n        b.last_grace_date,\n        b.settlement_status AS current_settlement_status,\n        b.settlement_time AS current_settlement_time,\n        b.overdue_day AS current_overdue_days,\n        b.total_amount AS current_total_amount,\n        b.paid_amount AS current_paid_amount,\n        b.unpaid_amount AS current_unpaid_amount,\n        CASE WHEN b.last_grace_date < '2026-11-12'\n             AND b.create_time <= '2026-11-12 00:01:00'\n             AND (b.settlement_status <> 1 OR b.settlement_time > '2026-11-12 00:01:00')\n        THEN 1 ELSE 0 END AS affected_20261112,\n        CASE WHEN b.last_grace_date < '2026-11-13'\n             AND b.create_time <= '2026-11-13 00:01:00'\n             AND (b.settlement_status <> 1 OR b.settlement_time > '2026-11-13 00:01:00')\n        THEN 1 ELSE 0 END AS affected_20261113\n    FROM ol_saps.customer_bill b\n    WHERE b.is_delete = 0\n      AND b.last_grace_date < '2026-11-13'\n      AND b.create_time <= '2026-11-13 00:01:00'\n) q\nWHERE q.affected_20261112 = 1 OR q.affected_20261113 = 1) t LIMIT 1"
+    },
+    "retrievedAt": "2026-11-13T15:04:47.488288+08:00",
+    "data": {
+      "targetKey": "db-prod",
+      "dataMasked": true,
+      "profileKey": "readonly",
+      "result": {
+        "truncatedByBytes": false,
+        "dataMasked": true,
+        "rows": [
+          {
+            "distinct_bills": 900,
+            "affected_12": 894,
+            "affected_13": 890,
+            "currently_settled": 13,
+            "currently_open": 887
+          }
+        ],
+        "columns": [
+          "distinct_bills",
+          "affected_12",
+          "affected_13",
+          "currently_settled",
+          "currently_open"
+        ]
+      },
+      "sql": "SELECT COUNT(*) AS distinct_bills,SUM(affected_20261112) AS affected_12,SUM(affected_20261113) AS affected_13,SUM(current_settlement_status=1) AS currently_settled,SUM(current_settlement_status<>1) AS currently_open FROM (SELECT q.*, q.affected_20261112 + q.affected_20261113 AS affected_days FROM ( SELECT b.id AS bill_id, b.bill_no, b.customer_code, b.customer_name, b.application_no, b.financial_contract_no, b.product_code, b.product_type, b.period, b.total_period, b.create_time AS bill_created_at, b.last_pay_date, b.last_grace_date, b.settlement_status AS current_settlement_status, b.settlement_time AS current_settlement_time, b.overdue_day AS current_overdue_days, b.total_amount AS current_total_amount, b.paid_amount AS current_paid_amount, b.unpaid_amount AS current_unpaid_amount, CASE WHEN b.last_grace_date < '***' AND b.create_time <= '***' AND (b.settlement_status <> 1 OR b.settlement_time > '***') THEN 1 ELSE 0 END AS affected_20261112, CASE WHEN b.last_grace_date < '***' AND b."
+    }
+  },
+  "fullscope-deleted-check-0": {
+    "tool": "run_readonly_query",
+    "arguments": {
+      "targetKey": "db-prod",
+      "profileKey": "readonly",
+      "sql": "SELECT COUNT(*) AS possible_deleted_bills,SUM(delete_time IS NULL) AS missing_delete_time FROM (SELECT q.*,\n       q.affected_20261112 + q.affected_20261113 AS affected_days\nFROM (\n    SELECT\n        b.id AS bill_id,\n        b.bill_no,\n        b.customer_code,\n        b.customer_name,\n        b.application_no,\n        b.financial_contract_no,\n        b.product_code,\n        b.product_type,\n        b.period,\n        b.total_period,\n        b.create_time AS bill_created_at,\n        b.delete_time,\n        b.modify_time,\n        b.is_delete,\n        b.last_pay_date,\n        b.last_grace_date,\n        b.settlement_status AS current_settlement_status,\n        b.settlement_time AS current_settlement_time,\n        b.overdue_day AS current_overdue_days,\n        b.total_amount AS current_total_amount,\n        b.paid_amount AS current_paid_amount,\n        b.unpaid_amount AS current_unpaid_amount,\n        CASE WHEN b.last_grace_date < '2026-11-12'\n             AND b.create_time <= '2026-11-12 03:00:10'\n             AND (b.settlement_status <> 1 OR b.settlement_time > '2026-11-12 03:00:10')\n        THEN 1 ELSE 0 END AS affected_20261112,\n        CASE WHEN b.last_grace_date < '2026-11-13'\n             AND b.create_time <= '2026-11-13 03:00:10'\n             AND (b.settlement_status <> 1 OR b.settlement_time > '2026-11-13 03:00:10')\n        THEN 1 ELSE 0 END AS affected_20261113\n    FROM lease_saps.customer_bill b\n    WHERE b.is_delete = 1\n      AND (b.delete_time IS NULL OR b.delete_time >= '2026-11-12 03:00:10')\n      AND b.last_grace_date < '2026-11-13'\n      AND b.create_time <= '2026-11-13 03:00:10'\n) q\nWHERE q.affected_20261112 = 1 OR q.affected_20261113 = 1) t LIMIT 1"
+    },
+    "retrievedAt": "2026-11-13T15:05:36.835468+08:00",
+    "data": {
+      "targetKey": "db-prod",
+      "dataMasked": true,
+      "profileKey": "readonly",
+      "result": {
+        "truncatedByBytes": false,
+        "dataMasked": true,
+        "rows": [
+          {
+            "possible_deleted_bills": 31,
+            "missing_delete_time": 31
+          }
+        ],
+        "columns": [
+          "possible_deleted_bills",
+          "missing_delete_time"
+        ]
+      },
+      "sql": "SELECT COUNT(*) AS possible_deleted_bills,SUM(delete_time IS NULL) AS missing_delete_time FROM (SELECT q.*, q.affected_20261112 + q.affected_20261113 AS affected_days FROM ( SELECT b.id AS bill_id, b.bill_no, b.customer_code, b.customer_name, b.application_no, b.financial_contract_no, b.product_code, b.product_type, b.period, b.total_period, b.create_time AS bill_created_at, b.delete_time, b.modify_time, b.is_delete, b.last_pay_date, b.last_grace_date, b.settlement_status AS current_settlement_status, b.settlement_time AS current_settlement_time, b.overdue_day AS current_overdue_days, b.total_amount AS current_total_amount, b.paid_amount AS current_paid_amount, b.unpaid_amount AS current_unpaid_amount, CASE WHEN b.last_grace_date < '***' AND b.create_time <= '***' AND (b.settlement_status <> 1 OR b.settlement_time > '***') THEN 1 ELSE 0 END AS affected_20261112, CASE WHEN b.last_grace_date < '***' AND b.create_time <= '***' AND (b.settlement_status <> 1 OR b.settlement_time > '***') TH"
+    }
+  },
+  "fullscope-deleted-check-1": {
+    "tool": "run_readonly_query",
+    "arguments": {
+      "targetKey": "db-prod",
+      "profileKey": "readonly",
+      "sql": "SELECT COUNT(*) AS possible_deleted_bills,SUM(delete_time IS NULL) AS missing_delete_time FROM (SELECT q.*,\n       q.affected_20261112 + q.affected_20261113 AS affected_days\nFROM (\n    SELECT\n        b.id AS bill_id,\n        b.bill_no,\n        b.customer_code,\n        b.customer_name,\n        b.application_no,\n        b.financial_contract_no,\n        b.product_code,\n        b.product_type,\n        b.period,\n        b.total_period,\n        b.create_time AS bill_created_at,\n        b.delete_time,\n        b.modify_time,\n        b.is_delete,\n        b.last_pay_date,\n        b.last_grace_date,\n        b.settlement_status AS current_settlement_status,\n        b.settlement_time AS current_settlement_time,\n        b.overdue_day AS current_overdue_days,\n        b.total_amount AS current_total_amount,\n        b.paid_amount AS current_paid_amount,\n        b.unpaid_amount AS current_unpaid_amount,\n        CASE WHEN b.last_grace_date < '2026-11-12'\n             AND b.create_time <= '2026-11-12 00:01:00'\n             AND (b.settlement_status <> 1 OR b.settlement_time > '2026-11-12 00:01:00')\n        THEN 1 ELSE 0 END AS affected_20261112,\n        CASE WHEN b.last_grace_date < '2026-11-13'\n             AND b.create_time <= '2026-11-13 00:01:00'\n             AND (b.settlement_status <> 1 OR b.settlement_time > '2026-11-13 00:01:00')\n        THEN 1 ELSE 0 END AS affected_20261113\n    FROM ol_saps.customer_bill b\n    WHERE b.is_delete = 1\n      AND (b.delete_time IS NULL OR b.delete_time >= '2026-11-12 00:01:00')\n      AND b.last_grace_date < '2026-11-13'\n      AND b.create_time <= '2026-11-13 00:01:00'\n) q\nWHERE q.affected_20261112 = 1 OR q.affected_20261113 = 1) t LIMIT 1"
+    },
+    "retrievedAt": "2026-11-13T15:05:36.875865+08:00",
+    "data": {
+      "targetKey": "db-prod",
+      "dataMasked": true,
+      "profileKey": "readonly",
+      "result": {
+        "truncatedByBytes": false,
+        "dataMasked": true,
+        "rows": [
+          {
+            "possible_deleted_bills": 53,
+            "missing_delete_time": 53
+          }
+        ],
+        "columns": [
+          "possible_deleted_bills",
+          "missing_delete_time"
+        ]
+      },
+      "sql": "SELECT COUNT(*) AS possible_deleted_bills,SUM(delete_time IS NULL) AS missing_delete_time FROM (SELECT q.*, q.affected_20261112 + q.affected_20261113 AS affected_days FROM ( SELECT b.id AS bill_id, b.bill_no, b.customer_code, b.customer_name, b.application_no, b.financial_contract_no, b.product_code, b.product_type, b.period, b.total_period, b.create_time AS bill_created_at, b.delete_time, b.modify_time, b.is_delete, b.last_pay_date, b.last_grace_date, b.settlement_status AS current_settlement_status, b.settlement_time AS current_settlement_time, b.overdue_day AS current_overdue_days, b.total_amount AS current_total_amount, b.paid_amount AS current_paid_amount, b.unpaid_amount AS current_unpaid_amount, CASE WHEN b.last_grace_date < '***' AND b.create_time <= '***' AND (b.settlement_status <> 1 OR b.settlement_time > '***') THEN 1 ELSE 0 END AS affected_20261112, CASE WHEN b.last_grace_date < '***' AND b.create_time <= '***' AND (b.settlement_status <> 1 OR b.settlement_time > '***') TH"
+    }
+  }
+}

@@ -1,0 +1,46 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::        (v2.2.9.RELEASE)
+
+2026-11-06 13:36:57.788 [main] INFO  BootstrapProbe - The following profiles are active: sit
+2026-11-06 13:36:57.803 [main] ERROR org.springframework.boot.SpringApplication - Application run failed
+java.lang.IllegalStateException: DIAGNOSTIC_STOP_BEFORE_BUSINESS_CONTEXT_REFRESH
+	at BootstrapProbe.lambda$main$0(BootstrapProbe.java:16)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:172)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:165)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:139)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:127)
+	at org.springframework.boot.context.event.EventPublishingRunListener.contextLoaded(EventPublishingRunListener.java:93)
+	at org.springframework.boot.SpringApplicationRunListeners.contextLoaded(SpringApplicationRunListeners.java:65)
+	at org.springframework.boot.SpringApplication.prepareContext(SpringApplication.java:393)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:314)
+	at BootstrapProbe.main(BootstrapProbe.java:19)
+
+DIAGNOSTIC_STARTUP_FAILURE
+java.lang.IllegalStateException: DIAGNOSTIC_STOP_BEFORE_BUSINESS_CONTEXT_REFRESH
+	at BootstrapProbe.lambda$main$0(BootstrapProbe.java:16)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:172)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:165)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:139)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:127)
+	at org.springframework.boot.context.event.EventPublishingRunListener.contextLoaded(EventPublishingRunListener.java:93)
+	at org.springframework.boot.SpringApplicationRunListeners.contextLoaded(SpringApplicationRunListeners.java:65)
+	at org.springframework.boot.SpringApplication.prepareContext(SpringApplication.java:393)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:314)
+	at BootstrapProbe.main(BootstrapProbe.java:19)
+java.lang.IllegalStateException: DIAGNOSTIC_STOP_BEFORE_BUSINESS_CONTEXT_REFRESH
+	at BootstrapProbe.lambda$main$0(BootstrapProbe.java:16)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:172)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:165)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:139)
+	at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:127)
+	at org.springframework.boot.context.event.EventPublishingRunListener.contextLoaded(EventPublishingRunListener.java:93)
+	at org.springframework.boot.SpringApplicationRunListeners.contextLoaded(SpringApplicationRunListeners.java:65)
+	at org.springframework.boot.SpringApplication.prepareContext(SpringApplication.java:393)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:314)
+	at BootstrapProbe.main(BootstrapProbe.java:19)

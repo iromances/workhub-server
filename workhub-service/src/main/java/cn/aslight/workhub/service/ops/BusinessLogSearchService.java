@@ -68,7 +68,7 @@ public class BusinessLogSearchService {
 
     public BusinessLogSearchResponse search(BusinessLogSearchRequest request) {
         String businessLineCode = requireText(request.businessLineCode(), "业务线不能为空");
-        String environmentCode = requireText(request.environmentCode(), "环境不能为空");
+        String environmentCode = requireText(request.environmentCode(), "环境不能为空").toUpperCase(Locale.ROOT);
         SystemAlertScopeResponse scope = resolveScope(businessLineCode, environmentCode);
         List<String> services = resolveServices(scope, request.serviceNames()).stream().sorted().toList();
         List<String> levels = normalizeLevels(request.levels()).stream().sorted().toList();

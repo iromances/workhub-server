@@ -14,6 +14,8 @@ public class BusinessLineAccessConfigEntity {
     private String endpointName;
     private String endpointUrl;
     private String pathPrefix;
+    private String loginUsername;
+    private String loginPasswordEncrypted;
     private Integer sortOrder;
     private Boolean enabled;
     private LocalDateTime createdAt;
@@ -73,6 +75,22 @@ public class BusinessLineAccessConfigEntity {
 
     public void setPathPrefix(String pathPrefix) {
         this.pathPrefix = pathPrefix;
+    }
+
+    public String getLoginUsername() {
+        return loginUsername;
+    }
+
+    public void setLoginUsername(String loginUsername) {
+        this.loginUsername = loginUsername;
+    }
+
+    public String getLoginPasswordEncrypted() {
+        return loginPasswordEncrypted;
+    }
+
+    public void setLoginPasswordEncrypted(String loginPasswordEncrypted) {
+        this.loginPasswordEncrypted = loginPasswordEncrypted;
     }
 
     public Integer getSortOrder() {

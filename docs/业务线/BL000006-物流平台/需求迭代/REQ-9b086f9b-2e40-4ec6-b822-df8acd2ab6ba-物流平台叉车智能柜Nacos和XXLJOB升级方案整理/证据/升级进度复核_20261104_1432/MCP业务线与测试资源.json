@@ -1,0 +1,114 @@
+{
+  "businessLines": [
+    {
+      "code": "BL000006",
+      "name": "物流平台",
+      "gitlabGroupName": "xxt-plateform",
+      "involvedSystems": [
+        "thctay-partner-gateway",
+        "etc-doc",
+        "invoice-exinterface",
+        "thctay-eas",
+        "insurance-exinterface",
+        "thctay-wms",
+        "mock-server",
+        "xxt-front-scafold",
+        "intf-qdccb",
+        "intf-icbc",
+        "intf-abc",
+        "intf-boc",
+        "intf-ccb",
+        "xxl-job-admin",
+        "thctay-guangdong-tools",
+        "thctay-ems-logistics",
+        "thctay-sf-logistics",
+        "thctay-devicemanage",
+        "thctay-scaffold",
+        "thctay-report",
+        "thctay-front-gateway",
+        "thctay-ebaby-gateway",
+        "thctay-cms",
+        "thctay-contract",
+        "thctay-scene",
+        "thctay-marketing-gateway",
+        "thctay-user",
+        "etc-tools",
+        "thctay-marketing-back",
+        "thctay-marketing",
+        "thctay-lianrongbao",
+        "thctay-op-gateway",
+        "saps-back",
+        "saps-account-checker",
+        "thctay-risk-backend",
+        "thctay-message",
+        "intf-sence-back",
+        "thctay-saps-core-common",
+        "thctay-etc-issue",
+        "bpm-framework",
+        "thctay-etc",
+        "intf-hs",
+        "intf-gs",
+        "thctay-auth",
+        "thctay-cashloan",
+        "intf-risk",
+        "intf-bank",
+        "thctay-payment",
+        "intf-credit",
+        "intf-common",
+        "thctay-account",
+        "thctay-saps",
+        "thctay-crm",
+        "thctay-public"
+      ],
+      "globalSystems": [
+        "intf-paychannel",
+        "thctay-contract",
+        "thctay-eas",
+        "xxt-pay",
+        "xxt-pay-gateway"
+      ],
+      "enabled": true
+    }
+  ],
+  "serverTargets": [
+    {
+      "key": "bl000006-test-server-10-10-116-19-22",
+      "publicResource": false,
+      "featureTags": [],
+      "businessLineCode": "BL000006",
+      "businessLineCodes": [
+        "BL000006"
+      ],
+      "environmentCode": "TEST",
+      "name": "物流平台 TEST 服务器目标 10.10.116.19:22",
+      "systemName": null,
+      "systemNames": [],
+      "allowedServices": [],
+      "allowedLogPaths": [
+        "/mnt"
+      ],
+      "profiles": [
+        "diagnostic"
+      ]
+    }
+  ],
+  "databaseTargets": [
+    {
+      "key": "bl000006-test-db-10-10-116-19-3306",
+      "publicResource": false,
+      "featureTags": [],
+      "businessLineCode": "BL000006",
+      "businessLineCodes": [
+        "BL000006"
+      ],
+      "environmentCode": "TEST",
+      "name": "物流平台 test 数据库目标 10.10.116.19:3306",
+      "systemName": null,
+      "systemNames": [],
+      "schema": null,
+      "profiles": [
+        "readonly"
+      ]
+    }
+  ]
+}

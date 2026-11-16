@@ -18,7 +18,8 @@ public interface BusinessLineAccessConfigMapper {
     @Select("""
             <script>
             SELECT id, business_line_code, environment_code, endpoint_type, endpoint_name,
-                   endpoint_url, path_prefix, sort_order, enabled, created_at, updated_at
+                   endpoint_url, path_prefix, login_username, login_password_encrypted,
+                   sort_order, enabled, created_at, updated_at
             FROM pm_business_line_access_config
             WHERE business_line_code IN
             <foreach collection="businessLineCodes" item="code" open="(" separator="," close=")">
@@ -35,10 +36,12 @@ public interface BusinessLineAccessConfigMapper {
     @Insert("""
             INSERT INTO pm_business_line_access_config (
                 business_line_code, environment_code, endpoint_type, endpoint_name,
-                endpoint_url, path_prefix, sort_order, enabled
+                endpoint_url, path_prefix, login_username, login_password_encrypted,
+                sort_order, enabled
             ) VALUES (
                 #{businessLineCode}, #{environmentCode}, #{endpointType}, #{endpointName},
-                #{endpointUrl}, #{pathPrefix}, #{sortOrder}, #{enabled}
+                #{endpointUrl}, #{pathPrefix}, #{loginUsername}, #{loginPasswordEncrypted},
+                #{sortOrder}, #{enabled}
             )
             """)
     int insert(BusinessLineAccessConfigEntity entity);

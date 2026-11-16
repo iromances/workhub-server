@@ -1,0 +1,31 @@
+{
+  "saps-back": {
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "9c9c8ab5bb281f13115279e49165d90006315788",
+    "changes": [
+      "父依赖 0.0.1 -> 0.0.2-SNAPSHOT",
+      "sit config/discovery -> 10.10.116.110:8848",
+      "sit 两项有认证字段，未记录值"
+    ]
+  },
+  "thctay-op-gateway": {
+    "sha": "342a0e2a88ebd97f7444a88fcc40e2eb9657f84e",
+    "changes": [
+      "bootstrap.yml application 从 main 子级移至 spring 子级",
+      "spring.application.name=thctay-opgateway"
+    ]
+  },
+  "thctay-wms": {
+    "sha": "859d8ac5f03efca2f8954ff9e577ab82b9d60623",
+    "changes": [
+      "sit config/discovery -> 10.10.116.110:8848",
+      "补充认证字段，未记录值"
+    ]
+  },
+  "thctay-public": {
+    "releaseSha": "4252fe537d3c64700b715ebf7d2287b52d5a10c8",
+    "v2Sha": "71494aa9133c1a973c2cf0a48ecc11004e31a6e8",
+    "releaseAdds": "Netty BOM 4.1.140.Final",
+    "releaseVsV2ChangedPaths": []
+  }
+}

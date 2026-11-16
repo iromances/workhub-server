@@ -10,6 +10,8 @@ public class BusinessLineAccessConfigRequest {
     private String endpointName;
     private String endpointUrl;
     private String pathPrefix;
+    private String loginUsername;
+    private String loginPassword;
     private Integer sortOrder;
     private Boolean enabled = Boolean.TRUE;
 
@@ -51,6 +53,22 @@ public class BusinessLineAccessConfigRequest {
 
     public void setPathPrefix(String pathPrefix) {
         this.pathPrefix = pathPrefix;
+    }
+
+    public String getLoginUsername() {
+        return loginUsername;
+    }
+
+    public void setLoginUsername(String loginUsername) {
+        this.loginUsername = loginUsername;
+    }
+
+    public String getLoginPassword() {
+        return loginPassword;
+    }
+
+    public void setLoginPassword(String loginPassword) {
+        this.loginPassword = loginPassword;
     }
 
     public Integer getSortOrder() {

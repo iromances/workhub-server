@@ -1,0 +1,14 @@
+{
+  "flywayVersion" : "11.14.1",
+  "database" : "workhub",
+  "warnings" : [ ],
+  "operation" : "repair",
+  "repairActions" : [ "Marked missing migrations as deleted" ],
+  "migrationsRemoved" : [ ],
+  "migrationsDeleted" : [ {
+    "version" : "20261103.190110",
+    "description" : "mcp server file read paths",
+    "filepath" : ""
+  } ],
+  "migrationsAligned" : [ ]
+}

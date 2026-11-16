@@ -27,22 +27,20 @@ public class AgentWorkbenchService {
     private final AgentMapper mapper;
     private final AgentAccessService access;
     private final AiProviderConfigService providers;
-    private final AgentToolCatalog tools;
     private final ObjectMapper json;
     private final Clock clock;
 
     @Autowired
     public AgentWorkbenchService(AgentMapper mapper, AgentAccessService access, AiProviderConfigService providers,
-                                 AgentToolCatalog tools, ObjectMapper json) {
-        this(mapper, access, providers, tools, json, Clock.systemUTC());
+                                 ObjectMapper json) {
+        this(mapper, access, providers, json, Clock.systemUTC());
     }
 
     AgentWorkbenchService(AgentMapper mapper, AgentAccessService access, AiProviderConfigService providers,
-                           AgentToolCatalog tools, ObjectMapper json, Clock clock) {
+                           ObjectMapper json, Clock clock) {
         this.mapper = mapper;
         this.access = access;
         this.providers = providers;
-        this.tools = tools;
         this.json = json;
         this.clock = clock;
     }
@@ -176,6 +174,77 @@ public class AgentWorkbenchService {
         return response(mapper.findTask(taskId));
     }
 
+    /** 修改任务规格（可选一并调整执行方式）；已有运行保留原规格快照，后续新运行按新规格重新校验并执行。 */
+    @Transactional
+    public AgentTaskResponse updateTask(String taskId, AgentTaskUpdateRequest request, String user) {
+        var actor = access.actor(user);
+        actor.require("agent:task:operate");
+        var initial = requireTask(taskId);
+        var agent = mapper.lockAgent(initial.agentId());
+        access.requireAgent(actor, agent);
+        var task = mapper.lockTask(taskId);
+        requireVersion(task.version(), request.expectedVersion());
+        validateTask(request.specification(), configuration(agent.configurationJson()), actor);
+        if (request.schedule() != null) AgentSchedule.validate(request.schedule());
+        var nextRunAt = request.schedule() == null ? null : AgentSchedule.next(request.schedule(), clock.instant());
+        checkChanged(mapper.updateTaskSpecification(task.id(), task.version(), encode(request.specification()),
+                request.schedule(), nextRunAt, now()));
+        audit("TASK", taskId, "UPDATE_SPEC", actor.name(),
+                request.schedule() == null ? request.specification() : Map.of("specification", request.specification(), "schedule", request.schedule()));
+        return response(mapper.findTask(taskId));
+    }
+
+    /** 物理删除任务及其运行/事件/产物；过程数据保留证据，存在即拒绝，删除本身先写审计。 */
+    @Transactional
+    public void deleteTask(String taskId, long expectedVersion, String user) {
+        var actor = access.actor(user);
+        actor.require("agent:manage");
+        var initial = requireTask(taskId);
+        var agent = mapper.lockAgent(initial.agentId());
+        access.requireAgent(actor, agent);
+        var task = mapper.lockTask(taskId);
+        requireVersion(task.version(), expectedVersion);
+        if (task.scheduleEnabled()) throw new IllegalArgumentException("周期任务须先暂停调度后再删除");
+        if (mapper.countUnfinishedRuns(taskId) > 0)
+            throw new IllegalArgumentException("任务存在未结束的运行（排队、执行中或待核对），请先取消并等待结束");
+        var counts = mapper.taskRemovalCounts(taskId);
+        if (counts.hasProcessData())
+            throw new IllegalArgumentException("任务运行已产生" + counts.processCategories() + "等过程数据，为保留证据不能删除；可停用任务替代");
+        var spec = specification(task.specificationJson());
+        audit("TASK", taskId, "DELETE", actor.name(), Map.of("objective", spec.objective(), "requestKey", task.requestKey(),
+                "deletedRuns", mapper.countRuns(taskId), "deletedEvents", counts.events(), "deletedArtifacts", counts.artifacts()));
+        mapper.deleteArtifactsByTask(taskId);
+        mapper.deleteEventsByTask(taskId);
+        mapper.deleteRunsByTask(taskId);
+        checkChanged(mapper.deleteTaskById(taskId, task.version()));
+    }
+
+    /** 物理删除 Agent 及其任务/运行/事件/产物；须已停用且无周期、未结束运行与过程数据，删除本身先写审计。 */
+    @Transactional
+    public void deleteAgent(String id, long expectedVersion, String user) {
+        var actor = access.actor(user);
+        actor.require("agent:manage");
+        var agent = mapper.lockAgent(id);
+        access.requireAgent(actor, agent);
+        requireVersion(agent.version(), expectedVersion);
+        if (agent.enabled()) throw new IllegalArgumentException("Agent 尚未停用，请先停用后再删除");
+        if (mapper.countEnabledSchedulesByAgent(id) > 0)
+            throw new IllegalArgumentException("Agent 存在启用中的周期任务，请先暂停后再删除");
+        if (mapper.countUnfinishedRunsByAgent(id) > 0)
+            throw new IllegalArgumentException("Agent 存在未结束的运行（排队、执行中或待核对），请先取消并等待结束");
+        var counts = mapper.agentRemovalCounts(id);
+        if (counts.hasProcessData())
+            throw new IllegalArgumentException("Agent 运行已产生" + counts.processCategories() + "等过程数据，为保留证据不能删除；可停用 Agent 替代");
+        audit("AGENT", id, "DELETE", actor.name(), Map.of("name", agent.name(),
+                "deletedTasks", mapper.countTasks(id), "deletedRuns", mapper.countRunsByAgent(id),
+                "deletedEvents", counts.events(), "deletedArtifacts", counts.artifacts()));
+        mapper.deleteArtifactsByAgent(id);
+        mapper.deleteEventsByAgent(id);
+        mapper.deleteRunsByAgent(id);
+        mapper.deleteTasksByAgent(id);
+        checkChanged(mapper.deleteAgentById(id, agent.version()));
+    }
+
     @Transactional
     public AgentRunResponse run(String taskId, AgentRunRequest request, String user) {
         var actor = access.actor(user);
@@ -304,7 +373,7 @@ public class AgentWorkbenchService {
         var provider = providers.getEnabledById(configuration.providerConfigId());
         String model = configuration.model() == null || configuration.model().isBlank() ? provider.getDefaultModel() : configuration.model();
         var snapshot = new AgentConfiguration(configuration.name(), configuration.instructions(), configuration.providerConfigId(), model,
-                configuration.scopes(), configuration.toolCodes(), configuration.maxSteps(), configuration.maxRunSeconds(), configuration.maxConcurrentRuns());
+                configuration.scopes(), configuration.maxSteps(), configuration.maxRunSeconds(), configuration.maxConcurrentRuns());
         var run = new AgentRunEntity(id(), task.id(), agent.id(), triggerKey, task.requestedBy(),
                 encode(snapshot), task.specificationJson(), encode(AgentProviderBinding.from(provider)), "QUEUED", 0, 0, false,
                 null, null, null, null, null, 0, now(), now());
@@ -313,22 +382,38 @@ public class AgentWorkbenchService {
         return run;
     }
 
+    /** 物理删除运行记录及其事件/产物：用于清理待核对僵尸运行释放全局并发额度；活动运行不可删。 */
+    @Transactional
+    public void deleteRun(String taskId, String runId, long expectedVersion, String user) {
+        var actor = access.actor(user);
+        actor.require("agent:manage");
+        var initial = requireTask(taskId);
+        var agent = mapper.lockAgent(initial.agentId());
+        access.requireAgent(actor, agent);
+        var run = requireRun(taskId, runId, true);
+        requireVersion(run.version(), expectedVersion);
+        if (Set.of("QUEUED", "RUNNING", "CANCELLING").contains(run.status())) {
+            throw new IllegalArgumentException("排队或执行中的运行不能删除，请先取消并等待结束");
+        }
+        audit("RUN", runId, "DELETE", actor.name(), Map.of("reason",
+                run.ownerToken() != null ? "清理待核对运行并释放并发额度" : "删除运行记录",
+                "unresolvedHandle", run.externalHandle() != null));
+        mapper.deleteArtifactsByRun(runId);
+        mapper.deleteEventsByRun(runId);
+        checkChanged(mapper.deleteRunById(runId, run.version()));
+    }
+
     private void validateConfiguration(AgentConfiguration configuration, AgentAccessService.Actor actor) {
         providers.requireExisting(configuration.providerConfigId());
         access.validateScopes(configuration.scopes());
-        if (new HashSet<>(configuration.toolCodes()).size() != configuration.toolCodes().size()) {
-            throw new IllegalArgumentException("工具选择重复");
-        }
-        configuration.toolCodes().forEach(code -> access.requireTool(actor, tools.require(code)));
     }
 
     private void validateTask(AgentTaskSpecification task, AgentConfiguration configuration, AgentAccessService.Actor actor) {
         task.validateCompletionTargets();
-        if (!configuration.scopes().containsAll(task.scopes()) || !configuration.toolCodes().containsAll(task.toolCodes())) {
+        if (!configuration.scopes().containsAll(task.scopes())) {
             throw new IllegalArgumentException("任务范围超出 Agent 的授权配置");
         }
         access.validateScopes(task.scopes());
-        task.toolCodes().forEach(code -> access.requireTool(actor, tools.require(code)));
     }
 
     private void requireProviderEnabled(AgentConfiguration configuration) {

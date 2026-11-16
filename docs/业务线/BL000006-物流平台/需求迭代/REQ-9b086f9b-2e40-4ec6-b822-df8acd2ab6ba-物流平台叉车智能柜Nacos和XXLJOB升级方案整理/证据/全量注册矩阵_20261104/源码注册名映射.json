@@ -1,0 +1,3435 @@
+[
+  {
+    "repo": "bpm-framework",
+    "sha": "2e473432a6071b8afa24737fa8638fa04c37be47",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "bpm-start/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-bpm"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 10,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 29,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 48,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "bpm-start/src/main/java/com/thchengtay/bpm/BpmApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "etc-doc",
+    "sha": "1be2be6ec0e5430032dea538cc51630c169439ad",
+    "ref": "origin/main",
+    "configuration": [],
+    "bootApps": [],
+    "mqScheduleDeps": []
+  },
+  {
+    "repo": "etc-tools",
+    "sha": "71a93c6e2a5d5c8240180d25f3d6f88e107c590e",
+    "ref": "origin/ql-etc-tools",
+    "configuration": [],
+    "bootApps": [
+      "foodie-dev-api/src/main/java/com/imooc/Application.java"
+    ],
+    "mqScheduleDeps": []
+  },
+  {
+    "repo": "insurance-exinterface",
+    "sha": "71f393bb7563bb5cc95f1fb8375faed3740139eb",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "exinterface-start/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "insurance-exinterface"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 13,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 42,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 72,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "exinterface-start/src/main/java/com/thchengtay/Bootstrap.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-abc",
+    "sha": "041807dfabf331fd452a97c04ae08ff5426aae05",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "intfabc-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 5,
+            "key": "spring.application.name",
+            "value": "thctay-intfabc"
+          },
+          {
+            "line": 8,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 16,
+            "key": "spring.profiles",
+            "value": "local"
+          },
+          {
+            "line": 23,
+            "key": "spring.cloud.nacos.discovery.enabled",
+            "value": "false"
+          },
+          {
+            "line": 26,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 43,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 63,
+            "key": "spring.profiles",
+            "value": "prod"
+          },
+          {
+            "line": 81,
+            "key": "spring.profiles",
+            "value": "pre"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "intfabc-controller/src/main/java/com/thchengtay/intfabc/IntfAbcServerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-bank",
+    "sha": "96b7fac79dd8f5c1a0284bd7770e461bd5193b91",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "intfbank-controller/src/main/resources/application-local.yml",
+        "values": [
+          {
+            "line": 128,
+            "key": "xxl.job.executor.appname",
+            "value": "thctay-intfbank"
+          }
+        ]
+      },
+      {
+        "file": "intfbank-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 7,
+            "key": "spring.application.name",
+            "value": "thctay-intfbank"
+          },
+          {
+            "line": 10,
+            "key": "spring.profiles.active",
+            "value": "local"
+          },
+          {
+            "line": 18,
+            "key": "spring.profiles",
+            "value": "local"
+          },
+          {
+            "line": 25,
+            "key": "spring.cloud.nacos.discovery.enabled",
+            "value": "false"
+          },
+          {
+            "line": 28,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 45,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 65,
+            "key": "spring.profiles",
+            "value": "prod"
+          },
+          {
+            "line": 82,
+            "key": "spring.profiles",
+            "value": "pre"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "intfbank-controller/src/main/java/com/thchengtay/intfbank/controller/IntfbankServerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "intfbank-service/pom.xml",
+        "dependencies": [
+          [
+            "thctay-schedule",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-boc",
+    "sha": "b5f119fc6e1ce747f041be9ecb63fe6578ee8bc7",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "intfboc-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 5,
+            "key": "spring.application.name",
+            "value": "thctay-intfboc"
+          },
+          {
+            "line": 8,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 16,
+            "key": "spring.profiles",
+            "value": "local"
+          },
+          {
+            "line": 23,
+            "key": "spring.cloud.nacos.discovery.enabled",
+            "value": "false"
+          },
+          {
+            "line": 26,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 43,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 63,
+            "key": "spring.profiles",
+            "value": "prod"
+          },
+          {
+            "line": 80,
+            "key": "spring.profiles",
+            "value": "pre"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "intfboc-controller/src/main/java/com/thchengtay/intfboc/IntfBocServerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-ccb",
+    "sha": "cb65714c8d778d4604f45bb04fb2c717ce364fc5",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "intfccb-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 5,
+            "key": "spring.application.name",
+            "value": "thctay-intfccb"
+          },
+          {
+            "line": 8,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 16,
+            "key": "spring.profiles",
+            "value": "local"
+          },
+          {
+            "line": 23,
+            "key": "spring.cloud.nacos.discovery.enabled",
+            "value": "false"
+          },
+          {
+            "line": 26,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 43,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 63,
+            "key": "spring.profiles",
+            "value": "prod"
+          },
+          {
+            "line": 80,
+            "key": "spring.profiles",
+            "value": "pre"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "intfccb-controller/src/main/java/com/thchengtay/intfccb/IntfCcbServerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-common",
+    "sha": "13f4fad4b0d3d1f68bf11f744f9d331a18abfeee",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "intfcommon-controller/src/main/resources/application-dev.yaml",
+        "values": [
+          {
+            "line": 259,
+            "key": "wx.ma.xxt.appName",
+            "value": "先行通ETC"
+          },
+          {
+            "line": 263,
+            "key": "wx.ma.xxtzh.appName",
+            "value": "先行通智慧ETC"
+          },
+          {
+            "line": 266,
+            "key": "wx.ma.configs.appName",
+            "value": "${wx.ma.xxt.appName}"
+          },
+          {
+            "line": 274,
+            "key": "wx.ma.configs.appName",
+            "value": "${wx.ma.xxtzh.appName}"
+          },
+          {
+            "line": 280,
+            "key": "wx.ma.configs.appName",
+            "value": "易行呗"
+          },
+          {
+            "line": 287,
+            "key": "wx.mp.test.appName",
+            "value": "通汇诚泰科技"
+          },
+          {
+            "line": 293,
+            "key": "wx.mp.xxt.appName",
+            "value": "先行通ETC"
+          },
+          {
+            "line": 297,
+            "key": "wx.mp.thctkj.appName",
+            "value": "通汇诚泰科技"
+          },
+          {
+            "line": 300,
+            "key": "wx.mp.configs.appName",
+            "value": "${wx.mp.xxt.appName}"
+          },
+          {
+            "line": 305,
+            "key": "wx.mp.configs.appName",
+            "value": "${wx.mp.thctkj.appName}"
+          },
+          {
+            "line": 310,
+            "key": "wx.mp.configs.appName",
+            "value": "先行通数科"
+          }
+        ]
+      },
+      {
+        "file": "intfcommon-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 7,
+            "key": "spring.application.name",
+            "value": "thctay-intfcommon"
+          },
+          {
+            "line": 9,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 91,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 111,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 131,
+            "key": "spring.profiles",
+            "value": "pre"
+          },
+          {
+            "line": 150,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "intfcommon-controller/src/main/java/com/thchengtay/intfcommon/controller/IntfcommonServerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "intfcommon-controller/pom.xml",
+        "dependencies": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-credit",
+    "sha": "453d37b07fbdbc60694385c63478e06e242f56d5",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "intfcredit-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-intfcredit"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 9,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 34,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 58,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "intfcredit-controller/src/main/java/com/thchengtay/intfcredit/controller/IntCreditServerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-gs",
+    "sha": "945708952046fc213e9ca76b142018fc19ffc7cc",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "intfgs-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 7,
+            "key": "spring.application.name",
+            "value": "thctay-intfgs"
+          },
+          {
+            "line": 23,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "intfgs-controller/src/main/java/com/thchengtay/intfgs/controller/IntfGsServerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-hs",
+    "sha": "2c28b694b960b991599a982ea06f73ae643d83ed",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "domain/gd/intf-gdgs-web/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-gdgs"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 10,
+            "key": "spring.profiles",
+            "value": "local"
+          },
+          {
+            "line": 24,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 48,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 72,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 100,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      },
+      {
+        "file": "domain/gzgs/intf-gzgs-web/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-gzgs"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 10,
+            "key": "spring.profiles",
+            "value": "local"
+          },
+          {
+            "line": 24,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 48,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 72,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 100,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      },
+      {
+        "file": "domain/hlj/intf-hlj-web/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 7,
+            "key": "spring.application.name",
+            "value": "thctay-hlj"
+          },
+          {
+            "line": 9,
+            "key": "spring.profiles.active",
+            "value": "local"
+          },
+          {
+            "line": 16,
+            "key": "spring.profiles",
+            "value": "local"
+          },
+          {
+            "line": 38,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 62,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 90,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      },
+      {
+        "file": "domain/jsgs/intf-jsgs-web/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-jsgs"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 10,
+            "key": "spring.profiles",
+            "value": "local"
+          },
+          {
+            "line": 24,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 52,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 80,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 112,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      },
+      {
+        "file": "domain/sanchuan/intf-sanchuan-web/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-sanchuan"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "sit"
+          },
+          {
+            "line": 10,
+            "key": "spring.profiles",
+            "value": "local"
+          },
+          {
+            "line": 24,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 52,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 80,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 112,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      },
+      {
+        "file": "domain/scene/intf-scene/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-intf-hs-scene"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "kris"
+          },
+          {
+            "line": 10,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 28,
+            "key": "spring.profiles",
+            "value": "kris"
+          },
+          {
+            "line": 42,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 59,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 80,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      },
+      {
+        "file": "domain/sdgs/intf-sdgs-web/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-sdgs"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 10,
+            "key": "spring.profiles",
+            "value": "local"
+          },
+          {
+            "line": 24,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 48,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 72,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 100,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "domain/gd/intf-gdgs-web/src/main/java/com/thctay/gdgs/IntfGdgsApplication.java",
+      "domain/gzgs/intf-gzgs-web/src/main/java/com/thctay/gzgs/IntfGzgsApplication.java",
+      "domain/hlj/intf-hlj-web/src/main/java/com/thctay/hlj/IntfHljApplication.java",
+      "domain/jsgs/intf-jsgs-web/src/main/java/com/thctay/jsgs/IntfJsgsApplication.java",
+      "domain/sanchuan/intf-sanchuan-web/src/main/java/com/thctay/sanchuan/IntfSanchuanApplication.java",
+      "domain/scene/intf-scene/src/main/java/com/thchengtay/intf/hs/scene/BpmApplication.java",
+      "domain/sdgs/intf-sdgs-web/src/main/java/com/thctay/sdgs/IntfSdgsApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "common/intf-common/pom.xml",
+        "dependencies": [
+          [
+            "thctay-schedule",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "domain/gd/intf-gdgs-web/pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "domain/gzgs/intf-gzgs-service/pom.xml",
+        "dependencies": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "domain/gzgs/intf-gzgs-web/pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "domain/hlj/intf-hlj-web/pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "domain/jsgs/intf-jsgs-service/pom.xml",
+        "dependencies": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "domain/jsgs/intf-jsgs-web/pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "domain/sanchuan/intf-sanchuan-service/pom.xml",
+        "dependencies": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "domain/sanchuan/intf-sanchuan-web/pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "domain/sdgs/intf-sdgs-web/pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-icbc",
+    "sha": "8697bfb305c40081531e48c2ce4779307f52c8a5",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "intficbc-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 5,
+            "key": "spring.application.name",
+            "value": "thctay-intficbc"
+          },
+          {
+            "line": 8,
+            "key": "spring.profiles.active",
+            "value": "local"
+          },
+          {
+            "line": 16,
+            "key": "spring.profiles",
+            "value": "local"
+          },
+          {
+            "line": 23,
+            "key": "spring.cloud.nacos.discovery.enabled",
+            "value": "false"
+          },
+          {
+            "line": 26,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 43,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 63,
+            "key": "spring.profiles",
+            "value": "prod"
+          },
+          {
+            "line": 80,
+            "key": "spring.profiles",
+            "value": "pre"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "intficbc-controller/src/main/java/com/thchengtay/intficbc/IntfIcbcServerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-qdccb",
+    "sha": "29fd02fcc8fa1af8d39e98c1b3e5bc12e5f2bbb6",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "intfqdccb-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 5,
+            "key": "spring.application.name",
+            "value": "thctay-intfqdccb"
+          },
+          {
+            "line": 8,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 16,
+            "key": "spring.profiles",
+            "value": "local"
+          },
+          {
+            "line": 23,
+            "key": "spring.cloud.nacos.discovery.enabled",
+            "value": "false"
+          },
+          {
+            "line": 26,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 43,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 63,
+            "key": "spring.profiles",
+            "value": "prod"
+          },
+          {
+            "line": 80,
+            "key": "spring.profiles",
+            "value": "pre"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "intfqdccb-controller/src/main/java/com/thchengtay/intfqdccb/IntfQdccbServerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-risk",
+    "sha": "d4320324cdf1b32b8e067a57a26b7d5b05a746b7",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "intfrisk-start/src/main/resources/application-uat.yml",
+        "values": [
+          {
+            "line": 181,
+            "key": "xxl.job.executor.appname",
+            "value": "thctay-intfrisk"
+          }
+        ]
+      },
+      {
+        "file": "intfrisk-start/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-intfrisk"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 23,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 41,
+            "key": "spring.profiles",
+            "value": "test"
+          },
+          {
+            "line": 65,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 85,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "intfrisk-start/src/main/java/com/thchengtay/intfrisk/RiskApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-sence-back",
+    "sha": "f2d197825c7d203a92a6e1a61c04952d1d3bead5",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-intf-hs-scene-backend"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 13,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 31,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 50,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "invoice-exinterface",
+    "sha": "203c9de707b1261223a100c3a614d1970b151088",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "exinterface-start/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "invoice-exinterface"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 13,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 41,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 75,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "exinterface-start/src/main/java/com/thchengtay/Bootstrap.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "exinterface-service/pom.xml",
+        "dependencies": [
+          [
+            "thctay-schedule",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "mock-server",
+    "sha": "05bddfd9b684822b915741ef804c80787be6b54d",
+    "ref": "origin/mock_v1",
+    "configuration": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-mock-server-plus"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "lease"
+          },
+          {
+            "line": 11,
+            "key": "spring.profiles",
+            "value": "lease"
+          },
+          {
+            "line": 32,
+            "key": "spring.profiles",
+            "value": "test"
+          },
+          {
+            "line": 53,
+            "key": "spring.profiles",
+            "value": "amp"
+          }
+        ]
+      }
+    ],
+    "bootApps": [],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "saps-account-checker",
+    "sha": "6a3360057a6a4e39802a3c407c025678445f450e",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "configuration": [
+      {
+        "file": "src/main/resources/application-dev.yml",
+        "values": [
+          {
+            "line": 9,
+            "key": "spring.application.name",
+            "value": "thctay-saps-checkbill"
+          },
+          {
+            "line": 85,
+            "key": "xxl.job.executor.appname",
+            "value": "thctay-saps-checkbill"
+          }
+        ]
+      },
+      {
+        "file": "src/main/resources/application-sit.yml",
+        "values": [
+          {
+            "line": 12,
+            "key": "spring.application.name",
+            "value": "thctay-saps"
+          },
+          {
+            "line": 86,
+            "key": "xxl.job.executor.appname",
+            "value": "thctay-saps"
+          }
+        ]
+      },
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 4,
+            "key": "spring.application.name",
+            "value": "thctay-saps-checkbill"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 20,
+            "key": "spring.cloud.nacos.discovery.enabled",
+            "value": "false"
+          },
+          {
+            "line": 21,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 25,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 43,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 57,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [],
+    "mqScheduleDeps": []
+  },
+  {
+    "repo": "saps-back",
+    "sha": "aa1f91664d8b16d0858fce087961a254f76fa764",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "src/main/resources/application-dev.yml",
+        "values": [
+          {
+            "line": 12,
+            "key": "spring.application.name",
+            "value": "thctay-saps-back"
+          }
+        ]
+      },
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-saps-back"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 23,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 27,
+            "key": "spring.profiles",
+            "value": "test"
+          },
+          {
+            "line": 45,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 62,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 80,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-account",
+    "sha": "479f2052d95d33e58b674e6890bf235dc77ffaf8",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "configuration": [
+      {
+        "file": "account-controller/src/main/resources/application-dev.yml",
+        "values": [
+          {
+            "line": 12,
+            "key": "spring.application.name",
+            "value": "thctay-account"
+          }
+        ]
+      },
+      {
+        "file": "account-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-account"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 19,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 39,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 54,
+            "key": "spring.profiles",
+            "value": "pre"
+          },
+          {
+            "line": 69,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "account-controller/src/main/java/com/thchengtay/account/AccountApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-auth",
+    "sha": "404f565d1ce09249844d1d47cefaa4b60743b044",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "auth-controller/src/main/resources/config/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-admin"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 9,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 27,
+            "key": "spring.profiles",
+            "value": "test"
+          },
+          {
+            "line": 49,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 71,
+            "key": "spring.profiles",
+            "value": "pre"
+          },
+          {
+            "line": 89,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "auth-controller/src/main/java/com/thchengtay/admin/ThAuthRun.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-cashloan",
+    "sha": "b23696139d350f4e9302fe48c5928283315570be",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "cashloan-back/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-cashloan-back"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 10,
+            "key": "spring.profiles",
+            "value": "local"
+          },
+          {
+            "line": 32,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 59,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 85,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      },
+      {
+        "file": "cashloan-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-cashloan"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "sit"
+          },
+          {
+            "line": 9,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 33,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 57,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "cashloan-back/src/main/java/com/thchengtay/cashloan/CashLoanBackApplication.java",
+      "cashloan-controller/src/main/java/com/thchengtay/cashloan/CashLoanApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ],
+          [
+            "thctay-mq",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-cms",
+    "sha": "3c5a41bc0d56092c5a3590ed8ba9fc4ac568d400",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "cms-start/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 5,
+            "key": "spring.application.name",
+            "value": "thctay-cms"
+          },
+          {
+            "line": 7,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 15,
+            "key": "spring.profiles",
+            "value": "dev"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "cms-start/src/main/java/com/thchengtay/Bootstrap.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ],
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-contract",
+    "sha": "3182bff5291ec7e1ef9a8f14f80fa46ba0c64bbc",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "contract-start/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-contract"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 30,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 49,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 69,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "contract-start/src/main/java/com/thchengtay/contract/ContractServerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ],
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-crm",
+    "sha": "a79a599b7cbdfadecea554ecb4c3988ce5dee7f8",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "crm-start/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 6,
+            "key": "spring.application.name",
+            "value": "thctay-crm"
+          },
+          {
+            "line": 8,
+            "key": "spring.profiles.active",
+            "value": "sit"
+          },
+          {
+            "line": 16,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 51,
+            "key": "spring.profiles",
+            "value": "test"
+          },
+          {
+            "line": 86,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 121,
+            "key": "spring.profiles",
+            "value": "pre"
+          },
+          {
+            "line": 155,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "crm-start/src/main/java/com/thchengtay/crm/CrmServerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ],
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ],
+          [
+            "thctay-schedule",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-devicemanage",
+    "sha": "21fe064e5d66ab55c63decd2f380cce1f874b1c8",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "devicemanage-start/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-devicemanage"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 25,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 40,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 55,
+            "key": "spring.profiles",
+            "value": "pre"
+          },
+          {
+            "line": 71,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "devicemanage-start/src/main/java/com/thchengtay/devicemanage/DeviceManageApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-eas",
+    "sha": "0cf07fdc16f9ac6e6a3d34c50e08586eebb89285",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "configuration": [
+      {
+        "file": "eas-controller/src/main/resources/application-dev.yml",
+        "values": [
+          {
+            "line": 11,
+            "key": "spring.application.name",
+            "value": "thctay-eas"
+          }
+        ]
+      },
+      {
+        "file": "eas-controller/src/main/resources/application-dev_260508.yml",
+        "values": [
+          {
+            "line": 11,
+            "key": "spring.application.name",
+            "value": "thctay-eas"
+          }
+        ]
+      },
+      {
+        "file": "eas-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-eas"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 9,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 20,
+            "key": "spring.cloud.nacos.discovery.register-enabled",
+            "value": "false"
+          },
+          {
+            "line": 21,
+            "key": "spring.cloud.nacos.discovery.enabled",
+            "value": "false"
+          },
+          {
+            "line": 25,
+            "key": "spring.profiles",
+            "value": "test"
+          },
+          {
+            "line": 39,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 56,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 71,
+            "key": "spring.profiles",
+            "value": "pre"
+          },
+          {
+            "line": 86,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "eas-controller/src/main/java/com/thchengtay/eas/EasApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "eas-schedule/pom.xml",
+        "dependencies": [
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "xxl-job-core",
+            ""
+          ],
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ],
+          [
+            "thctay-schedule",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-ebaby-gateway",
+    "sha": "e38a3bbc5e7527226ddaf2ef01907aff24df6e3e",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.profiles.active",
+            "value": "test"
+          },
+          {
+            "line": 7,
+            "key": "spring.application.name",
+            "value": "thctay-ebaby-gateway"
+          }
+        ]
+      }
+    ],
+    "bootApps": [],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-ems-logistics",
+    "sha": "793a0df73b024c4242e73dbb863e0bbf6c0435e1",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-ems-logistics"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 8,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 27,
+            "key": "spring.profiles",
+            "value": "kris"
+          },
+          {
+            "line": 41,
+            "key": "spring.profiles",
+            "value": "test"
+          },
+          {
+            "line": 60,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 79,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 99,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-etc",
+    "sha": "8030ee092f6c0ef5aa053d5c362574d43a130b30",
+    "ref": "origin/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "etc-controller/src/main/resources/application-dev.yaml",
+        "values": [
+          {
+            "line": 146,
+            "key": "xxl.job.executor.appname",
+            "value": "thctay-etc"
+          }
+        ]
+      },
+      {
+        "file": "etc-controller/src/main/resources/application-local.yaml",
+        "values": [
+          {
+            "line": 125,
+            "key": "xxl.job.executor.appname",
+            "value": "thctay-etc"
+          }
+        ]
+      },
+      {
+        "file": "etc-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-etc"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "sit"
+          },
+          {
+            "line": 33,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 57,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 83,
+            "key": "spring.profiles",
+            "value": "pre"
+          },
+          {
+            "line": 104,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "etc-controller/src/main/java/com/thctay/etc/controller/EtcApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "etc-service/pom.xml",
+        "dependencies": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-etc-issue",
+    "sha": "8761b83781fe22450d6ba1e6c83d189c1080f635",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "etc-issue-controller/src/main/resources/application-dev.yaml",
+        "values": [
+          {
+            "line": 245,
+            "key": "xxl.job.executor.appname",
+            "value": "thctay-etc-issue"
+          }
+        ]
+      },
+      {
+        "file": "etc-issue-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 7,
+            "key": "spring.application.name",
+            "value": "thctay-etc-issue"
+          },
+          {
+            "line": 9,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 18,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 38,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 57,
+            "key": "spring.profiles",
+            "value": "pre"
+          },
+          {
+            "line": 76,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "etc-issue-controller/src/main/java/com/thchengtay/etc/issue/controller/EtcIssueControllerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "thctay-schedule",
+            "0.0.1-SNAPSHOT"
+          ],
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-front-gateway",
+    "sha": "78ac549ca1bfb6ddefce83fad8a11921f7181aeb",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 7,
+            "key": "spring.application.name",
+            "value": "thctay-front-gateway"
+          },
+          {
+            "line": 11,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 29,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 51,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-guangdong-tools",
+    "sha": "69cbbdb2f1314b64c6c85174f0846c987ac9f52c",
+    "ref": "origin/master",
+    "configuration": [],
+    "bootApps": [],
+    "mqScheduleDeps": []
+  },
+  {
+    "repo": "thctay-lianrongbao",
+    "sha": "59aeb2ef4d0ea52cf174066eb9c1777ae5dd82a6",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "lianrongbao-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 7,
+            "key": "spring.application.name",
+            "value": "thctay-lianrongbao"
+          },
+          {
+            "line": 9,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 13,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 28,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 43,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "lianrongbao-controller/src/main/java/com/thchengtay/lianrongbao/controller/LianrongbaoApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-marketing",
+    "sha": "b3459269bfd9157639ffd678863bfac09a56386d",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "marketing-start/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 5,
+            "key": "spring.application.name",
+            "value": "thctay-marketing"
+          },
+          {
+            "line": 7,
+            "key": "spring.profiles.active",
+            "value": "test"
+          },
+          {
+            "line": 15,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 42,
+            "key": "spring.profiles",
+            "value": "test"
+          },
+          {
+            "line": 76,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 110,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "marketing-start/src/main/java/com/thchengtay/marketing/MarketingServerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ],
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-marketing-back",
+    "sha": "6046c032bac7b476652ee60b49df7156144969ad",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "configuration": [
+      {
+        "file": "src/main/resources/application-dev.yml",
+        "values": [
+          {
+            "line": 215,
+            "key": "xxl.job.executor.appname",
+            "value": "thctay-crm"
+          }
+        ]
+      },
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-marketing-back"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 10,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 30,
+            "key": "spring.profiles",
+            "value": "kris"
+          },
+          {
+            "line": 45,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 66,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 90,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-marketing-gateway",
+    "sha": "6209f58c827889e7b745eae46e3a170c6bf2c54a",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 7,
+            "key": "spring.application.name",
+            "value": "thctay-marketing-gateway"
+          }
+        ]
+      }
+    ],
+    "bootApps": [],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-message",
+    "sha": "bc28a3081ffdf82faa84a0c19402f4b7e201fa96",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "message-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-message"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 33,
+            "key": "spring.profiles",
+            "value": "dev"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "message-controller/src/main/java/com/thchengtay/message/controller/IntfGsServerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-op-gateway",
+    "sha": "f7efe2875e9d880abc00cda8ff471299e219b7e9",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.profiles.active",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-partner-gateway",
+    "sha": "43b12748612d5ac5ed6925924aff000af8e6fe0a",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 9,
+            "key": "spring.application.name",
+            "value": "thctay-partner-gateway"
+          },
+          {
+            "line": 13,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 52,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 99,
+            "key": "spring.profiles",
+            "value": "pre"
+          },
+          {
+            "line": 138,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-payment",
+    "sha": "ea725eccc1b81a38ae597dec5bd492f43932f12a",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "configuration": [
+      {
+        "file": "payment-controller/src/main/resources/application-dev.yml",
+        "values": [
+          {
+            "line": 8,
+            "key": "spring.application.name",
+            "value": "thctay-payment"
+          }
+        ]
+      },
+      {
+        "file": "payment-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-payment"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 9,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 20,
+            "key": "spring.cloud.nacos.discovery.enabled",
+            "value": "false"
+          },
+          {
+            "line": 37,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 50,
+            "key": "spring.profiles",
+            "value": "pre"
+          },
+          {
+            "line": 63,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "payment-controller/src/main/java/com/thchengtay/payment/PaymentApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "payment-schedule/pom.xml",
+        "dependencies": [
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ],
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "thctay-schedule",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-public",
+    "sha": "71494aa9133c1a973c2cf0a48ecc11004e31a6e8",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027-v2",
+    "configuration": [
+      {
+        "file": "thctay-hystrix-dashboard/src/main/resources/application.yml",
+        "values": [
+          {
+            "line": 5,
+            "key": "spring.application.name",
+            "value": "thctay-hystrix-dashboard"
+          }
+        ]
+      },
+      {
+        "file": "thctay-service-discovery/src/main/resources/application.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-service-discovery"
+          }
+        ]
+      },
+      {
+        "file": "thctay-turbine-stream-server/src/main/resources/application.yml",
+        "values": [
+          {
+            "line": 18,
+            "key": "spring.application.name",
+            "value": "thctay-tubine-stream-server"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "thctay-hystrix-dashboard/src/main/java/com/thchengtay/hystrix/HystrixDashboardApplication.java",
+      "thctay-service-discovery/src/main/java/com/thchengtay/service/discovery/EurekaServerApplication.java",
+      "thctay-turbine-stream-server/src/main/java/com/thchengtay/turbine/TurbineStreamServerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "thctay-dependencies/pom.xml",
+        "dependencies": [
+          [
+            "thctay-schedule",
+            "${thctay-schedule.version}"
+          ],
+          [
+            "thctay-mq",
+            "${thctay-mq.version}"
+          ],
+          [
+            "xxl-job-core",
+            "2.5.0"
+          ]
+        ]
+      },
+      {
+        "file": "thctay-mq/pom.xml",
+        "dependencies": [
+          [
+            "thctay-schedule",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "thctay-schedule/pom.xml",
+        "dependencies": [
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-report",
+    "sha": "54efa6a4a8a4b2c1d37cb419eaf8f92128e93b2b",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "report-start/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-report"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 26,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 41,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 57,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "report-start/src/main/java/com/thchengtay/report/ReportStartApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-risk-backend",
+    "sha": "cedeb919d2b0448f651c584dbc5b8604e395bb94",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-risk-backend"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 10,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 28,
+            "key": "spring.profiles",
+            "value": "kris"
+          },
+          {
+            "line": 42,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 62,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 85,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [],
+    "mqScheduleDeps": []
+  },
+  {
+    "repo": "thctay-saps",
+    "sha": "9cd0d5aa6de19844aed32375408356d9a0f8110a",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "saps-controller/src/main/resources/application-dev.yml",
+        "values": [
+          {
+            "line": 12,
+            "key": "spring.application.name",
+            "value": "thctay-saps"
+          }
+        ]
+      },
+      {
+        "file": "saps-controller/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-saps"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 9,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 29,
+            "key": "spring.profiles",
+            "value": "test"
+          },
+          {
+            "line": 47,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 69,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 88,
+            "key": "spring.profiles",
+            "value": "pre"
+          },
+          {
+            "line": 107,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "saps-controller/src/main/java/com/thchengtay/saps/SapsApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ],
+          [
+            "thctay-mq",
+            ""
+          ]
+        ]
+      },
+      {
+        "file": "saps-schedule/pom.xml",
+        "dependencies": [
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-saps-core-common",
+    "sha": "0e088ce5ac02df0d601c960fc227db047e0a67c9",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "configuration": [],
+    "bootApps": [],
+    "mqScheduleDeps": []
+  },
+  {
+    "repo": "thctay-scaffold",
+    "sha": "36d4f0d571337bc72a14df0ccc338d368f369fb0",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "src/main/resources/archetype-resources/__rootArtifactId__-start/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 5,
+            "key": "spring.application.name",
+            "value": "thctay-${rootArtifactId}"
+          },
+          {
+            "line": 7,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 15,
+            "key": "spring.profiles",
+            "value": "dev"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "src/main/resources/archetype-resources/__rootArtifactId__-start/src/main/java/Bootstrap.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "src/main/resources/archetype-resources/pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ],
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-scene",
+    "sha": "70f064d7c721ad4fce1e9afe339c6c4e3a8f10dd",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-intf-hs-scene"
+          },
+          {
+            "line": 6,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 9,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 27,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 45,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 67,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [],
+    "mqScheduleDeps": []
+  },
+  {
+    "repo": "thctay-sf-logistics",
+    "sha": "9ebec822690d7c40b6dc2b5c342980e5e8d953cc",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "thctay-sf-logistics"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 8,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 27,
+            "key": "spring.profiles",
+            "value": "kris"
+          },
+          {
+            "line": 41,
+            "key": "spring.profiles",
+            "value": "test"
+          },
+          {
+            "line": 60,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 79,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-user",
+    "sha": "c10fef4cb7908e1c6513744a3e5c683c9dce9b85",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "user-start/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 5,
+            "key": "spring.application.name",
+            "value": "thctay-user"
+          },
+          {
+            "line": 7,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 15,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 43,
+            "key": "spring.profiles",
+            "value": "test"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "user-start/src/main/java/com/thchengtay/user/UserServerApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ],
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-wms",
+    "sha": "4360ad111ed342a219c59a49c4d55dcf97931134",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "configuration": [
+      {
+        "file": "wms-start/src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 6,
+            "key": "spring.application.name",
+            "value": "thctay-wms"
+          },
+          {
+            "line": 8,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 16,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 53,
+            "key": "spring.profiles",
+            "value": "uat"
+          },
+          {
+            "line": 79,
+            "key": "spring.profiles",
+            "value": "sit"
+          },
+          {
+            "line": 105,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [
+      "wms-start/src/main/java/com/thchengtay/WmsApplication.java"
+    ],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            ""
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "xxl-job-admin",
+    "sha": "3332af1565c8365f2603d741a6ad0fd30faefde8",
+    "ref": "origin/master",
+    "configuration": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "values": [
+          {
+            "line": 3,
+            "key": "spring.application.name",
+            "value": "xxl-job-admin"
+          },
+          {
+            "line": 5,
+            "key": "spring.profiles.active",
+            "value": "dev"
+          },
+          {
+            "line": 13,
+            "key": "spring.profiles",
+            "value": "dev"
+          },
+          {
+            "line": 36,
+            "key": "spring.profiles",
+            "value": "test"
+          },
+          {
+            "line": 59,
+            "key": "spring.profiles",
+            "value": "prod"
+          }
+        ]
+      }
+    ],
+    "bootApps": [],
+    "mqScheduleDeps": [
+      {
+        "file": "pom.xml",
+        "dependencies": [
+          [
+            "xxl-job-core",
+            "${project.parent.version}"
+          ],
+          [
+            "spring-cloud-starter-alibaba-nacos-discovery",
+            "2.2.1.RELEASE"
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "xxt-front-scafold",
+    "sha": "9267d9dfc24403e01c3e484d1228f1fd66301fd4",
+    "ref": "origin/master",
+    "configuration": [],
+    "bootApps": [],
+    "mqScheduleDeps": []
+  }
+]

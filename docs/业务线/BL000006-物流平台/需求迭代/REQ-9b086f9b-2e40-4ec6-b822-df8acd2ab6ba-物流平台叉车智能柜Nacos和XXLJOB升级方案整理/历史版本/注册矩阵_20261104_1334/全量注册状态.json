@@ -1,0 +1,641 @@
+{
+  "scope": "54 repositories, intf-hs 7 applications expanded; prior WorkHub mapping",
+  "registrationSnapshot": "2026-11-04T13:34:00+08:00",
+  "sourceSnapshot": "2026-11-04T13:30:00+08:00",
+  "rows": [
+    {
+      "repo": "bpm-framework",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "2e473432a6071b8afa24737fa8638fa04c37be47",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-bpm",
+      "xxlStatus": "待核：AppName",
+      "xxlIdentity": "有公共调度依赖；未见同名定义",
+      "note": "仓库包含 bpm-start 可运行模块，注册名 thctay-bpm；不能把整仓都当成不注册的公共库。含公共 MQ，执行器 AppName 待核。"
+    },
+    {
+      "repo": "etc-doc",
+      "ref": "origin/main",
+      "sha": "1be2be6ec0e5430032dea538cc51630c169439ad",
+      "nacosStatus": "不适用",
+      "nacosNames": "—",
+      "xxlStatus": "不适用",
+      "xxlIdentity": "—",
+      "note": "文档仓库。"
+    },
+    {
+      "repo": "etc-tools",
+      "ref": "origin/ql-etc-tools",
+      "sha": "71a93c6e2a5d5c8240180d25f3d6f88e107c590e",
+      "nacosStatus": "不适用",
+      "nacosNames": "—",
+      "xxlStatus": "不适用",
+      "xxlIdentity": "—",
+      "note": "工具工程，本次源码未见 Nacos/XXL 接入。"
+    },
+    {
+      "repo": "insurance-exinterface",
+      "ref": "origin/master",
+      "sha": "71f393bb7563bb5cc95f1fb8375faed3740139eb",
+      "nacosStatus": "未见注册",
+      "nacosNames": "insurance-exinterface",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "intf-abc",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "041807dfabf331fd452a97c04ae08ff5426aae05",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-intfabc",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "本次新见 Nacos 1 个健康实例。按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "intf-bank",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "96b7fac79dd8f5c1a0284bd7770e461bd5193b91",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-intfbank",
+      "xxlStatus": "未见定义",
+      "xxlIdentity": "源码名 thctay-intfbank",
+      "note": "源码 application-local.yml 声明执行器 thctay-intfbank（仅作测试 AppName 线索），且有 1 个业务任务；新中心 20 个定义中未见该名，需核实测试实际 AppName/补齐定义。"
+    },
+    {
+      "repo": "intf-boc",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "b5f119fc6e1ce747f041be9ecb63fe6578ee8bc7",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-intfboc",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "本次新见 Nacos 1 个健康实例。按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "intf-ccb",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "cb65714c8d778d4604f45bb04fb2c717ce364fc5",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-intfccb",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "intf-common",
+      "ref": "origin/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "0c4a07d5efa5ed8eb0b5d2d6aadd79d014077dc5",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-intfcommon",
+      "xxlStatus": "待核：AppName",
+      "xxlIdentity": "有公共调度依赖；未见同名定义",
+      "note": "新增升级分支，父依赖0.0.2、默认sit、新中心地址与认证已配置；Nacos已注册，公共调度AppName待核。"
+    },
+    {
+      "repo": "intf-credit",
+      "ref": "origin/master",
+      "sha": "453d37b07fbdbc60694385c63478e06e242f56d5",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-intfcredit",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "intf-gs",
+      "ref": "origin/master",
+      "sha": "945708952046fc213e9ca76b142018fc19ffc7cc",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-intfgs",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "intf-hs",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "2c28b694b960b991599a982ea06f73ae643d83ed",
+      "nacosStatus": "5/7 名称在线＊",
+      "nacosNames": "见子应用表",
+      "xxlStatus": "部分在线 / 待映射",
+      "xxlIdentity": "见子应用表",
+      "note": "江苏、贵州、黑龙江、山东在线；场景同名在线但部署归属待核；广东、三川未见。三川前次在线，本次未见。"
+    },
+    {
+      "repo": "intf-icbc",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "8697bfb305c40081531e48c2ce4779307f52c8a5",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-intficbc",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "intf-qdccb",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "29fd02fcc8fa1af8d39e98c1b3e5bc12e5f2bbb6",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-intfqdccb",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "intf-risk",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "8326e1590dc17d5b1f7b3e8c2748701ea4ec4bfe",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-intfrisk",
+      "xxlStatus": "待核：测试配置",
+      "xxlIdentity": "dev 为 thctay-intfrisk；未见定义",
+      "note": "源码 dev 配置存在 AppName thctay-intfrisk；新中心无该名，测试实际是否启用需核实。"
+    },
+    {
+      "repo": "intf-sence-back",
+      "ref": "origin/master",
+      "sha": "f2d197825c7d203a92a6e1a61c04952d1d3bead5",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-intf-hs-scene-backend",
+      "xxlStatus": "待核：AppName",
+      "xxlIdentity": "有公共调度依赖；未见同名定义",
+      "note": "服务名 thctay-intf-hs-scene-backend；依赖框架/MQ，执行器名需查测试配置。"
+    },
+    {
+      "repo": "invoice-exinterface",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "203c9de707b1261223a100c3a614d1970b151088",
+      "nacosStatus": "已注册",
+      "nacosNames": "invoice-exinterface",
+      "xxlStatus": "已注册",
+      "xxlIdentity": "invoice-exinterface（1 地址）",
+      "note": "本次Nacos恢复健康、XXL新增1地址；发票任务页3项为STOP，不能据此认定任务验收完成。"
+    },
+    {
+      "repo": "mock-server",
+      "ref": "origin/mock_v1",
+      "sha": "05bddfd9b684822b915741ef804c80787be6b54d",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-mock-server-plus",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "saps-account-checker",
+      "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+      "sha": "6a3360057a6a4e39802a3c407c025678445f450e",
+      "nacosStatus": "待核：重名",
+      "nacosNames": "thctay-saps-checkbill / sit 为 thctay-saps",
+      "xxlStatus": "待核：重名",
+      "xxlIdentity": "checkbill 定义未在线；sit 复用 thctay-saps",
+      "note": "bootstrap/开发配置为 thctay-saps-checkbill；application-sit.yml 却把应用名和执行器名都写成 thctay-saps。未见独立 checkbill 注册，现有 SAPS 实例不能重复算给两个系统。"
+    },
+    {
+      "repo": "saps-back",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "9c9c8ab5bb281f13115279e49165d90006315788",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-saps-back",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "本次新见 Nacos 1 个健康实例。注册名 thctay-saps-back，与 thctay-saps 分开。"
+    },
+    {
+      "repo": "thctay-account",
+      "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+      "sha": "479f2052d95d33e58b674e6890bf235dc77ffaf8",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-account",
+      "xxlStatus": "已注册",
+      "xxlIdentity": "thctay-account",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "thctay-auth",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "404f565d1ce09249844d1d47cefaa4b60743b044",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-admin",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "已核实 bootstrap 的 spring.application.name=thctay-admin；按该名字匹配已注册服务，修正此前 admin 未归属状态。"
+    },
+    {
+      "repo": "thctay-cashloan",
+      "ref": "origin/master",
+      "sha": "b23696139d350f4e9302fe48c5928283315570be",
+      "nacosStatus": "未见注册（2 项）",
+      "nacosNames": "thctay-cashloan、thctay-cashloan-back",
+      "xxlStatus": "未注册",
+      "xxlIdentity": "thctay-cashLoan（有定义，无在线地址）",
+      "note": "包含 cashloan-controller 和 cashloan-back 两个应用，Nacos 两个名字均未见；XXL 定义名称大小写为 thctay-cashLoan。"
+    },
+    {
+      "repo": "thctay-cms",
+      "ref": "origin/master",
+      "sha": "3c5a41bc0d56092c5a3590ed8ba9fc4ac568d400",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-cms",
+      "xxlStatus": "待核：AppName",
+      "xxlIdentity": "有公共调度依赖；未见同名定义",
+      "note": "有公共 MQ/XXL 依赖，无同名执行器定义；不能仅凭没有业务 @XxlJob 就判定不需要调度。"
+    },
+    {
+      "repo": "thctay-contract",
+      "ref": "origin/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "ddc88557af65362cc1050fedaf957c3c04aa5a42",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-contract",
+      "xxlStatus": "未注册",
+      "xxlIdentity": "thctay-contract（有定义，无在线地址）",
+      "note": "新增升级分支，5/5入口已适配、父依赖0.0.2、sit新中心配置；Nacos未见、XXL无地址，待部署验收。"
+    },
+    {
+      "repo": "thctay-crm",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "0a46480b6e8d816236b13de8e38f6a617913dac4",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-crm",
+      "xxlStatus": "已注册",
+      "xxlIdentity": "thctay-crm（1 个在线地址）",
+      "note": "0a46480b6e 已适配29/29入口，两中心在线；产品变更调度参数和失败反馈已修正，手工接口参数上下文仍未打通。"
+    },
+    {
+      "repo": "thctay-devicemanage",
+      "ref": "origin/master",
+      "sha": "21fe064e5d66ab55c63decd2f380cce1f874b1c8",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-devicemanage",
+      "xxlStatus": "待核：是否启用",
+      "xxlIdentity": "有 core 依赖；未见独立定义",
+      "note": "有 core 依赖，未见自定义任务或测试执行器 AppName，是否需要注册待核。"
+    },
+    {
+      "repo": "thctay-eas",
+      "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+      "sha": "0cf07fdc16f9ac6e6a3d34c50e08586eebb89285",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-eas",
+      "xxlStatus": "已注册",
+      "xxlIdentity": "thctay-eas",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "thctay-ebaby-gateway",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "e38a3bbc5e7527226ddaf2ef01907aff24df6e3e",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-ebaby-gateway",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "thctay-ems-logistics",
+      "ref": "origin/master",
+      "sha": "793a0df73b024c4242e73dbb863e0bbf6c0435e1",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-ems-logistics",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "thctay-etc",
+      "ref": "origin/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "8030ee092f6c0ef5aa053d5c362574d43a130b30",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-etc",
+      "xxlStatus": "已注册",
+      "xxlIdentity": "thctay-etc",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "thctay-etc-issue",
+      "ref": "origin/master",
+      "sha": "8761b83781fe22450d6ba1e6c83d189c1080f635",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-etc-issue",
+      "xxlStatus": "未注册",
+      "xxlIdentity": "thctay-etc-issue（有定义，无在线地址）",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "thctay-front-gateway",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "78ac549ca1bfb6ddefce83fad8a11921f7181aeb",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-front-gateway",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "thctay-guangdong-tools",
+      "ref": "origin/master",
+      "sha": "69cbbdb2f1314b64c6c85174f0846c987ac9f52c",
+      "nacosStatus": "不适用",
+      "nacosNames": "—",
+      "xxlStatus": "不适用",
+      "xxlIdentity": "—",
+      "note": "工具组件，本轮不作为独立注册服务。"
+    },
+    {
+      "repo": "thctay-lianrongbao",
+      "ref": "origin/master",
+      "sha": "59aeb2ef4d0ea52cf174066eb9c1777ae5dd82a6",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-lianrongbao",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "thctay-marketing",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "b3459269bfd9157639ffd678863bfac09a56386d",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-marketing",
+      "xxlStatus": "已注册",
+      "xxlIdentity": "thctay-marketing",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "thctay-marketing-back",
+      "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+      "sha": "6046c032bac7b476652ee60b49df7156144969ad",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-marketing-back",
+      "xxlStatus": "待核：测试配置",
+      "xxlIdentity": "dev 为 thctay-crm；非本系统独立证据",
+      "note": "dev 配置残留 AppName thctay-crm，仅作为配置线索，不能用 CRM 的注册状态替代本系统测试状态。"
+    },
+    {
+      "repo": "thctay-marketing-gateway",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "6209f58c827889e7b745eae46e3a170c6bf2c54a",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-marketing-gateway",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "thctay-message",
+      "ref": "origin/master",
+      "sha": "bc28a3081ffdf82faa84a0c19402f4b7e201fa96",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-message",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "thctay-op-gateway",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "342a0e2a88ebd97f7444a88fcc40e2eb9657f84e",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-opgateway",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "342a0e2a88 将非标准层级下 application 修正为 spring.application.name；新中心该名称 1 个健康实例。部署包 SHA 仍待核。"
+    },
+    {
+      "repo": "thctay-partner-gateway",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "43b12748612d5ac5ed6925924aff000af8e6fe0a",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-partner-gateway",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "本次新见 Nacos 1 个健康实例。按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "thctay-payment",
+      "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+      "sha": "ea725eccc1b81a38ae597dec5bd492f43932f12a",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-payment",
+      "xxlStatus": "已注册",
+      "xxlIdentity": "thctay-payment",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "thctay-public",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027-v2",
+      "sha": "71494aa9133c1a973c2cf0a48ecc11004e31a6e8",
+      "nacosStatus": "不适用",
+      "nacosNames": "—",
+      "xxlStatus": "不适用",
+      "xxlIdentity": "—",
+      "note": "本轮升级的是 dependencies/schedule/MQ 公共制品，不独立注册；仓库历史 Hystrix/Eureka/Turbine 模块不自动纳入本轮在运范围。"
+    },
+    {
+      "repo": "thctay-report",
+      "ref": "origin/master",
+      "sha": "54efa6a4a8a4b2c1d37cb419eaf8f92128e93b2b",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-report",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "thctay-risk-backend",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "cedeb919d2b0448f651c584dbc5b8604e395bb94",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-risk-backend",
+      "xxlStatus": "待核：AppName",
+      "xxlIdentity": "有公共调度依赖；未见同名定义",
+      "note": "服务名为 thctay-risk-backend；XXL 的 thctay-risk 不能仅凭名称相似就归到该仓库。框架传递 MQ 的 AppName 待核。"
+    },
+    {
+      "repo": "thctay-saps",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "9cd0d5aa6de19844aed32375408356d9a0f8110a",
+      "nacosStatus": "已注册＊",
+      "nacosNames": "thctay-saps",
+      "xxlStatus": "已注册＊",
+      "xxlIdentity": "thctay-saps",
+      "note": "中心里 thctay-saps 服务和执行器均在线；checker 的 sit 配置也复用此名，需用部署包/进程核实仓库归属，不能重复计数。"
+    },
+    {
+      "repo": "thctay-saps-core-common",
+      "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+      "sha": "0e088ce5ac02df0d601c960fc227db047e0a67c9",
+      "nacosStatus": "不适用",
+      "nacosNames": "—",
+      "xxlStatus": "不适用",
+      "xxlIdentity": "—",
+      "note": "公共模型组件，不独立注册。"
+    },
+    {
+      "repo": "thctay-scaffold",
+      "ref": "origin/master",
+      "sha": "36d4f0d571337bc72a14df0ccc338d368f369fb0",
+      "nacosStatus": "不适用",
+      "nacosNames": "—",
+      "xxlStatus": "不适用",
+      "xxlIdentity": "—",
+      "note": "模板，不作为已部署子系统。"
+    },
+    {
+      "repo": "thctay-scene",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "fea7b0618e07680849a083541c665796f8673cb2",
+      "nacosStatus": "已注册＊",
+      "nacosNames": "thctay-intf-hs-scene",
+      "xxlStatus": "名称在线，归属待核",
+      "xxlIdentity": "候选 thctay-intf-hs（2 个地址）",
+      "note": "Nacos同名已健康，服务器已见独立thctay-scene jar；XXL thctay-intf-hs的2地址尚未对应到进程，不能重复计数。"
+    },
+    {
+      "repo": "thctay-sf-logistics",
+      "ref": "origin/master",
+      "sha": "9ebec822690d7c40b6dc2b5c342980e5e8d953cc",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-sf-logistics",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "thctay-user",
+      "ref": "origin/master",
+      "sha": "c10fef4cb7908e1c6513744a3e5c683c9dce9b85",
+      "nacosStatus": "未见注册",
+      "nacosNames": "thctay-user",
+      "xxlStatus": "待核：AppName",
+      "xxlIdentity": "有公共调度依赖；未见同名定义",
+      "note": "含公共 MQ/XXL 依赖，执行器 AppName 未落在当前源码配置，需核测试配置。"
+    },
+    {
+      "repo": "thctay-wms",
+      "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+      "sha": "859d8ac5f03efca2f8954ff9e577ab82b9d60623",
+      "nacosStatus": "已注册",
+      "nacosNames": "thctay-wms",
+      "xxlStatus": "— 无调度证据",
+      "xxlIdentity": "源码未见独立任务/MQ/schedule/core",
+      "note": "本次新见 Nacos 1 个健康实例。按源码服务名核对 11:49—11:50 新中心完整列表；未注册不说明未部署到旧中心。"
+    },
+    {
+      "repo": "xxl-job-admin",
+      "ref": "origin/master",
+      "sha": "3332af1565c8365f2603d741a6ad0fd30faefde8",
+      "nacosStatus": "未见注册",
+      "nacosNames": "xxl-job-admin",
+      "xxlStatus": "不适用",
+      "xxlIdentity": "—",
+      "note": "调度中心本身可达且版本 2.5.0；不是业务执行器。旧仓库的 Nacos 声明不能当作新中心实际部署配置。"
+    },
+    {
+      "repo": "xxt-front-scafold",
+      "ref": "origin/master",
+      "sha": "9267d9dfc24403e01c3e484d1228f1fd66301fd4",
+      "nacosStatus": "不适用",
+      "nacosNames": "—",
+      "xxlStatus": "不适用",
+      "xxlIdentity": "—",
+      "note": "前端模板，不注册后端执行器。"
+    }
+  ],
+  "intfHsApps": [
+    {
+      "name": "广东",
+      "module": "domain/gd/intf-gdgs-web",
+      "nacosName": "thctay-gdgs",
+      "nacosStatus": "未见注册",
+      "executorCandidate": "thctay-intf-gdgs",
+      "executorStatus": "定义无在线地址（候选映射）"
+    },
+    {
+      "name": "贵州",
+      "module": "domain/gzgs/intf-gzgs-web",
+      "nacosName": "thctay-gzgs",
+      "nacosStatus": "已注册",
+      "executorCandidate": "thctay-intf-gzgs",
+      "executorStatus": "定义无在线地址（候选映射）"
+    },
+    {
+      "name": "黑龙江",
+      "module": "domain/hlj/intf-hlj-web",
+      "nacosName": "thctay-hlj",
+      "nacosStatus": "已注册",
+      "executorCandidate": "未查明",
+      "executorStatus": "未见对应定义，AppName 待核"
+    },
+    {
+      "name": "江苏",
+      "module": "domain/jsgs/intf-jsgs-web",
+      "nacosName": "thctay-jsgs",
+      "nacosStatus": "已注册",
+      "executorCandidate": "thctay-intf-jsgs",
+      "executorStatus": "名称在线 1 地址（候选映射）"
+    },
+    {
+      "name": "三川",
+      "module": "domain/sanchuan/intf-sanchuan-web",
+      "nacosName": "thctay-sanchuan",
+      "nacosStatus": "未见注册（前次在线）",
+      "executorCandidate": "thctay-sanchuan",
+      "executorStatus": "定义无在线地址"
+    },
+    {
+      "name": "场景",
+      "module": "domain/scene/intf-scene",
+      "nacosName": "thctay-intf-hs-scene",
+      "nacosStatus": "名称在线，归属待核",
+      "executorCandidate": "thctay-intf-hs",
+      "executorStatus": "名称在线 2 地址；与 thctay-scene 归属待核"
+    },
+    {
+      "name": "山东",
+      "module": "domain/sdgs/intf-sdgs-web",
+      "nacosName": "thctay-sdgs",
+      "nacosStatus": "已注册",
+      "executorCandidate": "thctay-intf-sdgs",
+      "executorStatus": "名称在线1地址（候选映射）"
+    }
+  ],
+  "unmappedObservedNacos": [
+    "thctay-datashield",
+    "thctay-risk"
+  ],
+  "unmappedXxlDefinitions": [
+    "thctay-board",
+    "thctay-risk",
+    "xxl-job-executor-sample"
+  ],
+  "registrationObservedBetween": [
+    "2026-11-04T13:29:00+08:00",
+    "2026-11-04T13:31:00+08:00"
+  ],
+  "runtimeEvidence": "../升级进度复核_20261104_1334/运行态观察.json",
+  "deltaFrom1151": {
+    "nacosAdded": [
+      "invoice-exinterface",
+      "thctay-intf-hs-scene",
+      "thctay-intfccb",
+      "thctay-intfcommon",
+      "thctay-intfqdccb",
+      "thctay-intfrisk",
+      "thctay-risk"
+    ],
+    "nacosNoLongerObserved": [
+      "thctay-sanchuan"
+    ],
+    "xxlOnlineAdded": [
+      "invoice-exinterface",
+      "thctay-intf-sdgs",
+      "thctay-risk"
+    ],
+    "xxlNewDefinitions": [
+      "thctay-intf-sdgs"
+    ]
+  }
+}

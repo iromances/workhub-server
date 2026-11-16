@@ -12,8 +12,10 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -117,9 +119,9 @@ public class CodexCliStructuredExtractor {
                     && isBlank(rawContent)) {
                 return CodexCliExtractionResult.skipped();
             }
-            AiGatewayResult result = aiGatewayClient.executeStructured(AiGatewayRequest.structured(
+            AiGatewayResult result = aiGatewayClient.executeStructured(AiGatewayRequest.withVariables(
                     USE_CASE_CODE,
-                    invocation.prompt(),
+                    invocation.variables(),
                     invocation.workingDirectory(),
                     invocation.addDirs(),
                     invocation.imagePaths(),
@@ -163,40 +165,22 @@ public class CodexCliStructuredExtractor {
                 List.copyOf(addDirs),
                 imagePaths,
                 safeSummaries,
-                buildPrompt(sourceChannel, rawContent, safeAttachments, safeSummaries)
+                buildVariables(sourceChannel, rawContent, safeAttachments, safeSummaries)
         );
     }
 
-    String buildPrompt(String sourceChannel,
-                       String rawContent,
-                       List<AttachmentService.AttachmentFileContext> attachments,
-                       List<IntakeAttachmentSummary> attachmentSummaries) {
-        StringBuilder prompt = new StringBuilder("""
-                你是 WorkHub 的需求结构化助手。
-                请结合人工补充说明、截图、附件内容，抽取审批型需求字段，并严格按给定 JSON Schema 输出。
-                要求：
-                1. 只输出事实，不要猜测无法确认的信息。
-                2. 能从截图或附件中确认的字段，优先写入标准字段。
-                3. fields 必须保留你最终识别到的结构化字段清单。
-                4. 如果图片或附件中能识别到更准确的值，可以覆盖人工说明里的模糊内容。
-                5. 非图片附件已经预先提取为纯文本摘要，请优先基于这些摘要判断，不要猜测如何打开二进制文件。
-                6. requirementType 只能输出“数据提取/运维”或“研发需求”。
-                7. requirementDigest 输出给列表展示的极短摘要，尽量不超过 24 个字。
-                8. 如果 requirementType 为“研发需求”，请在 developmentBranchName 中给出推荐研发分支名，格式优先使用 feature/summary_words_approvalCode；summary_words 使用英文单词或缩写，整体控制在 3 个英文单词以内，超过时使用常见缩写，所有单词和审批编号之间统一用下划线连接。非研发需求不要输出研发分支名。
-
-
-                来源渠道：%s
-                人工补充说明：
-                %s
-                """.formatted(defaultValue(sourceChannel), defaultValue(rawContent)));
-
+    Map<String, Object> buildVariables(String sourceChannel,
+                                       String rawContent,
+                                       List<AttachmentService.AttachmentFileContext> attachments,
+                                       List<IntakeAttachmentSummary> attachmentSummaries) {
         List<AttachmentService.AttachmentFileContext> safeAttachments = attachments == null ? List.of() : attachments;
         List<IntakeAttachmentSummary> safeSummaries = attachmentSummaries == null ? List.of() : attachmentSummaries;
 
+        StringBuilder attachmentList = new StringBuilder();
         if (!safeAttachments.isEmpty()) {
-            prompt.append("\n上传文件清单：\n");
+            attachmentList.append("\n上传文件清单：\n");
             for (AttachmentService.AttachmentFileContext attachment : safeAttachments) {
-                prompt.append("- [")
+                attachmentList.append("- [")
                         .append(attachment.category())
                         .append("] ")
                         .append(defaultValue(attachment.fileName()))
@@ -206,10 +190,11 @@ public class CodexCliStructuredExtractor {
             }
         }
 
+        StringBuilder attachmentSummaryText = new StringBuilder();
         if (!safeSummaries.isEmpty()) {
-            prompt.append("\n非图片附件文本摘要：\n");
+            attachmentSummaryText.append("\n非图片附件文本摘要：\n");
             for (IntakeAttachmentSummary summary : safeSummaries) {
-                prompt.append("### 文件：")
+                attachmentSummaryText.append("### 文件：")
                         .append(defaultValue(summary.fileName()))
                         .append('\n')
                         .append("类型：")
@@ -220,8 +205,12 @@ public class CodexCliStructuredExtractor {
                         .append("\n\n");
             }
         }
-        prompt.append("请输出整理建议 JSON。");
-        return prompt.toString();
+        Map<String, Object> variables = new LinkedHashMap<>();
+        variables.put("sourceChannel", defaultValue(sourceChannel));
+        variables.put("manualNotes", defaultValue(rawContent));
+        variables.put("attachmentList", attachmentList.toString());
+        variables.put("attachmentSummaries", attachmentSummaryText.toString());
+        return variables;
     }
 
     private boolean isImage(AttachmentService.AttachmentFileContext attachment) {
@@ -258,7 +247,7 @@ public class CodexCliStructuredExtractor {
                                      List<String> addDirs,
                                      List<String> imagePaths,
                                      List<IntakeAttachmentSummary> attachmentSummaries,
-                                     String prompt) {
+                                     Map<String, Object> variables) {
     }
 
     public record CodexCliExtractionResult(boolean attempted,

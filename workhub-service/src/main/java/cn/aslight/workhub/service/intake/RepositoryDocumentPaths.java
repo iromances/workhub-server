@@ -11,6 +11,7 @@ public final class RepositoryDocumentPaths {
     public static final String CONFIG_KEY_REPOSITORY_PATH = "repositoryPath";
     public static final String SOURCES = "requirement-sources";
     public static final String REQUIREMENTS = "requirements";
+    public static final String BUSINESS_LINES = "业务线";
 
     private RepositoryDocumentPaths() { }
 
@@ -71,6 +72,6 @@ public final class RepositoryDocumentPaths {
         }
         String oldRequirements = "wiki/公司项目/研发需求/";
         return normalized.startsWith(oldRequirements)
-                ? REQUIREMENTS + "/" + normalized.substring(oldRequirements.length()) : normalized;
+                ? BUSINESS_LINES + "/" + normalized.substring(oldRequirements.length()) : normalized;
     }
 }

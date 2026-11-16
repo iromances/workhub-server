@@ -41,6 +41,10 @@ public class IntakeRecordEntity {
      */
     private String developmentOwnerUserName;
     /**
+     * 研发规范：SDD 或 STANDARD，NULL 视为常规模式。
+     */
+    private String developmentStandard;
+    /**
      * 结构化需求 JSON。
      */
     private String structuredDataJson;
@@ -325,6 +329,14 @@ public class IntakeRecordEntity {
 
     public void setDevelopmentOwnerUserName(String developmentOwnerUserName) {
         this.developmentOwnerUserName = developmentOwnerUserName;
+    }
+
+    public String getDevelopmentStandard() {
+        return developmentStandard;
+    }
+
+    public void setDevelopmentStandard(String developmentStandard) {
+        this.developmentStandard = developmentStandard;
     }
 
     public String getStructuredDataJson() {

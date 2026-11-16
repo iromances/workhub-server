@@ -31,6 +31,7 @@ public interface OpsMonitorMapper {
                    mq_topic AS mqTopic,
                    mq_consumer_group AS mqConsumerGroup,
                    mq_lag_threshold AS mqLagThreshold,
+                   stale_threshold_minutes AS staleThresholdMinutes,
                    enabled,
                    last_status AS lastStatus,
                    last_message AS lastMessage,
@@ -63,6 +64,16 @@ public interface OpsMonitorMapper {
                 OR mq_consumer_group LIKE CONCAT('%', #{keyword}, '%')
               )
             </if>
+            <if test="lastStatus != null and lastStatus != '' and lastStatus != 'UNCHECKED'">
+              AND last_status = #{lastStatus}
+            </if>
+            <if test="lastStatus == 'UNCHECKED'">
+              AND last_status IS NULL
+              AND enabled = 1
+            </if>
+            <if test="enabled != null">
+              AND enabled = #{enabled}
+            </if>
             ORDER BY enabled DESC, business_line_code ASC, environment_code ASC, monitor_key ASC
             </script>
             """)
@@ -70,7 +81,9 @@ public interface OpsMonitorMapper {
                                    @Param("businessLineCode") String businessLineCode,
                                    @Param("environmentCode") String environmentCode,
                                    @Param("keyword") String keyword,
-                                   @Param("enabledOnly") boolean enabledOnly);
+                                   @Param("enabledOnly") boolean enabledOnly,
+                                   @Param("lastStatus") String lastStatus,
+                                   @Param("enabled") Boolean enabled);
 
     @Select("""
             SELECT id,
@@ -89,6 +102,7 @@ public interface OpsMonitorMapper {
                    mq_topic AS mqTopic,
                    mq_consumer_group AS mqConsumerGroup,
                    mq_lag_threshold AS mqLagThreshold,
+                   stale_threshold_minutes AS staleThresholdMinutes,
                    enabled,
                    last_status AS lastStatus,
                    last_message AS lastMessage,
@@ -118,6 +132,7 @@ public interface OpsMonitorMapper {
                    mq_topic AS mqTopic,
                    mq_consumer_group AS mqConsumerGroup,
                    mq_lag_threshold AS mqLagThreshold,
+                   stale_threshold_minutes AS staleThresholdMinutes,
                    enabled,
                    last_status AS lastStatus,
                    last_message AS lastMessage,
@@ -147,6 +162,7 @@ public interface OpsMonitorMapper {
                 mq_topic,
                 mq_consumer_group,
                 mq_lag_threshold,
+                stale_threshold_minutes,
                 enabled,
                 remark
             ) VALUES (
@@ -165,6 +181,7 @@ public interface OpsMonitorMapper {
                 #{mqTopic},
                 #{mqConsumerGroup},
                 #{mqLagThreshold},
+                #{staleThresholdMinutes},
                 #{enabled},
                 #{remark}
             )
@@ -188,6 +205,7 @@ public interface OpsMonitorMapper {
                 mq_topic = #{mqTopic},
                 mq_consumer_group = #{mqConsumerGroup},
                 mq_lag_threshold = #{mqLagThreshold},
+                stale_threshold_minutes = #{staleThresholdMinutes},
                 enabled = #{enabled},
                 remark = #{remark},
                 updated_at = CURRENT_TIMESTAMP

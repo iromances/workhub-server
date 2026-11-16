@@ -59,7 +59,7 @@ class DevelopmentPlanFolderServiceTest {
 
         IntakeRequirementFolderResponse response = service.open(101L);
 
-        Path expectedFolder = repository.resolve("docs/requirements")
+        Path expectedFolder = repository.resolve("docs/业务线")
                 .resolve("账单管理")
                 .resolve("需求迭代")
                 .resolve("趣学呗")
@@ -72,6 +72,51 @@ class DevelopmentPlanFolderServiceTest {
         assertEquals("202604220007-趣学呗平台账户展示切换", response.folderName());
         assertEquals(expectedFolder.toString(), response.folderPath());
         assertTrue(response.opened());
+    }
+
+    @Test
+    void open_shouldUseBusinessLineCodePrefixedFolderWhenCodePresent() throws Exception {
+        Path vault = tempDir.resolve("project-knowledge-coded");
+        ObjectMapper objectMapper = new ObjectMapper();
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(102L);
+        intake.setStructuredDataJson(objectMapper.writeValueAsString(structuredData()));
+
+        ProjectDetailResponse coded = new ProjectDetailResponse(
+                2L, "QXB", "趣学呗", "研发", "BL000002", "账单管理",
+                "owner", "ACTIVE", "账单管理相关系统", LocalDateTime.now(), LocalDateTime.now());
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        when(intakeMapper.findById(102L)).thenReturn(intake);
+        ProjectMapper projectMapper = mock(ProjectMapper.class);
+        when(projectMapper.findFirstDetailByBusinessLine("账单管理")).thenReturn(coded);
+
+        SysConfigService sysConfigService = mock(SysConfigService.class);
+        when(sysConfigService.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH))
+                .thenReturn(vault.toString());
+        Path repository = RepositoryDocumentPathsTest.repository(tempDir.resolve("workhub-server-coded"));
+        when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
+
+        RecordingPathOpener opener = new RecordingPathOpener();
+        ProjectKnowledgeBaseService knowledgeBaseService = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
+                new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
+        DevelopmentPlanFolderService service = new DevelopmentPlanFolderService(
+                intakeMapper,
+                projectMapper,
+                knowledgeBaseService,
+                objectMapper,
+                opener
+        );
+
+        service.open(102L);
+
+        Path expectedFolder = repository.resolve("docs/业务线")
+                .resolve("BL000002-账单管理")
+                .resolve("需求迭代")
+                .resolve("趣学呗")
+                .resolve("2026")
+                .resolve("202604220007-趣学呗平台账户展示切换");
+        assertTrue(Files.isDirectory(expectedFolder));
+        assertEquals(expectedFolder, opener.openedPath);
     }
 
     private IntakeStructuredData structuredData() {

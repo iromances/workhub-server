@@ -2,7 +2,6 @@ package cn.aslight.workhub.service.ops;
 
 import cn.aslight.workhub.dao.ops.*;
 import cn.aslight.workhub.dao.notification.NotificationMapper;
-import cn.aslight.workhub.dao.system.UserMapper;
 import cn.aslight.workhub.model.ops.*;
 import cn.aslight.workhub.service.notification.*;
 import org.apache.ibatis.session.Configuration;
@@ -41,14 +40,13 @@ class SystemAlertCollectionStoreTest {
         create(scopes,"ops_system_alert_scope_sync_state");create(scopes,"ops_system_alert_scope");
         jdbc.update("INSERT INTO ops_system_alert_scope(id,business_line_code,environment_code,watch_mode,enabled) VALUES(1,'BL000012','TEST','ALL',1)");
         jdbc.execute(Files.readString(schema.resolve("V20261104_155928__add_system_alert_collection_progress.sql")));
+        jdbc.execute(Files.readString(schema.resolve("V20261112_140809__add_system_alert_collection_failure_escalation.sql")));
         var config=new Configuration();config.setMapUnderscoreToCamelCase(true);
         for(var type:List.of(SystemAlertCollectionMapper.class,SystemAlertScopeIngestionMapper.class,NotificationMapper.class))config.addMapper(type);
         var factory=new SqlSessionFactoryBean();factory.setDataSource(db);factory.setConfiguration(config);var sql=new SqlSessionTemplate(factory.getObject());
         realMapper=sql.getMapper(SystemAlertCollectionMapper.class);mapper=mock(SystemAlertCollectionMapper.class,delegates(realMapper));
         ingestion=sql.getMapper(SystemAlertScopeIngestionMapper.class);
-        var notifications=new NotificationService(sql.getMapper(NotificationMapper.class),mock(NotificationSchemaInitializer.class));
-        var users=mock(UserMapper.class);when(users.findBusinessLineMembers(anyString())).thenReturn(List.of());
-        var target=new SystemAlertCollectionStore(mapper,ingestion,users,notifications,json,clock,ZoneOffset.UTC);
+        var target=new SystemAlertCollectionStore(mapper,ingestion,json,clock,ZoneOffset.UTC);
         var tx=new TransactionInterceptor();tx.setTransactionManager(new DataSourceTransactionManager(db));tx.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
         var proxy=new ProxyFactory(target);proxy.setProxyTargetClass(true);proxy.addAdvice(tx);store=(SystemAlertCollectionStore)proxy.getProxy();
         scope=new SystemAlertScopeEntity();scope.setId(1L);scope.setEnabled(true);scope.setBusinessLineCode("BL000012");scope.setEnvironmentCode("TEST");scope.setWatchMode("ALL");scope.setIndexPatterns(List.of("workhub-*"));scope.setIndexPatternExpression("workhub-*");
@@ -61,7 +59,7 @@ class SystemAlertCollectionStoreTest {
         var middle=mapper.find(1L);assertNull(middle.coveredUntil());assertEquals("PARTIAL",ingestion.findSyncState(1L).lastStatus());assertEquals(List.of(1L),store.pending());
         clock.advance(1);var two=claim();assertEquals(one.state().windowId(),two.state().windowId());assertEquals(one.state().toTime(),two.state().toTime());assertNotNull(store.position(two.state()));
         store.commit(two,page(List.of(event("two","a",same)),true,false));
-        assertEquals(2,count("ops_system_alert_event"));assertEquals(2,count("sys_notification"));assertEquals(2,mapper.pages(one.state().windowId()).size());
+        assertEquals(2,count("ops_system_alert_event"));assertEquals(0,count("sys_notification"));assertEquals(2,mapper.pages(one.state().windowId()).size());
         var finalState=mapper.find(1L);assertEquals("COMPLETE",finalState.status());assertEquals(one.state().toTime(),finalState.coveredUntil());assertTrue(store.pending().isEmpty());
         assertEquals("SUCCESS",ingestion.findSyncState(1L).lastStatus());
         for(var receipt:mapper.pages(one.state().windowId())) { assertEquals(AccountingExecutionEvidenceService.hash(receipt.receiptJson()),receipt.receiptHash());assertFalse(receipt.receiptJson().contains("private-pit")); }
@@ -70,7 +68,7 @@ class SystemAlertCollectionStoreTest {
         var first=claim();var event=event("one","a",clock.instant().minusSeconds(10));store.commit(first,page(List.of(event),false,false));
         var interrupted=claim();store.fail(interrupted,"expired",true);var restarted=claim();
         assertEquals(first.state().fromTime(),restarted.state().fromTime());assertEquals(first.state().toTime(),restarted.state().toTime());assertNotEquals(first.state().windowId(),restarted.state().windowId());assertNull(store.position(restarted.state()));
-        store.commit(restarted,page(List.of(event),true,false));assertEquals(1,count("ops_system_alert_event"));assertEquals(1,count("sys_notification"));
+        store.commit(restarted,page(List.of(event),true,false));assertEquals(1,count("ops_system_alert_event"));assertEquals(0,count("sys_notification"));
         assertFalse(mapper.pages(first.state().windowId()).getFirst().complete());
     }
     @Test void failedReceiptRollsBackEventsNotificationsAndPosition() {
@@ -125,6 +123,37 @@ class SystemAlertCollectionStoreTest {
         assertEquals("SLOW_SQL",jdbc.queryForObject("SELECT event_category FROM ops_system_alert_event",String.class));assertEquals("业务服务",jdbc.queryForObject("SELECT subsystem_name FROM ops_system_alert_event",String.class));assertEquals(0,count("sys_notification"));
         clock.advance(1);scope.setServices(List.of());assertThrows(IllegalArgumentException.class,()->claim());
     }
+    @Test void claimAlignsWindowBoundsToWholeMilliseconds() {
+        clock.set(Instant.parse("2026-11-12T05:47:26.313123400Z"));
+        var claimed=claim();
+        assertEquals(LocalDateTime.parse("2026-11-12T05:47:26.313"),claimed.state().toTime());
+        assertEquals(claimed.state().toTime().minusMinutes(5),claimed.state().fromTime());
+    }
+    @Test void boundaryRoundedEventWithinToleranceCommitsAndRealDriftStillRejected() {
+        var claimed=claim();
+        var to=claimed.state().toTime().toInstant(ZoneOffset.UTC);
+        store.commit(claimed,page(List.of(event("edge","a",to.plusNanos(900_000))),false,false));
+        assertEquals(1,count("ops_system_alert_event"));
+        var continued=claim();
+        assertThrows(IllegalArgumentException.class,()->store.commit(continued,page(List.of(event("drift","a",to.plusMillis(2))),true,false)));
+        assertEquals(1,count("ops_system_alert_event"));
+    }
+    @Test void repeatedFailuresEscalateToFreshAlignedWindowAndCommitResetsCounter() {
+        var first=claim();
+        store.fail(first,"poison",false);
+        for(int i=0;i<3;i++) store.fail(claim(),"poison",false);
+        var before=mapper.find(1L);
+        assertEquals(4,before.consecutiveFailures());assertEquals(first.state().windowId(),before.windowId());
+        store.fail(claim(),"poison",false);
+        var escalated=claim();
+        assertNotEquals(first.state().windowId(),escalated.state().windowId());
+        assertNull(escalated.state().positionJson());assertEquals(0,escalated.state().pageNumber());
+        assertEquals(0,mapper.find(1L).consecutiveFailures());assertNull(mapper.find(1L).lastFailureMessage());
+        assertEquals(escalated.state().toTime().minusMinutes(5),escalated.state().fromTime());
+        store.fail(escalated,"again",false);assertEquals(1,mapper.find(1L).consecutiveFailures());
+        store.commit(claim(),page(List.of(),true,false));
+        assertEquals(0,mapper.find(1L).consecutiveFailures());assertNull(mapper.find(1L).lastFailureMessage());
+    }
     private SystemAlertCollectionStore.Claim claim() { return store.claim(scope,List.of(),5,30); }
     private SystemAlertLogSource.ErrorPage page(List<ElkSystemAlertLog> events,boolean complete,boolean truncated) {
         var position=complete?null:new SystemAlertLogSource.Position("private-pit","[1,2]","a".repeat(64));
@@ -135,6 +164,6 @@ class SystemAlertCollectionStoreTest {
     private int count(String table){return jdbc.queryForObject("SELECT COUNT(*) FROM "+table,Integer.class);}
     private void create(String sql,String table){var match=Pattern.compile("(?s)CREATE TABLE (?:IF NOT EXISTS )?`"+table+"`.*?;",Pattern.CASE_INSENSITIVE).matcher(sql);assertTrue(match.find());jdbc.execute(match.group().replaceAll("(?i)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", ""));}
     private static class MutableClock extends Clock {
-        private volatile Instant at=Instant.parse("2026-11-04T08:00:00Z");public ZoneId getZone(){return ZoneOffset.UTC;}public Clock withZone(ZoneId zone){return this;}public Instant instant(){return at;}void advance(long seconds){at=at.plusSeconds(seconds);}
+        private volatile Instant at=Instant.parse("2026-11-04T08:00:00Z");public ZoneId getZone(){return ZoneOffset.UTC;}public Clock withZone(ZoneId zone){return this;}public Instant instant(){return at;}void advance(long seconds){at=at.plusSeconds(seconds);}void set(Instant instant){at=instant;}
     }
 }

@@ -35,6 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -48,6 +49,10 @@ class DevelopmentAnalysisServiceTest {
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         UserMapper userMapper = mock(UserMapper.class);
+        when(userMapper.findActiveUsers()).thenReturn(List.of(
+                new UserOptionResponse("石浩", "石浩", null),
+                new UserOptionResponse("王小明", "王小明", null),
+                new UserOptionResponse("耿庆阳", "耿庆阳", null)));
         GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
         ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
         CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
@@ -170,6 +175,10 @@ class DevelopmentAnalysisServiceTest {
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         UserMapper userMapper = mock(UserMapper.class);
+        when(userMapper.findActiveUsers()).thenReturn(List.of(
+                new UserOptionResponse("石浩", "石浩", null),
+                new UserOptionResponse("王小明", "王小明", null),
+                new UserOptionResponse("耿庆阳", "耿庆阳", null)));
         GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
         ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
         CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
@@ -222,6 +231,10 @@ class DevelopmentAnalysisServiceTest {
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         UserMapper userMapper = mock(UserMapper.class);
+        when(userMapper.findActiveUsers()).thenReturn(List.of(
+                new UserOptionResponse("石浩", "石浩", null),
+                new UserOptionResponse("王小明", "王小明", null),
+                new UserOptionResponse("耿庆阳", "耿庆阳", null)));
         GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
         ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
         CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
@@ -296,6 +309,7 @@ class DevelopmentAnalysisServiceTest {
         entity.setAnalysisStatus("DRAFT");
         entity.setDraftJson(writeDraft(objectMapper, draft));
         when(developmentAnalysisMapper.findLatestByIntakeId(39L)).thenReturn(entity);
+        when(userMapper.findActiveUsers()).thenReturn(List.of(new UserOptionResponse("王小明", "王小明", null)));
 
         service.updateOwners(
                 39L,
@@ -310,7 +324,6 @@ class DevelopmentAnalysisServiceTest {
         DevelopmentAnalysisDraft updated = readDraft(objectMapper, captor.getValue().getDraftJson());
         assertEquals("王小明", updated.workItems().getFirst().ownerUserName());
         assertTrue(updated.developerPool().contains("王小明"));
-        verify(userMapper).upsertActiveUser("王小明", "王小明");
     }
 
     @Test
@@ -321,6 +334,10 @@ class DevelopmentAnalysisServiceTest {
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         UserMapper userMapper = mock(UserMapper.class);
+        when(userMapper.findActiveUsers()).thenReturn(List.of(
+                new UserOptionResponse("石浩", "石浩", null),
+                new UserOptionResponse("王小明", "王小明", null),
+                new UserOptionResponse("耿庆阳", "耿庆阳", null)));
         GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
         ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
         CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
@@ -463,7 +480,6 @@ class DevelopmentAnalysisServiceTest {
         assertEquals(null, updated.plannedTestingEndDate());
         assertEquals(null, updated.plannedReleaseDate());
         assertEquals("8h", updated.workItems().getFirst().estimatedEffort());
-        verify(userMapper).upsertActiveUser("石浩", "石浩");
     }
 
     @Test
@@ -474,6 +490,10 @@ class DevelopmentAnalysisServiceTest {
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         UserMapper userMapper = mock(UserMapper.class);
+        when(userMapper.findActiveUsers()).thenReturn(List.of(
+                new UserOptionResponse("石浩", "石浩", null),
+                new UserOptionResponse("王小明", "王小明", null),
+                new UserOptionResponse("耿庆阳", "耿庆阳", null)));
         GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
         ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
         CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
@@ -575,6 +595,10 @@ class DevelopmentAnalysisServiceTest {
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         UserMapper userMapper = mock(UserMapper.class);
+        when(userMapper.findActiveUsers()).thenReturn(List.of(
+                new UserOptionResponse("石浩", "石浩", null),
+                new UserOptionResponse("王小明", "王小明", null),
+                new UserOptionResponse("耿庆阳", "耿庆阳", null)));
         GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
         ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
         CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
@@ -678,6 +702,10 @@ class DevelopmentAnalysisServiceTest {
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         UserMapper userMapper = mock(UserMapper.class);
+        when(userMapper.findActiveUsers()).thenReturn(List.of(
+                new UserOptionResponse("石浩", "石浩", null),
+                new UserOptionResponse("王小明", "王小明", null),
+                new UserOptionResponse("耿庆阳", "耿庆阳", null)));
         GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
         ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
         CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
@@ -778,7 +806,6 @@ class DevelopmentAnalysisServiceTest {
         assertEquals("12h", response.draft().totalEstimatedEffort());
         verify(developmentAnalysisMapper).insert(any());
         verify(intakeHistoryMapper).insert(any());
-        verify(userMapper).upsertActiveUser("石浩", "石浩");
     }
 
     @Test
@@ -789,6 +816,10 @@ class DevelopmentAnalysisServiceTest {
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         UserMapper userMapper = mock(UserMapper.class);
+        when(userMapper.findActiveUsers()).thenReturn(List.of(
+                new UserOptionResponse("石浩", "石浩", null),
+                new UserOptionResponse("王小明", "王小明", null),
+                new UserOptionResponse("耿庆阳", "耿庆阳", null)));
         GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
         ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
         CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
@@ -883,6 +914,10 @@ class DevelopmentAnalysisServiceTest {
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         UserMapper userMapper = mock(UserMapper.class);
+        when(userMapper.findActiveUsers()).thenReturn(List.of(
+                new UserOptionResponse("石浩", "石浩", null),
+                new UserOptionResponse("王小明", "王小明", null),
+                new UserOptionResponse("耿庆阳", "耿庆阳", null)));
         GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
         ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
         CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
@@ -1015,6 +1050,10 @@ class DevelopmentAnalysisServiceTest {
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         UserMapper userMapper = mock(UserMapper.class);
+        when(userMapper.findActiveUsers()).thenReturn(List.of(
+                new UserOptionResponse("石浩", "石浩", null),
+                new UserOptionResponse("王小明", "王小明", null),
+                new UserOptionResponse("耿庆阳", "耿庆阳", null)));
         GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
         ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
         CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
@@ -1098,6 +1137,10 @@ class DevelopmentAnalysisServiceTest {
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         UserMapper userMapper = mock(UserMapper.class);
+        when(userMapper.findActiveUsers()).thenReturn(List.of(
+                new UserOptionResponse("石浩", "石浩", null),
+                new UserOptionResponse("王小明", "王小明", null),
+                new UserOptionResponse("耿庆阳", "耿庆阳", null)));
         GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
         ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
         CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
@@ -1202,6 +1245,10 @@ class DevelopmentAnalysisServiceTest {
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         UserMapper userMapper = mock(UserMapper.class);
+        when(userMapper.findActiveUsers()).thenReturn(List.of(
+                new UserOptionResponse("石浩", "石浩", null),
+                new UserOptionResponse("王小明", "王小明", null),
+                new UserOptionResponse("耿庆阳", "耿庆阳", null)));
         GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
         ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
         CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
@@ -1253,6 +1300,10 @@ class DevelopmentAnalysisServiceTest {
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         UserMapper userMapper = mock(UserMapper.class);
+        when(userMapper.findActiveUsers()).thenReturn(List.of(
+                new UserOptionResponse("石浩", "石浩", null),
+                new UserOptionResponse("王小明", "王小明", null),
+                new UserOptionResponse("耿庆阳", "耿庆阳", null)));
         GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
         ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
         CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
@@ -1304,6 +1355,10 @@ class DevelopmentAnalysisServiceTest {
         ProjectMapper projectMapper = mock(ProjectMapper.class);
         ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
         UserMapper userMapper = mock(UserMapper.class);
+        when(userMapper.findActiveUsers()).thenReturn(List.of(
+                new UserOptionResponse("石浩", "石浩", null),
+                new UserOptionResponse("王小明", "王小明", null),
+                new UserOptionResponse("耿庆阳", "耿庆阳", null)));
         GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
         ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
         CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
@@ -1378,6 +1433,118 @@ class DevelopmentAnalysisServiceTest {
                 "2026-04-24T10:00:00",
                 "manual"
         );
+    }
+
+    @Test
+    void analyze_shouldSupersedeStalePendingAndInsertNewRun() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        DevelopmentAnalysisMapper developmentAnalysisMapper = mock(DevelopmentAnalysisMapper.class);
+        ProjectMapper projectMapper = mock(ProjectMapper.class);
+        ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
+        UserMapper userMapper = mock(UserMapper.class);
+        GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
+        ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
+        CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
+        WorkItemService workItemService = mock(WorkItemService.class);
+
+        DevelopmentAnalysisService service = new DevelopmentAnalysisService(
+                intakeMapper,
+                intakeHistoryMapper,
+                developmentAnalysisMapper,
+                projectMapper,
+                involvedSystemMapper,
+                userMapper,
+                gitlabRepositoryService,
+                projectKnowledgeBaseService,
+                analysisGenerator,
+                workItemService,
+                command -> { },
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(41L);
+        intake.setDemandStatus("待评估");
+        intake.setStructuredDataJson("""
+                {"category":"需求审批","approvalCode":"202604280001","requirementType":"研发需求","requirementName":"评估口径确认","businessLine":"账单管理","fields":[],"attachmentSummaries":[]}
+                """);
+        when(intakeMapper.findById(41L)).thenReturn(intake);
+
+        DevelopmentAnalysisEntity stale = new DevelopmentAnalysisEntity();
+        stale.setId(3L);
+        stale.setIntakeId(41L);
+        stale.setAnalysisStatus("RUNNING");
+        stale.setAnalysisMessage("任务评估正在执行，请稍后刷新查看结果。");
+        stale.setUpdatedAt(LocalDateTime.now().minusMinutes(31));
+        DevelopmentAnalysisEntity fresh = new DevelopmentAnalysisEntity();
+        fresh.setId(5L);
+        fresh.setIntakeId(41L);
+        fresh.setAnalysisStatus("PENDING");
+        fresh.setAnalysisMessage(null);
+        fresh.setUpdatedAt(LocalDateTime.now());
+        when(developmentAnalysisMapper.findLatestByIntakeId(41L)).thenReturn(stale, fresh);
+
+        var response = service.analyze(41L, "账单管理", "admin");
+
+        assertEquals("PENDING", response.status());
+        verify(developmentAnalysisMapper).failInFlightByIntakeId(eq(41L), any(), eq("admin"));
+        ArgumentCaptor<DevelopmentAnalysisEntity> insertCaptor = forClass(DevelopmentAnalysisEntity.class);
+        verify(developmentAnalysisMapper).insert(insertCaptor.capture());
+        assertEquals("PENDING", insertCaptor.getValue().getAnalysisStatus());
+        verify(developmentAnalysisMapper, never()).update(any());
+    }
+
+    @Test
+    void analyze_shouldReturnFreshPendingAnalysisWithoutDuplicateExecution() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        DevelopmentAnalysisMapper developmentAnalysisMapper = mock(DevelopmentAnalysisMapper.class);
+        ProjectMapper projectMapper = mock(ProjectMapper.class);
+        ProjectInvolvedSystemMapper involvedSystemMapper = mock(ProjectInvolvedSystemMapper.class);
+        UserMapper userMapper = mock(UserMapper.class);
+        GitlabRepositoryService gitlabRepositoryService = mock(GitlabRepositoryService.class);
+        ProjectKnowledgeBaseService projectKnowledgeBaseService = mock(ProjectKnowledgeBaseService.class);
+        CodexCliDevelopmentAnalysisGenerator analysisGenerator = mock(CodexCliDevelopmentAnalysisGenerator.class);
+        WorkItemService workItemService = mock(WorkItemService.class);
+
+        DevelopmentAnalysisService service = new DevelopmentAnalysisService(
+                intakeMapper,
+                intakeHistoryMapper,
+                developmentAnalysisMapper,
+                projectMapper,
+                involvedSystemMapper,
+                userMapper,
+                gitlabRepositoryService,
+                projectKnowledgeBaseService,
+                analysisGenerator,
+                workItemService,
+                command -> { },
+                new ObjectMapper()
+        );
+
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(41L);
+        intake.setDemandStatus("待评估");
+        intake.setStructuredDataJson("""
+                {"category":"需求审批","approvalCode":"202604280001","requirementType":"研发需求","requirementName":"评估口径确认","businessLine":"账单管理","fields":[],"attachmentSummaries":[]}
+                """);
+        when(intakeMapper.findById(41L)).thenReturn(intake);
+
+        DevelopmentAnalysisEntity fresh = new DevelopmentAnalysisEntity();
+        fresh.setId(4L);
+        fresh.setIntakeId(41L);
+        fresh.setAnalysisStatus("PENDING");
+        fresh.setAnalysisMessage(null);
+        fresh.setUpdatedAt(LocalDateTime.now().minusMinutes(5));
+        when(developmentAnalysisMapper.findLatestByIntakeId(41L)).thenReturn(fresh);
+
+        var response = service.analyze(41L, "账单管理", "admin");
+
+        assertEquals("PENDING", response.status());
+        org.junit.jupiter.api.Assertions.assertFalse(response.retryable());
+        verify(developmentAnalysisMapper, never()).failInFlightByIntakeId(any(), any(), any());
+        verify(developmentAnalysisMapper, never()).insert(any());
     }
 
     private static String writeDraft(ObjectMapper objectMapper, DevelopmentAnalysisDraft draft) {

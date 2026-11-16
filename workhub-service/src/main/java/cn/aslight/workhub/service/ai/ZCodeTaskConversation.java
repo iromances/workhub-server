@@ -2,6 +2,7 @@ package cn.aslight.workhub.service.ai;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import cn.aslight.workhub.mcp.security.ServerFileContentMasker;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -9,6 +10,9 @@ import java.util.*;
 
 /** ZCode 0.17 原生 app-server 协议；ACK 与 turn.completed 严格分开。 */
 public final class ZCodeTaskConversation implements CliTaskConversation {
+    /** 会话内 MCP 服务器名与工具暴露前缀；session/create 不会连接 mcpServers，须显式 mcp/list connect。 */
+    private static final String MCP_SERVER_NAME = "workhub_task";
+    private static final String MCP_TOOL_PREFIX = "mcp__" + MCP_SERVER_NAME + "__";
     private final ObjectMapper json;
     private final Path directory;
     private final Path output;
@@ -18,12 +22,21 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
     private final String mcpUrl;
     private final String token;
     private final String finalResultSchema;
+    /** 结构化场景即使不带 CLI schema（仓库读取绕开 schema 阻断）也要求终稿为 JSON 对象，否则强制格式校正。 */
+    private final boolean expectJsonObject;
+    /** 仓库调查场景：终稿前必须有授权工具调用，零调用时自动续跑一轮（一次为限）。 */
+    private final boolean requireToolInvestigation;
+    private final List<String> imagePaths;
     private final String inputId = UUID.randomUUID().toString();
     private OutputStream input;
     private String sessionId;
     private String turnId;
     private String phase = "NEW";
     private long lastSequence;
+    /** 当前轮输入身份：续跑会开启新 turn，身份校验跟随最新一次 session/send。 */
+    private String currentInputId = inputId;
+    private int toolCalls;
+    private boolean investigationContinued;
 
     public ZCodeTaskConversation(ObjectMapper json, Path directory, Path output, String prompt,
                                  Map<String, Object> selection, List<String> toolNames, String mcpUrl, String token) {
@@ -32,9 +45,34 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
 
     public ZCodeTaskConversation(ObjectMapper json, Path directory, Path output, String prompt,
                                  Map<String, Object> selection, List<String> toolNames, String mcpUrl, String token, String finalResultSchema) {
+        this(json, directory, output, prompt, selection, toolNames, mcpUrl, token, finalResultSchema, List.of(), finalResultSchema != null, false);
+    }
+
+    /** 仓库读取场景：不传 CLI schema（避免阻断工具调用），但终稿仍须是 JSON 对象；且要求先完成工具调查。 */
+    public static ZCodeTaskConversation structuredNoCliSchema(ObjectMapper json, Path directory, Path output, String prompt,
+                                                              Map<String, Object> selection, List<String> toolNames, String mcpUrl, String token,
+                                                              String schemaForFormatting, List<String> imagePaths) {
+        return new ZCodeTaskConversation(json, directory, output, prompt, selection, toolNames, mcpUrl, token,
+                schemaForFormatting, imagePaths, true, true);
+    }
+
+    public ZCodeTaskConversation(ObjectMapper json, Path directory, Path output, String prompt,
+                                 Map<String, Object> selection, List<String> toolNames, String mcpUrl, String token,
+                                 String finalResultSchema, List<String> imagePaths) {
+        this(json, directory, output, prompt, selection, toolNames, mcpUrl, token, finalResultSchema, imagePaths, false, false);
+    }
+
+    private ZCodeTaskConversation(ObjectMapper json, Path directory, Path output, String prompt,
+                                  Map<String, Object> selection, List<String> toolNames, String mcpUrl, String token,
+                                  String finalResultSchema, List<String> imagePaths, boolean expectJsonObject,
+                                  boolean requireToolInvestigation) {
         this.json = json; this.directory = directory; this.output = output; this.prompt = prompt;
-        this.selection = selection; this.toolNames = List.copyOf(toolNames); this.mcpUrl = mcpUrl; this.token = token;
+        this.selection = selection; this.toolNames = toolNames == null ? List.of() : toolNames.stream().map(ZCodeTaskConversation::exposedToolName).toList();
+        this.mcpUrl = mcpUrl; this.token = token;
         this.finalResultSchema = finalResultSchema;
+        this.expectJsonObject = expectJsonObject;
+        this.requireToolInvestigation = requireToolInvestigation;
+        this.imagePaths = imagePaths == null ? List.of() : List.copyOf(imagePaths);
     }
 
     @Override
@@ -76,7 +114,7 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
         JsonNode payload = event.path("payload");
         if ("turn.started".equals(type)) {
             if (!"SEND".equals(phase) && !"RUNNING".equals(phase)) throw invalid("未提交任务却收到运行事件");
-            if (!inputId.equals(payload.path("inputId").asText()) || event.path("turnId").asText().isBlank()) throw invalid("运行身份不匹配");
+            if (!currentInputId.equals(payload.path("inputId").asText()) || event.path("turnId").asText().isBlank()) throw invalid("运行身份不匹配");
             turnId = event.path("turnId").asText();
             return "ZCode 已开始执行任务";
         }
@@ -88,7 +126,23 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
             if (!"success".equals(payload.path("resultType").asText())) throw invalid("任务未成功完成：" + safeCode(payload.path("resultType").asText()));
             String result = payload.path("response").asText();
             if (!payload.path("response").isString() || result.isBlank() || result.getBytes(StandardCharsets.UTF_8).length > 24000) throw invalid("最终产物缺失或超长");
-            if (finalResultSchema != null && !isJsonObject(result)) {
+            if (requireToolInvestigation && toolCalls == 0 && !investigationContinued) {
+                investigationContinued = true;
+                phase = "SEND";
+                currentInputId = UUID.randomUUID().toString();
+                // 模型跳过调查直接交"计划"时给一次纠偏机会；续跑仍零工具则交给上层内容校验拒绝。
+                var retryParams = new LinkedHashMap<String, Object>();
+                retryParams.put("sessionId", sessionId);
+                retryParams.put("inputId", currentInputId);
+                retryParams.put("modelSelection", selection);
+                retryParams.put("content", "你尚未调用任何授权工具完成代码调查，此前的答复只是过程计划，不能作为终稿。"
+                        + "请先用 workhub_task 的只读仓库工具（工具名带 mcp__workhub_task__ 前缀，如 mcp__workhub_task__list_repository_files、"
+                        + "mcp__workhub_task__read_repository_text_file、mcp__workhub_task__search_repository_text）"
+                        + "完成代码检索，再基于真实代码结论输出符合先前要求的最终 JSON 对象；不要输出过程叙述。");
+                request("wh-send", "session/send", retryParams);
+                return "ZCode 未执行代码调查，已要求续跑一轮";
+            }
+            if ((finalResultSchema != null || expectJsonObject) && !isJsonObject(result)) {
                 phase = "FORMATTING";
                 // 仅整理本轮已有答复；无工具、无任务重放，仍受原进程时间预算约束。
                 request("wh-format-result", "workspace/generateText", Map.of(
@@ -105,6 +159,7 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
         if ("tool.updated".equals(type) && "scheduled".equals(payload.path("kind").asText())) {
             String name = payload.path("toolName").asText();
             if ("FORMATTING".equals(phase) || !toolNames.contains(name)) throw invalid("CLI 尝试调用未授权工具");
+            toolCalls++;
             return "ZCode 正在调用 " + name;
         }
         return null;
@@ -121,7 +176,7 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
     }
 
     private void response(JsonNode message) throws IOException {
-        if (message.has("error")) throw invalid("协议请求被拒绝，错误码 " + safeCode(message.path("error").path("code").asText()));
+        if (message.has("error")) throw protocolError(message);
         String id = message.path("id").asText(); JsonNode result = message.path("result");
         switch (id) {
             case "wh-create" -> {
@@ -138,8 +193,34 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
             case "wh-subscribe" -> {
                 if (!"SUBSCRIBE".equals(phase) || !sessionId.equals(result.path("sessionId").asText()) || !result.path("events").isArray()) throw invalid("事件订阅失败");
                 lastSequence = result.path("eventSeq").asLong();
+                if (mcpUrl == null) {
+                    phase = "SEND";
+                    sendPrompt();
+                    return;
+                }
+                // CLI 0.17 实测：session/create 的 mcpServers 只登记不连接，模型拿不到工具；
+                // 必须显式 mcp/list(mode=connect) 建立连接，工具才会以 mcp__workhub_task__ 前缀暴露。
+                phase = "MCP_CONNECT";
+                var server = new LinkedHashMap<String, Object>();
+                server.put("name", MCP_SERVER_NAME);
+                server.put("type", "http");
+                server.put("url", mcpUrl);
+                server.put("headers", List.of(Map.of("name", "Authorization", "value", "Bearer " + token)));
+                server.put("isolation", "session");
+                server.put("timeoutMs", 300000);
+                server.put("alwaysLoad", true);
+                request("wh-mcp", "mcp/list", Map.of(
+                        "workspace", Map.of("workspacePath", directory.toString(), "workspaceKey", directory.toString()),
+                        "mcpServers", List.of(server), "mode", "connect"));
+            }
+            case "wh-mcp" -> {
+                if (!"MCP_CONNECT".equals(phase)) throw invalid("MCP 连接应答时序错误");
+                JsonNode status = result.path("statuses").path(MCP_SERVER_NAME);
+                if (!"connected".equals(status.path("status").asText()) || status.path("toolCount").asInt(0) < 1)
+                    throw invalid("workhub_task MCP 连接失败（"
+                            + (status.isMissingNode() ? "服务器未注册" : "status=" + status.path("status").asText() + ", toolCount=" + status.path("toolCount").asInt(0)) + "）");
                 phase = "SEND";
-                request("wh-send", "session/send", Map.of("sessionId", sessionId, "inputId", inputId, "modelSelection", selection, "content", prompt));
+                sendPrompt();
             }
             case "wh-send" -> {
                 if (!Set.of("SEND", "FORMATTING", "COMPLETE").contains(phase) || !sessionId.equals(result.path("sessionId").asText()) || !result.path("accepted").asBoolean()) throw invalid("任务未被接受");
@@ -166,6 +247,62 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
         catch (tools.jackson.core.JacksonException ex) { return false; }
     }
 
+    private IllegalArgumentException protocolError(JsonNode message) {
+        String method = switch (message.path("id").asText()) {
+            case "wh-create" -> "session/create";
+            case "wh-subscribe" -> "session/subscribe";
+            case "wh-mcp" -> "mcp/list";
+            case "wh-send" -> "session/send";
+            case "wh-format-result" -> "workspace/generateText";
+            default -> "unknown";
+        };
+        JsonNode error = message.path("error");
+        String detail = error.path("message").asText("");
+        if (token != null && !token.isBlank()) detail = detail.replace(token, "[REDACTED]");
+        detail = new ServerFileContentMasker().mask(detail).replaceAll("\\s+", " ").trim();
+        if (detail.length() > 120) detail = detail.substring(0, 120) + "…";
+        return invalid("协议请求被拒绝，" + method + "，阶段 " + phase + "，错误码 "
+                + safeCode(error.path("code").asText()) + (detail.isBlank() ? "" : "：" + detail));
+    }
+
+    /** CLI 会话内 MCP 工具以 mcp__<server>__<name> 暴露；调用方传入的裸名统一补前缀（已带前缀的保持原样）。 */
+    private static String exposedToolName(String name) {
+        if (name == null) return null;
+        return name.startsWith(MCP_TOOL_PREFIX) ? name : MCP_TOOL_PREFIX + name;
+    }
+
+    private void sendPrompt() throws IOException {
+        var sendParams = new LinkedHashMap<String, Object>();
+        sendParams.put("sessionId", sessionId);
+        sendParams.put("inputId", inputId);
+        sendParams.put("modelSelection", selection);
+        sendParams.put("content", prompt);
+        if (!imagePaths.isEmpty()) sendParams.put("attachments", imageAttachments());
+        request("wh-send", "session/send", sendParams);
+    }
+
+    /** 图片沿用桌面端 localPath 通路提交为 session/send 附件，不进入协议正文。 */
+    private List<Map<String, Object>> imageAttachments() {
+        var attachments = new ArrayList<Map<String, Object>>();
+        for (String raw : imagePaths) {
+            Path path = Path.of(raw).toAbsolutePath().normalize();
+            attachments.add(Map.of(
+                    "kind", "image",
+                    "filename", path.getFileName().toString(),
+                    "mimeType", imageMimeType(path.getFileName().toString()),
+                    "localPath", path.toString()));
+        }
+        return attachments;
+    }
+
+    private static String imageMimeType(String filename) {
+        String lower = filename.toLowerCase(java.util.Locale.ROOT);
+        if (lower.endsWith(".png")) return "image/png";
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+        if (lower.endsWith(".webp")) return "image/webp";
+        return "application/octet-stream";
+    }
+
     private void complete(String result) throws IOException {
         Files.writeString(output, result, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW);
         phase = "COMPLETE";
@@ -178,7 +315,7 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
     }
     private void requireTurn(JsonNode event) {
         if ((!"RUNNING".equals(phase) && !"SEND".equals(phase)) || turnId == null || !turnId.equals(event.path("turnId").asText())
-                || !inputId.equals(event.path("payload").path("inputId").asText())) throw invalid("终态不属于本次任务");
+                || !currentInputId.equals(event.path("payload").path("inputId").asText())) throw invalid("终态不属于本次任务");
     }
     private void request(String id, String method, Object params) throws IOException { send(Map.of("id", id, "method", method, "params", params)); }
     private void send(Object value) throws IOException { input.write((json.writeValueAsString(value) + "\n").getBytes(StandardCharsets.UTF_8)); input.flush(); }

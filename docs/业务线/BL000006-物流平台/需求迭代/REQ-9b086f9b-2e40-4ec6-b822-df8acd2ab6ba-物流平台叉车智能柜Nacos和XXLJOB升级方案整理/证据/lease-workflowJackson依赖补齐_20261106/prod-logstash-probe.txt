@@ -1,0 +1,10 @@
+REGISTERED_JACKSON_MODULES=[com.fasterxml.jackson.datatype.jdk8.Jdk8Module, com.fasterxml.jackson.datatype.jsr310.JavaTimeModule, com.fasterxml.jackson.module.paramnames.ParameterNamesModule, com.fasterxml.jackson.module.jaxb.JaxbAnnotationModule, com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule, com.fasterxml.jackson.datatype.hppc.HppcModule, com.fasterxml.jackson.datatype.joda.JodaModule]
+JAXB_PROVIDER=file:/private/tmp/lease-workflow-jackson-alignment-20261106/packaged-libs/jackson-module-jaxb-annotations-2.10.5.jar
+2026-11-06 13:45:34.282 [main] INFO  lease.workflow.logstash.isolated.verification - LEASE_WORKFLOW_JACKSON_ALIGNMENT_20261106 info
+2026-11-06 13:45:34.284 [main] ERROR lease.workflow.logstash.isolated.verification - LEASE_WORKFLOW_JACKSON_ALIGNMENT_20261106 error
+java.lang.IllegalStateException: EXPECTED_LOGGING_PROBE_EXCEPTION
+	at LocalLogstashProbe.main(LocalLogstashProbe.java:32)
+RECEIVED_JSON={"@timestamp":"2026-11-06T13:45:34.282+08:00","@version":"1","message":"LEASE_WORKFLOW_JACKSON_ALIGNMENT_20261106 info","logger_name":"lease.workflow.logstash.isolated.verification","thread_name":"main","level":"INFO","level_value":20000,"appName":"lease-workflow"}
+RECEIVED_JSON={"@timestamp":"2026-11-06T13:45:34.284+08:00","@version":"1","message":"LEASE_WORKFLOW_JACKSON_ALIGNMENT_20261106 error","logger_name":"lease.workflow.logstash.isolated.verification","thread_name":"main","level":"ERROR","level_value":40000,"stack_trace":"java.lang.IllegalStateException: EXPECTED_LOGGING_PROBE_EXCEPTION\n\tat LocalLogstashProbe.main(LocalLogstashProbe.java:32)\n","appName":"lease-workflow"}
+LOGSTASH_LOOPBACK_OK profile=prod events=2
+

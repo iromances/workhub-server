@@ -2,7 +2,6 @@ package cn.aslight.workhub.service.ops;
 
 import cn.aslight.workhub.dao.ops.*;
 import cn.aslight.workhub.dao.notification.NotificationMapper;
-import cn.aslight.workhub.dao.system.UserMapper;
 import cn.aslight.workhub.model.ops.*;
 import cn.aslight.workhub.model.agent.*;
 import cn.aslight.workhub.model.autonomy.AgentObservationEntity;
@@ -47,16 +46,15 @@ class SystemAlertVerificationQueryServiceTest {
         String rules=Files.readString(schema.resolve("V20260805_180000__add_system_alert_filter_rules.sql"));
         create(rules,"ops_system_alert_rule");create(rules,"ops_system_alert_rule_keyword");
         jdbc.execute(Files.readString(schema.resolve("V20261104_155928__add_system_alert_collection_progress.sql")));
+        jdbc.execute(Files.readString(schema.resolve("V20261112_140809__add_system_alert_collection_failure_escalation.sql")));
         jdbc.update("INSERT INTO ops_system_alert_scope(id,business_line_code,environment_code,watch_mode,enabled) VALUES(1,'BL000012','TEST','ALL',1)");
         jdbc.update("INSERT INTO ops_system_alert_scope_index(scope_id,index_pattern) VALUES(1,'workhub-*')");
         var cfg=new Configuration();cfg.setMapUnderscoreToCamelCase(true);
         for(var type:List.of(SystemAlertCollectionMapper.class,SystemAlertScopeIngestionMapper.class,SystemAlertScopeMapper.class,SystemAlertMapper.class,NotificationMapper.class))cfg.addMapper(type);
         var factory=new SqlSessionFactoryBean();factory.setDataSource(db);factory.setConfiguration(cfg);var sql=new SqlSessionTemplate(factory.getObject());
         collections=sql.getMapper(SystemAlertCollectionMapper.class);ingestion=sql.getMapper(SystemAlertScopeIngestionMapper.class);scopes=sql.getMapper(SystemAlertScopeMapper.class);
-        var notifications=new NotificationService(sql.getMapper(NotificationMapper.class),mock(NotificationSchemaInitializer.class));
-        var users=mock(UserMapper.class);when(users.findBusinessLineMembers("BL000012")).thenReturn(List.of());
         var tx=new TransactionInterceptor();tx.setTransactionManager(new DataSourceTransactionManager(db));tx.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
-        store=proxy(new SystemAlertCollectionStore(collections,ingestion,users,notifications,json,clock,ZoneOffset.UTC),tx);
+        store=proxy(new SystemAlertCollectionStore(collections,ingestion,json,clock,ZoneOffset.UTC),tx);
         properties=new ElkAlertProperties();properties.setEnabled(true);properties.setBaseUrl("http://127.0.0.1:1");configs=new ElkAlertRuntimeConfigService(properties);
         var alerts=new SystemAlertService(sql.getMapper(SystemAlertMapper.class),mock(SystemAuditService.class));
         query=proxy(new SystemAlertVerificationQueryService(alerts,scopes,ingestion,collections,configs,json,clock,ZoneOffset.UTC),tx);
@@ -184,7 +182,7 @@ class SystemAlertVerificationQueryServiceTest {
     private void create(String sql,String table){var match=Pattern.compile("(?s)CREATE TABLE (?:IF NOT EXISTS )?`"+table+"`.*?;",Pattern.CASE_INSENSITIVE).matcher(sql);assertTrue(match.find());jdbc.execute(match.group().replaceAll("(?i)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", ""));}
     private AgentVerificationEvidence.Fact inspect(SystemAlertDashboardResponse result) {
         var scope=new AgentScope("BL000012","TEST");var at=clock.instant();var proof=result.executionEvidence();
-        var context=new AgentToolContext("run","task","agent","owner",new AgentConfiguration("巡检","巡检",1L,null,List.of(scope),List.of(),20,60,1),new AgentTaskSpecification("巡检","","判断恢复",List.of("REPORT"),List.of(scope),List.of()));
+        var context=new AgentToolContext("run","task","agent","owner",new AgentConfiguration("巡检","巡检",1L,null,List.of(scope),20,60,1),new AgentTaskSpecification("巡检","","判断恢复",List.of("REPORT"),List.of(scope)));
         String tool="monitor.system.alerts";
         String payload=json.writeValueAsString(new AgentToolData(json).sanitize(Map.of("scope",scope,"observedAt",at.toString(),"recordTimeZone","Z","query",Map.of("from",proof.from().toString(),"to",proof.to().toString()),"data",result)));
         var row=new AgentObservationEntity(UUID.randomUUID().toString(),"run","agent","key",tool,AgentObservationService.sourceType(tool,"BL000012"),"BL000012","TEST",payload,AccountingExecutionEvidenceService.hash(payload),now());

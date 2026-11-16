@@ -12,3 +12,4 @@ config
 __pycache__/
 *.pyc
 docs/.workhub-archive.lock
+.zcode

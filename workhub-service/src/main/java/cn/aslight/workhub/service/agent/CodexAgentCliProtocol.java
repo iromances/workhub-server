@@ -55,12 +55,14 @@ public class CodexAgentCliProtocol implements AgentCliProtocol {
                 "-C", directory.toString(), "--model", model, "--output-schema", schema.toString(), "--output-last-message", output.toString()));
         config(args, "approval_policy", "never");
         config(args, "web_search", "disabled");
-        config(args, "mcp_servers.workhub_task.url", mcpUrl);
-        config(args, "mcp_servers.workhub_task.bearer_token_env_var", "WORKHUB_AGENT_RUN_TOKEN");
-        // 仅当前任务桥接服务使用已分派授权；发布等人工审核仍由 WorkHub 工具校验。
-        config(args, "mcp_servers.workhub_task.default_tools_approval_mode", "approve");
-        args.addAll(List.of("-c", "mcp_servers.workhub_task.required=true", "-c", "mcp_servers.workhub_task.tool_timeout_sec=300",
-                "-c", "project_doc_max_bytes=0", "-c", "skills.bundled.enabled=false", "-c", "skills.include_instructions=false",
+        if (mcpUrl != null) {
+            // 平台标准 MCP 入口；AI 依据职责描述自行选择 WorkHub 能力，授权由 MCP 侧策略与审计约束。
+            config(args, "mcp_servers.workhub_task.url", mcpUrl);
+            config(args, "mcp_servers.workhub_task.bearer_token_env_var", "WORKHUB_AGENT_RUN_TOKEN");
+            config(args, "mcp_servers.workhub_task.default_tools_approval_mode", "approve");
+            args.addAll(List.of("-c", "mcp_servers.workhub_task.required=true", "-c", "mcp_servers.workhub_task.tool_timeout_sec=300"));
+        }
+        args.addAll(List.of("-c", "project_doc_max_bytes=0", "-c", "skills.bundled.enabled=false", "-c", "skills.include_instructions=false",
                 "-c", "features.skip_host_skill_discovery=true"));
         // 当前 CLI 通过 Code Mode 宿主调度 MCP；其他宿主工具仍由下列独立开关禁用。
         args.addAll(List.of("--enable", "code_mode_host"));
@@ -74,10 +76,11 @@ public class CodexAgentCliProtocol implements AgentCliProtocol {
 
     @Override
     public cn.aslight.workhub.service.ai.CliTaskLaunch prepare(AiProviderConfigEntity provider, String model, Path directory, Path schema, Path output,
-                                         String mcpUrl, String token, List<String> toolNames, String prompt) {
+                                         String mcpUrl, String token, String prompt) {
         var builder = new ProcessBuilder(command(provider, model, directory, schema, output, mcpUrl)).directory(directory.toFile())
                 .redirectError(ProcessBuilder.Redirect.DISCARD);
-        restrictEnvironment(builder.environment()); builder.environment().put("WORKHUB_AGENT_RUN_TOKEN", token);
+        restrictEnvironment(builder.environment());
+        if (token != null) builder.environment().put("WORKHUB_AGENT_RUN_TOKEN", token);
         return new cn.aslight.workhub.service.ai.CliTaskLaunch(builder, new CliTaskConversation() {
             public void start(java.io.OutputStream input) throws IOException {
                 try (input) { input.write(prompt.getBytes(StandardCharsets.UTF_8)); }

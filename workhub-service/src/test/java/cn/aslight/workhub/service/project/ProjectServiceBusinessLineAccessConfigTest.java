@@ -1,5 +1,6 @@
 package cn.aslight.workhub.service.project;
 
+import cn.aslight.workhub.config.McpProperties;
 import cn.aslight.workhub.dao.project.BusinessLineAccessConfigMapper;
 import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.dao.project.ProjectInvolvedSystemMapper;
@@ -10,6 +11,7 @@ import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.model.project.BusinessLineResponse;
 import cn.aslight.workhub.model.project.BusinessLineSaveRequest;
 import cn.aslight.workhub.service.intake.GitlabRepositoryService;
+import cn.aslight.workhub.service.mcp.McpCryptoService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -19,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doAnswer;
@@ -41,18 +44,58 @@ class ProjectServiceBusinessLineAccessConfigTest {
         BusinessLineResponse response = context.service.createBusinessLine(request);
 
         assertEquals("BL000011", response.businessLineCode());
+        assertEquals(List.of("DEV", "TEST", "PROD"), response.supportedEnvironments());
         assertEquals(2, response.accessConfigs().size());
-        assertEquals("test", response.accessConfigs().get(0).environmentCode());
+        assertEquals("TEST", response.accessConfigs().get(0).environmentCode());
         assertEquals("OPERATIONS", response.accessConfigs().get(0).endpointType());
         assertEquals("运营端", response.accessConfigs().get(0).endpointName());
         assertEquals("/asset-api", response.accessConfigs().get(1).pathPrefix());
     }
 
     @Test
+    void createBusinessLine_shouldRejectEnvironmentOutsideSupportedList() {
+        TestContext context = context();
+        BusinessLineSaveRequest request = businessLineRequest();
+        request.setAccessConfigs(List.of(
+                accessConfig("UAT", "CLIENT", "客户端", "https://client.example.test", null)
+        ));
+
+        IllegalArgumentException error = assertThrows(
+                IllegalArgumentException.class,
+                () -> context.service.createBusinessLine(request)
+        );
+
+        assertEquals("访问地址环境 UAT 不在业务线支持环境内", error.getMessage());
+    }
+
+    @Test
+    void createBusinessLine_shouldRejectEmptyOrDuplicateSupportedEnvironments() {
+        TestContext emptyContext = context();
+        BusinessLineSaveRequest empty = businessLineRequest();
+        empty.setSupportedEnvironments(List.of());
+
+        IllegalArgumentException emptyError = assertThrows(
+                IllegalArgumentException.class,
+                () -> emptyContext.service.createBusinessLine(empty)
+        );
+        assertEquals("支持环境不能为空", emptyError.getMessage());
+
+        TestContext duplicateContext = context();
+        BusinessLineSaveRequest duplicate = businessLineRequest();
+        duplicate.setSupportedEnvironments(List.of("DEV", "dev", "TEST"));
+
+        IllegalArgumentException duplicateError = assertThrows(
+                IllegalArgumentException.class,
+                () -> duplicateContext.service.createBusinessLine(duplicate)
+        );
+        assertEquals("支持环境不能重复：DEV", duplicateError.getMessage());
+    }
+
+    @Test
     void updateBusinessLine_shouldKeepAccessConfigsWhenFieldIsMissing() {
         TestContext context = context();
         context.currentBusinessLine.set(businessLine(9L, "BL000009", "创新保理"));
-        context.savedConfigs.add(entity("BL000009", "prod", "CLIENT", "客户端", "https://client.example.com", null));
+        context.savedConfigs.add(entity("BL000009", "PROD", "CLIENT", "客户端", "https://client.example.com", null));
         BusinessLineSaveRequest request = businessLineRequest();
         request.setBusinessLineName("创新保理");
         request.setAccessConfigs(null);
@@ -67,7 +110,7 @@ class ProjectServiceBusinessLineAccessConfigTest {
     void updateBusinessLine_shouldClearAccessConfigsForExplicitEmptyArray() {
         TestContext context = context();
         context.currentBusinessLine.set(businessLine(9L, "BL000009", "创新保理"));
-        context.savedConfigs.add(entity("BL000009", "prod", "CLIENT", "客户端", "https://client.example.com", null));
+        context.savedConfigs.add(entity("BL000009", "PROD", "CLIENT", "客户端", "https://client.example.com", null));
         BusinessLineSaveRequest request = businessLineRequest();
         request.setBusinessLineName("创新保理");
         request.setAccessConfigs(List.of());
@@ -76,6 +119,52 @@ class ProjectServiceBusinessLineAccessConfigTest {
 
         assertEquals(List.of(), response.accessConfigs());
         verify(context.accessConfigMapper).deleteByBusinessLineCode("BL000009");
+    }
+
+    @Test
+    void createBusinessLine_shouldEncryptLoginCredential() {
+        TestContext context = context();
+        BusinessLineSaveRequest request = businessLineRequest();
+        BusinessLineAccessConfigRequest accessConfig =
+                accessConfig("TEST", "operations", "", "https://ops.example.test/admin", null);
+        accessConfig.setLoginUsername(" ops.admin ");
+        accessConfig.setLoginPassword(" s3cret! ");
+        request.setAccessConfigs(List.of(accessConfig));
+
+        BusinessLineResponse response = context.service.createBusinessLine(request);
+
+        BusinessLineAccessConfigEntity saved = context.savedConfigs().get(0);
+        assertEquals("ops.admin", saved.getLoginUsername());
+        assertTrue(saved.getLoginPasswordEncrypted().startsWith("mcp:v1:"));
+        assertEquals("s3cret!", context.cryptoService().decrypt(saved.getLoginPasswordEncrypted()));
+        assertEquals("ops.admin", response.accessConfigs().get(0).loginUsername());
+        assertEquals(Boolean.TRUE, response.accessConfigs().get(0).loginPasswordConfigured());
+    }
+
+    @Test
+    void updateBusinessLine_shouldKeepExistingPasswordWhenLoginPasswordBlank() {
+        TestContext context = context();
+        context.currentBusinessLine().set(businessLine(9L, "BL000009", "创新保理"));
+        String existingEncrypted = context.cryptoService().encrypt("old-secret");
+        BusinessLineAccessConfigEntity existing =
+                entity("BL000009", "PROD", "CLIENT", "客户端", "https://client.example.com", null);
+        existing.setLoginUsername("client.user");
+        existing.setLoginPasswordEncrypted(existingEncrypted);
+        context.savedConfigs().add(existing);
+
+        BusinessLineSaveRequest request = businessLineRequest();
+        request.setBusinessLineName("创新保理");
+        BusinessLineAccessConfigRequest accessConfig =
+                accessConfig("PROD", "CLIENT", "客户端", "https://client.example.com", null);
+        accessConfig.setLoginUsername("client.user");
+        request.setAccessConfigs(List.of(accessConfig));
+
+        BusinessLineResponse response = context.service.updateBusinessLine(9L, request);
+
+        BusinessLineAccessConfigEntity saved = context.savedConfigs().get(0);
+        assertEquals("client.user", saved.getLoginUsername());
+        assertEquals(existingEncrypted, saved.getLoginPasswordEncrypted());
+        assertEquals(Boolean.TRUE, response.accessConfigs().get(0).loginPasswordConfigured());
     }
 
     @Test
@@ -158,20 +247,29 @@ class ProjectServiceBusinessLineAccessConfigTest {
             return savedConfigs.stream().filter(item -> codes.contains(item.getBusinessLineCode())).toList();
         });
 
+        McpCryptoService cryptoService = cryptoService();
         ProjectService service = new ProjectService(
                 mock(ProjectMapper.class),
                 businessLineMapper,
                 accessConfigMapper,
                 mock(ProjectInvolvedSystemMapper.class),
-                mock(GitlabRepositoryService.class)
+                mock(GitlabRepositoryService.class),
+                cryptoService
         );
-        return new TestContext(service, accessConfigMapper, currentBusinessLine, savedConfigs);
+        return new TestContext(service, accessConfigMapper, currentBusinessLine, savedConfigs, cryptoService);
+    }
+
+    private McpCryptoService cryptoService() {
+        McpProperties properties = new McpProperties();
+        properties.setMasterKey("workhub-mcp-test-master-key");
+        return new McpCryptoService(properties);
     }
 
     private BusinessLineSaveRequest businessLineRequest() {
         BusinessLineSaveRequest request = new BusinessLineSaveRequest();
         request.setBusinessLineName("新业务线");
         request.setGitlabGroupName("new-group");
+        request.setSupportedEnvironments(List.of("dev", "TEST", "Prod"));
         request.setEnabled(true);
         return request;
     }
@@ -221,6 +319,7 @@ class ProjectServiceBusinessLineAccessConfigTest {
     private record TestContext(ProjectService service,
                                BusinessLineAccessConfigMapper accessConfigMapper,
                                AtomicReference<BusinessLineEntity> currentBusinessLine,
-                               List<BusinessLineAccessConfigEntity> savedConfigs) {
+                               List<BusinessLineAccessConfigEntity> savedConfigs,
+                               McpCryptoService cryptoService) {
     }
 }

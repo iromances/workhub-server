@@ -6,6 +6,7 @@ import cn.aslight.workhub.model.ops.XxlJobDashboardResponse;
 import cn.aslight.workhub.model.ops.XxlJobExecutorResponse;
 import cn.aslight.workhub.model.ops.XxlJobFailedJobResponse;
 import cn.aslight.workhub.model.ops.XxlJobLogPageResponse;
+import cn.aslight.workhub.model.ops.XxlJobSilentJobResponse;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -14,6 +15,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,12 +25,29 @@ public class XxlJobMonitorCollector {
 
     private static final int DEFAULT_LOG_DAYS = 7;
     private static final String LOG_STATUS_ALL = "ALL";
+    private static final String LOG_STATUS_ABNORMAL = "ABNORMAL";
     private static final String LOG_STATUS_FAILED = "FAILED";
+    /** REQ-a58c7e21：日志筛选与行级 failureType 五态口径对齐（SUCCESS/RUNNING/STUCK/EXECUTION_FAILED）。 */
+    private static final String LOG_STATUS_SUCCESS = "SUCCESS";
+    private static final String LOG_STATUS_RUNNING = "RUNNING";
+    private static final String LOG_STATUS_STUCK = "STUCK";
+    private static final String LOG_STATUS_EXECUTION_FAILED = "EXECUTION_FAILED";
+    private static final java.util.Set<String> ABNORMAL_FILTER_STATUSES =
+            java.util.Set.of(LOG_STATUS_ABNORMAL, LOG_STATUS_STUCK, LOG_STATUS_EXECUTION_FAILED);
+    private static final int DEFAULT_STALE_THRESHOLD_MINUTES = 120;
+    private static final int SILENT_GRACE_MINUTES = 10;
 
-    private final XxlJobDatabaseQueryClient queryClient;
+    private final FunctionCallService functionCallService;
 
+    /** 生产构造：模板与执行统一走 FunctionCallService（页面维护优先 + 执行审计）。 */
+    @org.springframework.beans.factory.annotation.Autowired
+    public XxlJobMonitorCollector(FunctionCallService functionCallService) {
+        this.functionCallService = functionCallService;
+    }
+
+    /** 测试/无库环境构造：模板取 FuncCallSqlSeeds 种子，执行走传入的查询客户端（无审计）。 */
     public XxlJobMonitorCollector(XxlJobDatabaseQueryClient queryClient) {
-        this.queryClient = queryClient;
+        this(new FunctionCallService(new SeedsTemplateStore(), queryClient));
     }
 
     public XxlJobDashboardResponse collectSummary(OpsMonitorEntity monitor) {
@@ -43,11 +62,11 @@ public class XxlJobMonitorCollector {
             throw new IllegalArgumentException("开始日期不能晚于结束日期");
         }
         String databaseName = quoteDatabaseName(monitor.getXxlJobDatabaseName());
-        Map<String, Object> statistics = firstRow(queryClient.runRows(
+        Map<String, Object> statistics = firstRow(functionCallService.executeStatements(
                 monitor.getBusinessLineCode(),
                 monitor.getEnvironmentCode(),
-                summarySql(databaseName, monitor.getExecutorAppName(), normalizedStartDate, normalizedEndDate)
-        ));
+                List.of(summarySql(databaseName, monitor.getExecutorAppName(), normalizedStartDate, normalizedEndDate))
+        ).getFirst());
         int triggerRunningCount = countValue(rowValue(statistics, "triggerRunningCount"));
         int triggerSuccessCount = countValue(rowValue(statistics, "triggerSuccessCount"));
         int triggerFailedCount = countValue(rowValue(statistics, "triggerFailedCount"));
@@ -120,24 +139,29 @@ public class XxlJobMonitorCollector {
         int normalizedPageSize = normalizePageSize(pageSize);
         int offset = (normalizedPage - 1) * normalizedPageSize;
         String databaseName = quoteDatabaseName(monitor.getXxlJobDatabaseName());
+        int staleThresholdMinutes = normalizeStaleThresholdMinutes(monitor.getStaleThresholdMinutes());
+        LocalDateTime staleCutoff = LocalDateTime.now().minusMinutes(staleThresholdMinutes);
+        LocalDateTime silentGraceCutoff = LocalDateTime.now().minusMinutes(SILENT_GRACE_MINUTES);
         String detailFilter = detailFilterSql(author, executorAppName);
-        String statusFilter = logStatusFilterSql(logStatus);
-        String summaryStatement = summarySql(databaseName, monitor.getExecutorAppName(), normalizedStartDate, normalizedEndDate);
-        List<List<Map<String, Object>>> batches = queryClient.runRowsBatch(
+        String statusFilter = logStatusFilterSql(logStatus, staleCutoff);
+        // 健康口径按监测库全量聚合（不拼执行器过滤），executor 名单只聚焦失败明细列表。
+        List<List<Map<String, Object>>> batches = functionCallService.executeStatements(
                 monitor.getBusinessLineCode(),
                 monitor.getEnvironmentCode(),
                 List.of(
-                        summaryStatement,
+                        healthStatsSql(databaseName, normalizedStartDate, normalizedEndDate, staleCutoff, silentGraceCutoff),
                         failedJobsCountSql(databaseName, normalizedStartDate, normalizedEndDate, monitor.getExecutorAppName(), detailFilter, statusFilter),
-                        failedJobsSql(databaseName, normalizedStartDate, normalizedEndDate, monitor.getExecutorAppName(), detailFilter, statusFilter, normalizedPageSize, offset)
+                        failedJobsSql(databaseName, normalizedStartDate, normalizedEndDate, monitor.getExecutorAppName(), detailFilter, statusFilter, normalizedPageSize, offset),
+                        silentJobsSql(databaseName, silentGraceCutoff)
                 )
         );
         Map<String, Object> statistics = firstRow(batches.get(0));
-        int triggerRunningCount = countValue(rowValue(statistics, "triggerRunningCount"));
-        int triggerSuccessCount = countValue(rowValue(statistics, "triggerSuccessCount"));
-        int triggerFailedCount = countValue(rowValue(statistics, "triggerFailedCount"));
-        int triggerCount = Math.addExact(Math.addExact(triggerRunningCount, triggerSuccessCount), triggerFailedCount);
-        String reportUpdatedAt = stringValue(rowValue(statistics, "reportUpdatedAt"));
+        int successCount = countValue(rowValue(statistics, "successCount"));
+        int runningCount = countValue(rowValue(statistics, "runningCount"));
+        int stuckCount = countValue(rowValue(statistics, "stuckCount"));
+        int executionFailedCount = countValue(rowValue(statistics, "executionFailedCount"));
+        int silentJobCount = countValue(rowValue(statistics, "silentJobCount"));
+        String reportUpdatedAt = timeStringValue(rowValue(statistics, "reportUpdatedAt"));
         int executorCount = executorCount(rowValue(statistics, "executorRegistryList"));
         int jobCount = countValue(rowValue(statistics, "jobCount"));
         int enabledJobCount = countValue(rowValue(statistics, "enabledJobCount"));
@@ -145,13 +169,21 @@ public class XxlJobMonitorCollector {
         int failedJobCount = countValue(rowValue(firstRow(batches.get(1)), "failedJobTotal"));
         List<XxlJobFailedJobResponse> failedJobs = batches.get(2)
                 .stream()
-                .map(this::toFailedJob)
+                .map(row -> toFailedJob(row, staleCutoff))
                 .toList();
-        boolean failedOnly = LOG_STATUS_FAILED.equals(normalizeLogStatus(logStatus));
-        String status = failedOnly && failedJobCount > 0 ? "ERROR" : "UP";
-        String message = failedOnly
-                ? (failedJobCount > 0 ? "XXL-JOB 区间失败日志数：" + failedJobCount : "XXL-JOB 区间内无失败日志")
-                : "XXL-JOB 区间日志数：" + failedJobCount;
+        List<XxlJobSilentJobResponse> silentJobs = batches.get(3)
+                .stream()
+                .map(this::toSilentJob)
+                .toList();
+        int triggerRunningCount = runningCount;
+        int triggerSuccessCount = successCount;
+        int triggerFailedCount = Math.addExact(executionFailedCount, stuckCount);
+        int triggerCount = Math.addExact(Math.addExact(triggerFailedCount, triggerRunningCount), triggerSuccessCount);
+        boolean abnormal = triggerFailedCount > 0 || silentJobCount > 0;
+        String status = abnormal ? "ERROR" : "UP";
+        String message = abnormal
+                ? abnormalMessage(executionFailedCount, stuckCount, silentJobCount)
+                : "XXL-JOB 区间内无异常日志，无静默任务";
         return new XxlJobDashboardResponse(
                 monitor.getId(),
                 monitor.getMonitorKey(),
@@ -170,12 +202,31 @@ public class XxlJobMonitorCollector {
                 triggerRunningCount,
                 triggerSuccessCount,
                 triggerFailedCount,
+                executionFailedCount,
+                stuckCount,
+                silentJobCount,
                 reportUpdatedAt,
                 failedJobCount,
                 normalizedPage,
                 normalizedPageSize,
-                failedJobs
+                failedJobs,
+                silentJobs
         );
+    }
+
+    /** 白名单四态健康口径：异常只列非零项（执行失败含调度失败），状态判定见 REQ-3d8f2a71 design 第 1 节。 */
+    private String abnormalMessage(int executionFailedCount, int stuckCount, int silentJobCount) {
+        StringBuilder builder = new StringBuilder("XXL-JOB");
+        if (executionFailedCount > 0) {
+            builder.append("、执行失败 ").append(executionFailedCount);
+        }
+        if (stuckCount > 0) {
+            builder.append("、卡死（回调丢失） ").append(stuckCount);
+        }
+        if (silentJobCount > 0) {
+            builder.append("、静默任务 ").append(silentJobCount);
+        }
+        return builder.toString();
     }
 
     public XxlJobLogPageResponse collectLogs(OpsMonitorEntity monitor,
@@ -191,14 +242,16 @@ public class XxlJobMonitorCollector {
                 trimToNull(monitor.getExecutorAppName()), Boolean.TRUE.equals(monitor.getEnabled()), from, to, trimToNull(author),
                 trimToNull(executorAppName), normalizedStatus, normalizedPage, size);
         String database = quoteDatabaseName(definition.databaseName());
+        LocalDateTime staleCutoff = LocalDateTime.now().minusMinutes(normalizeStaleThresholdMinutes(monitor.getStaleThresholdMinutes()));
         String detailFilter = detailFilterSql(definition.author(), definition.executorFilter());
-        String statusFilter = logStatusFilterSql(normalizedStatus);
-        String statisticsSql = logStatisticsSql(database, from, to, definition.configuredExecutors(), detailFilter, normalizedStatus);
-        String pageSql = failedJobsSql(database, from, to, definition.configuredExecutors(), detailFilter, statusFilter, size, offset);
-        // 一个 SELECT 内的统计与明细共享数据库读取视图，避免并发新增日志把旧计数配上新分页。
-        var statements = List.of("SELECT stats.*, logs.* FROM (" + statisticsSql + ") stats LEFT JOIN (" + pageSql
-                + ") logs ON 1=1 ORDER BY logs.triggerTime DESC, logs.logId DESC");
-        var batch = queryClient.runVerifiedBatch(definition.businessLineCode(), definition.environmentCode(), statements);
+        String statusFilter = logStatusFilterSql(normalizedStatus, staleCutoff);
+        String statisticsSql = logStatisticsSql(database, from, to, definition.configuredExecutors(), detailFilter, normalizedStatus, staleCutoff).sql();
+        String pageSql = failedJobsSql(database, from, to, definition.configuredExecutors(), detailFilter, statusFilter, size, offset).sql();
+        // 一个 SELECT 内的统计与明细共享数据库读取视图，避免并发新增日志把旧计数配上新分页；组合语句审计编码为参与码连接。
+        var statements = List.of(FunctionCallService.Statement.of("OPS_XXL_LOG_STATS+OPS_XXL_FAILED_PAGE",
+                "SELECT stats.*, logs.* FROM (" + statisticsSql + ") stats LEFT JOIN (" + pageSql
+                        + ") logs ON 1=1 ORDER BY logs.triggerTime DESC, logs.logId DESC"));
+        var batch = functionCallService.executeVerified(definition.businessLineCode(), definition.environmentCode(), statements);
         if (batch == null || batch.rows() == null || batch.rows().size() != statements.size() || batch.targetHash() == null
                 || !batch.targetHash().matches("[a-f0-9]{64}") || batch.startedAt() == null || batch.finishedAt() == null
                 || batch.finishedAt().isBefore(batch.startedAt())) throw new IllegalArgumentException("缺少实际查询目标或完整批次回执");
@@ -215,38 +268,81 @@ public class XxlJobMonitorCollector {
                 throw new IllegalArgumentException("同一查询的统计与分页回执不一致");
             if (rowValue(row, "logId") == null && rows.size() != 1) throw new IllegalArgumentException("空分页标记与实际记录混合");
         }
-        var logs = rows.stream().filter(row -> rowValue(row, "logId") != null).map(this::toFailedJob).toList();
+        var logs = rows.stream().filter(row -> rowValue(row, "logId") != null).map(row -> toFailedJob(row, staleCutoff)).toList();
         int expected = Math.min(size, Math.max(0, total - offset));
         if (logs.size() != expected || logs.stream().map(XxlJobFailedJobResponse::logId).distinct().count() != logs.size())
             throw new IllegalArgumentException("日志分页不完整或查询期间数据已变化，请重新查询");
         var json = new tools.jackson.databind.ObjectMapper();
         var evidence = new cn.aslight.workhub.model.ops.XxlJobQueryEvidence(1, java.util.UUID.randomUUID().toString(), definition,
                 AccountingExecutionEvidenceService.hash(json.writeValueAsString(definition)), batch.targetHash(),
-                statements.stream().map(AccountingExecutionEvidenceService::hash).toList(), batch.startedAt(), batch.finishedAt(),
+                statements.stream().map(FunctionCallService.Statement::sql).map(AccountingExecutionEvidenceService::hash).toList(), batch.startedAt(), batch.finishedAt(),
                 "Asia/Shanghai", total, activityCount, latest, normalizedPage == 1 && total == logs.size());
-        boolean failedOnly = LOG_STATUS_FAILED.equals(normalizedStatus);
+        // REQ-a58c7e21：异常态筛选（ABNORMAL/STUCK/EXECUTION_FAILED）有结果按 ERROR；文案与行状态名对齐
+        boolean abnormalFilter = ABNORMAL_FILTER_STATUSES.contains(normalizedStatus);
+        String statusName = logStatusName(normalizedStatus);
+        String message = LOG_STATUS_ALL.equals(normalizedStatus)
+                ? "XXL-JOB 区间日志数：" + total
+                : (total > 0 ? "XXL-JOB 区间" + statusName + "日志数：" + total : "XXL-JOB 区间内无" + statusName + "日志");
         return new XxlJobLogPageResponse(definition.monitorId(), definition.monitorKey(), definition.businessLineCode(), definition.environmentCode(),
-                monitor.getName(), definition.databaseName(), failedOnly && total > 0 ? "ERROR" : "UP",
-                failedOnly ? (total > 0 ? "XXL-JOB 区间失败日志数：" + total : "XXL-JOB 区间内无失败日志") : "XXL-JOB 区间日志数：" + total,
+                monitor.getName(), definition.databaseName(), abnormalFilter && total > 0 ? "ERROR" : "UP",
+                message,
                 LocalDateTime.ofInstant(batch.finishedAt(), java.time.ZoneId.systemDefault()), total, normalizedPage, size, logs, evidence);
     }
 
     /** 匹配总数与全状态活动时间来自同一条 SQL，不能拼接不同时点的零失败和最新活动。 */
-    private String logStatisticsSql(String database, LocalDate from, LocalDate to, String executors, String filter, String status) {
+    private FunctionCallService.Statement logStatisticsSql(String database, LocalDate from, LocalDate to,
+                                                           String executors, String filter, String status,
+                                                           LocalDateTime staleCutoff) {
         String matching = LOG_STATUS_ALL.equals(status) ? "1"
-                : "CASE WHEN l.handle_code <> 200 AND NOT (l.trigger_code IN (0, 200) AND l.handle_code = 0) THEN 1 END";
-        return """
-                SELECT COUNT(%1$s) AS failedJobTotal,
-                  COUNT(1) AS activityCount,
-                  MAX(GREATEST(l.trigger_time, COALESCE(l.handle_time, l.trigger_time))) AS latestActivityAt
-                FROM %2$s.`xxl_job_log` l
-                JOIN %2$s.`xxl_job_info` i ON i.id = l.job_id
-                JOIN %2$s.`xxl_job_group` g ON g.id = i.job_group
-                WHERE l.trigger_time >= '%3$s 00:00:00'
-                  AND l.trigger_time < '%4$s 00:00:00'
-                  %5$s
-                  %6$s
-                """.formatted(matching, database, from, to.plusDays(1), executorAppNameFilterSql(executors), filter);
+                : "CASE WHEN " + statusPredicate(status, staleCutoff) + " THEN 1 END";
+        return FunctionCallService.Statement.of("OPS_XXL_LOG_STATS", functionCallService.render(
+                "OPS_XXL_LOG_STATS", FunctionCallService.params(
+                        "matching", matching,
+                        "databaseName", database,
+                        "startDate", from.toString(),
+                        "endDateExclusive", to.plusDays(1).toString(),
+                        "executorFilter", executorAppNameFilterSql(executors),
+                        "detailFilter", filter)));
+    }
+
+    /** 全库健康统计：五态计数（窗口内日志）+ 静默任务数 + 任务/执行器统计，恰好返回一行。 */
+    private FunctionCallService.Statement healthStatsSql(String databaseName,
+                                                         LocalDate startDate,
+                                                         LocalDate endDate,
+                                                         LocalDateTime staleCutoff,
+                                                         LocalDateTime silentGraceCutoff) {
+        return FunctionCallService.Statement.of("OPS_XXL_HEALTH_STATS", functionCallService.render(
+                "OPS_XXL_HEALTH_STATS", FunctionCallService.params(
+                        "silentGraceCutoff", sqlLiteral(silentGraceCutoff),
+                        "databaseName", databaseName,
+                        "staleCutoff", sqlLiteral(staleCutoff),
+                        "startDate", startDate.toString(),
+                        "endDateExclusive", endDate.plusDays(1).toString())));
+    }
+
+    private String sqlLiteral(LocalDateTime value) {
+        return value.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
+
+    /** 静默任务明细（全库视角）：启用中但调度停摆的任务，按停摆程度（next_time 最早落后）取前 20。不选 schedule_conf——老版本 xxl_job_info 无该列（运行期实证）。 */
+    private FunctionCallService.Statement silentJobsSql(String databaseName, LocalDateTime silentGraceCutoff) {
+        return FunctionCallService.Statement.of("OPS_XXL_SILENT_JOBS", functionCallService.render(
+                "OPS_XXL_SILENT_JOBS", FunctionCallService.params(
+                        "databaseName", databaseName,
+                        "silentGraceCutoff", sqlLiteral(silentGraceCutoff))));
+    }
+
+    private XxlJobSilentJobResponse toSilentJob(Map<String, Object> row) {
+        LocalDateTime nextTime = timestamp(rowValue(row, "triggerNextTime"));
+        return new XxlJobSilentJobResponse(
+                stringValue(rowValue(row, "executorAppName")),
+                longValue(rowValue(row, "jobId")),
+                stringValue(rowValue(row, "jobDesc")),
+                stringValue(rowValue(row, "author")),
+                stringValue(rowValue(row, "executorHandler")),
+                timeStringValue(rowValue(row, "triggerNextTime")),
+                nextTime == null ? null : java.time.Duration.between(nextTime, LocalDateTime.now()).toMinutes()
+        );
     }
 
     private LocalDateTime timestamp(Object value) {
@@ -266,6 +362,10 @@ public class XxlJobMonitorCollector {
         detail.put("enabledJobCount", dashboard.enabledJobCount());
         detail.put("disabledJobCount", dashboard.disabledJobCount());
         detail.put("failedJobCount", dashboard.failedJobCount());
+        detail.put("executionFailedCount", dashboard.executionFailedCount());
+        detail.put("stuckCount", dashboard.stuckCount());
+        detail.put("silentJobCount", dashboard.silentJobCount());
+        detail.put("silentJobs", dashboard.silentJobs());
         detail.put("failedJobs", dashboard.failedJobs());
         return new OpsMonitorCheckResponse(
                 monitor.getId(),
@@ -280,7 +380,9 @@ public class XxlJobMonitorCollector {
 
     public List<XxlJobExecutorResponse> listExecutors(String businessLineCode, String environmentCode, String xxlJobDatabaseName) {
         String databaseName = quoteDatabaseName(xxlJobDatabaseName);
-        return queryClient.runRows(businessLineCode, environmentCode, executorsSql(databaseName))
+        return functionCallService.executeStatements(businessLineCode, environmentCode,
+                        List.of(executorsSql(databaseName)))
+                .getFirst()
                 .stream()
                 .map(row -> new XxlJobExecutorResponse(
                         stringValue(rowValue(row, "appName")),
@@ -300,171 +402,152 @@ public class XxlJobMonitorCollector {
         return "`" + normalized + "`";
     }
 
-    private String summarySql(String databaseName,
-                              String executorAppName,
-                              LocalDate startDate,
-                              LocalDate endDate) {
+    /** REQ-9f3c2a84：SQL 主体统一走 func_call_sql 登记模板（场景编码 OPS-XXL-*），片段参数由白名单构建；
+     * REQ-b4d7e6f2：构建结果带归属编码（Statement），执行与审计由 FunctionCallService 收口。 */
+    private FunctionCallService.Statement summarySql(String databaseName,
+                                                     String executorAppName,
+                                                     LocalDate startDate,
+                                                     LocalDate endDate) {
         String executorFilter = executorAppNameFilterSql(executorAppName);
         if (!executorFilter.isBlank()) {
             return focusedSummarySql(databaseName, executorFilter, startDate, endDate);
         }
-        String endExclusiveDate = endDate.plusDays(1).toString();
-        return """
-                SELECT
-                  (SELECT COUNT(1) FROM %1$s.`xxl_job_info`) AS jobCount,
-                  (SELECT COUNT(1) FROM %1$s.`xxl_job_info` WHERE trigger_status = 1) AS enabledJobCount,
-                  (SELECT COUNT(1) FROM %1$s.`xxl_job_info` WHERE trigger_status <> 1) AS disabledJobCount,
-                  (SELECT GROUP_CONCAT(address_list SEPARATOR ',') FROM %1$s.`xxl_job_group` WHERE address_list IS NOT NULL AND address_list <> '') AS executorRegistryList,
-                  (SELECT COALESCE(SUM(running_count), 0) FROM %1$s.`xxl_job_log_report` WHERE trigger_day >= '%2$s' AND trigger_day < '%3$s') AS triggerRunningCount,
-                  (SELECT COALESCE(SUM(suc_count), 0) FROM %1$s.`xxl_job_log_report` WHERE trigger_day >= '%2$s' AND trigger_day < '%3$s') AS triggerSuccessCount,
-                  (SELECT COALESCE(SUM(fail_count), 0) FROM %1$s.`xxl_job_log_report` WHERE trigger_day >= '%2$s' AND trigger_day < '%3$s') AS triggerFailedCount,
-                  (SELECT MAX(trigger_day) FROM %1$s.`xxl_job_log_report` WHERE trigger_day >= '%2$s' AND trigger_day < '%3$s') AS reportUpdatedAt
-                """.formatted(databaseName, startDate, endExclusiveDate);
+        return FunctionCallService.Statement.of("OPS_XXL_SUMMARY", functionCallService.render("OPS_XXL_SUMMARY",
+                FunctionCallService.params(
+                        "databaseName", databaseName,
+                        "startDate", startDate.toString(),
+                        "endDateExclusive", endDate.plusDays(1).toString())));
     }
 
-    private String focusedSummarySql(String databaseName,
-                                     String executorFilter,
-                                     LocalDate startDate,
-                                     LocalDate endDate) {
-        String startDateTime = startDate + " 00:00:00";
-        String endExclusiveDateTime = endDate.plusDays(1) + " 00:00:00";
-        return """
-                SELECT
-                  job_stats.jobCount AS jobCount,
-                  job_stats.enabledJobCount AS enabledJobCount,
-                  job_stats.disabledJobCount AS disabledJobCount,
-                  executor_stats.executorRegistryList AS executorRegistryList,
-                  log_stats.triggerRunningCount AS triggerRunningCount,
-                  log_stats.triggerSuccessCount AS triggerSuccessCount,
-                  log_stats.triggerFailedCount AS triggerFailedCount,
-                  log_stats.reportUpdatedAt AS reportUpdatedAt
-                FROM (
-                  SELECT
-                    COUNT(1) AS jobCount,
-                    COALESCE(SUM(CASE WHEN i.trigger_status = 1 THEN 1 ELSE 0 END), 0) AS enabledJobCount,
-                    COALESCE(SUM(CASE WHEN i.trigger_status <> 1 THEN 1 ELSE 0 END), 0) AS disabledJobCount
-                  FROM %1$s.`xxl_job_info` i
-                  JOIN %1$s.`xxl_job_group` g ON g.id = i.job_group
-                  WHERE 1 = 1 %2$s
-                ) job_stats
-                CROSS JOIN (
-                  SELECT GROUP_CONCAT(g.address_list SEPARATOR ',') AS executorRegistryList
-                  FROM %1$s.`xxl_job_group` g
-                  WHERE g.address_list IS NOT NULL AND g.address_list <> '' %2$s
-                ) executor_stats
-                CROSS JOIN (
-                  SELECT
-                    COALESCE(SUM(CASE WHEN l.handle_code = 0 AND l.trigger_code IN (0, 200) THEN 1 ELSE 0 END), 0) AS triggerRunningCount,
-                    COALESCE(SUM(CASE WHEN l.handle_code = 200 THEN 1 ELSE 0 END), 0) AS triggerSuccessCount,
-                    COALESCE(SUM(CASE WHEN l.handle_code <> 200
-                                      AND NOT (l.trigger_code IN (0, 200) AND l.handle_code = 0)
-                                      THEN 1 ELSE 0 END), 0) AS triggerFailedCount,
-                    MAX(l.trigger_time) AS reportUpdatedAt
-                  FROM %1$s.`xxl_job_log` l
-                  JOIN %1$s.`xxl_job_info` i ON i.id = l.job_id
-                  JOIN %1$s.`xxl_job_group` g ON g.id = i.job_group
-                  WHERE l.trigger_time >= '%3$s'
-                    AND l.trigger_time < '%4$s'
-                    %2$s
-                ) log_stats
-                """.formatted(databaseName, executorFilter, startDateTime, endExclusiveDateTime);
+    private FunctionCallService.Statement focusedSummarySql(String databaseName,
+                                                            String executorFilter,
+                                                            LocalDate startDate,
+                                                            LocalDate endDate) {
+        return FunctionCallService.Statement.of("OPS_XXL_FOCUSED_SUMMARY", functionCallService.render(
+                "OPS_XXL_FOCUSED_SUMMARY", FunctionCallService.params(
+                        "databaseName", databaseName,
+                        "executorFilter", executorFilter,
+                        "startDateTime", startDate + " 00:00:00",
+                        "endExclusiveDateTime", endDate.plusDays(1) + " 00:00:00")));
     }
 
     private LocalDate defaultStartDate(LocalDate endDate) {
         return endDate.minusDays(DEFAULT_LOG_DAYS - 1L);
     }
 
-    private String executorsSql(String databaseName) {
-        return """
-                SELECT
-                  app_name AS appName,
-                  title AS title
-                FROM %1$s.`xxl_job_group`
-                ORDER BY app_name ASC
-                """.formatted(databaseName);
+    private FunctionCallService.Statement executorsSql(String databaseName) {
+        return FunctionCallService.Statement.of("OPS_XXL_EXECUTORS", functionCallService.render(
+                "OPS_XXL_EXECUTORS", FunctionCallService.params("databaseName", databaseName)));
     }
 
-    private String failedJobsCountSql(String databaseName,
-                                      LocalDate startDate,
-                                      LocalDate endDate,
-                                      String executorAppName,
-                                      String detailFilter,
-                                      String statusFilter) {
-        String startDateTime = startDate + " 00:00:00";
-        String endExclusiveDateTime = endDate.plusDays(1) + " 00:00:00";
-        String executorFilter = executorAppNameFilterSql(executorAppName);
-        return """
-                SELECT COUNT(1) AS failedJobTotal
-                FROM %1$s.`xxl_job_log` l
-                JOIN %1$s.`xxl_job_info` i ON i.id = l.job_id
-                JOIN %1$s.`xxl_job_group` g ON g.id = i.job_group
-                WHERE l.trigger_time >= '%2$s'
-                  AND l.trigger_time < '%3$s'
-                  %4$s
-                  %5$s
-                  %6$s
-                """.formatted(databaseName, startDateTime, endExclusiveDateTime, executorFilter, detailFilter, statusFilter);
+    private FunctionCallService.Statement failedJobsCountSql(String databaseName,
+                                                             LocalDate startDate,
+                                                             LocalDate endDate,
+                                                             String executorAppName,
+                                                             String detailFilter,
+                                                             String statusFilter) {
+        return FunctionCallService.Statement.of("OPS_XXL_FAILED_COUNT", functionCallService.render(
+                "OPS_XXL_FAILED_COUNT", FunctionCallService.params(
+                        "databaseName", databaseName,
+                        "startDateTime", startDate + " 00:00:00",
+                        "endExclusiveDateTime", endDate.plusDays(1) + " 00:00:00",
+                        "executorFilter", executorAppNameFilterSql(executorAppName),
+                        "detailFilter", detailFilter,
+                        "statusFilter", statusFilter)));
     }
 
-    private String failedJobsSql(String databaseName,
-                                 LocalDate startDate,
-                                 LocalDate endDate,
-                                 String executorAppName,
-                                 String detailFilter,
-                                 String statusFilter,
-                                 int limit,
-                                 int offset) {
-        String startDateTime = startDate + " 00:00:00";
-        String endExclusiveDateTime = endDate.plusDays(1) + " 00:00:00";
-        String executorFilter = executorAppNameFilterSql(executorAppName);
-        return """
-                SELECT
-                  g.app_name AS executorAppName,
-                  i.id AS jobId,
-                  i.job_desc AS jobDesc,
-                  i.author AS author,
-                  i.executor_handler AS executorHandler,
-                  i.trigger_status AS triggerStatus,
-                  l.id AS logId,
-                  l.trigger_time AS triggerTime,
-                  l.trigger_code AS triggerCode,
-                  l.trigger_msg AS triggerMsg,
-                  l.handle_time AS handleTime,
-                  l.handle_code AS handleCode,
-                  l.handle_msg AS handleMsg
-                FROM %1$s.`xxl_job_log` l
-                JOIN %1$s.`xxl_job_info` i ON i.id = l.job_id
-                JOIN %1$s.`xxl_job_group` g ON g.id = i.job_group
-                WHERE l.trigger_time >= '%2$s'
-                  AND l.trigger_time < '%3$s'
-                  %4$s
-                  %5$s
-                  %6$s
-                ORDER BY l.trigger_time DESC, l.id DESC
-                LIMIT %7$d OFFSET %8$d
-                """.formatted(databaseName, startDateTime, endExclusiveDateTime, executorFilter, detailFilter, statusFilter, limit, offset);
+    private FunctionCallService.Statement failedJobsSql(String databaseName,
+                                                        LocalDate startDate,
+                                                        LocalDate endDate,
+                                                        String executorAppName,
+                                                        String detailFilter,
+                                                        String statusFilter,
+                                                        int limit,
+                                                        int offset) {
+        return FunctionCallService.Statement.of("OPS_XXL_FAILED_PAGE", functionCallService.render(
+                "OPS_XXL_FAILED_PAGE", FunctionCallService.params(
+                        "databaseName", databaseName,
+                        "startDateTime", startDate + " 00:00:00",
+                        "endExclusiveDateTime", endDate.plusDays(1) + " 00:00:00",
+                        "executorFilter", executorAppNameFilterSql(executorAppName),
+                        "detailFilter", detailFilter,
+                        "statusFilter", statusFilter,
+                        "limit", String.valueOf(limit),
+                        "offset", String.valueOf(offset))));
     }
 
-    private String logStatusFilterSql(String logStatus) {
+    private String logStatusFilterSql(String logStatus, LocalDateTime staleCutoff) {
         String normalized = normalizeLogStatus(logStatus);
         if (LOG_STATUS_ALL.equals(normalized)) {
             return "";
         }
+        return "AND (" + statusPredicate(normalized, staleCutoff) + ")";
+    }
+
+    /** 白名单五态异常谓词：调度失败、执行失败或超时卡死（见 REQ-3d8f2a71 design 第 1 节）。 */
+    private String abnormalPredicate(LocalDateTime staleCutoff) {
         return """
-                AND l.handle_code <> 200
-                  AND NOT (l.trigger_code IN (0, 200) AND l.handle_code = 0)""";
+                l.trigger_code IS NULL
+                  OR l.trigger_code <> 200
+                  OR l.handle_code NOT IN (0, 200)
+                  OR ((l.handle_code = 0 OR l.handle_code IS NULL) AND l.trigger_time < '%1$s')"""
+                .formatted(sqlLiteral(staleCutoff));
+    }
+
+    /** REQ-a58c7e21：按筛选状态产出与行级 failureType 一致的谓词片段（STUCK∪EXECUTION_FAILED=ABNORMAL）。 */
+    private String statusPredicate(String normalizedStatus, LocalDateTime staleCutoff) {
+        String cutoff = sqlLiteral(staleCutoff);
+        return switch (normalizedStatus) {
+            case LOG_STATUS_ABNORMAL -> abnormalPredicate(staleCutoff);
+            case LOG_STATUS_SUCCESS -> "l.trigger_code = 200 AND l.handle_code = 200";
+            // trigger_time 为 NULL 视作执行中（与 failureType 的 null 归 RUNNING 一致）
+            case LOG_STATUS_RUNNING -> "l.trigger_code = 200 AND (l.handle_code = 0 OR l.handle_code IS NULL)"
+                    + " AND (l.trigger_time IS NULL OR l.trigger_time >= '" + cutoff + "')";
+            case LOG_STATUS_STUCK -> "l.trigger_code = 200 AND (l.handle_code = 0 OR l.handle_code IS NULL)"
+                    + " AND l.trigger_time < '" + cutoff + "'";
+            case LOG_STATUS_EXECUTION_FAILED -> "l.trigger_code IS NULL OR l.trigger_code <> 200 OR l.handle_code NOT IN (0, 200)";
+            default -> throw new IllegalArgumentException("不支持的日志状态谓词：" + normalizedStatus);
+        };
+    }
+
+    /** 筛选状态中文名（文案与行状态列 failureTypeName 对齐）。 */
+    private String logStatusName(String normalizedStatus) {
+        return switch (normalizedStatus) {
+            case LOG_STATUS_ABNORMAL -> "异常";
+            case LOG_STATUS_SUCCESS -> "执行成功";
+            case LOG_STATUS_RUNNING -> "执行中";
+            case LOG_STATUS_STUCK -> "卡死（回调丢失）";
+            case LOG_STATUS_EXECUTION_FAILED -> "执行失败";
+            default -> "";
+        };
     }
 
     private String normalizeLogStatus(String logStatus) {
         String normalized = trimToNull(logStatus);
         if (normalized == null) {
-            return LOG_STATUS_FAILED;
+            return LOG_STATUS_ABNORMAL;
         }
-        String upper = normalized.toUpperCase();
-        if (LOG_STATUS_ALL.equals(upper) || LOG_STATUS_FAILED.equals(upper)) {
+        String upper = normalized.toUpperCase(Locale.ROOT);
+        if (LOG_STATUS_ALL.equals(upper) || LOG_STATUS_ABNORMAL.equals(upper) || LOG_STATUS_SUCCESS.equals(upper)
+                || LOG_STATUS_RUNNING.equals(upper) || LOG_STATUS_STUCK.equals(upper)
+                || LOG_STATUS_EXECUTION_FAILED.equals(upper)) {
             return upper;
         }
-        throw new IllegalArgumentException("XXL-JOB 日志状态只支持 ALL 或 FAILED");
+        if (LOG_STATUS_FAILED.equals(upper)) {
+            return LOG_STATUS_ABNORMAL;
+        }
+        throw new IllegalArgumentException(
+                "XXL-JOB 日志状态只支持 ALL、ABNORMAL、SUCCESS、RUNNING、STUCK 或 EXECUTION_FAILED");
+    }
+
+    private int normalizeStaleThresholdMinutes(Integer staleThresholdMinutes) {
+        if (staleThresholdMinutes == null) {
+            return DEFAULT_STALE_THRESHOLD_MINUTES;
+        }
+        if (staleThresholdMinutes < 1) {
+            throw new IllegalArgumentException("卡死阈值必须大于等于 1 分钟");
+        }
+        return staleThresholdMinutes;
     }
 
     private String detailFilterSql(String author, String executorAppName) {
@@ -521,9 +604,10 @@ public class XxlJobMonitorCollector {
         return date;
     }
 
-    private XxlJobFailedJobResponse toFailedJob(Map<String, Object> row) {
-        Integer triggerCode = intValue(rowValue(row, "triggerCode"));
-        Integer handleCode = intValue(rowValue(row, "handleCode"));
+    private XxlJobFailedJobResponse toFailedJob(Map<String, Object> row, LocalDateTime staleCutoff) {
+        Integer triggerCode = nullableIntValue(rowValue(row, "triggerCode"));
+        Integer handleCode = nullableIntValue(rowValue(row, "handleCode"));
+        LocalDateTime triggerTime = timestamp(rowValue(row, "triggerTime"));
         return new XxlJobFailedJobResponse(
                 stringValue(rowValue(row, "executorAppName")),
                 longValue(rowValue(row, "jobId")),
@@ -531,44 +615,51 @@ public class XxlJobMonitorCollector {
                 stringValue(rowValue(row, "author")),
                 stringValue(rowValue(row, "executorHandler")),
                 intValue(rowValue(row, "triggerStatus")),
-                failureType(triggerCode, handleCode),
-                failureTypeName(triggerCode, handleCode),
+                failureType(triggerCode, handleCode, triggerTime, staleCutoff),
+                failureTypeName(triggerCode, handleCode, triggerTime, staleCutoff),
                 longValue(rowValue(row, "logId")),
-                stringValue(rowValue(row, "triggerTime")),
+                timeStringValue(rowValue(row, "triggerTime")),
                 triggerCode,
                 truncate(stringValue(rowValue(row, "triggerMsg")), 500),
-                stringValue(rowValue(row, "handleTime")),
+                timeStringValue(rowValue(row, "handleTime")),
                 handleCode,
                 truncate(stringValue(rowValue(row, "handleMsg")), 500)
         );
     }
 
-    private String failureType(Integer triggerCode) {
-        return failureType(triggerCode, null);
+    /** 行值可能来自 JDBC（Timestamp）或 MCP 反序列化（LocalDateTime/带 T 字符串），统一输出 yyyy-MM-dd HH:mm:ss；空值输出空串，无法解析的按原样返回。 */
+    private String timeStringValue(Object value) {
+        if (value == null || String.valueOf(value).isBlank()) {
+            return "";
+        }
+        try {
+            return sqlLiteral(timestamp(value));
+        } catch (IllegalArgumentException | java.time.DateTimeException ex) {
+            return stringValue(value);
+        }
     }
 
-    private String failureTypeName(Integer triggerCode) {
-        return failureTypeName(triggerCode, null);
-    }
-
-    private String failureType(Integer triggerCode, Integer handleCode) {
+    /** 白名单四态分类：trigger≠200 计为执行失败（含调度失败，2026-11-14 用户确认并入）；handle 只有 200 成功、0/NULL 未决（按时间分 RUNNING/STUCK）、其他执行失败。 */
+    private String failureType(Integer triggerCode, Integer handleCode, LocalDateTime triggerTime, LocalDateTime staleCutoff) {
+        if (!Integer.valueOf(200).equals(triggerCode)) {
+            return "EXECUTION_FAILED";
+        }
         if (Integer.valueOf(200).equals(handleCode)) {
             return "SUCCESS";
         }
-        if (Integer.valueOf(0).equals(handleCode) && (Integer.valueOf(0).equals(triggerCode) || Integer.valueOf(200).equals(triggerCode))) {
-            return "RUNNING";
+        if (handleCode == null || Integer.valueOf(0).equals(handleCode)) {
+            return triggerTime != null && triggerTime.isBefore(staleCutoff) ? "STUCK" : "RUNNING";
         }
-        return Integer.valueOf(200).equals(triggerCode) ? "EXECUTION_FAILED" : "SCHEDULE_FAILED";
+        return "EXECUTION_FAILED";
     }
 
-    private String failureTypeName(Integer triggerCode, Integer handleCode) {
-        if (Integer.valueOf(200).equals(handleCode)) {
-            return "执行成功";
-        }
-        if (Integer.valueOf(0).equals(handleCode) && (Integer.valueOf(0).equals(triggerCode) || Integer.valueOf(200).equals(triggerCode))) {
-            return "执行中";
-        }
-        return Integer.valueOf(200).equals(triggerCode) ? "执行失败" : "调度失败";
+    private String failureTypeName(Integer triggerCode, Integer handleCode, LocalDateTime triggerTime, LocalDateTime staleCutoff) {
+        return switch (failureType(triggerCode, handleCode, triggerTime, staleCutoff)) {
+            case "SUCCESS" -> "执行成功";
+            case "RUNNING" -> "执行中";
+            case "STUCK" -> "卡死（回调丢失）";
+            default -> "执行失败";
+        };
     }
 
     private String executorAppNameFilterSql(String executorAppName) {
@@ -633,6 +724,10 @@ public class XxlJobMonitorCollector {
     private int intValue(Object value) {
         try { return new java.math.BigDecimal(java.util.Objects.requireNonNull(value, "整数值缺失").toString()).intValueExact(); }
         catch (ArithmeticException | NumberFormatException | NullPointerException ex) { throw new IllegalArgumentException("数据库回执整数值缺失、无效或越界", ex); }
+    }
+
+    private Integer nullableIntValue(Object value) {
+        return value == null ? null : intValue(value);
     }
 
     private int countValue(Object value) { return Math.toIntExact(countLong(value)); }

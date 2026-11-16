@@ -3,6 +3,11 @@ package cn.aslight.workhub.service.ai;
 import cn.aslight.workhub.model.ai.AiProviderConfigEntity;
 import cn.aslight.workhub.model.ai.AiUseCaseConfigEntity;
 import cn.aslight.workhub.service.intake.CodexCliClient;
+import cn.aslight.workhub.config.McpProperties;
+import cn.aslight.workhub.service.mcp.McpRuntimeService;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,8 +22,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * 统一 AI 网关默认实现。
@@ -27,7 +30,6 @@ import java.util.regex.Pattern;
 public class DefaultAiGatewayClient implements AiGatewayClient {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultAiGatewayClient.class);
-    private static final Pattern TEMPLATE_VARIABLE_PATTERN = Pattern.compile("\\$\\{([A-Za-z0-9_.-]+)}");
     private static final String PROTOCOL_RESPONSES = "OPENAI_RESPONSES";
     private static final String PROTOCOL_OPENROUTER = "OPENROUTER";
     private static final String PROTOCOL_OPENAI_COMPATIBLE = "OPENAI_COMPATIBLE";
@@ -49,7 +51,13 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
     private final ZCodeCliClient zcodeCliClient;
     private final OpenAiResponsesClient responsesClient;
     private final OpenAiChatClient chatClient;
+    private final AiPromptTemplateRenderer promptTemplateRenderer;
     private final ObjectMapper objectMapper;
+    private final ObjectProvider<McpRuntimeService> mcpRuntimeProvider;
+    private final McpProperties mcpProperties;
+    private final String environmentAccessToken;
+    private final String serverPort;
+    private final String cliMcpEndpoint;
 
     public DefaultAiGatewayClient(AiUseCaseConfigService aiUseCaseConfigService,
                                   AiProviderConfigService aiProviderConfigService,
@@ -57,14 +65,62 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
                                   ZCodeCliClient zcodeCliClient,
                                   OpenAiResponsesClient responsesClient,
                                   OpenAiChatClient chatClient,
-                                  ObjectMapper objectMapper) {
+                                  AiPromptTemplateRenderer promptTemplateRenderer,
+                                  ObjectMapper objectMapper,
+                                  ObjectProvider<McpRuntimeService> mcpRuntimeProvider,
+                                  McpProperties mcpProperties,
+                                  @Value("${WORKHUB_MCP_ACCESS_TOKEN:}") String environmentAccessToken,
+                                  @Value("${server.port:8080}") String serverPort,
+                                  @Value("${workhub.agent.cli-mcp-endpoint:}") String cliMcpEndpoint) {
         this.aiUseCaseConfigService = aiUseCaseConfigService;
         this.aiProviderConfigService = aiProviderConfigService;
         this.codexCliClient = codexCliClient;
         this.zcodeCliClient = zcodeCliClient;
         this.responsesClient = responsesClient;
         this.chatClient = chatClient;
+        this.promptTemplateRenderer = promptTemplateRenderer;
         this.objectMapper = objectMapper;
+        this.mcpRuntimeProvider = mcpRuntimeProvider;
+        this.mcpProperties = mcpProperties;
+        this.environmentAccessToken = environmentAccessToken;
+        this.serverPort = serverPort;
+        this.cliMcpEndpoint = cliMcpEndpoint;
+    }
+
+    /** 本地仓库读取场景必须配置 MCP 访问令牌；不静默降级为无工具分析。 */
+    private String repositoryMcpUrl() {
+        if (!StringUtils.hasText(mcpAccessToken())) throw new IllegalArgumentException("ZCode 通道本地仓库读取需配置 workhub.mcp.access-token");
+        return StringUtils.hasText(cliMcpEndpoint) ? cliMcpEndpoint : "http://127.0.0.1:" + serverPort + "/api/mcp/runtime";
+    }
+
+    private String mcpAccessToken() {
+        return StringUtils.hasText(environmentAccessToken) ? environmentAccessToken : mcpProperties.getAccessToken();
+    }
+
+    private List<String> repositoryToolNames() {
+        McpRuntimeService runtime = mcpRuntimeProvider.getIfAvailable();
+        if (runtime == null) throw new IllegalArgumentException("MCP 运行时未就绪，无法执行 ZCode 本地仓库读取");
+        return runtime.toolNames();
+    }
+
+    private static String repositoryHint(AiGatewayRequest request) {
+        StringBuilder hint = new StringBuilder("\n\n代码读取约束：本场景只能通过 workhub_task MCP 的只读仓库工具查看代码（工具名带 mcp__workhub_task__ 前缀：mcp__workhub_task__list_repository_files / mcp__workhub_task__read_repository_text_file / mcp__workhub_task__search_repository_text）；");
+        if (request.workingDirectory() != null) hint.append("仓库根目录：").append(request.workingDirectory()).append("。");
+        if (request.allowedDirectories() != null && !request.allowedDirectories().isEmpty()) hint.append("授权目录：").append(String.join("、", request.allowedDirectories())).append("。");
+        return hint.toString();
+    }
+
+    /** 仓库读取场景的提示词：schema 以终稿格式说明给出，不触发 ZCode CLI 结构化输出模式（该模式阻断工具调用）。 */
+    private static String buildZcodePrompt(String prompt, String outputSchema, boolean repository, AiGatewayRequest request) {
+        String base = prompt + (repository ? repositoryHint(request) : "");
+        if (outputSchema == null) {
+            return base;
+        }
+        if (repository) {
+            return base + "\n\n先调查后作答：必须先用上述工具完成代码检索，再基于真实代码结论作答；调查完成前不要输出 JSON。"
+                    + "\n最终答复只输出一个符合此 schema 的 JSON 对象（不要代码围栏）：\n" + outputSchema;
+        }
+        return base + "\n仅输出符合此 schema 的 JSON：\n" + outputSchema;
     }
 
     @Override
@@ -74,7 +130,11 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
             AiUseCaseConfigEntity useCase = aiUseCaseConfigService.requireEnabledByCode(useCaseCode);
             AiProviderConfigEntity provider = aiProviderConfigService.requireExisting(useCase.getProviderConfigId());
             definition.requireChannel(provider.getChannelType());
-            if (AiCliType.is(provider, "ZCODE") && definition.capability() == AiUseCaseDefinitions.Capability.LOCAL_REPOSITORY_READ) return false;
+            if (AiCliType.is(provider, "ZCODE") && definition.capability() == AiUseCaseDefinitions.Capability.LOCAL_REPOSITORY_READ) {
+                if (!StringUtils.hasText(mcpAccessToken())) return false;
+                McpRuntimeService runtime = mcpRuntimeProvider.getIfAvailable();
+                if (runtime == null || !runtime.toolNames().contains("list_repository_files")) return false;
+            }
             requireText(firstText(useCase.getModel(), provider.getDefaultModel()), "AI 场景模型未配置");
             if (!Boolean.TRUE.equals(provider.getEnabled())) {
                 return false;
@@ -207,7 +267,7 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
         if (AiCliType.is(provider, "ZCODE")) {
             AiCliType.validate(provider);
             return zcodeCliClient.execute(provider, model, provider.getDefaultReasoningLevel(),
-                    "这是不含业务数据的连接测试。严格只返回 JSON：{\"status\":\"OK\"}。", provider.getCallTimeoutSeconds());
+                    "这是不含业务数据的连接测试。严格只返回 JSON：{\"status\":\"OK\"}。", provider.getCallTimeoutSeconds(), List.of(), null, null, null, List.of());
         }
         if (!AiCliType.is(provider, "CODEX")) throw new IllegalArgumentException("所选 CLI 没有对应适配器");
         if (!codexCliClient.isEnabled()) {
@@ -278,7 +338,7 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
                 throw new IllegalStateException("AI 接入配置已停用: " + providerCode);
             }
             definition.requireChannel(provider.getChannelType());
-            String prompt = renderPrompt(useCase.getPromptTemplate(), request.variables(), definition);
+            String prompt = promptTemplateRenderer.render(useCase.getPromptTemplate(), request.variables(), definition);
             String outputSchema = structured && !Boolean.FALSE.equals(useCase.getJsonSchemaEnabled())
                     ? resolveSchema(request.outputSchema(), firstText(request.schemaClasspathOverride(), useCase.getSchemaClasspath()))
                     : null;
@@ -306,9 +366,10 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
                     elapsedMillis(startedAt), output == null ? 0 : output.length());
             return AiGatewayResult.succeeded(output, providerCode, model, elapsedMillis(startedAt));
         } catch (Exception ex) {
-            log.warn("AI gateway execution failed. useCase={}, providerCode={}, model={}, durationMs={}, errorType={}",
+            log.warn("AI gateway execution failed. useCase={}, providerCode={}, model={}, durationMs={}, errorType={}, cause={}",
                     request == null ? null : request.useCaseCode(), providerCode, model, elapsedMillis(startedAt),
-                    ex.getClass().getSimpleName());
+                    ex.getClass().getSimpleName(),
+                    ex.getCause() == null ? ex.getMessage() : ex.getCause().getClass().getSimpleName() + ": " + ex.getCause().getMessage());
             log.debug("AI gateway execution exception", ex);
             return AiGatewayResult.failed(
                     "AI 网关执行失败: " + summarizeException(ex),
@@ -326,17 +387,28 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
                               String prompt,
                               String outputSchema) throws Exception {
         if (AiCliType.is(provider, "ZCODE")) {
-            if (definition.capability() == AiUseCaseDefinitions.Capability.LOCAL_REPOSITORY_READ) {
-                throw new IllegalArgumentException("ZCode 的代码操作请使用 Agent 工作台授权工具；旧研发分析场景的本地目录能力尚未适配");
-            }
-            if (request.imagePaths() != null && !request.imagePaths().isEmpty()) throw new IllegalArgumentException("ZCode 当前文本场景尚不接受图片附件");
             String speed = firstCliValue(request.speedModeOverride(), firstCliValue(useCase.getSpeedMode(), provider.getDefaultSpeedMode()));
             if (!"STANDARD".equalsIgnoreCase(speed)) throw new IllegalArgumentException("ZCode CLI 速度使用 STANDARD");
+            boolean repository = definition.capability() == AiUseCaseDefinitions.Capability.LOCAL_REPOSITORY_READ;
+            // ZCode 结构化输出模式会阻断 MCP 工具调用（实测带 schema 会话模型无法真正调用工具，只能产出
+            // 占位/空结果）。仓库读取场景不把 schema 传进 CLI 结构化输出，让模型自由完成工具调查；终稿仍
+            // 强制为 JSON 对象，模型交文本时按 schema 做一次无工具格式校正。
+            if (repository) {
+                return zcodeCliClient.executeStructuredWithoutCliSchema(provider,
+                        firstCliValue(request.modelOverride(), firstCliValue(useCase.getModel(), provider.getDefaultModel())),
+                        firstCliValue(request.reasoningLevelOverride(), firstCliValue(useCase.getReasoningLevel(), provider.getDefaultReasoningLevel())),
+                        buildZcodePrompt(prompt, outputSchema, true, request),
+                        positive(request.timeoutSecondsOverride(), positive(useCase.getTimeoutSeconds(), provider.getCallTimeoutSeconds())),
+                        request.imagePaths(), outputSchema,
+                        repositoryMcpUrl(), mcpAccessToken(), repositoryToolNames());
+            }
             return zcodeCliClient.execute(provider,
                     firstCliValue(request.modelOverride(), firstCliValue(useCase.getModel(), provider.getDefaultModel())),
                     firstCliValue(request.reasoningLevelOverride(), firstCliValue(useCase.getReasoningLevel(), provider.getDefaultReasoningLevel())),
-                    prompt + (outputSchema == null ? "" : "\n仅输出符合此 schema 的 JSON：\n" + outputSchema),
-                    positive(request.timeoutSecondsOverride(), positive(useCase.getTimeoutSeconds(), provider.getCallTimeoutSeconds())));
+                    buildZcodePrompt(prompt, outputSchema, false, request),
+                    positive(request.timeoutSecondsOverride(), positive(useCase.getTimeoutSeconds(), provider.getCallTimeoutSeconds())),
+                    request.imagePaths(), outputSchema,
+                    null, null, List.of());
         }
         if (!AiCliType.is(provider, "CODEX")) throw new IllegalArgumentException("所选 CLI 没有对应适配器");
         if (!codexCliClient.isEnabled()) {
@@ -393,30 +465,6 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
         throw new IllegalStateException("不支持的 AI API 协议: " + invocation.provider().getApiProtocol());
     }
 
-    private String renderPrompt(String template,
-                                Map<String, Object> variables,
-                                AiUseCaseDefinitions.Definition definition) throws Exception {
-        String normalizedTemplate = requireText(template, "AI 场景提示词模板为空: " + definition.code());
-        Matcher matcher = TEMPLATE_VARIABLE_PATTERN.matcher(normalizedTemplate);
-        StringBuffer rendered = new StringBuffer();
-        while (matcher.find()) {
-            String variableName = matcher.group(1);
-            if (!definition.allowedPromptVariables().contains(variableName)) {
-                throw new IllegalArgumentException("AI 场景提示词包含未授权变量: " + variableName);
-            }
-            Object value = variables.get(variableName);
-            if (value == null) {
-                throw new IllegalArgumentException("AI 场景提示词变量缺失: " + variableName);
-            }
-            matcher.appendReplacement(rendered, Matcher.quoteReplacement(stringify(value)));
-        }
-        matcher.appendTail(rendered);
-        if (TEMPLATE_VARIABLE_PATTERN.matcher(rendered).find()) {
-            throw new IllegalArgumentException("AI 场景提示词存在未渲染变量");
-        }
-        return rendered.toString();
-    }
-
     private String resolveSchema(String inlineSchema, String schemaClasspath) throws Exception {
         if (inlineSchema != null && !inlineSchema.isBlank()) {
             objectMapper.readTree(inlineSchema);
@@ -438,16 +486,6 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
             objectMapper.readTree(schema);
             return schema;
         }
-    }
-
-    private String stringify(Object value) throws Exception {
-        if (value instanceof String string) {
-            return string;
-        }
-        if (value instanceof Number || value instanceof Boolean) {
-            return String.valueOf(value);
-        }
-        return objectMapper.writeValueAsString(value);
     }
 
     private String firstCliValue(String first, String second) {
@@ -493,6 +531,14 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
 
     private String summarizeException(Exception ex) {
         String message = ex.getMessage();
+        // 协议失败等场景根因在 cause 链上（如 "ZCode 协议执行失败" 的真实原因是任务执行失败），只看首层会丢失可行动信息。
+        Throwable root = ex;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        if (root != ex && root.getMessage() != null && !root.getMessage().isBlank() && !root.getMessage().equals(message)) {
+            message = (message == null || message.isBlank() ? ex.getClass().getSimpleName() : message) + "；原因: " + root.getMessage();
+        }
         if (message == null || message.isBlank()) {
             return ex.getClass().getSimpleName();
         }

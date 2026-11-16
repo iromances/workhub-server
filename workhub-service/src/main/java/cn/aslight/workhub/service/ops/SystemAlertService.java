@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -277,7 +278,7 @@ public class SystemAlertService {
 
     private SystemAlertSubsystemEntity toSubsystemEntity(SystemAlertSubsystemEntity entity, SystemAlertSubsystemSaveRequest request) {
         entity.setBusinessLineCode(requireValue(request.getBusinessLineCode(), "业务线不能为空"));
-        entity.setEnvironmentCode(requireValue(request.getEnvironmentCode(), "环境不能为空"));
+        entity.setEnvironmentCode(requireValue(request.getEnvironmentCode(), "环境不能为空").toUpperCase(Locale.ROOT));
         entity.setSubsystemName(requireValue(request.getSubsystemName(), "子系统名称不能为空"));
         entity.setServiceName(requireValue(request.getServiceName(), "服务名不能为空"));
         entity.setIndexPatterns(normalizeIndexPatterns(request.getIndexPatterns()));

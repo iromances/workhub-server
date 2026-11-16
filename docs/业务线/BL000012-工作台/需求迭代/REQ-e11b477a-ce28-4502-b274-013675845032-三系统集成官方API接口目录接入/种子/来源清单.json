@@ -1,0 +1,285 @@
+{
+  "generatedAt": "2026-11-13T03:07:42Z",
+  "sources": {
+    "GITLAB": {
+      "index": "https://docs.gitlab.com/ee/api/api_resources.html",
+      "excludedSlugs": [
+        "api_resources",
+        "get_started",
+        "graphql",
+        "metadata",
+        "openapi",
+        "rest"
+      ]
+    },
+    "ZENTAO": {
+      "sitemap": "https://www.zentao.net/sitemap.xml",
+      "book": "https://www.zentao.net/book/api.html"
+    },
+    "JENKINS": {
+      "doc": "https://www.jenkins.io/doc/book/using/remote-access-api/",
+      "note": "官方 Remote Access API 文档为叙述式、无统一端点枚举清单；本组按官方文档条目 + Jenkins 核心广泛文档化端点整理"
+    }
+  },
+  "systems": {
+    "GITLAB": {
+      "groups": 197,
+      "endpoints": 1761,
+      "degraded": [
+        {
+          "group": "admin",
+          "reason": "抓取失败: HTTP Error 404: Not Found"
+        },
+        {
+          "group": "dora",
+          "reason": "抓取失败: HTTP Error 404: Not Found"
+        },
+        {
+          "group": "oauth2",
+          "reason": "页面未解析出端点签名（降级为组名+文档链接）"
+        },
+        {
+          "group": "templates",
+          "reason": "抓取失败: HTTP Error 404: Not Found"
+        }
+      ],
+      "failed_fetch": [],
+      "platformUsed": 10,
+      "platformUsedMatches": [
+        "GET /projects/{id}/repository/branches",
+        "GET /projects/{id}/repository/branches/{branch}",
+        "GET /groups/{id}/projects",
+        "GET /projects/{id}/merge_requests",
+        "GET /projects/{id}/merge_requests/{merge_request_iid}",
+        "POST /projects/{id}/merge_requests",
+        "GET /projects/{id}",
+        "GET /projects",
+        "GET /projects",
+        "GET /user"
+      ]
+    },
+    "ZENTAO": {
+      "chapters": 254,
+      "endpoints": 217,
+      "degraded": [
+        {
+          "group": "chapter-68",
+          "title": "12系列菜单登记和权限维护",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-116",
+          "title": "示例：如何修改禅道的语言提示？",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-142",
+          "title": "示例：创建bug时可以设置优先级字段",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-144",
+          "title": "禅道项目管理软件打包规范1.1版本",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-147",
+          "title": "使用在线扩展编辑器",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-155",
+          "title": "禅道的目录结构",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-156",
+          "title": "找到要修改的文件",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-157",
+          "title": "禅道的数据库结构",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-158",
+          "title": "公用模块",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-225",
+          "title": "二次开发机制",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-345",
+          "title": "二次开发编辑器和翻译功能限制使用说明",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-369",
+          "title": "配置使用与常见问题",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-370",
+          "title": "获取部门列表",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-371",
+          "title": "批量添加部门",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-372",
+          "title": "获取用户列表",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-373",
+          "title": "获得添加用户所用的参数列表",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-374",
+          "title": "添加单个用户",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-375",
+          "title": "获取产品列表",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-376",
+          "title": "添加单个产品可选信息",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-377",
+          "title": "添加单个产品",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-378",
+          "title": "获取项目列表",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-379",
+          "title": "添加单个项目可选信息",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-380",
+          "title": "添加单个项目",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-381",
+          "title": "获取任务列表",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-382",
+          "title": "添加单个任务可选信息",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-383",
+          "title": "添加单个任务",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-384",
+          "title": "完成单个任务可选信息",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-385",
+          "title": "完成单个任务",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-386",
+          "title": "获取Bug列表",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-387",
+          "title": "添加单个Bug可选信息",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-388",
+          "title": "添加单个Bug",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-389",
+          "title": "解决单个Bug可选信息",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-390",
+          "title": "解决单个Bug",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-494",
+          "title": "调用SDK示例",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-1164",
+          "title": "18系列菜单登记和权限维护",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-1397",
+          "title": "配置使用与常见问题",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        },
+        {
+          "group": "chapter-2309",
+          "title": "APIv2.0使用教程",
+          "reason": "非接口章节（无方法+路径签名块，如教程/配置/导航）"
+        }
+      ],
+      "platformUsed": 12,
+      "platformUsedMatches": [
+        "POST /api.php/v1/tokens",
+        "GET /api.php/v1/stories/{id}",
+        "GET /api.php/v1/projects/{id}/builds",
+        "POST /api.php/v1/projects/{id}/builds",
+        "GET /api.php/v1/projects/{id}/executions",
+        "GET /api.php/v1/executions/{id}",
+        "GET /api.php/v1/tasks/{id}",
+        "GET /api.php/v1/products/{id}/bugs",
+        "GET /api.php/v1/bugs/{id}",
+        "POST /api.php/v2/testtasks",
+        "GET /api.php/v1/products/{id}/projects",
+        "GET /api.php/v1/executions/{id}/bugs"
+      ]
+    },
+    "JENKINS": {
+      "chapters": 25,
+      "endpoints": 25,
+      "degraded": [],
+      "platformUsed": 9,
+      "platformUsedMatches": [
+        "GET /api/json",
+        "GET /job/{name}/api/json",
+        "GET /job/{folder}/job/{name}/api/json",
+        "POST /job/{name}/buildWithParameters",
+        "GET /job/{name}/{number}/api/json",
+        "GET /job/{name}/{number}/logText/progressiveText",
+        "GET /job/{name}/{number}/artifact/{path}",
+        "GET /queue/api/json",
+        "GET /queue/item/{number}/api/json"
+      ]
+    }
+  }
+}

@@ -1,0 +1,2 @@
+mvn -q -pl workhub-service -am test -Dtest='SystemAlertCollectionStoreTest,ElkSystemAlertCollectorTest,ElasticsearchSystemAlertClientTest,SystemAlertVerificationQueryServiceTest' -Dsurefire.failIfNoSpecifiedTests=false
+mvn test

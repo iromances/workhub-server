@@ -70,6 +70,12 @@ public class AgentJenkinsPolicy {
         return new BindingSnapshot(instance, binding, AgentCodePolicy.hash(json.writeValueAsString(new BindingIdentity(instance, binding))));
     }
 
+    /** 返回第一个启用实例，供系统集成页测试连接；无启用实例时明确报错。 */
+    public Instance firstEnabledInstance() {
+        return current().instances().stream().filter(instance -> instance.enabled()).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Jenkins 尚无启用的实例（agent.jenkins/policy）"));
+    }
+
     public AgentJenkinsClient.Target target(BindingSnapshot snapshot) {
         requireCurrent(snapshot);
         var instance = snapshot.instance();

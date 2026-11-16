@@ -55,7 +55,6 @@ class AgentVerificationServiceTest {
     private AgentAccessService access;
     private AgentChangeService changes;
     private AgentVerificationService service;
-    private AgentToolCatalog catalog;
     private AgentToolContext context;
     private AgentChangeView change;
     private AgentJenkinsPolicy.BindingSnapshot binding;
@@ -91,11 +90,8 @@ class AgentVerificationServiceTest {
         changes = mock(AgentChangeService.class);
         service = proxy(new AgentVerificationService(verifications, plans, deployments, agents, observations, runs, access, changes,
                 new AgentReleasePlanGate(plans, deployments, agents, json), new AgentVerificationEvidence(json), data, json, clock));
-        var tools = new AgentVerificationTools(service, json);
-        catalog = new AgentToolCatalog(List.of(tools.agentVerificationStartTool(), tools.agentVerificationRecordTool(), tools.agentVerificationFinishTool(), tools.agentVerificationStatusTool(), tools.agentVerificationWaitTool(), tools.agentVerificationResolveCaseTool()));
-        var codes = new ArrayList<>(catalog.all().stream().map(AgentTool::code).toList()); codes.addAll(AgentReleaseVerificationPlan.TOOL_CODES);
-        var specification = new AgentTaskSpecification("修复", "夹具", "复查", List.of("VERIFICATION"), List.of(scope, new AgentScope("BL000012", "PROD")), codes, List.of(scope, new AgentScope("BL000012", "PROD")));
-        var configuration = new AgentConfiguration("Agent", "复查", 1L, "fixture", specification.scopes(), codes, 200, 3600, 2);
+        var specification = new AgentTaskSpecification("修复", "夹具", "复查", List.of("VERIFICATION"), List.of(scope, new AgentScope("BL000012", "PROD")), List.of(scope, new AgentScope("BL000012", "PROD")));
+        var configuration = new AgentConfiguration("Agent", "复查", 1L, "fixture", specification.scopes(), 200, 3600, 2);
         agents.insertAgent(new AgentDefinitionEntity("agent", "Agent", json.writeValueAsString(configuration), true, "owner", 0, now(), now()));
         agents.insertRun(new AgentRunEntity("run", "task", "agent", "fixture", "owner", json.writeValueAsString(configuration), json.writeValueAsString(specification),
                 json.writeValueAsString(AgentProviderBinding.from(provider)), "QUEUED", 0, 0, false, null, null, null, null, null, 0, now(), now()));
@@ -145,44 +141,44 @@ class AgentVerificationServiceTest {
     }
     @Test void closureRejectsUnfinishedHistoricalPendingAndStaleEvidence() {
         bindCase("TEST","config:1"); String id=completeSamples();
-        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
-        finish(id,"PASS",true); assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
+        assertThrows(IllegalArgumentException.class,()->resolve(id,2,1));
+        finish(id,"PASS",true); assertThrows(IllegalArgumentException.class,()->resolve(id,2,1));
         finish(id,"PASS",false); clock.advance(31);
-        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
+        assertThrows(IllegalArgumentException.class,()->resolve(id,2,1));
         assertEquals("ANALYZING",observations.find("case").status()); assertEquals(0,count("pm_autonomy_case_resolution"));
     }
     @Test void testEnvironmentVerificationCannotCloseProductionProblem() {
         bindCase("PROD","config:1"); String id=completeSamples(); finish(id,"PASS",false);
-        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1)); assertEquals(0,count("pm_autonomy_case_resolution"));
+        assertThrows(IllegalArgumentException.class,()->resolve(id,2,1)); assertEquals(0,count("pm_autonomy_case_resolution"));
     }
     @Test void unrelatedConfigurationOrRuleCannotCloseOriginalProblem() {
         bindCase("TEST","config:2"); String id=completeSamples(); finish(id,"PASS",false);
-        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
+        assertThrows(IllegalArgumentException.class,()->resolve(id,2,1));
         jdbc.update("UPDATE pm_autonomy_case SET subject_key='config:1:rule:OTHER' WHERE id='case'");
-        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1)); assertEquals(0,count("pm_autonomy_case_resolution"));
+        assertThrows(IllegalArgumentException.class,()->resolve(id,2,1)); assertEquals(0,count("pm_autonomy_case_resolution"));
     }
     @Test void closureRequiresLatestVersionsAndNoKnownFailureInsideObservationWindow() {
         bindCase("TEST","config:1"); String id=completeSamples(); finish(id,"PASS",false);
-        assertThrows(AgentTool.Rejected.class,()->resolve(id,1,1));
-        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,0));
+        assertThrows(IllegalArgumentException.class,()->resolve(id,1,1));
+        assertThrows(IllegalArgumentException.class,()->resolve(id,2,0));
         jdbc.update("UPDATE pm_autonomy_case SET evidence_version=2,last_seen_at=? WHERE id='case'",now().minusSeconds(10));
-        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
-        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,2)); assertEquals(0,count("pm_autonomy_case_resolution"));
+        assertThrows(IllegalArgumentException.class,()->resolve(id,2,1));
+        assertThrows(IllegalArgumentException.class,()->resolve(id,2,2)); assertEquals(0,count("pm_autonomy_case_resolution"));
     }
     @Test void failureExactlyAtRecoveredWindowStartCannotClose() {
         bindCase("TEST","config:1"); String id=completeSamples(); finish(id,"PASS",false);
         jdbc.update("UPDATE pm_autonomy_case SET last_seen_at=? WHERE id='case'",now().minusSeconds(20));
-        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1)); assertEquals(0,count("pm_autonomy_case_resolution"));
+        assertThrows(IllegalArgumentException.class,()->resolve(id,2,1)); assertEquals(0,count("pm_autonomy_case_resolution"));
     }
     @Test void closureRechecksCasePermissionProposalAndPersistedCertificate() {
         bindCase("TEST","config:1"); String id=completeSamples(); finish(id,"PASS",false);
-        grants.remove("autonomy:case:operate"); assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1)); grants.add("autonomy:case:operate");
-        grants.remove("ops:accounting:view"); assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1)); grants.add("ops:accounting:view");
+        grants.remove("autonomy:case:operate"); assertThrows(org.springframework.security.access.AccessDeniedException.class,()->resolve(id,2,1)); grants.add("autonomy:case:operate");
+        grants.remove("ops:accounting:view"); assertThrows(org.springframework.security.access.AccessDeniedException.class,()->resolve(id,2,1)); grants.add("ops:accounting:view");
         jdbc.update("UPDATE pm_autonomy_proposal SET proposal_json='{}' WHERE id='proposal'");
-        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
+        assertThrows(IllegalArgumentException.class,()->resolve(id,2,1));
         jdbc.update("UPDATE pm_autonomy_proposal SET proposal_json=? WHERE id='proposal'","{\"plan\":\"fix\"}");
         jdbc.update("UPDATE pm_agent_artifact SET payload_json='{}' WHERE kind='VERIFICATION'");
-        assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1)); assertEquals(0,count("pm_autonomy_case_resolution"));
+        assertThrows(IllegalArgumentException.class,()->resolve(id,2,1)); assertEquals(0,count("pm_autonomy_case_resolution"));
     }
     @Test void failedJournalInsertRollsBackClosureAndReceiptTogether() {
         bindCase("TEST","config:1"); String id=completeSamples(); finish(id,"PASS",false);
@@ -195,13 +191,13 @@ class AgentVerificationServiceTest {
     }
     @Test void anUnlinkedVerificationDoesNotInventAProblemClosure() {
         String id=completeSamples(); finish(id,"PASS",false);
-        assertThrows(AgentTool.Rejected.class,()->resolve(id,0,0)); assertEquals(0,count("pm_autonomy_case_resolution"));
+        assertThrows(IllegalArgumentException.class,()->resolve(id,0,0)); assertEquals(0,count("pm_autonomy_case_resolution"));
     }
     @Test void committedClosureReceiptRecoversWithoutClosingTwice() {
         bindCase("TEST","config:1"); String id=completeSamples(); finish(id,"PASS",false);
         var args=json.valueToTree(Map.of("verificationId",id,"caseVersion",2,"evidenceVersion",1,"reason","原问题及历史数据已核对"));
         String key=begin("verification.resolve_case",args);
-        var result=catalog.require("verification.resolve_case").execute(context,args); expire(); runs.recoverExpired("run");
+        var result=dispatch("verification.resolve_case",args); expire(); runs.recoverExpired("run");
         assertEquals("QUEUED",runs.get("run").status()); assertNull(runs.get("run").externalHandle());
         assertEquals(json.writeValueAsString(result),json.writeValueAsString(json.readTree(runs.event("run",key+":result").payloadJson()).path("value")));
         assertEquals(1,count("pm_autonomy_case_resolution")); assertEquals(3,observations.find("case").version());
@@ -211,7 +207,7 @@ class AgentVerificationServiceTest {
         jdbc.update("UPDATE pm_autonomy_case SET source_type='SELF_LOG',category='APPLICATION_ERROR' WHERE id='case'");
         useSource("workhub.logs"); String id=start();
         for(int i=0;i<3;i++){if(i>0)clock.advance(10);recordLog(id,"log-close"+i,clock.instant(),clock.instant().minusSeconds(60),false,false,null);}
-        finish(id,"PASS",false); assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
+        finish(id,"PASS",false); assertThrows(IllegalArgumentException.class,()->resolve(id,2,1));
         jdbc.update("UPDATE pm_autonomy_case SET subject_key=? WHERE id='case'","service:"+AgentCodePolicy.hash("a")+":error:signature");
         assertTrue(resolve(id,2,1).path("caseClosed").asBoolean());
     }
@@ -227,7 +223,7 @@ class AgentVerificationServiceTest {
         jdbc.update("UPDATE pm_autonomy_case SET source_type='BUSINESS_MONITOR',category='EXECUTION_FAILURE' WHERE id='case'");
         useBusinessDetail(); String id=start();
         for(int i=0;i<3;i++){if(i>0)clock.advance(10);recordBusiness(id,"business-close"+i,clock.instant());}
-        finish(id,"PASS",false); assertThrows(AgentTool.Rejected.class,()->resolve(id,2,1));
+        finish(id,"PASS",false); assertThrows(IllegalArgumentException.class,()->resolve(id,2,1));
         jdbc.update("UPDATE pm_autonomy_case SET subject_key='monitor:1:job:20' WHERE id='case'");
         assertTrue(resolve(id,2,1).path("caseClosed").asBoolean());
     }
@@ -265,7 +261,7 @@ class AgentVerificationServiceTest {
         assertEquals("AI_ASSESSMENT", json.readTree(artifact.payloadJson()).path("conclusionSource").asText());
         assertEquals("TEST_ENVIRONMENT", json.readTree(artifact.payloadJson()).path("phase").asText());
         assertFalse(result.path("caseClosed").asBoolean());
-        assertThrows(AgentTool.Rejected.class, () -> record(id, "later", accounting(clock.instant()), "PASS", false));
+        assertThrows(IllegalArgumentException.class, () -> record(id, "later", accounting(clock.instant()), "PASS", false));
     }
     @Test void rereadingOldDataDoesNotAdvanceSampleCountOrWindow() {
         String id = start(); Instant old = clock.instant();
@@ -316,15 +312,15 @@ class AgentVerificationServiceTest {
     @Test void differentSourceScopeAgentRunHashAndScalarReferencesAreRejected() {
         String id = start();
         String wrong = accounting(clock.instant()); jdbc.update("UPDATE pm_agent_observation SET environment_code='PROD' WHERE id=?", wrong);
-        String wrongScope = wrong; assertThrows(AgentTool.Rejected.class, () -> record(id, "wrong-scope", wrongScope, "PASS", false));
+        String wrongScope = wrong; assertThrows(IllegalArgumentException.class, () -> record(id, "wrong-scope", wrongScope, "PASS", false));
         wrong = accounting(clock.instant()); jdbc.update("UPDATE pm_agent_observation SET agent_id='other' WHERE id=?", wrong);
-        String agent = wrong; assertThrows(AgentTool.Rejected.class, () -> record(id, "wrong-agent", agent, "PASS", false));
+        String agent = wrong; assertThrows(IllegalArgumentException.class, () -> record(id, "wrong-agent", agent, "PASS", false));
         String foreign = accounting(clock.instant()); jdbc.update("UPDATE pm_agent_observation SET run_id='other' WHERE id=?", foreign);
-        assertThrows(AgentTool.Rejected.class, () -> record(id, "wrong-run", foreign, "PASS", false));
+        assertThrows(IllegalArgumentException.class, () -> record(id, "wrong-run", foreign, "PASS", false));
         String corrupt = accounting(clock.instant()); jdbc.update("UPDATE pm_agent_observation SET content_hash='broken' WHERE id=?", corrupt);
-        assertThrows(AgentTool.Rejected.class, () -> record(id, "corrupt", corrupt, "PASS", false));
+        assertThrows(IllegalArgumentException.class, () -> record(id, "corrupt", corrupt, "PASS", false));
         var args = recordArgs(id, "scalar", accounting(clock.instant()), "PASS", false); ((ObjectNode) args.at("/evidence/0")).put("pointer", "/data/0/status");
-        assertThrows(AgentTool.Rejected.class, () -> invoke("verification.record", args)); assertEquals(0, count("pm_agent_verification_sample"));
+        assertThrows(IllegalArgumentException.class, () -> invoke("verification.record", args)); assertEquals(0, count("pm_agent_verification_sample"));
     }
     @Test void latestFailedOrIncompleteSampleResetsEarlierHealthyWindow() {
         String id = completeSamples(); clock.advance(5); var result = record(id, "failure", accounting(clock.instant()), "FAIL", false);
@@ -334,17 +330,17 @@ class AgentVerificationServiceTest {
         String id = start(); assertEquals(id, start()); assertEquals(1, count("pm_agent_verification"));
         String observation = accounting(clock.instant()); record(id, "sample", observation, "PASS", false); record(id, "sample", observation, "PASS", false);
         assertEquals(1, count("pm_agent_verification_sample"));
-        assertThrows(AgentTool.Rejected.class, () -> record(id, "sample", observation, "FAIL", false));
+        assertThrows(IllegalArgumentException.class, () -> record(id, "sample", observation, "FAIL", false));
     }
     @Test void concurrentSameToolCallCommitsOnlyOneSampleAndReceipt() throws Exception {
         String id = start(); var args = recordArgs(id, "sample", accounting(clock.instant()), "PASS", false);
         String key = begin("verification.record", args);
         try (var pool = Executors.newFixedThreadPool(2)) {
-            var a = pool.submit(() -> catalog.require("verification.record").execute(context, args));
-            var b = pool.submit(() -> catalog.require("verification.record").execute(context, args));
+            var a = pool.submit(() -> dispatch("verification.record", args));
+            var b = pool.submit(() -> dispatch("verification.record", args));
             assertEquals(a.get(5, TimeUnit.SECONDS).toString(), b.get(5, TimeUnit.SECONDS).toString());
         }
-        runs.endTool("run", context.ownerToken(), key, Map.of("fixture", true));
+        endTool(key, Map.of("fixture", true));
         assertEquals(1, count("pm_agent_verification_sample")); assertEquals(2, count("pm_agent_verification_call"));
     }
     @Test void failedReceiptPersistenceRollsBackSampleAndSessionVersion() {
@@ -355,22 +351,22 @@ class AgentVerificationServiceTest {
     }
     @Test void startRejectsIncompleteDeploymentWrongCommitAndUnapprovedStandards() {
         jdbc.update("UPDATE pm_agent_release_plan SET status='EXECUTING' WHERE id='plan'");
-        assertThrows(AgentTool.Rejected.class, this::start);
+        assertThrows(IllegalArgumentException.class, this::start);
         jdbc.update("UPDATE pm_agent_release_plan SET status='SUCCEEDED' WHERE id='plan'");
         var receipt = (ObjectNode) json.readTree(deployments.find("deploy").receiptJson()); receipt.set("deployedCommits", json.valueToTree(Map.of("server", "c".repeat(40))));
         jdbc.update("UPDATE pm_agent_deployment SET receipt_json=? WHERE id='deploy'", receipt.toString());
-        assertThrows(AgentTool.Rejected.class, this::start); assertEquals(0, count("pm_agent_verification"));
+        assertThrows(IllegalArgumentException.class, this::start); assertEquals(0, count("pm_agent_verification"));
     }
     @Test void reviewAndPlanHashesMustRemainConsistent() {
         jdbc.update("UPDATE pm_agent_release_review SET snapshot_hash='different' WHERE id='review'");
-        assertThrows(AgentTool.Rejected.class, this::start); assertEquals(0, count("pm_agent_verification"));
+        assertThrows(IllegalArgumentException.class, this::start); assertEquals(0, count("pm_agent_verification"));
     }
     @Test void finalCertificateRequiresUnchangedDeploymentAndCandidate() {
         String id = completeSamples(); jdbc.update("UPDATE pm_agent_deployment SET status='UNKNOWN' WHERE id='deploy'");
-        assertThrows(AgentTool.Rejected.class, () -> finish(id, "PASS", false));
+        assertThrows(IllegalArgumentException.class, () -> finish(id, "PASS", false));
         jdbc.update("UPDATE pm_agent_deployment SET status='SUCCEEDED' WHERE id='deploy'");
         change = new AgentChangeView(change.id(), change.runId(), change.taskId(), change.revision(), change.manifestHash(), change.createdAt(), false, false, List.of("CHANGED"), change.manifest());
-        assertThrows(AgentTool.Rejected.class, () -> finish(id, "PASS", false)); assertEquals(0, count("pm_agent_artifact"));
+        assertThrows(IllegalArgumentException.class, () -> finish(id, "PASS", false)); assertEquals(0, count("pm_agent_artifact"));
     }
     @Test void currentSourcePermissionRevocationBlocksReadWriteAndWake() {
         String id = start(); waitFor(id, 5); pause(); grants.remove("ops:accounting:view"); clock.advance(5);
@@ -402,7 +398,7 @@ class AgentVerificationServiceTest {
     }
     @Test void committedApiMutationIsRecoveredWithoutRepeatingTheProducer() {
         var args = json.valueToTree(Map.of("planId", "plan")); String key = begin("verification.start", args);
-        var result = catalog.require("verification.start").execute(context, args); expire(); runs.recoverExpired("run");
+        var result = dispatch("verification.start", args); expire(); runs.recoverExpired("run");
         assertEquals("QUEUED", runs.get("run").status()); assertNull(runs.get("run").externalHandle());
         var recovered = json.readTree(runs.event("run", key + ":result").payloadJson());
         assertEquals(json.writeValueAsString(result), json.writeValueAsString(recovered.path("value")));
@@ -411,8 +407,12 @@ class AgentVerificationServiceTest {
     @Test void nativeRecoveryPreservesUnknownProcessUntilActualStopReceipt() {
         String attempt = "cli:fixture"; runs.beginNative("run", context.ownerToken(), attempt, "fixture");
         var args = json.valueToTree(Map.of("planId", "plan")); String key = attempt + ":rpc:1";
-        runs.beginTool("run", context.ownerToken(), key, catalog.require("verification.start"), args, true);
-        catalog.require("verification.start").execute(context, args); expire(); runs.recoverExpired("run");
+        var tool = json.createObjectNode().put("kind", "TOOL").put("key", key).put("tool", "verification.start").put("readOnly", false);
+        var handle = (ObjectNode) json.readTree(runs.get("run").externalHandle()); handle.set("activeTool", tool);
+        agents.insertEvent(new AgentEventEntity(UUID.randomUUID().toString(), "run", key + ":request", agents.nextEventOrdinal("run"),
+                "TOOL_REQUEST", json.writeValueAsString(Map.of("tool", "verification.start", "arguments", args)), "agent-runtime", now()));
+        jdbc.update("UPDATE pm_agent_run SET external_handle=? WHERE id='run'", json.writeValueAsString(handle));
+        dispatch("verification.start", args); expire(); runs.recoverExpired("run");
         assertEquals("WAITING_RESOURCE", runs.get("run").status()); assertNotNull(runs.get("run").ownerToken());
         assertNotNull(runs.event("run", key + ":result")); assertFalse(json.readTree(runs.get("run").externalHandle()).has("activeTool"));
         runs.endNative("run", context.ownerToken(), attempt, Map.of("processTreeStopped", true, "exitCode", 0, "result", Map.of("type", "NEEDS_INPUT", "summary", "等待")));
@@ -570,8 +570,8 @@ class AgentVerificationServiceTest {
     }
     @Test void historicalDataFlagMustBeAnExplicitBoolean() {
         String id = start(); var args = recordArgs(id, "flag", accounting(clock.instant()), "PASS", false);
-        args.put("historicalDataPending", "false"); assertThrows(AgentTool.Rejected.class, () -> invoke("verification.record", args));
-        args.remove("historicalDataPending"); assertThrows(AgentTool.Rejected.class, () -> invoke("verification.record", args));
+        args.put("historicalDataPending", "false"); assertThrows(IllegalArgumentException.class, () -> invoke("verification.record", args));
+        args.remove("historicalDataPending"); assertThrows(IllegalArgumentException.class, () -> invoke("verification.record", args));
         assertEquals(0, count("pm_agent_verification_sample"));
     }
 
@@ -775,13 +775,51 @@ class AgentVerificationServiceTest {
                 scope.businessLineCode(), scope.environmentCode(), payload, AgentCodePolicy.hash(payload), LocalDateTime.ofInstant(observedAt, ZoneOffset.UTC)));
         return id;
     }
+    /** 历史运行的工具调用意图直接落库：对账与恢复按原样识别已提交事务，不重放调用。 */
     private String begin(String code, JsonNode args) {
-        String key = "verification-test:" + sequence.incrementAndGet(); runs.beginTool("run", context.ownerToken(), key, catalog.require(code), args, true); return key;
+        String key = "verification-test:" + sequence.incrementAndGet();
+        agents.insertEvent(new AgentEventEntity(UUID.randomUUID().toString(), "run", key + ":request", agents.nextEventOrdinal("run"),
+                "TOOL_REQUEST", json.writeValueAsString(Map.of("tool", code, "arguments", args)), "agent-runtime", now()));
+        jdbc.update("UPDATE pm_agent_run SET external_handle=? WHERE id='run'",
+                json.writeValueAsString(Map.of("kind", "TOOL", "key", key, "tool", code, "readOnly", false)));
+        return key;
+    }
+    private void endTool(String key, Object result) {
+        agents.insertEvent(new AgentEventEntity(UUID.randomUUID().toString(), "run", key + ":result", agents.nextEventOrdinal("run"),
+                "TOOL_RESULT", json.writeValueAsString(result), "agent-runtime", now()));
+        jdbc.update("UPDATE pm_agent_run SET external_handle=NULL WHERE id='run'");
     }
     private JsonNode invoke(String code, JsonNode args) {
         String key = begin(code, args);
-        try { var result = (JsonNode) catalog.require(code).execute(context, args); runs.endTool("run", context.ownerToken(), key, result); return result; }
-        catch (RuntimeException ex) { runs.endTool("run", context.ownerToken(), key, Map.of("fixtureFailure", true)); throw ex; }
+        try {
+            var result = dispatch(code, args);
+            endTool(key, result); return result;
+        } catch (RuntimeException ex) { endTool(key, Map.of("fixtureFailure", true)); throw ex; }
+    }
+    private JsonNode dispatch(String code, JsonNode args) {
+        return switch (code) {
+            case "verification.start" -> service.start(context, args.path("planId").asText());
+            case "verification.record" -> service.record(context, args.path("verificationId").asText(), args.path("requestKey").asText(),
+                    args.path("checkId").asText(), args.path("assessment").asText(), args.path("reason").asText(""),
+                    requiredBoolean(args, "historicalDataPending"), references(args));
+            case "verification.finish" -> service.finish(context, args.path("verificationId").asText(), args.path("assessment").asText(),
+                    args.path("reason").asText(""), requiredBoolean(args, "historicalDataPending"));
+            case "verification.resolve_case" -> service.resolveCase(context, args.path("verificationId").asText(),
+                    args.path("caseVersion").asLong(), args.path("evidenceVersion").asLong(), args.path("reason").asText());
+            case "verification.status" -> service.status(context, args.path("verificationId").asText());
+            case "verification.wait" -> service.waitForNext(context, args.path("verificationId").asText(), args.path("seconds").asLong());
+            default -> throw new IllegalArgumentException("未知验证调用: " + code);
+        };
+    }
+    private boolean requiredBoolean(JsonNode args, String name) {
+        var value = args.get(name);
+        if (value == null || !value.isBoolean()) throw new IllegalArgumentException(name + " 必须为布尔值");
+        return value.asBoolean();
+    }
+    private List<AgentVerificationEvidenceReference> references(JsonNode args) {
+        var references = new ArrayList<AgentVerificationEvidenceReference>();
+        for (var row : args.path("evidence")) references.add(new AgentVerificationEvidenceReference(row.path("observationId").asText(), row.path("pointer").asText()));
+        return references;
     }
     private void expire() { jdbc.update("UPDATE pm_agent_run SET lease_until=? WHERE id='run'", now().minusSeconds(1)); }
     private int count(String table) { return jdbc.queryForObject("SELECT COUNT(*) FROM " + table, Integer.class); }

@@ -1,12 +1,18 @@
 package cn.aslight.workhub.service.mcp;
 
 import cn.aslight.workhub.dao.project.BusinessLineAccessConfigMapper;
+import cn.aslight.workhub.config.McpProperties;
+import cn.aslight.workhub.integration.wecom.WecomRobotMessageSender;
+import cn.aslight.workhub.integration.wecom.WecomRobotSendResult;
+import cn.aslight.workhub.model.attachment.AttachmentEntity;
 import cn.aslight.workhub.model.mcp.McpCatalogResponse;
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
 import cn.aslight.workhub.model.project.BusinessLineAccessConfigEntity;
 import cn.aslight.workhub.model.ops.BusinessLogSearchResponse;
+import cn.aslight.workhub.service.attachment.AttachmentService;
+import cn.aslight.workhub.service.attachment.AttachmentTextExtractionService;
 import cn.aslight.workhub.service.ops.BusinessLogSearchService;
 import cn.aslight.workhub.service.intake.GitlabRepositoryService;
 import cn.aslight.workhub.service.intake.IntakeService;
@@ -21,16 +27,98 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class McpRuntimeServiceTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Test
+    void httpRuntimeExposesFileToolsAndUnifiedAiReadRoots() throws Exception {
+        Map<String, Object> server = serverTarget("logistics-test", "BL000006", "TEST", "thctay-saps");
+        server.put("allowedLogPaths", List.of("/mnt/etc-server"));
+        McpResourceService resources = resourceService(new McpCatalogResponse(
+                List.of(Map.of("code", "BL000006", "name", "物流平台")), List.of(), List.of(),
+                List.of(server), Map.of(), Map.of()));
+        McpRuntimeService runtime = new McpRuntimeService(resources, new FakeIntakeService(), new FakeGitlabRepositoryService());
+        JsonNode tools = runtime.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":1,"method":"tools/list"}
+                """)).at("/result/tools");
+        assertTrue(tools.toString().contains("list_server_directory"));
+        assertTrue(tools.toString().contains("read_server_file"));
+        JsonNode response = runtime.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_business_line_test_context","arguments":{"businessLine":"BL000006","environmentCode":"TEST"}}}
+                """));
+        JsonNode context = objectMapper.readTree(response.at("/result/content/0/text").asText());
+        assertEquals("/mnt/etc-server", context.at("/testContext/serverTargets/0/allowedLogPaths/0").asText());
+        assertTrue(!context.toString().contains("\"password\""));
+    }
+
+    @Test
+    void toolsCall_shouldExtractIntakeAttachmentTextFromDatabaseInMemory() throws Exception {
+        McpRuntimeService runtime = runtimeWithAttachment(attachment(
+                "需求说明.txt", "text/plain", "这是需求附件的原始正文内容。".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+
+        JsonNode response = runtime.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_intake_attachment","arguments":{"attachmentId":5,"intakeId":9}}}
+                """));
+        JsonNode result = objectMapper.readTree(response.at("/result/content/0/text").asText());
+        assertEquals("这是需求附件的原始正文内容。", result.at("/text").asText());
+        assertTrue(!result.at("/truncated").asBoolean());
+        assertEquals(false, result.at("/image").asBoolean());
+    }
+
+    @Test
+    void toolsCall_shouldRejectAttachmentOutsideIntake() throws Exception {
+        McpRuntimeService runtime = runtimeWithAttachment(attachment(
+                "需求说明.txt", "text/plain", "正文".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        JsonNode response = runtime.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"get_intake_attachment","arguments":{"attachmentId":5,"intakeId":8}}}
+                """));
+        assertTrue(response.toString().contains("附件不属于当前需求"));
+    }
+
+    @Test
+    void toolsCall_shouldExplainImageAttachmentsWithoutText() throws Exception {
+        McpRuntimeService runtime = runtimeWithAttachment(attachment(
+                "页面截图.png", "image/png", new byte[]{1, 2, 3}));
+        JsonNode response = runtime.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"get_intake_attachment","arguments":{"attachmentId":5}}}
+                """));
+        JsonNode result = objectMapper.readTree(response.at("/result/content/0/text").asText());
+        assertTrue(result.at("/image").asBoolean());
+        assertTrue(result.at("/text").isMissingNode());
+        assertTrue(result.at("/note").asText().contains("图片附件"));
+    }
+
+    private McpRuntimeService runtimeWithAttachment(AttachmentEntity entity) {
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        when(attachmentService.loadAsResource(entity.getId())).thenReturn(new AttachmentService.AttachmentResource(
+                entity, new org.springframework.core.io.ByteArrayResource(
+                entity.getFileContent() == null ? new byte[0] : entity.getFileContent())));
+        return new McpRuntimeService(emptyResourceService(), new FakeIntakeService(), new FakeGitlabRepositoryService(),
+                null, null, attachmentService, new AttachmentTextExtractionService(), null);
+    }
+
+    private AttachmentEntity attachment(String fileName, String contentType, byte[] content) {
+        AttachmentEntity entity = new AttachmentEntity();
+        entity.setId(5L);
+        entity.setBizType(AttachmentService.INTAKE_ATTACHMENT);
+        entity.setBizId(9L);
+        entity.setFileName(fileName);
+        entity.setContentType(contentType);
+        entity.setFileSize((long) content.length);
+        entity.setFileSha256("test-sha256");
+        entity.setFileContent(content);
+        return entity;
+    }
 
     @Test
     void handleHttp_shouldNegotiateCurrentProtocolAndReturnInstructions() throws Exception {
@@ -162,7 +250,7 @@ class McpRuntimeServiceTest {
         assertTrue(text.contains("projectVaultPath"));
         assertTrue(text.contains("accessTokenConfigured"));
         assertTrue(text.contains("/workspace/workhub-server/docs/requirement-sources/汇浦"));
-        assertTrue(text.contains("/workspace/workhub-server/docs/requirements/汇浦"));
+        assertTrue(text.contains("/workspace/workhub-server/docs/业务线/汇浦"));
         assertTrue(!text.contains("plain-gitlab-token"));
     }
 
@@ -254,6 +342,53 @@ class McpRuntimeServiceTest {
                         && request.serviceNames().equals(List.of("scf-payment", "scf-saps"))
                         && request.levels().equals(List.of("INFO", "ERROR"))
                         && request.limit() == 20));
+    }
+
+    @Test
+    void wecomRobotTool_shouldExposeAndCallConfiguredSender() throws Exception {
+        McpRuntimeService runtimeService = new McpRuntimeService(
+                resourceService(new McpCatalogResponse(List.of(), List.of(), List.of(), List.of(), Map.of(), Map.of())),
+                new FakeIntakeService(), new FakeGitlabRepositoryService());
+        WecomRobotMessageSender sender = mock(WecomRobotMessageSender.class);
+        when(sender.send("## 汇总")).thenReturn(new WecomRobotSendResult(true, 0, "ok"));
+        runtimeService.setWecomRobotMessageSender(sender);
+
+        JsonNode listResponse = runtimeService.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}
+                """));
+        JsonNode callResponse = runtimeService.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"send_wecom_robot_markdown","arguments":{"content":"## 汇总"}}}
+                """));
+
+        assertTrue(listResponse.at("/result/tools").toString().contains("send_wecom_robot_markdown"));
+        JsonNode result = objectMapper.readTree(callResponse.at("/result/content/0/text").asText());
+        assertTrue(result.at("/sent").asBoolean());
+        assertEquals(0, result.at("/errcode").asInt());
+        verify(sender).send("## 汇总");
+    }
+
+    @Test
+    void wecomRobotTool_shouldRejectMissingContentAndStayHiddenWithoutSender() throws Exception {
+        McpRuntimeService runtimeService = new McpRuntimeService(
+                resourceService(new McpCatalogResponse(List.of(), List.of(), List.of(), List.of(), Map.of(), Map.of())),
+                new FakeIntakeService(), new FakeGitlabRepositoryService());
+        WecomRobotMessageSender sender = mock(WecomRobotMessageSender.class);
+        runtimeService.setWecomRobotMessageSender(sender);
+
+        JsonNode callResponse = runtimeService.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"send_wecom_robot_markdown","arguments":{}}}
+                """));
+        assertTrue(callResponse.at("/result/isError").asBoolean());
+        assertTrue(callResponse.at("/result/content/0/text").asText().contains("content"));
+        verifyNoInteractions(sender);
+
+        McpRuntimeService bareRuntime = new McpRuntimeService(
+                resourceService(new McpCatalogResponse(List.of(), List.of(), List.of(), List.of(), Map.of(), Map.of())),
+                new FakeIntakeService(), new FakeGitlabRepositoryService());
+        JsonNode bareTools = bareRuntime.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":4,"method":"tools/list","params":{}}
+                """));
+        assertFalse(bareTools.at("/result/tools").toString().contains("send_wecom_robot_markdown"));
     }
 
     @Test
@@ -467,6 +602,47 @@ class McpRuntimeServiceTest {
         JsonNode generalContext = objectMapper.readTree(generalResponse.at("/result/content/0/text").asText());
         assertEquals(3, generalContext.path("accessEndpoints").size());
         assertTrue(generalContext.path("accessEndpoints").toString().contains("生产网关"));
+    }
+
+    @Test
+    void handle_shouldReturnDecryptedLoginCredentialForConfiguredAccessEndpoints() throws Exception {
+        McpResourceService resourceService = resourceService(new McpCatalogResponse(
+                List.of(Map.of("code", "BL000009", "name", "创新保理")),
+                List.of(Map.of("code", "test", "name", "测试环境", "production", false, "enabled", true)),
+                List.of(),
+                List.of(),
+                Map.of(),
+                Map.of()
+        ));
+        McpCryptoService cryptoService = new McpCryptoService(new McpProperties());
+        BusinessLineAccessConfigEntity withCredential = accessConfig("BL000009", "test", "OPERATIONS", "运营端",
+                "https://ops.example.test", null, true);
+        withCredential.setLoginUsername("ops.user");
+        withCredential.setLoginPasswordEncrypted(cryptoService.encrypt("ops-secret"));
+        BusinessLineAccessConfigEntity withoutCredential = accessConfig("BL000009", "test", "GATEWAY", "统一网关",
+                "https://gateway.example.test", "/asset-api", true);
+        McpRuntimeService runtimeService = new McpRuntimeService(
+                resourceService,
+                new FakeIntakeService(),
+                new FakeGitlabRepositoryService(),
+                new FakeBusinessLineAccessConfigMapper(List.of(withCredential, withoutCredential)),
+                null,
+                null,
+                null,
+                cryptoService
+        );
+
+        JsonNode response = runtimeService.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"get_business_line_test_context","arguments":{"businessLine":"BL000009","environmentCode":"test"}}}
+                """));
+        JsonNode accessEndpoints = objectMapper.readTree(response.at("/result/content/0/text").asText())
+                .path("testContext")
+                .path("accessEndpoints");
+
+        assertEquals("ops.user", accessEndpoints.at("/0/loginUsername").asText());
+        assertEquals("ops-secret", accessEndpoints.at("/0/loginPassword").asText());
+        assertTrue(!accessEndpoints.get(1).has("loginUsername"));
+        assertTrue(!accessEndpoints.get(1).has("loginPassword"));
     }
 
     @Test
@@ -759,5 +935,54 @@ class McpRuntimeServiceTest {
                     ))
             );
         }
+    }
+
+    @org.junit.jupiter.api.io.TempDir
+    java.nio.file.Path auditDir;
+
+    @Test
+    void handle_shouldExposeAndCallIntegrationQueryTools() throws Exception {
+        var zentaoClient = org.mockito.Mockito.mock(cn.aslight.workhub.service.intake.ZentaoClient.class);
+        var jenkinsPolicy = org.mockito.Mockito.mock(cn.aslight.workhub.service.agent.AgentJenkinsPolicy.class);
+        var jenkinsClient = org.mockito.Mockito.mock(cn.aslight.workhub.service.agent.AgentJenkinsClient.class);
+        var sysConfig = org.mockito.Mockito.mock(cn.aslight.workhub.service.system.SysConfigService.class);
+        var auditLogger = new cn.aslight.workhub.mcp.audit.McpAuditLogger(new ObjectMapper(), auditDir.resolve("audit.jsonl"));
+        var queryService = new cn.aslight.workhub.service.system.IntegrationQueryService(
+                zentaoClient, jenkinsPolicy, jenkinsClient, sysConfig, auditLogger);
+        McpRuntimeService runtime = new McpRuntimeService(emptyResourceService(), new FakeIntakeService(), new FakeGitlabRepositoryService());
+        runtime.setIntegrationQueryService(queryService);
+
+        JsonNode tools = runtime.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":1,"method":"tools/list"}
+                """)).at("/result/tools");
+        for (String name : List.of("search_zentao_bugs", "get_zentao_bug", "get_zentao_story", "get_zentao_task",
+                "get_zentao_execution", "list_jenkins_jobs", "get_jenkins_job", "get_jenkins_build", "get_jenkins_build_log")) {
+            assertTrue(tools.toString().contains("\"" + name + "\""), "缺少工具：" + name);
+        }
+
+        when(zentaoClient.searchBugs(59L, null, "登录", 20)).thenReturn(List.of(new tools.jackson.databind.ObjectMapper()
+                .readTree("{\"id\":101,\"title\":\"登录失败\",\"product\":59}")));
+        JsonNode response = runtime.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_zentao_bugs","arguments":{"productId":"59","keyword":"登录"}}}
+                """));
+        JsonNode result = objectMapper.readTree(response.at("/result/content/0/text").asText());
+        assertEquals(1, result.at("/count").asInt());
+        assertEquals("101", result.at("/bugs/0/id").asText());
+
+        JsonNode rejected = runtime.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search_zentao_bugs","arguments":{"limit":"0"}}}
+                """));
+        assertTrue(rejected.at("/result/isError").asBoolean());
+        assertTrue(rejected.at("/result/content/0/text").asText().contains("正整数"));
+    }
+
+    @Test
+    void handle_shouldNotExposeIntegrationQueryToolsWithoutService() throws Exception {
+        McpRuntimeService runtime = new McpRuntimeService(emptyResourceService(), new FakeIntakeService(), new FakeGitlabRepositoryService());
+        JsonNode tools = runtime.handle(objectMapper.readTree("""
+                {"jsonrpc":"2.0","id":1,"method":"tools/list"}
+                """)).at("/result/tools");
+        assertTrue(!tools.toString().contains("search_zentao_bugs"));
+        assertTrue(!tools.toString().contains("get_jenkins_build_log"));
     }
 }

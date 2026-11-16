@@ -179,9 +179,12 @@ class IntakeControllerTest {
                         5L,
                         "PENDING",
                         "任务评估已提交，系统正在后台处理中",
-                        null,
+                        false,
                         LocalDateTime.of(2026, 4, 24, 12, 0),
-                        LocalDateTime.of(2026, 4, 24, 12, 0)
+                        LocalDateTime.of(2026, 4, 24, 12, 0),
+                        null,
+                        null,
+                        null
                 )
         );
 

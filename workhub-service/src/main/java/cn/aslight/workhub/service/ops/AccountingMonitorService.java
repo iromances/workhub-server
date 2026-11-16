@@ -64,7 +64,7 @@ public class AccountingMonitorService {
         validateConfig(request);
         AccountingMonitorConfigEntity duplicate = monitorMapper.findByIdentity(
                 request.businessLineCode().trim(),
-                request.environmentCode().trim(),
+                normalizeEnvironmentCode(request.environmentCode()),
                 request.systemName().trim());
         if (duplicate != null) {
             throw new IllegalArgumentException("该业务线、环境和系统的账务监测配置已存在");
@@ -83,7 +83,7 @@ public class AccountingMonitorService {
         }
         AccountingMonitorConfigEntity duplicate = monitorMapper.findByIdentity(
                 request.businessLineCode().trim(),
-                request.environmentCode().trim(),
+                normalizeEnvironmentCode(request.environmentCode()),
                 request.systemName().trim());
         if (duplicate != null && !id.equals(duplicate.id())) {
             throw new IllegalArgumentException("该业务线、环境和系统的账务监测配置已存在");
@@ -264,7 +264,7 @@ public class AccountingMonitorService {
                 id,
                 request.businessLineCode().trim(),
                 null,
-                request.environmentCode().trim(),
+                normalizeEnvironmentCode(request.environmentCode()),
                 request.systemName().trim(),
                 request.displayName().trim(),
                 trimToNull(request.databaseTargetKey()),
@@ -296,6 +296,10 @@ public class AccountingMonitorService {
 
     private int statusCount(List<AccountingRunEntity> runs, String status) {
         return (int) runs.stream().filter(item -> status.equals(item.status())).count();
+    }
+
+    private String normalizeEnvironmentCode(String value) {
+        return requireValue(value, "环境不能为空").toUpperCase(Locale.ROOT);
     }
 
     private String requireValue(String value, String message) {

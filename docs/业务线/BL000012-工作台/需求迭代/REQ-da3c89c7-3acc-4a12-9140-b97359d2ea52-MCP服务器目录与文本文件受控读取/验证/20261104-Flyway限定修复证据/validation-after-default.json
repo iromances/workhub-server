@@ -1,0 +1,22 @@
+{
+  "flywayVersion" : "11.14.1",
+  "database" : "workhub",
+  "warnings" : [ ],
+  "operation" : "validate",
+  "errorDetails" : {
+    "errorCode" : "VALIDATE_ERROR",
+    "errorMessage" : "Migrations have failed validation"
+  },
+  "invalidMigrations" : [ {
+    "version" : "20261103.193242",
+    "description" : "unify mcp ai read paths default mnt",
+    "filepath" : "/private/tmp/workhub-flyway-limited-repair/migrations/V20261103_193242__unify_mcp_ai_read_paths_default_mnt.sql",
+    "errorDetails" : {
+      "errorCode" : "RESOLVED_VERSIONED_MIGRATION_NOT_APPLIED",
+      "errorMessage" : "Detected resolved migration not applied to database: 20261103.193242.\nTo fix this error, either run migrate, or set -ignoreMigrationPatterns='*:pending'."
+    }
+  } ],
+  "validationSuccessful" : false,
+  "validateCount" : 0,
+  "allErrorMessages" : "Detected resolved migration not applied to database: 20261103.193242.\nTo fix this error, either run migrate, or set -ignoreMigrationPatterns='*:pending'."
+}

@@ -2,6 +2,8 @@ package cn.aslight.workhub.controller.ops;
 
 import cn.aslight.workhub.common.api.ApiResponse;
 import cn.aslight.workhub.common.api.PageResponse;
+import cn.aslight.workhub.model.ops.MqDashboardResponse;
+import cn.aslight.workhub.model.ops.MqMessagePageResponse;
 import cn.aslight.workhub.model.ops.OpsMonitorCheckResponse;
 import cn.aslight.workhub.model.ops.OpsMonitorResponse;
 import cn.aslight.workhub.model.ops.OpsMonitorSaveRequest;
@@ -40,8 +42,10 @@ public class OpsMonitorController {
                                                               @RequestParam(required = false) String businessLineCode,
                                                               @RequestParam(required = false) String environmentCode,
                                                               @RequestParam(required = false) String keyword,
-                                                              @RequestParam(defaultValue = "false") boolean enabledOnly) {
-        List<OpsMonitorResponse> items = opsMonitorService.list(monitorType, businessLineCode, environmentCode, keyword, enabledOnly);
+                                                              @RequestParam(defaultValue = "false") boolean enabledOnly,
+                                                              @RequestParam(required = false) String lastStatus,
+                                                              @RequestParam(required = false) Boolean enabled) {
+        List<OpsMonitorResponse> items = opsMonitorService.list(monitorType, businessLineCode, environmentCode, keyword, enabledOnly, lastStatus, enabled);
         return ApiResponse.success(new PageResponse<>(items.size(), items));
     }
 
@@ -75,8 +79,10 @@ public class OpsMonitorController {
     @PreAuthorize("hasAuthority('ops:monitor:view') or hasAuthority('ops:monitor:manage')")
     public ApiResponse<PageResponse<XxlJobDashboardResponse>> xxlJobDashboard(@RequestParam(required = false) String businessLineCode,
                                                                                @RequestParam(required = false) String environmentCode,
-                                                                               @RequestParam(defaultValue = "true") boolean enabledOnly) {
-        List<XxlJobDashboardResponse> items = opsMonitorService.dashboard(businessLineCode, environmentCode, enabledOnly);
+                                                                               @RequestParam(defaultValue = "true") boolean enabledOnly,
+                                                                               @RequestParam(required = false) String lastStatus,
+                                                                               @RequestParam(required = false) Boolean enabled) {
+        List<XxlJobDashboardResponse> items = opsMonitorService.dashboard(businessLineCode, environmentCode, enabledOnly, lastStatus, enabled);
         return ApiResponse.success(new PageResponse<>(items.size(), items));
     }
 
@@ -112,5 +118,40 @@ public class OpsMonitorController {
                                                          @RequestParam(required = false) String executorAppName,
                                                          @RequestParam(defaultValue = "ALL") String logStatus) {
         return ApiResponse.success(opsMonitorService.xxlJobLogs(id, startDate, endDate, page, pageSize, author, executorAppName, logStatus));
+    }
+
+    @GetMapping("/mq/dashboard")
+    @PreAuthorize("hasAuthority('ops:monitor:view') or hasAuthority('ops:monitor:manage')")
+    public ApiResponse<PageResponse<MqDashboardResponse>> mqDashboard(@RequestParam(required = false) String businessLineCode,
+                                                                       @RequestParam(required = false) String environmentCode,
+                                                                       @RequestParam(defaultValue = "true") boolean enabledOnly) {
+        List<MqDashboardResponse> items = opsMonitorService.mqDashboard(businessLineCode, environmentCode, enabledOnly);
+        return ApiResponse.success(new PageResponse<>(items.size(), items));
+    }
+
+    @GetMapping("/{id}/mq/detail")
+    @PreAuthorize("hasAuthority('ops:monitor:view') or hasAuthority('ops:monitor:manage')")
+    public ApiResponse<MqDashboardResponse> mqDetail(@PathVariable Long id,
+                                                     @RequestParam(required = false) LocalDate startDate,
+                                                     @RequestParam(required = false) LocalDate endDate,
+                                                     @RequestParam(defaultValue = "1") int page,
+                                                     @RequestParam(defaultValue = "20") int pageSize,
+                                                     @RequestParam(defaultValue = "ALL") String logType,
+                                                     @RequestParam(required = false) String exchangeKeyword,
+                                                     @RequestParam(required = false) String queueKeyword) {
+        return ApiResponse.success(opsMonitorService.mqDetail(id, startDate, endDate, page, pageSize, logType, exchangeKeyword, queueKeyword));
+    }
+
+    @GetMapping("/{id}/mq/messages")
+    @PreAuthorize("hasAuthority('ops:monitor:view') or hasAuthority('ops:monitor:manage')")
+    public ApiResponse<MqMessagePageResponse> mqMessages(@PathVariable Long id,
+                                                         @RequestParam(required = false) LocalDate startDate,
+                                                         @RequestParam(required = false) LocalDate endDate,
+                                                         @RequestParam(defaultValue = "1") int page,
+                                                         @RequestParam(defaultValue = "20") int pageSize,
+                                                         @RequestParam(defaultValue = "ALL") String logType,
+                                                         @RequestParam(required = false) String exchangeKeyword,
+                                                         @RequestParam(required = false) String queueKeyword) {
+        return ApiResponse.success(opsMonitorService.mqMessages(id, startDate, endDate, page, pageSize, logType, exchangeKeyword, queueKeyword));
     }
 }

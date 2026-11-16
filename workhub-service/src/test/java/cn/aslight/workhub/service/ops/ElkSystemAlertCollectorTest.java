@@ -57,6 +57,6 @@ class ElkSystemAlertCollectorTest {
     }
     private SystemAlertCollectionStore.Claim claim(SystemAlertScopeEntity scope) {
         var at=LocalDateTime.of(2026,11,4,8,0);
-        return new SystemAlertCollectionStore.Claim(new SystemAlertCollectionState(1L,"window","{}","a".repeat(64),at.minusMinutes(5),at,null,null,null,"ACTIVE","owner",at.plusMinutes(3),0,0,1,at),new SystemAlertCollectionStore.Definition(scope,List.of()));
+        return new SystemAlertCollectionStore.Claim(new SystemAlertCollectionState(1L,"window","{}","a".repeat(64),at.minusMinutes(5),at,null,null,null,"ACTIVE","owner",at.plusMinutes(3),0,0,1,at,0,null),new SystemAlertCollectionStore.Definition(scope,List.of()));
     }
 }

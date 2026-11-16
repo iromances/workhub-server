@@ -6,6 +6,7 @@ import cn.aslight.workhub.model.ai.AiUseCaseConfigEntity;
 import cn.aslight.workhub.model.ai.AiUseCaseConfigQuery;
 import cn.aslight.workhub.model.ai.AiUseCaseConfigRequest;
 import cn.aslight.workhub.model.ai.AiUseCaseConfigResponse;
+import cn.aslight.workhub.model.ai.AiUseCaseConfigRow;
 import cn.aslight.workhub.model.ai.AiUseCaseManagePage;
 import cn.aslight.workhub.service.system.SystemAuditService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,18 +56,28 @@ public class AiUseCaseConfigService {
                 upperOrNull(safeQuery.getModelProvider()),
                 safeQuery.getEnabled(),
                 trimToNull(safeQuery.getKeyword())
-        );
+        ).stream().map(this::toResponse).toList();
     }
 
     public AiUseCaseConfigResponse detail(Long id) {
         if (id == null) {
             throw new IllegalArgumentException("AI 任务配置 ID 不能为空");
         }
-        AiUseCaseConfigResponse response = aiUseCaseConfigMapper.findDetailById(id);
-        if (response == null) {
+        AiUseCaseConfigRow row = aiUseCaseConfigMapper.findDetailById(id);
+        if (row == null) {
             throw new IllegalArgumentException("AI 任务配置不存在");
         }
-        return response;
+        return toResponse(row);
+    }
+
+    private AiUseCaseConfigResponse toResponse(AiUseCaseConfigRow row) {
+        AiUseCaseDefinitions.Definition definition = AiUseCaseDefinitions.find(row.useCaseCode());
+        if (definition == null) {
+            return AiUseCaseConfigResponse.fromRow(row, null, null, null);
+        }
+        return AiUseCaseConfigResponse.fromRow(row, definition.capability().name(),
+                definition.allowedChannelTypes().stream().sorted().toList(),
+                definition.allowedCliTypes().stream().sorted().toList());
     }
 
     public AiUseCaseManagePage listForManage(AiUseCaseConfigQuery query) {
@@ -176,8 +187,11 @@ public class AiUseCaseConfigService {
             throw new IllegalArgumentException("AI 接入配置已停用，不能绑定任务");
         }
         definition.requireChannel(provider.getChannelType());
-        if (enabled && AiCliType.is(provider, "ZCODE") && definition.capability() == AiUseCaseDefinitions.Capability.LOCAL_REPOSITORY_READ) {
-            throw new IllegalArgumentException("ZCode 代码任务请使用 Agent 工作台；旧本地研发分析场景尚未适配");
+        if (enabled && "CLI".equalsIgnoreCase(provider.getChannelType())
+                && !definition.allowsCliType(AiCliType.resolve(provider.getCliType(), provider.getCliCommand()))) {
+            throw new IllegalArgumentException(definition.capability() == AiUseCaseDefinitions.Capability.LOCAL_REPOSITORY_READ
+                    ? "ZCode 代码任务请使用 Agent 工作台；旧本地研发分析场景尚未适配"
+                    : "AI 场景 " + definition.code() + " 不允许使用该 CLI 类型通道");
         }
         String promptTemplate = requireText(request.getPromptTemplate(), "提示词模板不能为空");
         entity.setUseCaseCode(requireText(request.getUseCaseCode(), "AI 任务编码不能为空"));
@@ -276,6 +290,19 @@ public class AiUseCaseConfigService {
         return saveForManage(request, null, null);
     }
 
+    /** 软删 AI 任务：注册场景删除后相关流程将不可用，由前端确认弹窗承担风险提示。 */
+    @Transactional
+    public void deleteForManage(Long id, Integer version, String operator, String ip) {
+        AiUseCaseConfigEntity existing = requireExisting(id);
+        if (version == null || existing.getVersion() == null || !version.equals(existing.getVersion())) {
+            throw new IllegalStateException("AI 任务配置已被其他操作修改，请刷新后重试");
+        }
+        if (aiUseCaseConfigMapper.softDelete(id, version, operator) != 1) {
+            throw new IllegalStateException("AI 任务配置已被其他操作修改，请刷新后重试");
+        }
+        audit("DELETE", existing, existing, operator, ip);
+    }
+
     private void audit(String action,
                        AiUseCaseConfigEntity before,
                        AiUseCaseConfigEntity after,
@@ -286,7 +313,7 @@ public class AiUseCaseConfigService {
         }
         auditService.operation(
                 operator,
-                "CREATE".equals(action) ? "system:ai-config:create" : "system:ai-config:update",
+                "DELETE".equals(action) ? "system:ai-config:manage" : "CREATE".equals(action) ? "system:ai-config:create" : "system:ai-config:update",
                 action,
                 "AI_USE_CASE_CONFIG",
                 String.valueOf(after.getId()),

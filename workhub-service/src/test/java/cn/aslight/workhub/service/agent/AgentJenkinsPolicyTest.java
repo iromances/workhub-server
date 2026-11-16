@@ -20,7 +20,6 @@ class AgentJenkinsPolicyTest {
     private SysConfigService configs;
     private AgentJenkinsPolicy service;
     private AgentJenkinsClient client;
-    private AgentJenkinsTools tools;
     private AgentToolContext context;
 
     @BeforeEach void setup() {
@@ -36,10 +35,9 @@ class AgentJenkinsPolicyTest {
             if (!value.specification().scopes().contains(invocation.getArgument(1))) throw new AccessDeniedException("scope");
             return null;
         }).when(access).requireScope(any(), any());
-        tools = new AgentJenkinsTools(service, client, access, json);
-        var config = new AgentConfiguration("release", "prepare", 1L, "model", List.of(scope), List.of(), 30, 120, 1);
+        var config = new AgentConfiguration("release", "prepare", 1L, "model", List.of(scope), 30, 120, 1);
         context = new AgentToolContext("run", "task", "agent", "owner", "lease", config,
-                new AgentTaskSpecification("inspect release", "", "report", List.of("REPORT"), List.of(scope), List.of()));
+                new AgentTaskSpecification("inspect release", "", "report", List.of("REPORT"), List.of(scope)));
     }
 
     @Test void fixedParametersIncludeExactManifestEnvironmentAndEveryRepository() {
@@ -86,34 +84,6 @@ class AgentJenkinsPolicyTest {
         assertThrows(IllegalArgumentException.class, () -> service.current());
         save(binding(Map.of("server", "SERVER_SHA"), Map.of("apiToken", "must-not-send-secret")));
         assertThrows(IllegalArgumentException.class, () -> service.current());
-    }
-
-    @Test void preflightReportsMissingParametersAndNeverApprovesOrTriggers() {
-        var tool = tools.agentJenkinsPreflightTool();
-        when(client.probe(any())).thenReturn(new AgentJenkinsClient.Probe("team/app", true, List.of("REQUEST_ID")));
-        var rejected = json.valueToTree(tool.execute(context, json.readTree("{\"bindingId\":\"test-deploy\"}")));
-        assertEquals("NOT_READY", rejected.path("state").asText()); assertTrue(rejected.path("missingParameters").size() > 0);
-        var parameters = service.requiredParameters(service.binding("test-deploy").binding());
-        when(client.probe(any())).thenReturn(new AgentJenkinsClient.Probe("team/app", true, parameters));
-        var passed = json.valueToTree(tool.execute(context, json.readTree("{\"bindingId\":\"test-deploy\"}")));
-        assertEquals("PREFLIGHT_PASSED", passed.path("state").asText());
-        assertFalse(passed.path("approved").asBoolean()); assertFalse(passed.path("triggered").asBoolean());
-        assertTrue(tool.readOnly()); verify(client, never()).submit(any(), any());
-    }
-
-    @Test void crossScopePreflightFailsBeforeCredentialResolutionOrNetwork() {
-        var other = new AgentToolContext("run", "task", "agent", "owner", "lease", context.configuration(),
-                new AgentTaskSpecification("test", "", "report", List.of("REPORT"), List.of(new AgentScope("BL000012", "PROD")), List.of()));
-        assertThrows(AccessDeniedException.class, () -> tools.agentJenkinsPreflightTool().execute(other, json.readTree("{\"bindingId\":\"test-deploy\"}")));
-        verify(configs, never()).requireSecretValue(anyString(), anyString()); verifyNoInteractions(client);
-    }
-
-    @Test void targetListExposesOnlyScopedMetadataAndMissingConfigIsVisible() {
-        var listed = json.valueToTree(tools.agentJenkinsTargetsTool().execute(context, json.createObjectNode()));
-        assertEquals("CONFIGURED_NOT_PROBED", listed.path("targets").get(0).path("state").asText());
-        assertFalse(listed.toString().contains("jenkins.invalid")); assertFalse(listed.toString().contains("apiToken"));
-        verifyNoInteractions(client);
-        raw.set(null); assertThrows(AgentCodePolicy.Unavailable.class, () -> tools.agentJenkinsTargetsTool().execute(context, json.createObjectNode()));
     }
 
     @Test void deploymentStageCannotMislabelTheConfiguredEnvironment() {

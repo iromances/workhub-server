@@ -1,0 +1,178 @@
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.lease:lease-workflow-common:jar:1.0.0-SNAPSHOT
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.apache.poi:poi:jar -> version 3.17 vs 3.9 @ line 104, column 21
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.apache.poi:poi-ooxml:jar -> version 3.17 vs 3.9 @ line 109, column 21
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: com.github.briandilley.jsonrpc4j:jsonrpc4j:jar -> duplicate declaration of version 1.5.0 @ line 131, column 21
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.apache.commons:commons-lang3:jar -> duplicate declaration of version 3.9 @ line 234, column 21
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: commons-codec:commons-codec:jar -> duplicate declaration of version 1.5 @ line 247, column 21
+[WARNING] 'build.plugins.plugin.version' for org.apache.maven.plugins:maven-compiler-plugin is missing. @ com.lease:lease-workflow:1.0.0-SNAPSHOT, /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/pom.xml, line 74, column 21
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.lease:lease-workflow-start:jar:1.0.0-SNAPSHOT
+[WARNING] 'build.plugins.plugin.version' for org.apache.maven.plugins:maven-compiler-plugin is missing. @ com.lease:lease-workflow:1.0.0-SNAPSHOT, /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/pom.xml, line 74, column 21
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.lease:lease-workflow:pom:1.0.0-SNAPSHOT
+[WARNING] 'build.plugins.plugin.version' for org.apache.maven.plugins:maven-compiler-plugin is missing. @ line 74, column 21
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] lease-workflow                                                     [pom]
+[INFO] lease-workflow-common                                              [jar]
+[INFO] lease-workflow-start                                               [jar]
+[INFO] 
+[INFO] ----------------------< com.lease:lease-workflow >----------------------
+[INFO] Building lease-workflow 1.0.0-SNAPSHOT                             [1/3]
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[WARNING] Ignoring incompatible plugin version 4.0.0-beta-5: 
+The plugin org.apache.maven.plugins:maven-compiler-plugin:4.0.0-beta-5 has unmet prerequisites: 
+	Required Java version 17 is not met by current version: 1.8.0_481
+	Required Maven version 4.0.0-rc-6 is not met by current version 3.9.14
+[INFO] Latest version of plugin org.apache.maven.plugins:maven-compiler-plugin failed compatibility check
+[INFO] Looking for compatible RELEASE version of plugin org.apache.maven.plugins:maven-compiler-plugin
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-4/maven-compiler-plugin-4.0.0-beta-4.pom
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-4/maven-compiler-plugin-4.0.0-beta-4.pom (11 kB at 34 kB/s)
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-4/maven-compiler-plugin-4.0.0-beta-4.jar
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-4/maven-compiler-plugin-4.0.0-beta-4.jar (183 kB at 819 kB/s)
+[WARNING] Ignoring incompatible plugin version 4.0.0-beta-4: 
+The plugin org.apache.maven.plugins:maven-compiler-plugin:4.0.0-beta-4 has unmet prerequisites: 
+	Required Java version 17 is not met by current version: 1.8.0_481
+	Required Maven version 4.0.0-rc-4 is not met by current version 3.9.14
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-3/maven-compiler-plugin-4.0.0-beta-3.pom
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-3/maven-compiler-plugin-4.0.0-beta-3.pom (26 kB at 178 kB/s)
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-3/maven-compiler-plugin-4.0.0-beta-3.jar
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-3/maven-compiler-plugin-4.0.0-beta-3.jar (174 kB at 392 kB/s)
+[WARNING] Ignoring incompatible plugin version 4.0.0-beta-3: 
+The plugin org.apache.maven.plugins:maven-compiler-plugin:4.0.0-beta-3 has unmet prerequisites: 
+	Required Java version 17 is not met by current version: 1.8.0_481
+	Required Maven version 4.0.0-rc-4 is not met by current version 3.9.14
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-2/maven-compiler-plugin-4.0.0-beta-2.pom
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-2/maven-compiler-plugin-4.0.0-beta-2.pom (8.8 kB at 58 kB/s)
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-2/maven-compiler-plugin-4.0.0-beta-2.jar
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-2/maven-compiler-plugin-4.0.0-beta-2.jar (133 kB at 946 kB/s)
+[WARNING] Ignoring incompatible plugin version 4.0.0-beta-2: 
+The plugin org.apache.maven.plugins:maven-compiler-plugin:4.0.0-beta-2 has unmet prerequisites: 
+	Required Java version 17 is not met by current version: 1.8.0_481
+	Required Maven version 4.0.0-rc-2 is not met by current version 3.9.14
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-1/maven-compiler-plugin-4.0.0-beta-1.pom
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-1/maven-compiler-plugin-4.0.0-beta-1.pom (11 kB at 86 kB/s)
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-1/maven-compiler-plugin-4.0.0-beta-1.jar
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/4.0.0-beta-1/maven-compiler-plugin-4.0.0-beta-1.jar (82 kB at 205 kB/s)
+[WARNING] Ignoring incompatible plugin version 4.0.0-beta-1: 
+The plugin org.apache.maven.plugins:maven-compiler-plugin:4.0.0-beta-1 has unmet prerequisites: 
+	Required Java version 17 is not met by current version: 1.8.0_481
+	Required Maven version 4.0.0-beta-3 is not met by current version 3.9.14
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/3.16.0/maven-compiler-plugin-3.16.0.pom
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/3.16.0/maven-compiler-plugin-3.16.0.pom (9.7 kB at 85 kB/s)
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/3.16.0/maven-compiler-plugin-3.16.0.jar
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/org/apache/maven/plugins/maven-compiler-plugin/3.16.0/maven-compiler-plugin-3.16.0.jar (98 kB at 615 kB/s)
+[INFO] Selected plugin org.apache.maven.plugins:maven-compiler-plugin:3.16.0
+[INFO] 
+[INFO] ------------------< com.lease:lease-workflow-common >-------------------
+[INFO] Building lease-workflow-common 1.0.0-SNAPSHOT                      [2/3]
+[INFO]   from lease-workflow-common/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[WARNING] The POM for com.alibaba:druid:jar:1.2.6 is invalid, transitive dependencies (if any) will not be available: 2 problems were encountered while building the effective model for com.alibaba:druid:1.2.6
+[ERROR] 'dependencies.dependency.systemPath' for com.sun:tools:jar must specify an absolute path but is ${project.basedir}/lib/openjdk-1.8-tools.jar @ 
+[ERROR] 'dependencies.dependency.systemPath' for com.sun:jconsole:jar must specify an absolute path but is ${project.basedir}/lib/openjdk-1.8-jconsole.jar @ 
+
+[INFO] 
+[INFO] --- resources:3.4.0:resources (default-resources) @ lease-workflow-common ---
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-common/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ lease-workflow-common ---
+[WARNING]  Parameter 'compilerVersion' (user property 'maven.compiler.compilerVersion') is deprecated: This parameter is no longer evaluated by the underlying compilers, instead the actual version of the javac binary is automatically retrieved.
+[INFO] Recompiling the module because of added or removed source files.
+[INFO] Compiling 31 source files with javac [debug target 1.8] to target/classes
+[WARNING] /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-common/src/main/java/com/lease/workflow/common/util/properties/MessageUtil.java:[127,64] 最后一个参数使用了不准确的变量类型的 varargs 方法的非 varargs 调用; 
+  对于 varargs 调用, 应使用 java.lang.Object
+  对于非 varargs 调用, 应使用 java.lang.Object[], 这样也可以抑制此警告
+[WARNING] /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-common/src/main/java/com/lease/workflow/common/util/properties/MessageUtil.java:[134,64] 最后一个参数使用了不准确的变量类型的 varargs 方法的非 varargs 调用; 
+  对于 varargs 调用, 应使用 java.lang.Object
+  对于非 varargs 调用, 应使用 java.lang.Object[], 这样也可以抑制此警告
+[INFO] /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-common/src/main/java/com/lease/workflow/common/config/CacheConfig.java: 某些输入文件使用或覆盖了已过时的 API。
+[INFO] /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-common/src/main/java/com/lease/workflow/common/config/CacheConfig.java: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+[INFO] /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-common/src/main/java/com/lease/workflow/common/config/CacheConfig.java: 某些输入文件使用了未经检查或不安全的操作。
+[INFO] /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-common/src/main/java/com/lease/workflow/common/config/CacheConfig.java: 有关详细信息, 请使用 -Xlint:unchecked 重新编译。
+[INFO] 
+[INFO] --- resources:3.4.0:testResources (default-testResources) @ lease-workflow-common ---
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-common/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ lease-workflow-common ---
+[WARNING]  Parameter 'compilerVersion' (user property 'maven.compiler.compilerVersion') is deprecated: This parameter is no longer evaluated by the underlying compilers, instead the actual version of the javac binary is automatically retrieved.
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.4:test (default-test) @ lease-workflow-common ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.5.0:jar (default-jar) @ lease-workflow-common ---
+[INFO] Building jar: /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-common/target/lease-workflow-common-1.0.0-SNAPSHOT.jar
+[INFO] 
+[INFO] -------------------< com.lease:lease-workflow-start >-------------------
+[INFO] Building lease-workflow-start 1.0.0-SNAPSHOT                       [3/3]
+[INFO]   from lease-workflow-start/pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/module/jackson-module-jaxb-annotations/2.10.5/jackson-module-jaxb-annotations-2.10.5.pom
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/module/jackson-module-jaxb-annotations/2.10.5/jackson-module-jaxb-annotations-2.10.5.pom (3.5 kB at 36 kB/s)
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/module/jackson-modules-base/2.10.5/jackson-modules-base-2.10.5.pom
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/module/jackson-modules-base/2.10.5/jackson-modules-base-2.10.5.pom (3.4 kB at 39 kB/s)
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/datatype/jackson-datatype-json-org/2.10.5/jackson-datatype-json-org-2.10.5.pom
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/datatype/jackson-datatype-json-org/2.10.5/jackson-datatype-json-org-2.10.5.pom (3.2 kB at 7.8 kB/s)
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/datatype/jackson-datatype-hppc/2.10.5/jackson-datatype-hppc-2.10.5.pom
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/datatype/jackson-datatype-hppc/2.10.5/jackson-datatype-hppc-2.10.5.pom (1.9 kB at 3.9 kB/s)
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/datatype/jackson-datatypes-collections/2.10.5/jackson-datatypes-collections-2.10.5.pom
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/datatype/jackson-datatypes-collections/2.10.5/jackson-datatypes-collections-2.10.5.pom (2.1 kB at 8.8 kB/s)
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/module/jackson-module-jaxb-annotations/2.10.5/jackson-module-jaxb-annotations-2.10.5.jar
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/module/jackson-module-jaxb-annotations/2.10.5/jackson-module-jaxb-annotations-2.10.5.jar (35 kB at 299 kB/s)
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/datatype/jackson-datatype-json-org/2.10.5/jackson-datatype-json-org-2.10.5.jar
+[INFO] Downloading from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/datatype/jackson-datatype-hppc/2.10.5/jackson-datatype-hppc-2.10.5.jar
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/datatype/jackson-datatype-hppc/2.10.5/jackson-datatype-hppc-2.10.5.jar (45 kB at 107 kB/s)
+[INFO] Downloaded from th-group: http://10.10.116.21:10003/repository/th-group/com/fasterxml/jackson/datatype/jackson-datatype-json-org/2.10.5/jackson-datatype-json-org-2.10.5.jar (17 kB at 35 kB/s)
+[INFO] 
+[INFO] --- resources:3.4.0:resources (default-resources) @ lease-workflow-start ---
+[INFO] Copying 7 resources from src/main/java to target/classes
+[INFO] Copying 26 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ lease-workflow-start ---
+[WARNING]  Parameter 'compilerVersion' (user property 'maven.compiler.compilerVersion') is deprecated: This parameter is no longer evaluated by the underlying compilers, instead the actual version of the javac binary is automatically retrieved.
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 391 source files with javac [debug target 1.8] to target/classes
+[WARNING] /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-start/src/main/java/com/lease/workflow/modeler/extention/task/entity/ApiLoggerOut.java:[15,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[WARNING] /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-start/src/main/java/com/lease/workflow/modeler/extention/task/entity/ApiLogger.java:[12,1] Generating equals/hashCode implementation but without a call to superclass, even though this class does not extend java.lang.Object. If this is intentional, add '@EqualsAndHashCode(callSuper=false)' to your type.
+[INFO] /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-start/src/main/java/com/lease/workflow/modeler/app/admin/service/engine/AbstractEncryptingService.java: 某些输入文件使用或覆盖了已过时的 API。
+[INFO] /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-start/src/main/java/com/lease/workflow/modeler/app/admin/service/engine/AbstractEncryptingService.java: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+[INFO] /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-start/src/main/java/com/lease/workflow/LeaseWorkflowApplication.java: 某些输入文件使用了未经检查或不安全的操作。
+[INFO] /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-start/src/main/java/com/lease/workflow/LeaseWorkflowApplication.java: 有关详细信息, 请使用 -Xlint:unchecked 重新编译。
+[INFO] 
+[INFO] --- resources:3.4.0:testResources (default-testResources) @ lease-workflow-start ---
+[INFO] skip non existing resourceDirectory /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-start/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ lease-workflow-start ---
+[WARNING]  Parameter 'compilerVersion' (user property 'maven.compiler.compilerVersion') is deprecated: This parameter is no longer evaluated by the underlying compilers, instead the actual version of the javac binary is automatically retrieved.
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.5.4:test (default-test) @ lease-workflow-start ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.5.0:jar (default-jar) @ lease-workflow-start ---
+[INFO] Building jar: /Users/aslight/IDEAWorkspace/lease-saas/lease-workflow/lease-workflow-start/target/lease-workflow-start-1.0.0-SNAPSHOT.jar
+[INFO] 
+[INFO] --- spring-boot:2.2.9.RELEASE:repackage (default) @ lease-workflow-start ---
+[INFO] Replacing main artifact with repackaged archive
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for lease-workflow 1.0.0-SNAPSHOT:
+[INFO] 
+[INFO] lease-workflow ..................................... SUCCESS [  2.452 s]
+[INFO] lease-workflow-common .............................. SUCCESS [  1.958 s]
+[INFO] lease-workflow-start ............................... SUCCESS [  5.734 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  10.360 s
+[INFO] Finished at: 2026-11-06T13:43:44+08:00
+[INFO] ------------------------------------------------------------------------

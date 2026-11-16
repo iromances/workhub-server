@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public interface SystemAlertLogSource {
+    /** ES毫秒级date字段对range边界按包含方向取整；该偏差内的边界文档视为区间内，超出仍按越界失败。 */
+    long BOUNDARY_TOLERANCE_MS = 1L;
+
     SyncResult readErrors(String indexPattern, List<String> serviceNames, String environmentCode, Instant fromInclusive,
                           Consumer<ElkSystemAlertLog> consumer);
 

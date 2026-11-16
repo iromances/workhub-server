@@ -1,0 +1,225 @@
+{
+  "summarizedAt": "2026-11-04T10:58:27+08:00",
+  "environment": "TEST",
+  "nacos": {
+    "url": "http://10.10.116.110:8848/nacos/",
+    "version": "2.5.4",
+    "namespace": "bae98fd5-aa76-427b-a5fc-c32f81befa38",
+    "namespaceName": "sit",
+    "hideEmpty": false,
+    "total": 17,
+    "services": [
+      {
+        "name": "thctay-intfbank",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-eas",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-payment",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-saps",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-wms",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-marketing",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-crm",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-front-gateway",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-partner-gateway",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-intfboc",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-intfabc",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-datashield",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-saps-back",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-account",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-sanchuan",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-admin",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-etc",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      }
+    ],
+    "listPages": [
+      [
+        "thctay-intfbank",
+        "thctay-eas",
+        "thctay-payment",
+        "thctay-saps",
+        "thctay-wms",
+        "thctay-marketing",
+        "thctay-crm",
+        "thctay-front-gateway",
+        "thctay-partner-gateway",
+        "thctay-intfboc"
+      ],
+      [
+        "thctay-intfabc",
+        "thctay-datashield",
+        "thctay-saps-back",
+        "thctay-account",
+        "thctay-sanchuan",
+        "thctay-admin",
+        "thctay-etc"
+      ]
+    ],
+    "focusedRecheck": {
+      "serviceName": "invoice-exinterface",
+      "result": "没有数据",
+      "namespaceName": "sit"
+    }
+  },
+  "xxlJob": {
+    "url": "http://10.10.116.110:28080/xxl-job-admin/jobgroup",
+    "version": "2.5.0",
+    "definitions": 20,
+    "onlineGroups": 6,
+    "onlineAddresses": 6,
+    "online": [
+      {
+        "appname": "thctay-account",
+        "addressCount": 1
+      },
+      {
+        "appname": "thctay-eas",
+        "addressCount": 1
+      },
+      {
+        "appname": "thctay-etc",
+        "addressCount": 1
+      },
+      {
+        "appname": "thctay-marketing",
+        "addressCount": 1
+      },
+      {
+        "appname": "thctay-payment",
+        "addressCount": 1
+      },
+      {
+        "appname": "thctay-saps",
+        "addressCount": 1
+      }
+    ],
+    "noOnlineAddress": [
+      "invoice-exinterface",
+      "thctay-board",
+      "thctay-cashLoan",
+      "thctay-contract",
+      "thctay-crm",
+      "thctay-etc-issue",
+      "thctay-intf-gdgs",
+      "thctay-intf-gzgs",
+      "thctay-intf-hs",
+      "thctay-intf-jsgs",
+      "thctay-risk",
+      "thctay-sanchuan",
+      "thctay-saps-checkbill",
+      "xxl-job-executor-sample"
+    ],
+    "registrationType": "AUTO"
+  },
+  "validation": "通过控制台读取新 Nacos sit 完整两页共 17 行，均 1 个健康实例，隐藏空服务关闭；单独检索 invoice-exinterface 返回没有数据。新 XXL .110 执行器管理重新加载并点击搜索，25 条每页，完整 20 项，6 项各 1 个在线地址、14 项无地址。未触发任何任务。XXL .52 不在本次范围。",
+  "observedBetween": [
+    "2026-11-04T10:54:09+08:00",
+    "2026-11-04T10:58:27+08:00"
+  ],
+  "deltaFrom0955": {
+    "nacosAdded": [
+      "thctay-intfabc",
+      "thctay-intfboc",
+      "thctay-partner-gateway",
+      "thctay-sanchuan",
+      "thctay-saps-back",
+      "thctay-wms"
+    ],
+    "nacosNoLongerObserved": [
+      "invoice-exinterface"
+    ],
+    "xxlOnlineAdded": [],
+    "xxlOnlineRemoved": []
+  },
+  "limitations": [
+    "本次只刷新注册状态，名称映射使用 09:11 固定源码；没有重新 fetch 或代码复审。",
+    "本机 WorkHub MCP tools/list 仍返回 Connection refused，未读取新的数据库、服务器进程与日志；SAPS/checker 归属和发票服务变化原因未确认。",
+    "注册列表是观察窗口内的状态，不证明部署版本或业务任务验收通过。"
+  ],
+  "mcpCheck": {
+    "checkedAt": "2026-11-04T11:01:05+08:00",
+    "transport": "configured WorkHub MCP endpoint",
+    "operation": "tools/list",
+    "result": "Connection refused"
+  }
+}

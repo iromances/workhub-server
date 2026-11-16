@@ -1,6 +1,7 @@
 package cn.aslight.workhub.model.project;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 
 import java.util.List;
 
@@ -22,6 +23,11 @@ public class BusinessLineSaveRequest {
      * 业务线说明。
      */
     private String description;
+    /**
+     * 支持环境编码列表，如 DEV、FAT、TEST、PROD。
+     */
+    @NotEmpty(message = "支持环境不能为空")
+    private List<String> supportedEnvironments;
     /**
      * 是否启用。
      */
@@ -53,6 +59,14 @@ public class BusinessLineSaveRequest {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public List<String> getSupportedEnvironments() {
+        return supportedEnvironments;
+    }
+
+    public void setSupportedEnvironments(List<String> supportedEnvironments) {
+        this.supportedEnvironments = supportedEnvironments;
     }
 
     public Boolean getEnabled() {

@@ -1,0 +1,906 @@
+{
+  "scope": "叉车 PROD；用户执行12日补跑，助手只读验收",
+  "snapshotComparison": {
+    "baseline": "生产逾期费补算金额核查证据_20261113_1419.json / amount-open-forklift",
+    "matchedBills": 60,
+    "amountMismatches": 0,
+    "overdueDayIncrementMismatches": 0,
+    "positiveFeeBills": 53
+  },
+  "queries": {
+    "fork12-log": {
+      "tool": "run_readonly_query",
+      "arguments": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT id,job_id,trigger_time,handle_time,trigger_code,handle_code,executor_param,handle_msg FROM lease_xxl_job_250.xxl_job_log WHERE job_id=10 AND trigger_time>='2026-11-13 14:00:00' AND trigger_time<=NOW() ORDER BY id DESC LIMIT 20"
+      },
+      "retrievedAt": "2026-11-13T14:44:31.229190+08:00",
+      "data": {
+        "targetKey": "db-prod",
+        "dataMasked": true,
+        "profileKey": "readonly",
+        "result": {
+          "truncatedByBytes": false,
+          "dataMasked": true,
+          "rows": [
+            {
+              "id": 11553,
+              "job_id": 10,
+              "trigger_time": "2026-11-13T14:43:54",
+              "handle_time": "2026-11-13T14:43:55",
+              "trigger_code": 200,
+              "handle_code": 200,
+              "executor_param": "{\"executeDate\":\"2026-11-12\"}",
+              "handle_msg": ""
+            }
+          ],
+          "columns": [
+            "id",
+            "job_id",
+            "trigger_time",
+            "handle_time",
+            "trigger_code",
+            "handle_code",
+            "executor_param",
+            "handle_msg"
+          ]
+        },
+        "sql": "SELECT id,job_id,trigger_time,handle_time,trigger_code,handle_code,executor_param,handle_msg FROM lease_xxl_job_250.xxl_job_log WHERE job_id=10 AND trigger_time>='***' AND trigger_time<=NOW() ORDER BY id DESC LIMIT 20"
+      }
+    },
+    "fork12-summary": {
+      "tool": "run_readonly_query",
+      "arguments": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT NOW() AS checked_at,start_date,end_date,subject_no,COUNT(*) AS records,COUNT(DISTINCT bill_no) AS bills,SUM(fee_amount) AS total_fee,MIN(create_time) AS first_created,MAX(create_time) AS last_created,SUM(is_cancel) AS cancelled,SUM(is_delete) AS deleted FROM lease_saps.bill_fee_record WHERE end_date IN ('2026-11-12','2026-11-13') GROUP BY start_date,end_date,subject_no LIMIT 20"
+      },
+      "retrievedAt": "2026-11-13T14:44:31.228058+08:00",
+      "data": {
+        "targetKey": "db-prod",
+        "dataMasked": true,
+        "profileKey": "readonly",
+        "result": {
+          "truncatedByBytes": false,
+          "dataMasked": true,
+          "rows": [
+            {
+              "checked_at": "2026-11-13T14:44:31",
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12",
+              "subject_no": "103",
+              "records": 2,
+              "bills": 2,
+              "total_fee": 8.01,
+              "first_created": "2026-11-13T14:43:55",
+              "last_created": "2026-11-13T14:43:55",
+              "cancelled": 0,
+              "deleted": 0
+            },
+            {
+              "checked_at": "2026-11-13T14:44:31",
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12",
+              "subject_no": "10301",
+              "records": 58,
+              "bills": 58,
+              "total_fee": 0.0,
+              "first_created": "2026-11-13T14:43:55",
+              "last_created": "2026-11-13T14:43:55",
+              "cancelled": 0,
+              "deleted": 0
+            },
+            {
+              "checked_at": "2026-11-13T14:44:31",
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12",
+              "subject_no": "10302",
+              "records": 58,
+              "bills": 58,
+              "total_fee": 199.88,
+              "first_created": "2026-11-13T14:43:55",
+              "last_created": "2026-11-13T14:43:55",
+              "cancelled": 0,
+              "deleted": 0
+            }
+          ],
+          "columns": [
+            "checked_at",
+            "start_date",
+            "end_date",
+            "subject_no",
+            "records",
+            "bills",
+            "total_fee",
+            "first_created",
+            "last_created",
+            "cancelled",
+            "deleted"
+          ]
+        },
+        "sql": "SELECT NOW() AS checked_at,start_date,end_date,subject_no,COUNT(*) AS records,COUNT(DISTINCT bill_no) AS bills,SUM(fee_amount) AS total_fee,MIN(create_time) AS first_created,MAX(create_time) AS last_created,SUM(is_cancel) AS cancelled,SUM(is_delete) AS deleted FROM lease_saps.bill_fee_record WHERE end_date IN ('***','***') GROUP BY start_date,end_date,subject_no LIMIT 20"
+      }
+    },
+    "fork12-coverage": {
+      "tool": "run_readonly_query",
+      "arguments": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT COUNT(*) AS open_candidates,SUM(EXISTS(SELECT 1 FROM lease_saps.bill_fee_record r WHERE r.bill_no=b.bill_no AND r.end_date='2026-11-12' AND r.is_delete=0)) AS covered FROM lease_saps.customer_bill b WHERE b.is_delete=0 AND b.settlement_status<>1 AND b.last_grace_date<'2026-11-12' LIMIT 1"
+      },
+      "retrievedAt": "2026-11-13T14:44:31.299641+08:00",
+      "data": {
+        "targetKey": "db-prod",
+        "dataMasked": true,
+        "profileKey": "readonly",
+        "result": {
+          "truncatedByBytes": false,
+          "dataMasked": true,
+          "rows": [
+            {
+              "open_candidates": 60,
+              "covered": 60
+            }
+          ],
+          "columns": [
+            "open_candidates",
+            "covered"
+          ]
+        },
+        "sql": "SELECT COUNT(*) AS open_candidates,SUM(EXISTS(SELECT 1 FROM lease_saps.bill_fee_record r WHERE r.bill_no=b.bill_no AND r.end_date='***' AND r.is_delete=0)) AS covered FROM lease_saps.customer_bill b WHERE b.is_delete=0 AND b.settlement_status<>1 AND b.last_grace_date<'***' LIMIT 1"
+      }
+    },
+    "fork12-duplicates": {
+      "tool": "run_readonly_query",
+      "arguments": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT bill_no,start_date,end_date,subject_no,COUNT(*) AS cnt,SUM(fee_amount) AS total_fee FROM lease_saps.bill_fee_record WHERE end_date IN ('2026-11-12','2026-11-13') AND is_delete=0 GROUP BY bill_no,start_date,end_date,subject_no HAVING COUNT(*)>1 LIMIT 100"
+      },
+      "retrievedAt": "2026-11-13T14:44:31.947315+08:00",
+      "data": {
+        "targetKey": "db-prod",
+        "dataMasked": true,
+        "profileKey": "readonly",
+        "result": {
+          "truncatedByBytes": false,
+          "dataMasked": true,
+          "rows": [],
+          "columns": [
+            "bill_no",
+            "start_date",
+            "end_date",
+            "subject_no",
+            "cnt",
+            "total_fee"
+          ]
+        },
+        "sql": "SELECT bill_no,start_date,end_date,subject_no,COUNT(*) AS cnt,SUM(fee_amount) AS total_fee FROM lease_saps.bill_fee_record WHERE end_date IN ('***','***') AND is_delete=0 GROUP BY bill_no,start_date,end_date,subject_no HAVING COUNT(*)>1 LIMIT 100"
+      }
+    },
+    "fork12-total": {
+      "tool": "run_readonly_query",
+      "arguments": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT COUNT(*) AS records,COUNT(DISTINCT bill_no) AS bills,SUM(fee_amount) AS total_fee FROM lease_saps.bill_fee_record WHERE end_date='2026-11-12' AND is_delete=0 LIMIT 1"
+      },
+      "retrievedAt": "2026-11-13T14:44:31.976480+08:00",
+      "data": {
+        "targetKey": "db-prod",
+        "dataMasked": true,
+        "profileKey": "readonly",
+        "result": {
+          "truncatedByBytes": false,
+          "dataMasked": true,
+          "rows": [
+            {
+              "records": 118,
+              "bills": 60,
+              "total_fee": 207.89
+            }
+          ],
+          "columns": [
+            "records",
+            "bills",
+            "total_fee"
+          ]
+        },
+        "sql": "SELECT COUNT(*) AS records,COUNT(DISTINCT bill_no) AS bills,SUM(fee_amount) AS total_fee FROM lease_saps.bill_fee_record WHERE end_date='***' AND is_delete=0 LIMIT 1"
+      }
+    },
+    "fork12-amounts": {
+      "tool": "run_readonly_query",
+      "arguments": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT b.id,b.bill_no,b.product_type,b.overdue_day,COUNT(r.id) AS record_count,SUM(r.fee_amount) AS actual_fee,MAX(CASE WHEN (b.product_type=1 AND r.subject_no='10302') OR (b.product_type=2 AND r.subject_no='103') THEN r.principal END) AS customer_fee_base,MIN(r.start_date) AS start_date,MAX(r.end_date) AS end_date FROM lease_saps.bill_fee_record r JOIN lease_saps.customer_bill b ON b.bill_no=r.bill_no AND b.is_delete=0 WHERE r.end_date='2026-11-12' AND r.is_delete=0 GROUP BY b.id,b.bill_no,b.product_type,b.overdue_day ORDER BY b.id LIMIT 100"
+      },
+      "retrievedAt": "2026-11-13T14:44:32.087808+08:00",
+      "data": {
+        "targetKey": "db-prod",
+        "dataMasked": true,
+        "profileKey": "readonly",
+        "result": {
+          "truncatedByBytes": false,
+          "dataMasked": true,
+          "rows": [
+            {
+              "id": 302,
+              "bill_no": "FX2403061707530018",
+              "product_type": 1,
+              "overdue_day": 461,
+              "record_count": 2,
+              "actual_fee": 0.0,
+              "customer_fee_base": 0.0,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 303,
+              "bill_no": "FX2403061707530019",
+              "product_type": 1,
+              "overdue_day": 430,
+              "record_count": 2,
+              "actual_fee": 0.0,
+              "customer_fee_base": 0.0,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 304,
+              "bill_no": "FX2403061707530020",
+              "product_type": 1,
+              "overdue_day": 400,
+              "record_count": 2,
+              "actual_fee": 0.0,
+              "customer_fee_base": 0.0,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 311,
+              "bill_no": "FX2403061707530027",
+              "product_type": 1,
+              "overdue_day": 188,
+              "record_count": 2,
+              "actual_fee": 0.0,
+              "customer_fee_base": 0.0,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 312,
+              "bill_no": "FX2403061707530028",
+              "product_type": 1,
+              "overdue_day": 159,
+              "record_count": 2,
+              "actual_fee": 0.0,
+              "customer_fee_base": 0.0,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 313,
+              "bill_no": "FX2403061707530029",
+              "product_type": 1,
+              "overdue_day": 129,
+              "record_count": 2,
+              "actual_fee": 0.38,
+              "customer_fee_base": 384.08,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 428,
+              "bill_no": "FX2408021649010024",
+              "product_type": 1,
+              "overdue_day": 133,
+              "record_count": 2,
+              "actual_fee": 0.0,
+              "customer_fee_base": 0.0,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 569,
+              "bill_no": "FX2410221441290021",
+              "product_type": 1,
+              "overdue_day": 143,
+              "record_count": 2,
+              "actual_fee": 1.45,
+              "customer_fee_base": 1452.5,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 570,
+              "bill_no": "FX2410221441290022",
+              "product_type": 1,
+              "overdue_day": 113,
+              "record_count": 2,
+              "actual_fee": 1.91,
+              "customer_fee_base": 1907.5,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 572,
+              "bill_no": "FX2410221441290024",
+              "product_type": 1,
+              "overdue_day": 51,
+              "record_count": 2,
+              "actual_fee": 0.0,
+              "customer_fee_base": 0.0,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 674,
+              "bill_no": "FX2411211458350006",
+              "product_type": 1,
+              "overdue_day": 568,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 675,
+              "bill_no": "FX2411211458350007",
+              "product_type": 1,
+              "overdue_day": 538,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 676,
+              "bill_no": "FX2411211458350008",
+              "product_type": 1,
+              "overdue_day": 507,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 677,
+              "bill_no": "FX2411211458350009",
+              "product_type": 1,
+              "overdue_day": 477,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 678,
+              "bill_no": "FX2411211458350010",
+              "product_type": 1,
+              "overdue_day": 446,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 679,
+              "bill_no": "FX2411211458350011",
+              "product_type": 1,
+              "overdue_day": 415,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 680,
+              "bill_no": "FX2411211458350012",
+              "product_type": 1,
+              "overdue_day": 385,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 681,
+              "bill_no": "FX2411211458350013",
+              "product_type": 1,
+              "overdue_day": 354,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 682,
+              "bill_no": "FX2411211458350014",
+              "product_type": 1,
+              "overdue_day": 324,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 683,
+              "bill_no": "FX2411211458350015",
+              "product_type": 1,
+              "overdue_day": 293,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 684,
+              "bill_no": "FX2411211458350016",
+              "product_type": 1,
+              "overdue_day": 262,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 685,
+              "bill_no": "FX2411211458350017",
+              "product_type": 1,
+              "overdue_day": 234,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 686,
+              "bill_no": "FX2411211458350018",
+              "product_type": 1,
+              "overdue_day": 203,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 687,
+              "bill_no": "FX2411211458350019",
+              "product_type": 1,
+              "overdue_day": 175,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 688,
+              "bill_no": "FX2411211458350020",
+              "product_type": 1,
+              "overdue_day": 144,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 689,
+              "bill_no": "FX2411211458350021",
+              "product_type": 1,
+              "overdue_day": 114,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 690,
+              "bill_no": "FX2411211458350022",
+              "product_type": 1,
+              "overdue_day": 83,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 691,
+              "bill_no": "FX2411211458350023",
+              "product_type": 1,
+              "overdue_day": 52,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 692,
+              "bill_no": "FX2411211458350024",
+              "product_type": 1,
+              "overdue_day": 22,
+              "record_count": 2,
+              "actual_fee": 3.39,
+              "customer_fee_base": 3391.11,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 816,
+              "bill_no": "FX2412111713420016",
+              "product_type": 1,
+              "overdue_day": 246,
+              "record_count": 2,
+              "actual_fee": 6.97,
+              "customer_fee_base": 6968.89,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 817,
+              "bill_no": "FX2412111713420017",
+              "product_type": 1,
+              "overdue_day": 215,
+              "record_count": 2,
+              "actual_fee": 6.97,
+              "customer_fee_base": 6968.89,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 818,
+              "bill_no": "FX2412111713420018",
+              "product_type": 1,
+              "overdue_day": 185,
+              "record_count": 2,
+              "actual_fee": 6.97,
+              "customer_fee_base": 6968.89,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 819,
+              "bill_no": "FX2412111713420019",
+              "product_type": 1,
+              "overdue_day": 154,
+              "record_count": 2,
+              "actual_fee": 6.97,
+              "customer_fee_base": 6968.89,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 820,
+              "bill_no": "FX2412111713420020",
+              "product_type": 1,
+              "overdue_day": 124,
+              "record_count": 2,
+              "actual_fee": 6.97,
+              "customer_fee_base": 6968.89,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 821,
+              "bill_no": "FX2412111713420021",
+              "product_type": 1,
+              "overdue_day": 93,
+              "record_count": 2,
+              "actual_fee": 6.97,
+              "customer_fee_base": 6968.89,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 822,
+              "bill_no": "FX2412111713420022",
+              "product_type": 1,
+              "overdue_day": 62,
+              "record_count": 2,
+              "actual_fee": 6.97,
+              "customer_fee_base": 6968.89,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 823,
+              "bill_no": "FX2412111713420023",
+              "product_type": 1,
+              "overdue_day": 32,
+              "record_count": 2,
+              "actual_fee": 6.97,
+              "customer_fee_base": 6968.89,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 824,
+              "bill_no": "FX2412111713420024",
+              "product_type": 1,
+              "overdue_day": 1,
+              "record_count": 2,
+              "actual_fee": 6.97,
+              "customer_fee_base": 6968.89,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 864,
+              "bill_no": "FX2501071101240004",
+              "product_type": 1,
+              "overdue_day": 582,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 865,
+              "bill_no": "FX2501071101240005",
+              "product_type": 1,
+              "overdue_day": 552,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 866,
+              "bill_no": "FX2501071101240006",
+              "product_type": 1,
+              "overdue_day": 521,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 867,
+              "bill_no": "FX2501071101240007",
+              "product_type": 1,
+              "overdue_day": 491,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 868,
+              "bill_no": "FX2501071101240008",
+              "product_type": 1,
+              "overdue_day": 460,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 869,
+              "bill_no": "FX2501071101240009",
+              "product_type": 1,
+              "overdue_day": 429,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 870,
+              "bill_no": "FX2501071101240010",
+              "product_type": 1,
+              "overdue_day": 399,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 871,
+              "bill_no": "FX2501071101240011",
+              "product_type": 1,
+              "overdue_day": 368,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 872,
+              "bill_no": "FX2501071101240012",
+              "product_type": 1,
+              "overdue_day": 338,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 873,
+              "bill_no": "FX2501071101240013",
+              "product_type": 1,
+              "overdue_day": 307,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 874,
+              "bill_no": "FX2501071101240014",
+              "product_type": 1,
+              "overdue_day": 276,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 875,
+              "bill_no": "FX2501071101240015",
+              "product_type": 1,
+              "overdue_day": 248,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 876,
+              "bill_no": "FX2501071101240016",
+              "product_type": 1,
+              "overdue_day": 217,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 877,
+              "bill_no": "FX2501071101240017",
+              "product_type": 1,
+              "overdue_day": 187,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 878,
+              "bill_no": "FX2501071101240018",
+              "product_type": 1,
+              "overdue_day": 158,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 879,
+              "bill_no": "FX2501071101240019",
+              "product_type": 1,
+              "overdue_day": 128,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 880,
+              "bill_no": "FX2501071101240020",
+              "product_type": 1,
+              "overdue_day": 97,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 881,
+              "bill_no": "FX2501071101240021",
+              "product_type": 1,
+              "overdue_day": 66,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 882,
+              "bill_no": "FX2501071101240022",
+              "product_type": 1,
+              "overdue_day": 36,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 883,
+              "bill_no": "FX2501071101240023",
+              "product_type": 1,
+              "overdue_day": 5,
+              "record_count": 2,
+              "actual_fee": 3.45,
+              "customer_fee_base": 3453.33,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 1724,
+              "bill_no": "C2507281017280016",
+              "product_type": 2,
+              "overdue_day": 15,
+              "record_count": 1,
+              "actual_fee": 2.73,
+              "customer_fee_base": 2726.14,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            },
+            {
+              "id": 2282,
+              "bill_no": "C2603251259540008",
+              "product_type": 2,
+              "overdue_day": 18,
+              "record_count": 1,
+              "actual_fee": 5.28,
+              "customer_fee_base": 5280.0,
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12"
+            }
+          ],
+          "columns": [
+            "id",
+            "bill_no",
+            "product_type",
+            "overdue_day",
+            "record_count",
+            "actual_fee",
+            "customer_fee_base",
+            "start_date",
+            "end_date"
+          ]
+        },
+        "sql": "SELECT b.id,b.bill_no,b.product_type,b.overdue_day,COUNT(r.id) AS record_count,SUM(r.fee_amount) AS actual_fee,MAX(CASE WHEN (b.product_type=1 AND r.subject_no='***') OR (b.product_type=2 AND r.subject_no='***') THEN r.principal END) AS customer_fee_base,MIN(r.start_date) AS start_date,MAX(r.end_date) AS end_date FROM lease_saps.bill_fee_record r JOIN lease_saps.customer_bill b ON b.bill_no=r.bill_no AND b.is_delete=0 WHERE r.end_date='***' AND r.is_delete=0 GROUP BY b.id,b.bill_no,b.product_type,b.overdue_day ORDER BY b.id LIMIT 100"
+      }
+    }
+  }
+}

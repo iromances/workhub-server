@@ -72,6 +72,122 @@ public interface AgentMapper {
             """)
     int updateSchedule(AgentTaskEntity entity);
 
+    @Update("""
+            <script>
+            UPDATE pm_agent_task SET specification_json=#{specificationJson},
+              <if test="schedule != null">schedule_mode=#{schedule.mode},cron_expression=#{schedule.cronExpression},zone_id=#{schedule.zoneId},
+                misfire_policy=#{schedule.misfirePolicy},schedule_enabled=#{schedule.enabled},next_run_at=#{nextRunAt},</if>
+              version=version+1,updated_at=#{updatedAt} WHERE id=#{id} AND version=#{version}
+            </script>
+            """)
+    int updateTaskSpecification(@Param("id") String id, @Param("version") long version,
+                                @Param("specificationJson") String specificationJson, @Param("schedule") AgentScheduleRequest schedule,
+                                @Param("nextRunAt") LocalDateTime nextRunAt, @Param("updatedAt") LocalDateTime updatedAt);
+
+    /** 删除前核对：未结束运行（含排队/执行中/待核对）阻止物理删除。 */
+    @Select("SELECT COUNT(*) FROM pm_agent_run WHERE task_id=#{taskId} AND status NOT IN ('COMPLETED','FAILED','CANCELLED','WAITING_INPUT')")
+    int countUnfinishedRuns(@Param("taskId") String taskId);
+
+    /** 删除前核对：运行挂接的过程数据与将一并清除的轨迹行数，任一过程数据非零即拒绝删除。 */
+    @Select("""
+            SELECT (SELECT COUNT(*) FROM pm_agent_event e WHERE e.run_id IN (SELECT id FROM pm_agent_run WHERE task_id=#{taskId})) AS events,
+                   (SELECT COUNT(*) FROM pm_agent_artifact a WHERE a.run_id IN (SELECT id FROM pm_agent_run WHERE task_id=#{taskId})) AS artifacts,
+                   (SELECT COUNT(*) FROM pm_agent_observation o JOIN pm_agent_run r ON o.run_id=r.id WHERE r.task_id=#{taskId}) AS observations,
+                   (SELECT COUNT(*) FROM pm_agent_change_set c JOIN pm_agent_run r2 ON c.run_id=r2.id WHERE r2.task_id=#{taskId}) AS changeSets,
+                   (SELECT COUNT(*) FROM pm_agent_code_workspace w JOIN pm_agent_run r3 ON w.run_id=r3.id WHERE r3.task_id=#{taskId}) AS codeWorkspaces,
+                   (SELECT COUNT(*) FROM pm_agent_build_test b JOIN pm_agent_run r4 ON b.run_id=r4.id WHERE r4.task_id=#{taskId}) AS buildTests,
+                   (SELECT COUNT(*) FROM pm_agent_release_plan p JOIN pm_agent_run r5 ON p.run_id=r5.id WHERE r5.task_id=#{taskId}) AS releasePlans,
+                   (SELECT COUNT(*) FROM pm_agent_deployment dp JOIN pm_agent_run r6 ON dp.run_id=r6.id WHERE r6.task_id=#{taskId}) AS deployments,
+                   (SELECT COUNT(*) FROM pm_agent_verification v JOIN pm_agent_run r7 ON v.run_id=r7.id WHERE r7.task_id=#{taskId}) AS verifications,
+                   (SELECT COUNT(*) FROM pm_agent_inspection_item i JOIN pm_agent_run r8 ON i.assigned_run_id=r8.id WHERE r8.task_id=#{taskId}) AS inspectionItems,
+                   (SELECT COUNT(*) FROM pm_autonomy_case_run cr JOIN pm_agent_run r9 ON cr.run_id=r9.id WHERE r9.task_id=#{taskId}) AS autonomyCases
+            """)
+    TaskRemovalCounts taskRemovalCounts(@Param("taskId") String taskId);
+
+    @Delete("DELETE FROM pm_agent_artifact WHERE run_id IN (SELECT id FROM pm_agent_run WHERE task_id=#{taskId})")
+    int deleteArtifactsByTask(@Param("taskId") String taskId);
+
+    @Delete("DELETE FROM pm_agent_event WHERE run_id IN (SELECT id FROM pm_agent_run WHERE task_id=#{taskId})")
+    int deleteEventsByTask(@Param("taskId") String taskId);
+
+    @Delete("DELETE FROM pm_agent_run WHERE task_id=#{taskId}")
+    int deleteRunsByTask(@Param("taskId") String taskId);
+
+    @Delete("DELETE FROM pm_agent_task WHERE id=#{id} AND version=#{version}")
+    int deleteTaskById(@Param("id") String id, @Param("version") long version);
+
+    @Delete("DELETE FROM pm_agent_artifact WHERE run_id=#{runId}")
+    int deleteArtifactsByRun(@Param("runId") String runId);
+
+    @Delete("DELETE FROM pm_agent_event WHERE run_id=#{runId}")
+    int deleteEventsByRun(@Param("runId") String runId);
+
+    @Delete("DELETE FROM pm_agent_run WHERE id=#{id} AND version=#{version}")
+    int deleteRunById(@Param("id") String id, @Param("version") long version);
+
+    /** Agent 删除前核对：未结束运行与启用中周期任务阻止物理删除。 */
+    @Select("SELECT COUNT(*) FROM pm_agent_run WHERE agent_id=#{agentId} AND status NOT IN ('COMPLETED','FAILED','CANCELLED','WAITING_INPUT')")
+    int countUnfinishedRunsByAgent(@Param("agentId") String agentId);
+
+    @Select("SELECT COUNT(*) FROM pm_agent_run WHERE agent_id=#{agentId}")
+    long countRunsByAgent(@Param("agentId") String agentId);
+
+    @Select("SELECT COUNT(*) FROM pm_agent_task WHERE agent_id=#{agentId} AND schedule_enabled=1")
+    int countEnabledSchedulesByAgent(@Param("agentId") String agentId);
+
+    /** Agent 删除前核对：全部运行挂接的过程数据，与任务删除同类别同口径。 */
+    @Select("""
+            SELECT (SELECT COUNT(*) FROM pm_agent_event e WHERE e.run_id IN (SELECT id FROM pm_agent_run WHERE agent_id=#{agentId})) AS events,
+                   (SELECT COUNT(*) FROM pm_agent_artifact a WHERE a.run_id IN (SELECT id FROM pm_agent_run WHERE agent_id=#{agentId})) AS artifacts,
+                   (SELECT COUNT(*) FROM pm_agent_observation o WHERE o.agent_id=#{agentId}) AS observations,
+                   (SELECT COUNT(*) FROM pm_agent_change_set c JOIN pm_agent_run r2 ON c.run_id=r2.id WHERE r2.agent_id=#{agentId}) AS changeSets,
+                   (SELECT COUNT(*) FROM pm_agent_code_workspace w JOIN pm_agent_run r3 ON w.run_id=r3.id WHERE r3.agent_id=#{agentId}) AS codeWorkspaces,
+                   (SELECT COUNT(*) FROM pm_agent_build_test b JOIN pm_agent_run r4 ON b.run_id=r4.id WHERE r4.agent_id=#{agentId}) AS buildTests,
+                   (SELECT COUNT(*) FROM pm_agent_release_plan p JOIN pm_agent_run r5 ON p.run_id=r5.id WHERE r5.agent_id=#{agentId}) AS releasePlans,
+                   (SELECT COUNT(*) FROM pm_agent_deployment dp JOIN pm_agent_run r6 ON dp.run_id=r6.id WHERE r6.agent_id=#{agentId}) AS deployments,
+                   (SELECT COUNT(*) FROM pm_agent_verification v JOIN pm_agent_run r7 ON v.run_id=r7.id WHERE r7.agent_id=#{agentId}) AS verifications,
+                   (SELECT COUNT(*) FROM pm_agent_inspection_item i JOIN pm_agent_run r8 ON i.assigned_run_id=r8.id WHERE r8.agent_id=#{agentId}) AS inspectionItems,
+                   (SELECT COUNT(*) FROM pm_autonomy_case_run cr JOIN pm_agent_run r9 ON cr.run_id=r9.id WHERE r9.agent_id=#{agentId}) AS autonomyCases
+            """)
+    TaskRemovalCounts agentRemovalCounts(@Param("agentId") String agentId);
+
+    @Delete("DELETE FROM pm_agent_artifact WHERE run_id IN (SELECT id FROM pm_agent_run WHERE agent_id=#{agentId})")
+    int deleteArtifactsByAgent(@Param("agentId") String agentId);
+
+    @Delete("DELETE FROM pm_agent_event WHERE run_id IN (SELECT id FROM pm_agent_run WHERE agent_id=#{agentId})")
+    int deleteEventsByAgent(@Param("agentId") String agentId);
+
+    @Delete("DELETE FROM pm_agent_run WHERE agent_id=#{agentId}")
+    int deleteRunsByAgent(@Param("agentId") String agentId);
+
+    @Delete("DELETE FROM pm_agent_task WHERE agent_id=#{agentId}")
+    int deleteTasksByAgent(@Param("agentId") String agentId);
+
+    @Delete("DELETE FROM pm_agent_definition WHERE id=#{id} AND version=#{version}")
+    int deleteAgentById(@Param("id") String id, @Param("version") long version);
+
+    record TaskRemovalCounts(long events, long artifacts, long observations, long changeSets, long codeWorkspaces,
+                             long buildTests, long releasePlans, long deployments, long verifications,
+                             long inspectionItems, long autonomyCases) {
+        public boolean hasProcessData() {
+            return observations + changeSets + codeWorkspaces + buildTests + releasePlans + deployments
+                    + verifications + inspectionItems + autonomyCases > 0;
+        }
+        public String processCategories() {
+            var names = new java.util.ArrayList<String>();
+            if (observations > 0) names.add("巡检观测");
+            if (changeSets > 0) names.add("候选变更");
+            if (codeWorkspaces > 0) names.add("代码工作区");
+            if (buildTests > 0) names.add("构建测试");
+            if (releasePlans > 0) names.add("发布计划");
+            if (deployments > 0) names.add("部署回执");
+            if (verifications > 0) names.add("业务复查");
+            if (inspectionItems > 0) names.add("巡检分配");
+            if (autonomyCases > 0) names.add("问题协作");
+            return String.join("、", names);
+        }
+    }
+
     @Select("""
             SELECT t.id FROM pm_agent_task t JOIN pm_agent_definition a ON a.id=t.agent_id
             WHERE t.schedule_enabled=1 AND t.next_run_at <= #{now} AND a.enabled=1
@@ -106,6 +222,10 @@ public interface AgentMapper {
 
     @Select("SELECT COUNT(*) FROM pm_agent_run WHERE task_id=#{taskId}")
     long countRuns(String taskId);
+
+    /** 增量数据窗口基线：本任务最近一次已完成运行（排除当前运行）的开始时间。 */
+    @Select("SELECT created_at FROM pm_agent_run WHERE task_id=#{taskId} AND id<>#{runId} AND status='COMPLETED' ORDER BY created_at DESC LIMIT 1")
+    LocalDateTime lastCompletedRunStart(@Param("taskId") String taskId, @Param("runId") String runId);
 
     @Select("SELECT COUNT(*) FROM pm_agent_run WHERE agent_id=#{agentId} AND status IN ('QUEUED','RUNNING','WAITING_RESOURCE','CANCELLING')")
     int countPendingRuns(String agentId);
@@ -142,8 +262,9 @@ public interface AgentMapper {
     @Select("SELECT id FROM pm_agent_run WHERE status='QUEUED' AND owner_token IS NULL AND external_handle IS NULL AND cancel_requested=0 ORDER BY created_at,id LIMIT 100")
     List<String> findQueuedRunIds();
 
-    @Select("SELECT COUNT(*) FROM pm_agent_run WHERE owner_token IS NOT NULL AND (#{agentId} IS NULL OR agent_id=#{agentId})")
-    int countOwnedRuns(String agentId);
+    /** 只统计租约仍存活的运行；执行器失联后被恢复为 WAITING_RESOURCE 的残留 owner（租约已过期）不再占用并发额度。 */
+    @Select("SELECT COUNT(*) FROM pm_agent_run WHERE owner_token IS NOT NULL AND lease_until>#{now} AND (#{agentId} IS NULL OR agent_id=#{agentId})")
+    int countOwnedRuns(@Param("agentId") String agentId, @Param("now") LocalDateTime now);
 
     @Update("""
             UPDATE pm_agent_run SET status='RUNNING',owner_token=#{owner},lease_until=#{lease},version=version+1,updated_at=#{now}

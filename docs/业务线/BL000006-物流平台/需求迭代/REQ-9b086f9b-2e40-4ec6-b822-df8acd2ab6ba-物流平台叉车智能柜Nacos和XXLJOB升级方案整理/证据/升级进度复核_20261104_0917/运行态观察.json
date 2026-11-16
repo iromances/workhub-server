@@ -1,0 +1,103 @@
+{
+  "date": "2026-11-04",
+  "timezone": "Asia/Shanghai",
+  "summaryTime": "09:17",
+  "source": "本轮浏览器可见页面；未使用昨日运行数据替代当前状态",
+  "nacos": {
+    "url": "http://10.10.116.110:8848/nacos/",
+    "version": "2.5.4",
+    "mode": "standalone",
+    "namespaceName": "sit",
+    "namespaceId": "bae98fd5-aa76-427b-a5fc-c32f81befa38",
+    "hideEmptyServices": false,
+    "totalServices": 11,
+    "services": [
+      {
+        "name": "thctay-intfbank",
+        "group": "DEFAULT_GROUP",
+        "instances": 1,
+        "healthyInstances": 1
+      },
+      {
+        "name": "thctay-eas",
+        "group": "DEFAULT_GROUP",
+        "instances": 1,
+        "healthyInstances": 1
+      },
+      {
+        "name": "thctay-datashield",
+        "group": "DEFAULT_GROUP",
+        "instances": 1,
+        "healthyInstances": 1
+      },
+      {
+        "name": "thctay-account",
+        "group": "DEFAULT_GROUP",
+        "instances": 1,
+        "healthyInstances": 1
+      },
+      {
+        "name": "thctay-payment",
+        "group": "DEFAULT_GROUP",
+        "instances": 1,
+        "healthyInstances": 1
+      },
+      {
+        "name": "thctay-marketing",
+        "group": "DEFAULT_GROUP",
+        "instances": 1,
+        "healthyInstances": 1
+      },
+      {
+        "name": "thctay-crm",
+        "group": "DEFAULT_GROUP",
+        "instances": 1,
+        "healthyInstances": 1
+      },
+      {
+        "name": "invoice-exinterface",
+        "group": "DEFAULT_GROUP",
+        "instances": 1,
+        "healthyInstances": 1
+      },
+      {
+        "name": "thctay-front-gateway",
+        "group": "DEFAULT_GROUP",
+        "instances": 1,
+        "healthyInstances": 1
+      },
+      {
+        "name": "thctay-admin",
+        "group": "DEFAULT_GROUP",
+        "instances": 1,
+        "healthyInstances": 1
+      },
+      {
+        "name": "thctay-etc",
+        "group": "DEFAULT_GROUP",
+        "instances": 1,
+        "healthyInstances": 1
+      }
+    ],
+    "crm": {
+      "ip": "10.10.116.19",
+      "port": 9900,
+      "healthy": true,
+      "ephemeral": true,
+      "registerSource": "SPRING_CLOUD"
+    }
+  },
+  "xxlJob": {
+    "url": "http://10.10.116.110:28080/xxl-job-admin/",
+    "status": "登录页可达，现有会话失效；当前在线机器和调度结果未核实",
+    "onlineMachines": null,
+    "triggerCount": null
+  },
+  "workhubMcp": {
+    "url": "http://127.0.0.1:8080/api/mcp/runtime",
+    "status": "工具未挂载；已配置端点连接被拒绝（Connection refused）",
+    "serverLogsReadThisRun": false,
+    "databaseReadThisRun": false
+  },
+  "deploymentShaVerified": false
+}

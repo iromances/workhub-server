@@ -75,7 +75,7 @@ public class SystemAlertScopeService {
     private SystemAlertScopeEntity toEntity(SystemAlertScopeSaveRequest request) {
         SystemAlertScopeEntity entity = new SystemAlertScopeEntity();
         entity.setBusinessLineCode(requireValue(request.getBusinessLineCode(), "业务线不能为空"));
-        entity.setEnvironmentCode(requireValue(request.getEnvironmentCode(), "环境不能为空"));
+        entity.setEnvironmentCode(requireValue(request.getEnvironmentCode(), "环境不能为空").toUpperCase(Locale.ROOT));
         SystemAlertWatchMode mode = SystemAlertWatchMode.parse(request.getWatchMode());
         entity.setWatchMode(mode.name());
         entity.setEnabled(request.getEnabled() == null || request.getEnabled());

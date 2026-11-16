@@ -24,7 +24,8 @@ public interface SystemAlertCollectionMapper {
     @Update("""
         UPDATE ops_system_alert_collection_state SET window_id=#{windowId},definition_json=#{definitionJson},definition_hash=#{definitionHash},
           from_time=#{fromTime},to_time=#{toTime},position_json=#{positionJson},latest_occurred_at=#{latestOccurredAt},covered_until=#{coveredUntil},
-          status=#{status},owner_token=#{ownerToken},lease_until=#{leaseUntil},issue_count=#{issueCount},page_number=#{pageNumber},version=version+1,updated_at=#{updatedAt}
+          status=#{status},owner_token=#{ownerToken},lease_until=#{leaseUntil},issue_count=#{issueCount},page_number=#{pageNumber},
+          consecutive_failures=#{consecutiveFailures},last_failure_message=#{lastFailureMessage},version=version+1,updated_at=#{updatedAt}
         WHERE scope_id=#{scopeId} AND version=#{version}
         """) int update(SystemAlertCollectionState value);
     @Insert("""

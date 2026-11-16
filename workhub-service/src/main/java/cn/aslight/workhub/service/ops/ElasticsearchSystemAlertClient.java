@@ -140,7 +140,8 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
             pitId = page.pitId();
             if (page.events().stream().map(ElkSystemAlertLog::sourceEventId).distinct().count() != page.events().size())
                 throw new IllegalStateException("ELK分页返回重复日志");
-            if (page.events().stream().anyMatch(event -> event.occurredAt().isBefore(from) || event.occurredAt().isAfter(to)))
+            if (page.events().stream().anyMatch(event -> event.occurredAt().isBefore(from.minusMillis(SystemAlertLogSource.BOUNDARY_TOLERANCE_MS))
+                    || event.occurredAt().isAfter(to.plusMillis(SystemAlertLogSource.BOUNDARY_TOLERANCE_MS))))
                 throw new IllegalStateException("ELK返回日志超出采集区间");
             boolean complete = page.hitCount() < size;
             if (!complete && (page.searchAfter() == null || page.searchAfter().equals(after)))
@@ -239,8 +240,10 @@ public class ElasticsearchSystemAlertClient implements SystemAlertLogSource {
     }
 
     private String openPit(ElkAlertRuntimeConfig config, HttpClient httpClient) throws Exception {
+        // _pit 不带 allow_partial_search_results：ES 7.16 及以下对该端点拒绝未知参数（HTTP 400），
+        // 查询完整性由每次 _search 的 requireCompleteSearch（分片全部成功）保证。
         HttpRequest request = request(config, endpoint(config,
-                        "/" + config.indexPattern() + "/_pit?keep_alive=" + config.pitKeepAlive() + "&allow_partial_search_results=false"))
+                        "/" + config.indexPattern() + "/_pit?keep_alive=" + config.pitKeepAlive()))
                 .POST(HttpRequest.BodyPublishers.noBody()).build();
         JsonNode body = send(httpClient, request, "创建PIT");
         String pitId = text(body, "id");

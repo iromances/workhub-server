@@ -1,0 +1,3688 @@
+[
+  {
+    "repo": "bpm-framework",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "2e473432a6071b8afa24737fa8638fa04c37be47",
+    "date": "2026-11-02T11:27:08+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "0.0.3-SNAPSHOT",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "bpm-start/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "116.62.241.157:8848",
+          "192.168.1.92:8848",
+          "47.97.26.13:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "etc-doc",
+    "ref": "origin/main",
+    "sha": "1be2be6ec0e5430032dea538cc51630c169439ad",
+    "date": "2026-08-21T10:48:06+08:00",
+    "poms": [],
+    "jobs": [],
+    "legacy": [],
+    "addresses": []
+  },
+  {
+    "repo": "etc-tools",
+    "ref": "origin/ql-etc-tools",
+    "sha": "71a93c6e2a5d5c8240180d25f3d6f88e107c590e",
+    "date": "2021-06-29T16:26:40+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "spring-boot-starter-parent",
+          "2.1.5.RELEASE"
+        ],
+        "version": "1.0-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": []
+  },
+  {
+    "repo": "insurance-exinterface",
+    "ref": "origin/master",
+    "sha": "71f393bb7563bb5cc95f1fb8375faed3740139eb",
+    "date": "2022-11-30T15:20:01+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "exinterface-start/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.21:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-abc",
+    "ref": "origin/master",
+    "sha": "63fc29d5828f3a68517b20043847c2af11845a17",
+    "date": "2022-07-27T17:26:47+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "intfabc-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.21:8848",
+          "192.168.0.105:8840",
+          "192.168.0.105:8848",
+          "192.168.0.105:8849"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-bank",
+    "ref": "origin/master",
+    "sha": "6b5a422edc9790655663693e2c801389828e0717",
+    "date": "2026-06-26T19:09:09+08:00",
+    "poms": [
+      {
+        "file": "intfbank-service/pom.xml",
+        "parent": [
+          "thctay-intfbank",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [
+          [
+            "thctay-schedule",
+            "0.0.1-SNAPSHOT"
+          ]
+        ],
+        "props": {}
+      },
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "notifyRecordPush",
+        "file": "intfbank-service/src/main/java/com/thchengtay/intfbank/service/allinpay/service/impl/PayResultNotifyService.java",
+        "signature": "public ReturnT<String> notifyRecordPush(String param)",
+        "adapted": false
+      }
+    ],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "intfbank-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.0.105:8840",
+          "192.168.0.105:8848",
+          "192.168.0.105:8849"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-boc",
+    "ref": "origin/master",
+    "sha": "31417e771e3dffacf41102cfb570a7376e686c7a",
+    "date": "2022-07-27T17:27:08+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "intfboc-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.21:8848",
+          "192.168.0.105:8840",
+          "192.168.0.105:8848",
+          "192.168.0.105:8849"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-ccb",
+    "ref": "origin/master",
+    "sha": "7e27b68f3452fd39c5dd0711080544ddcf0d839b",
+    "date": "2022-07-27T17:27:27+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "intfccb-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.21:8848",
+          "192.168.0.105:8840",
+          "192.168.0.105:8848",
+          "192.168.0.105:8849"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-common",
+    "ref": "origin/master",
+    "sha": "13f4fad4b0d3d1f68bf11f744f9d331a18abfeee",
+    "date": "2026-10-29T17:53:23+08:00",
+    "poms": [
+      {
+        "file": "intfcommon-controller/pom.xml",
+        "parent": [
+          "thctay-intfcommon",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ],
+        "props": {}
+      },
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "intfcommon-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "116.62.241.157:22122",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.0.105:8840",
+          "192.168.0.105:8848",
+          "192.168.0.105:8849",
+          "210.74.42.33:9443",
+          "47.97.26.13:8888"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-credit",
+    "ref": "origin/master",
+    "sha": "453d37b07fbdbc60694385c63478e06e242f56d5",
+    "date": "2021-08-12T17:03:05+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "intfcredit-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.21:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-gs",
+    "ref": "origin/master",
+    "sha": "945708952046fc213e9ca76b142018fc19ffc7cc",
+    "date": "2020-12-14T20:59:16+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "intfgs-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "116.62.241.157:22122",
+          "116.62.241.157:8848",
+          "192.168.0.105:8840",
+          "192.168.0.105:8848",
+          "192.168.0.105:8849",
+          "47.97.26.13:8888"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-hs",
+    "ref": "origin/master",
+    "sha": "df6684c3efb1134f7d084c4cea8f84861d611059",
+    "date": "2026-08-06T18:22:36+08:00",
+    "poms": [
+      {
+        "file": "common/intf-common/pom.xml",
+        "parent": [
+          "intf-hs",
+          "1.0-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [
+          [
+            "thctay-schedule",
+            "0.0.1-SNAPSHOT"
+          ]
+        ],
+        "props": {}
+      },
+      {
+        "file": "domain/gzgs/intf-gzgs-service/pom.xml",
+        "parent": [
+          "intf-hs",
+          "1.0-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ],
+        "props": {}
+      },
+      {
+        "file": "domain/jsgs/intf-jsgs-service/pom.xml",
+        "parent": [
+          "intf-hs",
+          "1.0-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ],
+        "props": {}
+      },
+      {
+        "file": "domain/sanchuan/intf-sanchuan-service/pom.xml",
+        "parent": [
+          "intf-hs",
+          "1.0-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ],
+        "props": {}
+      },
+      {
+        "file": "domain/sanchuan/intf-sanchuan-web/pom.xml",
+        "parent": [
+          "intf-hs",
+          "1.0-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ],
+        "props": {}
+      },
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "1.0-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "gdgsConsumeBackHandleJob",
+        "file": "domain/gd/intf-gdgs-service/src/main/java/com/thctay/gdgs/schedule/ConsumeBackJob.java",
+        "signature": "public ReturnT<String> consumeBackHandle(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "gdgsConsumeFilePollingJob",
+        "file": "domain/gd/intf-gdgs-service/src/main/java/com/thctay/gdgs/schedule/ConsumeFilePollingJob.java",
+        "signature": "public ReturnT<String> consumeFilePolling(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "gzgsConsumeBackHandleJob",
+        "file": "domain/gzgs/intf-gzgs-service/src/main/java/com/thctay/gzgs/schedule/GzgsConsumeBackJob.java",
+        "signature": "public ReturnT<String> consumeBackHandle(String jobParam)",
+        "adapted": false
+      },
+      {
+        "handler": "gzgsConsumeFilePollingJob",
+        "file": "domain/gzgs/intf-gzgs-service/src/main/java/com/thctay/gzgs/schedule/GzgsConsumeFilePollingJob.java",
+        "signature": "public ReturnT<String> consumeFilePolling(String jobParam)",
+        "adapted": false
+      },
+      {
+        "handler": "consumeGain",
+        "file": "domain/hlj/intf-hlj-service/src/main/java/com/thctay/hlj/service/consume/HljConsumeGetService.java",
+        "signature": "public ReturnT<String> consumeGain(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "consumeFileCompensation",
+        "file": "domain/hlj/intf-hlj-service/src/main/java/com/thctay/hlj/service/consume/HljConsumeGetService.java",
+        "signature": "public ReturnT<String> consumeFileCompensation(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "consumeBackHandleJob",
+        "file": "domain/jsgs/intf-jsgs-service/src/main/java/com/thctay/jsgs/schedule/ConsumeBackJob.java",
+        "signature": "public ReturnT<String> consumeBackHandle(String jobParam)",
+        "adapted": false
+      },
+      {
+        "handler": "consumeFilePollingJob",
+        "file": "domain/jsgs/intf-jsgs-service/src/main/java/com/thctay/jsgs/schedule/ConsumeFilePollingJob.java",
+        "signature": "public ReturnT<String> consumeFilePolling(String jobParam)",
+        "adapted": false
+      },
+      {
+        "handler": "factoringFileDownJob",
+        "file": "domain/jsgs/intf-jsgs-service/src/main/java/com/thctay/jsgs/schedule/FactoringFileDownJob.java",
+        "signature": "public ReturnT<String> factoringFileDown(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "nxConsumeBackHandleJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/nx/NxConsumeBackNoticeJob.java",
+        "signature": "public ReturnT<String> nxConsumeBackHandleJob(String jobParam)",
+        "adapted": false
+      },
+      {
+        "handler": "nxDeductionBillFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/nx/NxDeductionBillFileDownJob.java",
+        "signature": "public ReturnT<String> deductionBillFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "nxDeductionResultFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/nx/NxDeductionResultFileDownJob.java",
+        "signature": "public ReturnT<String> deductionResultFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "nxLateFeeFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/nx/NxLateFeeFileDownJob.java",
+        "signature": "public ReturnT<String> lateFeeFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "nxOriginalInvoiceFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/nx/NxOriginalInvoiceFileDownJob.java",
+        "signature": "public ReturnT<String> originalInvoiceFileDown(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "nxOriginalRefundFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/nx/NxOriginalRefundFileDownJob.java",
+        "signature": "public ReturnT<String> originalRefundFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "nxOverdueChargeFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/nx/NxOverdueChargeFileDownJob.java",
+        "signature": "public ReturnT<String> overdueChargeFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "nxPreRefundResultFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/nx/NxPreRefundResultFileDownJob.java",
+        "signature": "public ReturnT<String> preRefundResultFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "nxRefundResultFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/nx/NxRefundResultFileDownJob.java",
+        "signature": "public ReturnT<String> refundResultFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "nxResLateFeeFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/nx/NxResLateFeeFileDownJob.java",
+        "signature": "public ReturnT<String> lateFeeFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "deductionBillFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/sc/DeductionBillFileDownJob.java",
+        "signature": "public ReturnT<String> deductionBillFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "deductionResultFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/sc/DeductionResultFileDownJob.java",
+        "signature": "public ReturnT<String> deductionResultFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "lateFeeFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/sc/LateFeeFileDownJob.java",
+        "signature": "public ReturnT<String> lateFeeFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "originalInvoiceFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/sc/OriginalInvoiceFileDownJob.java",
+        "signature": "public ReturnT<String> originalInvoiceFileDown(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "originalRefundFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/sc/OriginalRefundFileDownJob.java",
+        "signature": "public ReturnT<String> originalRefundFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "overdueChargeFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/sc/OverdueChargeFileDownJob.java",
+        "signature": "public ReturnT<String> overdueChargeFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "preRefundResultFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/sc/PreRefundResultFileDownJob.java",
+        "signature": "public ReturnT<String> preRefundResultFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "refundResultFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/sc/RefundResultFileDownJob.java",
+        "signature": "public ReturnT<String> refundResultFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "resLateFeeFileDownJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/sc/ResLateFeeFileDownJob.java",
+        "signature": "public ReturnT<String> lateFeeFileDownJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "scConsumeBackHandleJob",
+        "file": "domain/sanchuan/intf-sanchuan-service/src/main/java/com/thctay/sanchuan/schedule/sc/ScConsumeBackNoticeJob.java",
+        "signature": "public ReturnT<String> scConsumeBackHandleJob(String jobParam)",
+        "adapted": false
+      },
+      {
+        "handler": "batchStrategy",
+        "file": "domain/scene/intf-scene/src/main/java/com/thchengtay/intf/hs/scene/job/BatchBpmEngineJob.java",
+        "signature": "public ReturnT<String> batchStrategy(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "batchInvokeEngine",
+        "file": "domain/scene/intf-scene/src/main/java/com/thchengtay/intf/hs/scene/job/BatchBpmEngineJob.java",
+        "signature": "public ReturnT<String> batchInvokeEngine(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "batchEngineNotify",
+        "file": "domain/scene/intf-scene/src/main/java/com/thchengtay/intf/hs/scene/job/BatchBpmEngineJob.java",
+        "signature": "public ReturnT<String> batchEngineNotify(String param) throws Exception",
+        "adapted": false
+      }
+    ],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "domain/gd/intf-gdgs-web/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.1.74:8848"
+        ]
+      },
+      {
+        "file": "domain/gzgs/intf-gzgs-web/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.1.74:8848"
+        ]
+      },
+      {
+        "file": "domain/hlj/intf-hlj-web/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.1.74:8848"
+        ]
+      },
+      {
+        "file": "domain/jsgs/intf-jsgs-web/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.1.74:8848"
+        ]
+      },
+      {
+        "file": "domain/sanchuan/intf-sanchuan-web/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.1.74:8848"
+        ]
+      },
+      {
+        "file": "domain/scene/intf-scene/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.1.92:8848"
+        ]
+      },
+      {
+        "file": "domain/sdgs/intf-sdgs-web/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.1.74:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-icbc",
+    "ref": "origin/master",
+    "sha": "6feab6a665c8f6d8337faec8441ae6bdfd2a3b60",
+    "date": "2025-06-28T15:26:42+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "intficbc-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.0.105:8840",
+          "192.168.0.105:8848",
+          "192.168.0.105:8849"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-qdccb",
+    "ref": "origin/master",
+    "sha": "2f1fdc95ea39e6db0d73dfd022110c6eac61d6d0",
+    "date": "2025-10-14T14:00:43+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "intfqdccb-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.0.105:8840",
+          "192.168.0.105:8848",
+          "192.168.0.105:8849"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-risk",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "d4320324cdf1b32b8e067a57a26b7d5b05a746b7",
+    "date": "2026-11-03T10:43:16+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "intfrisk-start/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.110:8848",
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.21:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "intf-sence-back",
+    "ref": "origin/master",
+    "sha": "f2d197825c7d203a92a6e1a61c04952d1d3bead5",
+    "date": "2024-11-19T17:54:24+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "bpm-framework",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "invoice-exinterface",
+    "ref": "origin/master",
+    "sha": "2b283bdf6e7d830691298e0b29e6d34fcbad4136",
+    "date": "2024-09-03T16:09:40+08:00",
+    "poms": [
+      {
+        "file": "exinterface-service/pom.xml",
+        "parent": [
+          "invoice-exinterface",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [
+          [
+            "thctay-schedule",
+            "0.0.1-SNAPSHOT"
+          ]
+        ],
+        "props": {}
+      },
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "invoiceCallbackJobSchedule",
+        "file": "exinterface-service/src/main/java/com/thchengtay/service/job/InvoiceCallbackJob.java",
+        "signature": "public ReturnT<String> process(String params) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "invoiceOrderJobSchedule",
+        "file": "exinterface-service/src/main/java/com/thchengtay/service/job/InvoiceOrderJob.java",
+        "signature": "public ReturnT<String> process(String params) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "invoiceOrderSendJobSchedule",
+        "file": "exinterface-service/src/main/java/com/thchengtay/service/job/InvoiceOrderSendJob.java",
+        "signature": "public ReturnT<String> process(String params) throws Exception",
+        "adapted": false
+      }
+    ],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "exinterface-start/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.21:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "mock-server",
+    "ref": "origin/mock_v1",
+    "sha": "05bddfd9b684822b915741ef804c80787be6b54d",
+    "date": "2022-11-08T15:44:31+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "1.0-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:18848",
+          "127.0.0.1:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "saps-account-checker",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "84c5abc6181f5d92834a266c971289024a19e43b",
+    "date": "2026-11-03T14:01:04+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-saps",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "billWithPayDetailCheckerSchedule",
+        "file": "src/main/java/com/chengtay/saps/schedule/BillWithPayDetailCheckerSchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "consumeDetailSummaryCheckerSchedule",
+        "file": "src/main/java/com/chengtay/saps/schedule/ConsumeDetailSummaryCheckerSchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "orderWithTradeCheckerSchedule",
+        "file": "src/main/java/com/chengtay/saps/schedule/OrderWithTradeCheckerSchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "payDetailWithPaySubjectDetailCheckerSchedule",
+        "file": "src/main/java/com/chengtay/saps/schedule/PayDetailWithPaySubjectDetailCheckerSchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      }
+    ],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "saps-back",
+    "ref": "origin/master",
+    "sha": "aa1f91664d8b16d0858fce087961a254f76fa764",
+    "date": "2025-01-20T17:27:15+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-account",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "8ae51cdc7a43fa95c8aea3c5269266ef1f659c72",
+    "date": "2026-11-03T14:14:13+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "creditAccountJobHandler",
+        "file": "account-schedule/src/main/java/com/thchengtay/account/schedule/CreditAccountJobHandler.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "highwayAccountDayRecordSchedule",
+        "file": "account-schedule/src/main/java/com/thchengtay/account/schedule/HighwayAccountSchedule.java",
+        "signature": "public void highwayAccountDayRecordSchedule() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "highwayAccountDayCheckSchedule",
+        "file": "account-schedule/src/main/java/com/thchengtay/account/schedule/HighwayAccountSchedule.java",
+        "signature": "public void dayCheck() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "highwayAccountCheckWarnSchedule",
+        "file": "account-schedule/src/main/java/com/thchengtay/account/schedule/HighwayAccountSchedule.java",
+        "signature": "public void highwayAccountCheckWarnSchedule()",
+        "adapted": true
+      },
+      {
+        "handler": "hotAccountJobHandler",
+        "file": "account-schedule/src/main/java/com/thchengtay/account/schedule/HotAccountJobHandler.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "increaseCreditLimitJobHandler",
+        "file": "account-schedule/src/main/java/com/thchengtay/account/schedule/IncreaseCreditLimitJobHandler.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "reportAccountBalanceDaySummaryJobHandler",
+        "file": "account-schedule/src/main/java/com/thchengtay/account/schedule/ReportAccountBalanceDaySummaryJobHandler.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      }
+    ],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "account-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-auth",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "29ffce84ef1ea902259809d8f86e984136917462",
+    "date": "2026-11-02T15:53:17+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [
+          [
+            "nacos-client",
+            ""
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "auth-controller/src/main/resources/config/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-cashloan",
+    "ref": "origin/master",
+    "sha": "b23696139d350f4e9302fe48c5928283315570be",
+    "date": "2021-08-30T17:56:32+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "loanApplyJob",
+        "file": "cashloan-schedule/src/main/java/com.thchengtay.cashloan/loan/LoanApplySchedualJob.java",
+        "signature": "public ReturnT<String> loanApply(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "getLoanContractFileJob",
+        "file": "cashloan-schedule/src/main/java/com.thchengtay.cashloan/loan/LoanContractSchedualJob.java",
+        "signature": "public ReturnT<String> getLoanContractFile(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "loanQuotaJob",
+        "file": "cashloan-schedule/src/main/java/com.thchengtay.cashloan/loan/LoanQuotaJob.java",
+        "signature": "public ReturnT<String> loanQuota(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "loanRepayPlanSchedualJon",
+        "file": "cashloan-schedule/src/main/java/com.thchengtay.cashloan/loan/LoanRepayPlanSchedualJob.java",
+        "signature": "public ReturnT<String> loanRepayPlanSchedual(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "loanUnfreezeSchedualJob",
+        "file": "cashloan-schedule/src/main/java/com.thchengtay.cashloan/loan/LoanUnfreezeSchedualJob.java",
+        "signature": "public ReturnT<String> loanUnfreezeSchedual(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "reduceTaskJob",
+        "file": "cashloan-schedule/src/main/java/com.thchengtay.cashloan/loan/ReduceTaskJob.java",
+        "signature": "public ReturnT<String> reduceTaskJob(String param)",
+        "adapted": false
+      },
+      {
+        "handler": "repayApplyJob",
+        "file": "cashloan-schedule/src/main/java/com.thchengtay.cashloan/loan/RepayApplySchedualJob.java",
+        "signature": "public ReturnT<String> repayApplyJob(String bizType)",
+        "adapted": false
+      }
+    ],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "cashloan-back/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.21:8848",
+          "192.168.1.74:8848"
+        ]
+      },
+      {
+        "file": "cashloan-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.21:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-cms",
+    "ref": "origin/master",
+    "sha": "3c5a41bc0d56092c5a3590ed8ba9fc4ac568d400",
+    "date": "2023-05-15T15:55:41+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "cms-start/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-contract",
+    "ref": "origin/master",
+    "sha": "3182bff5291ec7e1ef9a8f14f80fa46ba0c64bbc",
+    "date": "2026-01-15T18:04:28+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "dealFlowActionNoticeJob",
+        "file": "contract-schedule/src/main/java/com/thchengtay/contract/schedule/sign/DealFlowActionNoticeJob.java",
+        "signature": "public ReturnT<String> dealFlowActionNoticeJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "dealUnSignSuccessFlowTasks",
+        "file": "contract-schedule/src/main/java/com/thchengtay/contract/schedule/sign/SignContractJob.java",
+        "signature": "public ReturnT<String> dealUnSignSuccessFlowTasks(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "SignFlowCompensateSaveVoucherJob",
+        "file": "contract-schedule/src/main/java/com/thchengtay/contract/schedule/sign/SignFlowCompensateSaveVoucher.java",
+        "signature": "public ReturnT<String> apply(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "signFlowQueryResultJob",
+        "file": "contract-schedule/src/main/java/com/thchengtay/contract/schedule/sign/SignFlowQueryResultJob.java",
+        "signature": "public ReturnT<String> signFlowQueryResultJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "SignResultAsyncNoticeTask",
+        "file": "contract-schedule/src/main/java/com/thchengtay/contract/schedule/sign/SignResultAsyncNotice.java",
+        "signature": "public ReturnT<String> apply(String params)",
+        "adapted": false
+      }
+    ],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "contract-start/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.0.105:8840",
+          "192.168.0.105:8848",
+          "192.168.0.105:8849"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-crm",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "3f0b2974104389d3f020fe196a710155722bbbbc",
+    "date": "2026-11-02T17:42:06+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "applicationWarningJob",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/ApplicationWarningJob.java",
+        "signature": "public ReturnT<String> process(String params) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "ApplyApplicationContinueCloseSchedule",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/ApplyApplicationContinueClose.java",
+        "signature": "public ReturnT<String> process(String params) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "customerCouponOutOfDateSchedule",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/CustomerCouponOutOfDateSchedule.java",
+        "signature": "public ReturnT<String> process(String params) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "InsuranceServerSchedule",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/InsuranceServerSchedule.java",
+        "signature": "public ReturnT<String> process(String params) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "NewModelOverdueMQRetryConsumerJob",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/NewModelOverdueMQRetryConsumerJob.java",
+        "signature": "public ReturnT<String> execute(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "PendingApplicationAutoExecuteSchedule",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/PendingApplicationAutoExecuteSchedule.java",
+        "signature": "public ReturnT<String> process(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "platformOrderStatusPollHandler",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/PlatformOrderStatusPollJob.java",
+        "signature": "public ReturnT<String> process(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "scOrderStatusPollHandler",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/PlatformOrderStatusPollJob.java",
+        "signature": "public ReturnT<String> processScCompatible(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "platformSignPollHandler",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/PlatformSignPollJob.java",
+        "signature": "public ReturnT<String> process(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "scSignPollJobHandler",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/PlatformSignPollJob.java",
+        "signature": "public ReturnT<String> processScCompatible(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "postSalesApplicationCancelSchedule",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/PostSalesApplicationCancelSchedule.java",
+        "signature": "public ReturnT<String> process(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "postSalesEquipmentSendBackStatusSchedule",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/PostSalesEquipmentSendBackStatusSchedule.java",
+        "signature": "public ReturnT<String> process(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "PostSalesWaitExecuteDetailSchedule",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/PostSalesWaitExecuteDetailSchedule.java",
+        "signature": "public ReturnT<String> process(String params) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "stopCardCheckSchedule",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/PsotSalesSchedule.java",
+        "signature": "public ReturnT<String> process(String params) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "pushPersonVehicleOrderBatch",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/PushPersonVehicleOrderBatchJob.java",
+        "signature": "public ReturnT<String> process(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "UpdateProductConfig",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/UpdateProductConfigSchedule.java",
+        "signature": "public ReturnT<String> process(String params) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "watchOfficialAccountInfoJob",
+        "file": "crm-business/src/main/java/com/thchengtay/crm/business/job/WatchOfficialAccountInfoJob.java",
+        "signature": "public ReturnT<String> process(String params) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "appletInvoiceNoticeJob",
+        "file": "crm-controller/src/main/java/com/thchengtay/crm/controller/xxljob/AppletInvoiceNoticeJob.java",
+        "signature": "public ReturnT<String> execute(String params) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "applyInvoiceQueryJob",
+        "file": "crm-controller/src/main/java/com/thchengtay/crm/controller/xxljob/JsCustomerInvoiceJob.java",
+        "signature": "public ReturnT<String> execute(String params) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "jobQueryLogoutProcess",
+        "file": "crm-controller/src/main/java/com/thchengtay/crm/controller/xxljob/JsHHTLogoutQueryJob.java",
+        "signature": "public ReturnT<String> jobQueryLogoutProcess(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "LoanOrderAutoCancelJob",
+        "file": "crm-controller/src/main/java/com/thchengtay/crm/controller/xxljob/LoanOrderAutoCancelJob.java",
+        "signature": "public ReturnT<String> execute(String params) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "NewModelApplicationAutoSignJob",
+        "file": "crm-controller/src/main/java/com/thchengtay/crm/controller/xxljob/NewModelApplicationAutoSignJob.java",
+        "signature": "public ReturnT<String> execute(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "NewModelApplicationNoticeRetryJob",
+        "file": "crm-controller/src/main/java/com/thchengtay/crm/controller/xxljob/NewModelApplicationNoticeRetryJob.java",
+        "signature": "public ReturnT<String> execute(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "NewModelApplicationSubmitRiskSystemJob",
+        "file": "crm-controller/src/main/java/com/thchengtay/crm/controller/xxljob/NewModelApplicationSubmitRiskSystemJob.java",
+        "signature": "public ReturnT<String> execute(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "NewModelJiangSuOrderConsumerJob",
+        "file": "crm-controller/src/main/java/com/thchengtay/crm/controller/xxljob/NewModelJiangSuOrderConsumerJob.java",
+        "signature": "public ReturnT<String> execute(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "NewModelVehicleIssueStatusQueryJob",
+        "file": "crm-controller/src/main/java/com/thchengtay/crm/controller/xxljob/NewModelVehicleIssueStatusQueryJob.java",
+        "signature": "public ReturnT<String> execute(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "PlatformEtcNoticeRetryJob",
+        "file": "crm-controller/src/main/java/com/thchengtay/crm/controller/xxljob/PlatformEtcNoticeRetryJob.java",
+        "signature": "public ReturnT<String> execute(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "productChangeExecuteJob",
+        "file": "crm-controller/src/main/java/com/thchengtay/crm/controller/xxljob/ProductChangeExecuteJob.java",
+        "signature": "public ReturnT<String> execute(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "productInstanceVehicleRepairJob",
+        "file": "crm-controller/src/main/java/com/thchengtay/crm/controller/xxljob/ProductInstanceVehicleRepairJob.java",
+        "signature": "public ReturnT<String> execute(String s) throws Exception",
+        "adapted": false
+      }
+    ],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "crm-start/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-devicemanage",
+    "ref": "origin/master",
+    "sha": "21fe064e5d66ab55c63decd2f380cce1f874b1c8",
+    "date": "2024-11-19T14:54:51+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "devicemanage-start/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.0.105:8840",
+          "192.168.0.105:8848",
+          "192.168.0.105:8849"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-eas",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "f5aa9fe4e1bb4dfac2659fc7fb4f00795b447087",
+    "date": "2026-11-03T14:14:17+08:00",
+    "poms": [
+      {
+        "file": "eas-schedule/pom.xml",
+        "parent": [
+          "thctay-eas",
+          "1.0-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ],
+        "props": {}
+      },
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "1.0-SNAPSHOT",
+        "deps": [
+          [
+            "xxl-job-core",
+            ""
+          ],
+          [
+            "thctay-schedule",
+            "0.0.1-SNAPSHOT"
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "loanVoucherGenerateScheduleNew",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/LoanVoucherGenerateSchedule.java",
+        "signature": "public void processNew()",
+        "adapted": true
+      },
+      {
+        "handler": "loanRefactorCapitalSchedule",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/LoanVoucherGenerateSchedule.java",
+        "signature": "public void loanRefactorCapital()",
+        "adapted": true
+      },
+      {
+        "handler": "monthlyInterestVoucherSchedule",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/MonthlyInterestVoucherSchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "offlineVoucherGenerateSchedule",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/OfflineVoucherGenerateSchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "onlineVoucherGenerateSchedule",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/OnlineVoucherGenerateSchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "onlineVoucherGenerateNewSchedule",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/OnlineVoucherGenerateSchedule.java",
+        "signature": "public void processNew()",
+        "adapted": true
+      },
+      {
+        "handler": "onlineRefactorVoucherGenerateSchedule",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/OnlineVoucherGenerateSchedule.java",
+        "signature": "public void onlineRefactorVoucherGenerateSchedule()",
+        "adapted": true
+      },
+      {
+        "handler": "voucherImportSchedule",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/VoucherRetrySchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "ampVoucherCreateSchedule",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/amp/AmpVoucherCreateSchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "ampOfflineMonthFeeSchedule",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/amp/AmpVoucherCreateSchedule.java",
+        "signature": "public void monthFee() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "assetsVoucherCreateSchedule",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/assets/AssetsVoucherSchedule.java",
+        "signature": "public void assetsVoucherCreateSchedule()",
+        "adapted": true
+      },
+      {
+        "handler": "assetsQxbVoucherCreateSchedule",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/assets/AssetsVoucherSchedule.java",
+        "signature": "public void assetsQxbVoucherCreateSchedule()",
+        "adapted": true
+      },
+      {
+        "handler": "assetsLeaseVoucherCreateSchedule",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/assets/AssetsVoucherSchedule.java",
+        "signature": "public void assetsLeaseVoucherCreateSchedule()",
+        "adapted": true
+      },
+      {
+        "handler": "scfVoucherImportSchedule",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/scf/ScfVoucherRetrySchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "scfThctayVoucherCreateSchedule",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/scf/ThctayFactorTianJinMergeSchedule.java",
+        "signature": "public void thctayVoucherCreateSchedule()",
+        "adapted": true
+      },
+      {
+        "handler": "scfXxtVoucherCreateSchedule",
+        "file": "eas-schedule/src/main/java/com/thchengtay/eas/schedule/scf/XxtSupplychainTianJinMergeSchedule.java",
+        "signature": "public void scfXxtVoucherCreateSchedule()",
+        "adapted": true
+      }
+    ],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "eas-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-ebaby-gateway",
+    "ref": "origin/master",
+    "sha": "03c30405922bf14a1ecf7afc0cbb7e7c80d925da",
+    "date": "2022-07-27T17:24:07+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap-dev.yml",
+        "hosts": [
+          "10.10.116.26:8848"
+        ]
+      },
+      {
+        "file": "src/main/resources/bootstrap-pre.yml",
+        "hosts": [
+          "127.0.0.1:8848"
+        ]
+      },
+      {
+        "file": "src/main/resources/bootstrap-prod.yml",
+        "hosts": [
+          "172.16.224.21:8848"
+        ]
+      },
+      {
+        "file": "src/main/resources/bootstrap-sit.yml",
+        "hosts": [
+          "127.0.0.1:8848"
+        ]
+      },
+      {
+        "file": "src/main/resources/bootstrap-test.yml",
+        "hosts": [
+          "127.0.0.1:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-ems-logistics",
+    "ref": "origin/master",
+    "sha": "793a0df73b024c4242e73dbb863e0bbf6c0435e1",
+    "date": "2024-11-20T10:43:53+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.1.92:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-etc",
+    "ref": "origin/master",
+    "sha": "dcacecb9c2eaab95bad04d1a5f8826d0480285b2",
+    "date": "2026-08-14T16:01:12+08:00",
+    "poms": [
+      {
+        "file": "etc-service/pom.xml",
+        "parent": [
+          "thctay-etc",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ],
+        "props": {}
+      },
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "batchRetrySendAfterSaleMsgJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/aftersale/AfterSaleWorkOrderRetryMsgJob.java",
+        "signature": "public ReturnT<String> batchRetrySendAfterSaleMsgJob(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "batchRetryLoseRedoJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/aftersale/AfterSaleWorkOrderRetryMsgJob.java",
+        "signature": "public ReturnT<String> batchRetryLoseRedoJob(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "batchRetryChangeSuitJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/aftersale/AfterSaleWorkOrderRetryMsgJob.java",
+        "signature": "public ReturnT<String> batchRetryChangeSuitJob(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "tryCRMPushMsgJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/aftersale/AfterSaleWorkOrderRetryMsgJob.java",
+        "signature": "public ReturnT<String> tryCRMPushMsgJob(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "pushCardBlockJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/aftersale/AfterSaleWorkOrderRetryMsgJob.java",
+        "signature": "public ReturnT<String> pushCardBlockJob(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "pushHangUpMsgToCRM",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/aftersale/AfterSaleWorkOrderRetryMsgJob.java",
+        "signature": "public ReturnT<String> pushHangUpMsgToCRM(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "inspectNoticeCrmCancel",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/aftersale/AfterSaleWorkOrderRetryMsgJob.java",
+        "signature": "public ReturnT<String> inspectNoticeCrmCancel(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "changeIssueWayNotice",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/aftersale/AfterSaleWorkOrderRetryMsgJob.java",
+        "signature": "public ReturnT<String> changeIssueWayNotice(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "logoutCancelInsuranceNotice",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/aftersale/AfterSaleWorkOrderRetryMsgJob.java",
+        "signature": "public ReturnT<String> logoutCancelInsuranceNotice(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "batchPushInspectRecoverCardJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/aftersale/AfterSaleWorkOrderUploadDealJob.java",
+        "signature": "public ReturnT<String> batchPushInspectRecoverCardJob(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "batchCancellationJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/aftersale/AfterSaleWorkOrderUploadDealJob.java",
+        "signature": "public ReturnT<String> batchCancellationJob(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "batchCancellationNoticeJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/aftersale/AfterSaleWorkOrderUploadDealJob.java",
+        "signature": "public ReturnT<String> batchCancellationNoticeJob(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "dealUnActivateCards",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/ActivateCardNoticeJob.java",
+        "signature": "public ReturnT<String> dealUnActivateCards(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "dealUnActivateObuCards",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/ActivateObuNoticeJob.java",
+        "signature": "public ReturnT<String> dealUnActivateObuCards(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "dealConsumeCardNoticeJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/ConsumeCardNoticeJob.java",
+        "signature": "public ReturnT<String> dealConsumeCardNoticeJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "dealUnNoticeInactiveCardJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/DealUnNoticeInactiveCardJob.java",
+        "signature": "public ReturnT<String> dealUnNoticeInactiveCardJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "etcCompensationNoticeJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/EtcCompensationNoticeJob.java",
+        "signature": "public ReturnT<String> etcCompensationNoticeJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "inactiveCardNoticeJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/InactiveCardNoticeJob.java",
+        "signature": "public ReturnT<String> inactiveCardNoticeJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "dealUnIssueMailNotices",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/IssueMailNoticeJob.java",
+        "signature": "public ReturnT<String> dealUnIssueMailNotices(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "dealStayNoticeChangeCardJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/JsChangeCardAndObuDealJob.java",
+        "signature": "public ReturnT<String> dealStayNoticeChangeCardJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "dealNewCardNoticeJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/NewModelCardNoticeJob.java",
+        "signature": "public ReturnT<String> dealNewCardNoticeJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "parseCardBlackFileJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/ParseCardBlackFileJob.java",
+        "signature": "public ReturnT<String> parseCardBlackFileJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "blackOverdueCardJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/ReBalanceBlackCardJob.java",
+        "signature": "public ReturnT<String> blackOverdueCardJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "reMarginBlackCardJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/ReMarginBlackCardJob.java",
+        "signature": "public ReturnT<String> reMarginBlackCardJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "unDealBalanceBlackCardJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/UnDealBalanceBlackCardJob.java",
+        "signature": "public ReturnT<String> unDealBalanceBlackCardJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "underMarginBlackCardJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/UnderMarginBlackCardJob.java",
+        "signature": "public ReturnT<String> underMarginBlackCardJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "restoreCardDetailJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/hlj/HljRestoreCardDetailJob.java",
+        "signature": "public ReturnT<String> restoreCardDetailJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "reRestoreCardDetailJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/hlj/ReRestoreCardDetailJob.java",
+        "signature": "public ReturnT<String> reRestoreCardDetailJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "parseJsIssueFtpFile",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/js/ParseJsIssueFtpFileJob.java",
+        "signature": "public ReturnT<String> parseJsIssueFtpFile(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "syncJsNotLogoutCards",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/js/SyncJsCardsJob.java",
+        "signature": "public ReturnT<String> syncJsNotLogoutCards(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "syncJsIssueCards",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/js/SyncJsIssueCardJob.java",
+        "signature": "public ReturnT<String> syncJsIssueCards(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "miniatureNotLogoutCardJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/miniature/MiniatureNotLogoutCardJob.java",
+        "signature": "public ReturnT<String> miniatureNotLogoutCardJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "unDealManageBlackCardJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/miniature/UnDealManageBlackCardJob.java",
+        "signature": "public ReturnT<String> unDealManageBlackCardJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "dayCollectBuildJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/ConsumeDayCollectJob.java",
+        "signature": "public ReturnT<String> dayCollectBuildJob(String jobParam)",
+        "adapted": false
+      },
+      {
+        "handler": "consumeDetailCompensatePushJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/ConsumeDetailCompensatePushJob.java",
+        "signature": "public ReturnT<String> compensatePush(String channelNo)",
+        "adapted": false
+      },
+      {
+        "handler": "couponCompensationJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/CouponCompensationJob.java",
+        "signature": "public ReturnT<String> couponCompensationJob(String params)",
+        "adapted": false
+      },
+      {
+        "handler": "disputeConsumeBillStatusJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/DisputeConsumeBillStatusJob.java",
+        "signature": "public ReturnT<String> disputeConsumeBillStatusJob(String jobParam)",
+        "adapted": false
+      },
+      {
+        "handler": "firstConsumePushMarketingJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/FirstConsumePushMarketingJob.java",
+        "signature": "public ReturnT<String> execute(String jobParam)",
+        "adapted": false
+      },
+      {
+        "handler": "pushConsume2BaigebaoJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/PushConsume2Baigebao.java",
+        "signature": "public ReturnT<String> execute(String jobParam)",
+        "adapted": false
+      },
+      {
+        "handler": "SanChuanBillConsumePushJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/SanChuanBillConsumePushJob.java",
+        "signature": "public ReturnT<String> SanChuanBillConsumePushJob(String args)",
+        "adapted": false
+      },
+      {
+        "handler": "SanChuanBillSettleJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/SanChuanBillSettleJob.java",
+        "signature": "public ReturnT<String> sanChuanBillSetlleBizService(String args)",
+        "adapted": false
+      },
+      {
+        "handler": "SanChuanCalcServiceJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/SanChuanCalcServiceJob.java",
+        "signature": "public ReturnT<String> SanChuanCalcServiceJob(String args)",
+        "adapted": false
+      },
+      {
+        "handler": "sanChuanOverdueFeeJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/SanChuanOverdueFeeJob.java",
+        "signature": "public ReturnT<String> sanChuanOverdueFeeJob(String args)",
+        "adapted": false
+      },
+      {
+        "handler": "sanChuanOverdueFeeSettleJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/SanChuanOverdueFeeJob.java",
+        "signature": "public ReturnT<String> sanChuanOverdueFeeSettleJob(String args)",
+        "adapted": false
+      },
+      {
+        "handler": "SanChuanUpdateAccountJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/SanChuanUpdateAccountJob.java",
+        "signature": "public ReturnT<String> SanChuanUpdateAccountJob(String args)",
+        "adapted": false
+      },
+      {
+        "handler": "sanChuanhandlePassBillBatchJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/SanChuanhandlePassBillBatchJob.java",
+        "signature": "public ReturnT<String> sanChuanhandlePassBillBatchJob(String args)",
+        "adapted": false
+      },
+      {
+        "handler": "autoCreateIssueTaskJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/issue/EtcIssueJob.java",
+        "signature": "public ReturnT<String> autoCreateIssueTaskJob(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "autoRetryTaskJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/issue/EtcIssueJob.java",
+        "signature": "public ReturnT<String> autoRetryTaskJob(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "batchRetrySendIssueMsgJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/msg/IssueMsgRetrySendJob.java",
+        "signature": "public ReturnT<String> batchRetrySendIssueMsgJob(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "batchResendSmsJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/msg/IssueMsgRetrySendJob.java",
+        "signature": "public ReturnT<String> batchResendSmsJob(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "batchRetryAutonomyIssueOrderJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/order/IssueOrderRetryAutonomyIssueJob.java",
+        "signature": "public ReturnT<String> batchRetryAutonomyIssueOrderJob(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "retryGetWaybillNoJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/order/IssueOrderRetryAutonomyIssueJob.java",
+        "signature": "public ReturnT<String> retryGetWaybillNo(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "batchRetryIssueOrderJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/order/IssueOrderRetryIssueJob.java",
+        "signature": "public ReturnT<String> batchRetryIssueOrderJob(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "printOrderNoMsgNotice",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/order/IssueOrderRetryIssueJob.java",
+        "signature": "public ReturnT<String> printOrderNoMsgNotice(String param) throws Exception",
+        "adapted": false
+      },
+      {
+        "handler": "batchAuditNoticeJob",
+        "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/sync/AuditVehicleUpdateJob.java",
+        "signature": "public ReturnT<String> batchAuditNoticeJob(String param) throws Exception",
+        "adapted": false
+      }
+    ],
+    "legacy": [
+      [
+        "etc-schedule/src/main/java/com/thctay/etc/schedule/aftersale/AfterSaleWorkOrderUploadDealJob.java",
+        "XxlJobLogger"
+      ]
+    ],
+    "addresses": [
+      {
+        "file": "etc-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.0.105:8840",
+          "192.168.0.105:8848",
+          "192.168.0.105:8849",
+          "192.168.1.97:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-etc-issue",
+    "ref": "origin/master",
+    "sha": "8761b83781fe22450d6ba1e6c83d189c1080f635",
+    "date": "2025-06-22T20:17:50+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [
+          [
+            "thctay-schedule",
+            "0.0.1-SNAPSHOT"
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "etcIssuePushProcessJob",
+        "file": "etc-issue-controller/src/main/java/com/thchengtay/etc/issue/controller/timetasks/EtcIssueJob.java",
+        "signature": "public ReturnT<String> etcIssuePushProcessJob(String jobParam)",
+        "adapted": false
+      }
+    ],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "etc-issue-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.0.105:8840",
+          "192.168.0.105:8848",
+          "192.168.0.105:8849"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-front-gateway",
+    "ref": "origin/master",
+    "sha": "ebe47205640caeeeb750a6b6457e6e854d1c21be",
+    "date": "2024-10-12T13:46:18+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.21:8848",
+          "192.168.0.105:8840",
+          "192.168.0.105:8848",
+          "192.168.0.105:8849"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-guangdong-tools",
+    "ref": "origin/master",
+    "sha": "69cbbdb2f1314b64c6c85174f0846c987ac9f52c",
+    "date": "2021-12-03T14:48:13+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "spring-boot-starter-parent",
+          "2.0.1.RELEASE"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": []
+  },
+  {
+    "repo": "thctay-lianrongbao",
+    "ref": "origin/master",
+    "sha": "59aeb2ef4d0ea52cf174066eb9c1777ae5dd82a6",
+    "date": "2024-11-19T14:57:50+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "lianrongbao-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-marketing",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "e1d7db18539d0f99dc2acc36def5943d602b54d0",
+    "date": "2026-11-03T10:43:16+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "achievementYearSchedule",
+        "file": "marketing-schedule/src/main/java/com/thchengtay/marketing/schedule/AchievementYearSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "bpmnBatchRetryTaskJob",
+        "file": "marketing-schedule/src/main/java/com/thchengtay/marketing/schedule/BpmnSchedule.java",
+        "signature": "public void bpmnBatchRetryTaskJob() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "jumpToNodeTask",
+        "file": "marketing-schedule/src/main/java/com/thchengtay/marketing/schedule/BpmnSchedule.java",
+        "signature": "public void jumpToNodeTask() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "retryTask",
+        "file": "marketing-schedule/src/main/java/com/thchengtay/marketing/schedule/BpmnSchedule.java",
+        "signature": "public void retryTask() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "terminateProcessManuallyTask",
+        "file": "marketing-schedule/src/main/java/com/thchengtay/marketing/schedule/BpmnSchedule.java",
+        "signature": "public void terminateProcessManuallyTask() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "eventLogSchedule",
+        "file": "marketing-schedule/src/main/java/com/thchengtay/marketing/schedule/EventLogSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "productSyncSchedule",
+        "file": "marketing-schedule/src/main/java/com/thchengtay/marketing/schedule/ProductSyncSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "withdrawOrdePushJobHandler",
+        "file": "marketing-schedule/src/main/java/com/thchengtay/marketing/schedule/WithdrawOrdePushJobHandler.java",
+        "signature": "protected void withdrawOrdePushJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "withdrawOrderExpireJobHandler",
+        "file": "marketing-schedule/src/main/java/com/thchengtay/marketing/schedule/WithdrawOrderExpireJobHandler.java",
+        "signature": "protected void withdrawOrderExpireJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "completionProofFileUploadJobHandler",
+        "file": "marketing-schedule/src/main/java/com/thchengtay/marketing/schedule/WithdrawOrderFileUploadJobHandler.java",
+        "signature": "protected void completionProofFileUploadJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "withdrawOrderPendingJobHandler",
+        "file": "marketing-schedule/src/main/java/com/thchengtay/marketing/schedule/WithdrawOrderPendingJobHandler.java",
+        "signature": "protected void withdrawOrderPendingJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "withdrawOrderQueryJobHandler",
+        "file": "marketing-schedule/src/main/java/com/thchengtay/marketing/schedule/WithdrawOrderQueryJobHandler.java",
+        "signature": "protected void withdrawOrderQueryJobHandler() throws Exception",
+        "adapted": true
+      }
+    ],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "marketing-start/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.110:8848",
+          "10.10.116.26:8848",
+          "172.16.224.221:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-marketing-back",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "2f5ebb8a98724190fbd910a766dd66b5e108fd19",
+    "date": "2026-11-03T14:03:22+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "1.0-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.1.92:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-marketing-back",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "e5e5e2ba0fd72d37bca80b4d06ea13aa53c43cb5",
+    "date": "2026-11-03T10:43:16+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "1.0-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.110:8848",
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.1.92:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-marketing-gateway",
+    "ref": "origin/master",
+    "sha": "a1e958046c84ef5b1cc7ebdd5335c631f15448f5",
+    "date": "2021-04-30T10:53:26+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap-dev.yml",
+        "hosts": [
+          "10.10.116.26:8848"
+        ]
+      },
+      {
+        "file": "src/main/resources/bootstrap-prod.yml",
+        "hosts": [
+          "172.16.224.21:8848"
+        ]
+      },
+      {
+        "file": "src/main/resources/bootstrap-sit.yml",
+        "hosts": [
+          "127.0.0.1:8848"
+        ]
+      },
+      {
+        "file": "src/main/resources/bootstrap-test.yml",
+        "hosts": [
+          "127.0.0.1:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-message",
+    "ref": "origin/master",
+    "sha": "bc28a3081ffdf82faa84a0c19402f4b7e201fa96",
+    "date": "2021-03-10T16:15:24+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "message-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "192.168.1.26:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-op-gateway",
+    "ref": "origin/master",
+    "sha": "2b1164dd9ca35c51f5d5ed778a80adc92c181bde",
+    "date": "2024-11-21T16:05:57+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap-dev.yml",
+        "hosts": [
+          "10.10.116.26:8848"
+        ]
+      },
+      {
+        "file": "src/main/resources/bootstrap-pre.yml",
+        "hosts": [
+          "127.0.0.1:8848"
+        ]
+      },
+      {
+        "file": "src/main/resources/bootstrap-prod.yml",
+        "hosts": [
+          "172.16.224.221:8848"
+        ]
+      },
+      {
+        "file": "src/main/resources/bootstrap-sit.yml",
+        "hosts": [
+          "127.0.0.1:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-partner-gateway",
+    "ref": "origin/master",
+    "sha": "fd1a1e1525364f1683d3ac8215f1f0c02e64688f",
+    "date": "2026-08-06T09:45:00+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "1.0-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.19:8089",
+          "10.10.116.30:8848",
+          "127.0.0.1:8089",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "172.16.224.226:8089",
+          "192.168.0.105:8840",
+          "192.168.0.105:8848",
+          "192.168.0.105:8849"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-payment",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "e8841c66fa27c96ab12fab08954b2b79c6d1ff9a",
+    "date": "2026-11-03T14:14:09+08:00",
+    "poms": [
+      {
+        "file": "payment-schedule/pom.xml",
+        "parent": [
+          "thctay-payment",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ],
+        "props": {}
+      },
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [
+          [
+            "thctay-mq",
+            "0.0.1-SNAPSHOT"
+          ],
+          [
+            "thctay-schedule",
+            "0.0.1-SNAPSHOT"
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "ccbBalancePaymentJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/CcbBalancePaymentJobHandler.java",
+        "signature": "public void ccbBalancePaymentJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "ccbCallbackErrorJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/CcbCallbackErrorJobHandler.java",
+        "signature": "public void ccbCallbackErrorJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "ccbOrderJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/CcbOrderJobHandler.java",
+        "signature": "public void ccbOrderJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "pendingChannelOrderJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/ChannelOrderJobHandler.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "dailyChannelDuplicateOrderErrorJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/DailyChannelDuplicateOrderErrorJobHandler.java",
+        "signature": "public void dailyChannelDuplicateOrderErrorJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "dailyNotifyErrorJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/DailyNotifyErrorJobHandler.java",
+        "signature": "public void dailyNotifyErrorJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "dailyPendingOrderErrorJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/DailyPendingOrderErrorJobHandler.java",
+        "signature": "public void dailyPendingOrderErrorJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "dailyTransSummaryJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/DailyTransSummaryJobHandler.java",
+        "signature": "public void dailyTransSummaryJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "icbcIIConsumePaymentJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/IcbcIIConsumePaymentJobHandler.java",
+        "signature": "public void icbcIIConsumePaymentJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "icbcIIPaymentJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/IcbcIIPaymentJobHandler.java",
+        "signature": "public void icbcIIPaymentJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "notifyFailedOrderHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/NotifyPaymentResultJobHandler.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "notifyOrderHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/NotifyPaymentResultJobHandler.java",
+        "signature": "public void notifyOrderHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "qdCcbBalancePaymentJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/QdCcbBalancePaymentJobHandler.java",
+        "signature": "public void qdCcbBalancePaymentJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "qdCcbCallbackErrorJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/QdCcbCallbackErrorJobHandler.java",
+        "signature": "public void qdCcbCallbackErrorJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "qdCcbOrderJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/QdCcbOrderJobHandler.java",
+        "signature": "public void qdCcbOrderJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "reconciliationJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/ReconciliationJobHandler.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "splitOrderJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/SplitOrderJobHandler.java",
+        "signature": "public void splitOrderJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "newSplitOrderJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/SplitOrderJobHandler.java",
+        "signature": "public void newSplitOrderJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "inTimeWheelPadding",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/TradeSyncJobHandler.java",
+        "signature": "public void inTimeWheelPadding() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "unionScanCodeCloseJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/UnionScanCodeCloseJobHandler.java",
+        "signature": "public void unionScanCodeCloseJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "unpaidOrderJobHandler",
+        "file": "payment-schedule/src/main/java/com/thchengtay/payment/schedule/UnpaidOrderJobHandler.java",
+        "signature": "public void unpaidOrderJobHandler() throws Exception",
+        "adapted": true
+      }
+    ],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "payment-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-public",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "d44d555c252b751af4d367fdea656fdb1fda41cb",
+    "date": "2026-10-30T16:10:45+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "",
+          ""
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      },
+      {
+        "file": "thctay-dependencies/pom.xml",
+        "parent": [
+          "spring-boot-starter-parent",
+          "2.2.9.RELEASE"
+        ],
+        "version": "0.0.2-SNAPSHOT",
+        "deps": [
+          [
+            "thctay-schedule",
+            "${thctay-schedule.version}"
+          ],
+          [
+            "thctay-mq",
+            "${thctay-mq.version}"
+          ],
+          [
+            "nacos-client",
+            "2.5.4"
+          ],
+          [
+            "xxl-job-core",
+            "2.5.0"
+          ]
+        ],
+        "props": {
+          "thctay-schedule.version": "0.0.2-SNAPSHOT",
+          "thctay-mq.version": "0.0.2-SNAPSHOT"
+        }
+      },
+      {
+        "file": "thctay-mq/pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [
+          [
+            "thctay-schedule",
+            ""
+          ]
+        ],
+        "props": {}
+      },
+      {
+        "file": "thctay-schedule/pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "messageSenderRetrySchedule",
+        "file": "thctay-mq/src/main/java/com/thchengtay/mq/schedule/MessageSenderRetrySchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      }
+    ],
+    "legacy": [],
+    "addresses": []
+  },
+  {
+    "repo": "thctay-report",
+    "ref": "origin/master",
+    "sha": "54efa6a4a8a4b2c1d37cb419eaf8f92128e93b2b",
+    "date": "2024-04-11T14:46:45+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "report-start/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.21:8848",
+          "192.168.0.105:8840",
+          "192.168.0.105:8848",
+          "192.168.0.105:8849"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-risk-backend",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "cedeb919d2b0448f651c584dbc5b8604e395bb94",
+    "date": "2026-11-03T10:43:16+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "bpm-framework",
+          "0.0.3-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.110:8848",
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.21:8848",
+          "192.168.1.92:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-saps",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "4bb146cff746bde1cf8c52c8581effae94166d87",
+    "date": "2026-11-03T13:36:00+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ]
+        ],
+        "props": {}
+      },
+      {
+        "file": "saps-schedule/pom.xml",
+        "parent": [
+          "thctay-saps",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "couponOverdueSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/CouponOverdueSchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "customerBillNotifySchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/CustomerBillNotifySchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "customerBillPrepaymentNotifySchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/CustomerBillPrepaymentNotifySchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "customerEmailTempSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/CustomerEmailTempSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "customerNotifySchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/CustomerNotifySchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "customerTransactionCancelSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/CustomerTransactionCancelSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "customerBillLastPayDateNotifySchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/ETCBillLastPayDateNotifySchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "etcPartnerBillSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/EtcPartnerBillSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "happyNewYearSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/HappyNewYearSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "loanBillRepaymentNotifySchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/LoanBillRepaymentNotifySchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "marginLineNoticeSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/MarginLineNoticeSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "negativeBillRefundSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/NegativeBillRefundSchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "partnerBillPushStatusSyncSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/PartnerBillPushStatusSyncSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "pendTransactionNoticeOtherCompensationSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/PendTransactionNoticeOtherCompensationSchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "pendTransactionSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/PendTransactionSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "productInstanceSyncSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/ProductInstanceSyncSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "productSyncSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/ProductSyncSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "pushSgBill",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/PushBillSchedule.java",
+        "signature": "protected void process()throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "pushSgBillDetail",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/PushBillSchedule.java",
+        "signature": "protected void processDetail()throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "customerBillExtensionSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/CustomerBillExtensionSchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "customerBillFeeCalcSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/CustomerBillFeeCalcSchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "customerBillGenerateSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/CustomerBillGenerateSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "customerOverdueMessageSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/CustomerOverdueMessageETCSchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "jsCustomerBillFeeCalcSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/JSCustomerBillFeeCalcSchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "managementFeeBillGenerateSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/ManagementFeeBillGenerateSchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "managementFeePrepareNoticeSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/ManagementFeePrepareNoticeSchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "monthManageFeeBillGenerateSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/MonthManageFeeBillGenerateSchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "monthlyManagementFeePrepareNoticeSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/MonthlyManagementFeePrepareNoticeSchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "newModelCusBillSettleSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/NewModelCusBillSchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "newModelCusBillSettleWatchSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/NewModelCusBillSchedule.java",
+        "signature": "public void newModelCusBillSettleWatchSchedule() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "newModelOverdueNotifySchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/NewModelCusBillSchedule.java",
+        "signature": "public void overdueNotifySchedule() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "sanChuanCustomerBillGenerateSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/SanChuanCustomerBillGenerateSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "sanChuanPartnerTollJob",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/SanChuanPartnerTollJob.java",
+        "signature": "protected void process()",
+        "adapted": true
+      },
+      {
+        "handler": "sanChuanTollCheckJob",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/SanChuanTollCheckJob.java",
+        "signature": "protected void process()",
+        "adapted": true
+      },
+      {
+        "handler": "alipayDataBillSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/SanchuanAlipayDataBillSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "sanchuanAliPayCheck",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/SanchuanAlipayDataBillSchedule.java",
+        "signature": "protected void sanchuanAliPayCheck()",
+        "adapted": true
+      },
+      {
+        "handler": "sanchuanBillPayNosSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/SanchuanBillPayNosSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "sanchuanOverdueBillPayNosSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/SanchuanBillPayNosSchedule.java",
+        "signature": "protected void processOverduePayNos() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "sanchuanBillSettleSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/SanchuanBillSettleSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "sanchuanOverdueFeeSettleSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/SanchuanOverdueFeeSettleSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "sanchuanOverdueFeeUpdateSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/bill/SanchuanOverdueFeeUpdateSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "partnerBillRemitSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/partner/PartnerBillRemitSchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "paySlipAgreementSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/payment/slip/PaySlipAgreementSchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "paymentSlipCancelSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/payment/slip/PaymentSlipCancelSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "paymentSlipUrgentSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/payment/slip/PaymentSlipUrgentSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "generateChannelCollectionReportSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/report/ChannelCollectionReportSchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "customerBillReportJobHandler",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/report/CustomerBillReportJobHandler.java",
+        "signature": "protected void customerBillReportJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "customerBillSettlement2ReportJobHandler",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/report/CustomerBillSettlement2ReportJobHandler.java",
+        "signature": "protected void customerBillSettlementReportJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "customerBillSettlementReportJobHandler",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/report/CustomerBillSettlementReportJobHandler.java",
+        "signature": "protected void customerBillSettlementReportJobHandler() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "cwReportCustomerTransactionSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/report/CwReportCustomerTransactionSchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "generateElineReportSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/report/ElineReportSchedule.java",
+        "signature": "public void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "paymentSlipReportSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/report/PaymentSlipReportSchedule.java",
+        "signature": "public void generateDayReport()",
+        "adapted": true
+      },
+      {
+        "handler": "paymentSlipAdvanceReportSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/report/PaymentSlipReportSchedule.java",
+        "signature": "public void generateDayAdvanceReport()",
+        "adapted": true
+      },
+      {
+        "handler": "etcBatchAgreementPaySchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/withholding/CcbBatchAgreementPaySchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "couponAgreementPaySchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/withholding/CouponAgreementPaySchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "deductResultSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/withholding/DeductResultSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "etcAgreementPaySchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/withholding/EtcBillAgreementPaySchedule.java",
+        "signature": "public void execute() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "loanBillAgreementPaymentSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/withholding/LoanBillAgreementPaySchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "loanBillAgreementPaymentTSSchedule",
+        "file": "saps-schedule/src/main/java/com/thchengtay/saps/schedule/withholding/LoanBillAgreementPayTSSchedule.java",
+        "signature": "protected void process() throws Exception",
+        "adapted": true
+      }
+    ],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "saps-controller/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.19:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-saps-core-common",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "0e088ce5ac02df0d601c960fc227db047e0a67c9",
+    "date": "2026-11-03T14:03:53+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "1.0-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": []
+  },
+  {
+    "repo": "thctay-scaffold",
+    "ref": "origin/master",
+    "sha": "36d4f0d571337bc72a14df0ccc338d368f369fb0",
+    "date": "2021-09-17T16:35:03+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "",
+          ""
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      },
+      {
+        "file": "src/main/resources/archetype-resources/pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "${version}",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/archetype-resources/__rootArtifactId__-start/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-scene",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "70f064d7c721ad4fce1e9afe339c6c4e3a8f10dd",
+    "date": "2026-11-03T10:43:16+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [
+      {
+        "handler": "batchStrategy",
+        "file": "src/main/java/com/thchengtay/intf/hs/scene/job/BatchBpmEngineJob.java",
+        "signature": "public void batchStrategy() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "batchInvokeEngine",
+        "file": "src/main/java/com/thchengtay/intf/hs/scene/job/BatchBpmEngineJob.java",
+        "signature": "public void batchInvokeEngine() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "batchInvokeEngineByBizCode",
+        "file": "src/main/java/com/thchengtay/intf/hs/scene/job/BatchBpmEngineJob.java",
+        "signature": "public void batchInvokeEngineByBizCode() throws Exception",
+        "adapted": true
+      },
+      {
+        "handler": "batchEngineNotify",
+        "file": "src/main/java/com/thchengtay/intf/hs/scene/job/BatchBpmEngineJob.java",
+        "signature": "public void batchEngineNotify() throws Exception",
+        "adapted": true
+      }
+    ],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.110:8848",
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-sf-logistics",
+    "ref": "origin/master",
+    "sha": "9ebec822690d7c40b6dc2b5c342980e5e8d953cc",
+    "date": "2024-11-20T14:07:48+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848",
+          "192.168.1.92:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-user",
+    "ref": "origin/master",
+    "sha": "c10fef4cb7908e1c6513744a3e5c683c9dce9b85",
+    "date": "2021-04-27T09:11:20+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.1-SNAPSHOT"
+        ],
+        "version": "",
+        "deps": [
+          [
+            "thctay-mq",
+            ""
+          ],
+          [
+            "xxl-job-core",
+            ""
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "user-start/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.21:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "thctay-wms",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "4360ad111ed342a219c59a49c4d55dcf97931134",
+    "date": "2026-11-03T14:29:33+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "thctay-dependencies",
+          "0.0.2-SNAPSHOT"
+        ],
+        "version": "0.0.1-SNAPSHOT",
+        "deps": [],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "wms-start/src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:8848",
+          "172.16.224.221:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "xxl-job-admin",
+    "ref": "origin/master",
+    "sha": "3332af1565c8365f2603d741a6ad0fd30faefde8",
+    "date": "2021-12-16T16:38:41+08:00",
+    "poms": [
+      {
+        "file": "pom.xml",
+        "parent": [
+          "xxl-job",
+          "2.2.0"
+        ],
+        "version": "",
+        "deps": [
+          [
+            "xxl-job-core",
+            "${project.parent.version}"
+          ]
+        ],
+        "props": {}
+      }
+    ],
+    "jobs": [],
+    "legacy": [],
+    "addresses": [
+      {
+        "file": "src/main/resources/bootstrap.yml",
+        "hosts": [
+          "10.10.116.26:8848",
+          "127.0.0.1:18848",
+          "172.17.128.135:8848"
+        ]
+      }
+    ]
+  },
+  {
+    "repo": "xxt-front-scafold",
+    "ref": "origin/master",
+    "sha": "9267d9dfc24403e01c3e484d1228f1fd66301fd4",
+    "date": "2021-12-23T16:02:49+08:00",
+    "poms": [],
+    "jobs": [],
+    "legacy": [],
+    "addresses": []
+  }
+]

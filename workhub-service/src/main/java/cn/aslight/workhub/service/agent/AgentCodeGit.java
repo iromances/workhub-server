@@ -115,8 +115,8 @@ public class AgentCodeGit {
         sha(previous); sha(baseSha);
         if (content != null && content.getBytes(StandardCharsets.UTF_8).length > MAX_FILE_BYTES) throw new IllegalArgumentException("单次写入不能超过128KiB");
         Path index = directory.resolve("index-" + UUID.randomUUID());
-        Map<String, String> environment = Map.of("GIT_INDEX_FILE", index.toString(), "GIT_AUTHOR_NAME", "WorkHub Agent",
-                "GIT_AUTHOR_EMAIL", "agent@workhub.invalid", "GIT_COMMITTER_NAME", "WorkHub Agent", "GIT_COMMITTER_EMAIL", "agent@workhub.invalid",
+        Map<String, String> environment = Map.of("GIT_INDEX_FILE", index.toString(), "GIT_AUTHOR_NAME", "Agent",
+                "GIT_AUTHOR_EMAIL", "agent@noreply.invalid", "GIT_COMMITTER_NAME", "Agent", "GIT_COMMITTER_EMAIL", "agent@noreply.invalid",
                 "GIT_AUTHOR_DATE", "@" + timestamp + " +0000", "GIT_COMMITTER_DATE", "@" + timestamp + " +0000");
         try {
             run(repo, environment, null, "read-tree", previous);

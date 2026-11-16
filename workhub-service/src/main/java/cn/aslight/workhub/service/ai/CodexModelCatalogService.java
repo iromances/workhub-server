@@ -76,7 +76,8 @@ public class CodexModelCatalogService {
 
     private CodexModelCatalogResponse await(CompletableFuture<CodexModelCatalogResponse> pending) {
         try {
-            return pending.get(12, TimeUnit.SECONDS);
+            // 并发等待方预算需覆盖 owner 侧客户端超时
+            return pending.get(35, TimeUnit.SECONDS);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("查询 Codex 模型已中断");

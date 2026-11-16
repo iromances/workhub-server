@@ -96,7 +96,7 @@ public class SystemAlertCleanupTaskService {
         SystemAlertCleanupTaskEntity task = newTask(
                 request.getMessageKeyword(), SystemAlertCleanupTaskType.DELETE_AND_FILTER, operator, ip);
         task.setBusinessLineCode(trimToNull(request.getBusinessLineCode()));
-        task.setEnvironmentCode(trimToNull(request.getEnvironmentCode()));
+        task.setEnvironmentCode(upperToNull(request.getEnvironmentCode()));
         task.setServiceName(trimToNull(request.getServiceName()));
         task.setLogLevel(upperToNull(request.getLevel()));
         task.setEventCategory(eventCategory == null ? null : eventCategory.name());

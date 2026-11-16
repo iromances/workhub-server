@@ -222,7 +222,7 @@ public record McpResourceCatalog(List<BusinessLine> businessLines,
         }
 
         public List<String> allowedLogPaths() {
-            return allowedLogPaths == null ? List.of() : allowedLogPaths;
+            return allowedLogPaths == null ? List.of("/mnt") : allowedLogPaths;
         }
 
         public List<ServerProfile> profiles() {

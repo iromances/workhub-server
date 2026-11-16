@@ -1,0 +1,3 @@
+已执行：JAVA_HOME=已安装JDK8 mvn -o -pl cashloan-schedule -am test-compile -DskipTests
+结果：cashloan-common依赖解析失败，commons-pool2:2.6.2、apm-toolkit-logback-1.x:6.2.0未缓存，未编译到schedule模块；另有已有druid:1.2.6 POM systemPath问题。未下载或安装任何依赖。
+隔离验证：实际7个任务源码 + 实际IProcessEngineServerJob接口 + 缓存XXL2.5.0及JUnit4；其他业务类型用4个仅编译桩替代。4个测试通过，不代表完整业务模块或成品编译通过。

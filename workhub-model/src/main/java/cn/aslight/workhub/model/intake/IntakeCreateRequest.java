@@ -14,6 +14,11 @@ public class IntakeCreateRequest {
 
     private String developmentOwnerUserName;
 
+    /**
+     * 研发规范：SDD 或 STANDARD，缺省 SDD。
+     */
+    private String developmentStandard;
+
     private String sourceChannel;
 
     private LocalDateTime receivedAt;
@@ -35,6 +40,14 @@ public class IntakeCreateRequest {
 
     public void setDevelopmentOwnerUserName(String developmentOwnerUserName) {
         this.developmentOwnerUserName = developmentOwnerUserName;
+    }
+
+    public String getDevelopmentStandard() {
+        return developmentStandard;
+    }
+
+    public void setDevelopmentStandard(String developmentStandard) {
+        this.developmentStandard = developmentStandard;
     }
 
     public String getSourceChannel() {

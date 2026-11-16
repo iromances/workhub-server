@@ -24,6 +24,8 @@ public class AgentExecutionCoordinator {
     private final AgentWorkbenchService workbench;
     private final AgentRunStore store;
     private final AiProviderConfigService providers;
+    private final AgentRunNotifier runNotifier;
+    private final AgentIssueService issueService;
     private final Map<String, AgentExecutionAdapter> adapters;
     private final ExecutorService workers = Executors.newVirtualThreadPerTaskExecutor();
     private final ScheduledExecutorService pulses = Executors.newSingleThreadScheduledExecutor(Thread.ofPlatform().daemon().name("agent-heartbeat").factory());
@@ -31,11 +33,14 @@ public class AgentExecutionCoordinator {
     private final AtomicBoolean closed = new AtomicBoolean();
 
     public AgentExecutionCoordinator(AgentMapper mapper, AgentWorkbenchService workbench, AgentRunStore store,
-                                     AiProviderConfigService providers, List<AgentExecutionAdapter> adapters) {
+                                     AiProviderConfigService providers, AgentRunNotifier runNotifier,
+                                     AgentIssueService issueService, List<AgentExecutionAdapter> adapters) {
         this.mapper = mapper;
         this.workbench = workbench;
         this.store = store;
         this.providers = providers;
+        this.runNotifier = runNotifier;
+        this.issueService = issueService;
         Map<String, AgentExecutionAdapter> registered = new HashMap<>();
         adapters.forEach(adapter -> {
             if (registered.putIfAbsent(adapter.channelType(), adapter) != null) throw new IllegalArgumentException("执行通道重复: " + adapter.channelType());
@@ -81,6 +86,22 @@ public class AgentExecutionCoordinator {
                 return;
             }
             adapter.execute(claim.id(), claim.ownerToken());
+            // 巡检通知：仅在运行完成且报告含 P0/P1 时发送；失败不影响运行结果（内部吞异常）。
+            runNotifier.notifyCompletion(claim.id());
+            // 结构化问题摄取（REQ-4d361388）：结果含 problems 时聚合入工单表；失败不影响运行结果。
+            // 巡检结束瞬间连接池可能被 CLI 密集查询占满（同通知器），瞬时事务异常退避重试三次。
+            for (int attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    if (attempt > 1) Thread.sleep(2000L * attempt);
+                    issueService.ingest(claim.id());
+                    break;
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    break;
+                } catch (RuntimeException ex) {
+                    if (attempt == 3) log.warn("Agent issue ingest failed. runId={}, errorType={}", claim.id(), ex.getClass().getSimpleName());
+                }
+            }
         } catch (AgentRunStore.LeaseLost ex) {
             // 失租约执行器不能完成或复活任务，交由持久化恢复流程处理。
             log.info("Agent worker lost ownership. runId={}", claim.id());
@@ -109,6 +130,10 @@ public class AgentExecutionCoordinator {
             } catch (RuntimeException ex) {
                 // 数据库或租约不可用时立即停止本机继续行动，不能自发续租或转交另一个模型。
                 execution.interrupt();
+            } catch (Throwable error) {
+                // 心跳线程是单线程调度器，任何逃逸异常都会静默终止全部后续心跳，导致健康执行被误判失联。
+                execution.interrupt();
+                log.warn("Agent heartbeat stopped by unexpected error. runId={}, errorType={}", execution.claim.id(), error.getClass().getSimpleName());
             }
         }
     }

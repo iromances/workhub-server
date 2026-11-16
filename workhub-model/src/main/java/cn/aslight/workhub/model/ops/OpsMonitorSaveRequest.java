@@ -27,6 +27,7 @@ public class OpsMonitorSaveRequest {
     private String mqTopic;
     private String mqConsumerGroup;
     private Integer mqLagThreshold;
+    private Integer staleThresholdMinutes;
     private Boolean enabled;
     private String remark;
 
@@ -148,6 +149,14 @@ public class OpsMonitorSaveRequest {
 
     public void setMqLagThreshold(Integer mqLagThreshold) {
         this.mqLagThreshold = mqLagThreshold;
+    }
+
+    public Integer getStaleThresholdMinutes() {
+        return staleThresholdMinutes;
+    }
+
+    public void setStaleThresholdMinutes(Integer staleThresholdMinutes) {
+        this.staleThresholdMinutes = staleThresholdMinutes;
     }
 
     public Boolean getEnabled() {

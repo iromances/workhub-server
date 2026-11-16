@@ -83,6 +83,18 @@ public class McpToolRegistry {
                         registry.requireText(args, "keyword"),
                         registry.optionalText(args, "maxMatches")
                 ));
+        registry.register("list_server_directory", "List files and directories below an explicit allowedLogPaths root. Bounded depth and entries; never follows symbolic links or executes files. Requires existing Python 3 on the target. Other directories require explicit user authorization; never expand the allowlist automatically.",
+                registry.objectSchema(List.of("targetKey", "profileKey", "path"), "maxDepth", "maxEntries"),
+                args -> serverService.listServerDirectory(
+                        registry.requireText(args, "targetKey"), registry.requireText(args, "profileKey"),
+                        registry.requireText(args, "path"), registry.optionalText(args, "maxDepth"),
+                        registry.optionalText(args, "maxEntries")));
+        registry.register("read_server_file", "Read bounded UTF-8 text or a startup script below an explicit allowedLogPaths root. Masks secrets; rejects symbolic links, special files and binary data; never executes the file. Requires existing Python 3 on the target. Other directories require explicit user authorization; never expand the allowlist automatically.",
+                registry.objectSchema(List.of("targetKey", "profileKey", "path"), "lines", "maxBytes"),
+                args -> serverService.readServerFile(
+                        registry.requireText(args, "targetKey"), registry.requireText(args, "profileKey"),
+                        registry.requireText(args, "path"), registry.optionalText(args, "lines"),
+                        registry.optionalText(args, "maxBytes")));
         return registry;
     }
 

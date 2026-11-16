@@ -6,6 +6,7 @@ import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisDraft;
 import cn.aslight.workhub.model.intake.DevelopmentWorkItemDraft;
 import cn.aslight.workhub.model.intake.IntakeAIDraft;
+import cn.aslight.workhub.model.intake.IntakeBoardResponse;
 import cn.aslight.workhub.model.intake.IntakeBusinessLineUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeCreateRequest;
 import cn.aslight.workhub.model.intake.IntakeDashboardResponse;
@@ -25,6 +26,7 @@ import cn.aslight.workhub.model.intake.IntakeTodoEntity;
 import cn.aslight.workhub.model.intake.IntakeTodoResponse;
 import cn.aslight.workhub.model.intake.IntakeWorkItemRelationEntity;
 import cn.aslight.workhub.model.intake.IntakeStageActionRequest;
+import cn.aslight.workhub.model.intake.IntakeStageRollbackRequest;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSqlDraft;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
@@ -37,9 +39,11 @@ import cn.aslight.workhub.dao.intake.IntakeMapper;
 import cn.aslight.workhub.dao.intake.IntakeStructuredFieldMapper;
 import cn.aslight.workhub.dao.intake.IntakeTodoMapper;
 import cn.aslight.workhub.dao.intake.IntakeWorkItemRelationMapper;
+import cn.aslight.workhub.dao.system.UserMapper;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeStructuredField;
 import cn.aslight.workhub.model.intake.IntakeStructuredFieldEntity;
+import cn.aslight.workhub.model.system.UserOptionResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
@@ -50,9 +54,11 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -135,6 +141,7 @@ public class IntakeService {
                     List.of(
                             IntakeDemandStatusRules.RECORDED,
                             IntakeDemandStatusRules.CLARIFYING,
+                            IntakeDemandStatusRules.PENDING_PROCESSING,
                             IntakeDemandStatusRules.PENDING_EVALUATION,
                             IntakeDemandStatusRules.PENDING_SCHEDULING,
                             IntakeDemandStatusRules.PENDING_DESIGN
@@ -146,7 +153,7 @@ public class IntakeService {
             new DashboardDemandGroup(
                     "developing",
                     "开发中的需求",
-                    List.of(IntakeDemandStatusRules.IN_DEVELOPMENT),
+                    List.of(IntakeDemandStatusRules.IN_DEVELOPMENT, IntakeDemandStatusRules.PROCESSING),
                     "已指定研发人员或执行人，正在推进实现",
                     "metric-card--developing",
                     "stage-tag--developing"
@@ -166,6 +173,14 @@ public class IntakeService {
                     "等待业务验收或上线发布闭环",
                     "metric-card--release",
                     "stage-tag--release"
+            ),
+            new DashboardDemandGroup(
+                    "paused",
+                    "已暂停的需求",
+                    List.of(IntakeDemandStatusRules.PAUSED),
+                    "因故暂停推进，恢复后回到原阶段",
+                    "metric-card--paused",
+                    "stage-tag--paused"
             )
     );
     private static final Set<String> UNRELEASED_EXCLUDED_STATUSES = Set.of(
@@ -190,6 +205,8 @@ public class IntakeService {
     private final IntakeClarificationAnalysisService intakeClarificationAnalysisService;
     private final ObjectMapper objectMapper;
     private final RequirementFolderService requirementFolderService;
+    private final UserMapper userMapper;
+    private final IntakeAiDevelopmentService intakeAiDevelopmentService;
 
     public IntakeService(IntakeMapper intakeMapper,
                          IntakeHistoryMapper intakeHistoryMapper,
@@ -207,7 +224,49 @@ public class IntakeService {
         this(intakeMapper, intakeHistoryMapper, intakeWorkItemRelationMapper, intakeTodoMapper,
                 intakeStructuredFieldMapper, businessLineMapper, attachmentService, intakeStructuredDataExtractor,
                 intakeStructuredFieldNormalizer, intakeEnrichmentService, codexCliSqlDraftGenerator,
-                intakeClarificationAnalysisService, objectMapper, null);
+                intakeClarificationAnalysisService, objectMapper, null, null, null);
+    }
+
+    public IntakeService(IntakeMapper intakeMapper,
+                         IntakeHistoryMapper intakeHistoryMapper,
+                         IntakeWorkItemRelationMapper intakeWorkItemRelationMapper,
+                         IntakeTodoMapper intakeTodoMapper,
+                         IntakeStructuredFieldMapper intakeStructuredFieldMapper,
+                         BusinessLineMapper businessLineMapper,
+                         AttachmentService attachmentService,
+                         IntakeStructuredDataExtractor intakeStructuredDataExtractor,
+                         IntakeStructuredFieldNormalizer intakeStructuredFieldNormalizer,
+                         IntakeEnrichmentService intakeEnrichmentService,
+                         CodexCliSqlDraftGenerator codexCliSqlDraftGenerator,
+                         IntakeClarificationAnalysisService intakeClarificationAnalysisService,
+                         ObjectMapper objectMapper,
+                         RequirementFolderService requirementFolderService) {
+        this(intakeMapper, intakeHistoryMapper, intakeWorkItemRelationMapper, intakeTodoMapper,
+                intakeStructuredFieldMapper, businessLineMapper, attachmentService, intakeStructuredDataExtractor,
+                intakeStructuredFieldNormalizer, intakeEnrichmentService, codexCliSqlDraftGenerator,
+                intakeClarificationAnalysisService, objectMapper, requirementFolderService, null, null);
+    }
+
+    /** 兼容既有调用：无 AI 开发编排服务时该自动化不启用。 */
+    public IntakeService(IntakeMapper intakeMapper,
+                         IntakeHistoryMapper intakeHistoryMapper,
+                         IntakeWorkItemRelationMapper intakeWorkItemRelationMapper,
+                         IntakeTodoMapper intakeTodoMapper,
+                         IntakeStructuredFieldMapper intakeStructuredFieldMapper,
+                         BusinessLineMapper businessLineMapper,
+                         AttachmentService attachmentService,
+                         IntakeStructuredDataExtractor intakeStructuredDataExtractor,
+                         IntakeStructuredFieldNormalizer intakeStructuredFieldNormalizer,
+                         IntakeEnrichmentService intakeEnrichmentService,
+                         CodexCliSqlDraftGenerator codexCliSqlDraftGenerator,
+                         IntakeClarificationAnalysisService intakeClarificationAnalysisService,
+                         ObjectMapper objectMapper,
+                         RequirementFolderService requirementFolderService,
+                         UserMapper userMapper) {
+        this(intakeMapper, intakeHistoryMapper, intakeWorkItemRelationMapper, intakeTodoMapper,
+                intakeStructuredFieldMapper, businessLineMapper, attachmentService, intakeStructuredDataExtractor,
+                intakeStructuredFieldNormalizer, intakeEnrichmentService, codexCliSqlDraftGenerator,
+                intakeClarificationAnalysisService, objectMapper, requirementFolderService, userMapper, null);
     }
 
     @Autowired
@@ -224,7 +283,9 @@ public class IntakeService {
                          CodexCliSqlDraftGenerator codexCliSqlDraftGenerator,
                          IntakeClarificationAnalysisService intakeClarificationAnalysisService,
                          ObjectMapper objectMapper,
-                         RequirementFolderService requirementFolderService) {
+                         RequirementFolderService requirementFolderService,
+                         UserMapper userMapper,
+                         IntakeAiDevelopmentService intakeAiDevelopmentService) {
         this.intakeMapper = intakeMapper;
         this.intakeHistoryMapper = intakeHistoryMapper;
         this.intakeWorkItemRelationMapper = intakeWorkItemRelationMapper;
@@ -239,6 +300,8 @@ public class IntakeService {
         this.intakeClarificationAnalysisService = intakeClarificationAnalysisService;
         this.objectMapper = objectMapper;
         this.requirementFolderService = requirementFolderService;
+        this.userMapper = userMapper;
+        this.intakeAiDevelopmentService = intakeAiDevelopmentService;
     }
 
     IntakeService(IntakeMapper intakeMapper,
@@ -443,6 +506,222 @@ public class IntakeService {
         );
     }
 
+    /**
+     * 需求看板聚合维度。
+     */
+    private enum BoardGroupDimension {
+        /** 按需求研发负责人聚合，该人对整条需求的任务与工时负责。 */
+        DEMAND_OWNER("demandOwner"),
+        /** 按需求内任务项负责人聚合，无主任务归入未指定负责人。 */
+        TASK_OWNER("taskOwner");
+
+        private final String value;
+
+        BoardGroupDimension(String value) {
+            this.value = value;
+        }
+
+        static BoardGroupDimension from(String value) {
+            String normalized = value == null ? null : value.trim();
+            if (normalized == null || normalized.isEmpty() || DEMAND_OWNER.value.equals(normalized)) {
+                return DEMAND_OWNER;
+            }
+            if (TASK_OWNER.value.equals(normalized)) {
+                return TASK_OWNER;
+            }
+            throw new IllegalArgumentException("不支持的看板维度: " + value + "，仅支持 demandOwner / taskOwner");
+        }
+    }
+
+    /**
+     * 按负责人维度聚合需求看板：每人当前在负责的需求及其任务数、工时与计划起止时间。
+     *
+     * <p>任务数取最新研发拆解草稿的任务项数量；工时沿用过程信息的预估口径（人工覆盖优先）；
+     * 开始时间优先取实际开发开始日期，截止时间优先取预计完成日期，缺失时回退计划日期。</p>
+     *
+     * <p>任务负责人维度下，同一条需求会按任务拆分到多个负责人的面板；未指派负责人的任务
+     * 归入"未指定负责人"列；没有任务项的需求不进入该维度看板，不回退到需求负责人。</p>
+     *
+     * @param includeClosed 是否包含已完成、终止关闭的终态需求
+     * @param groupBy 聚合维度：demandOwner（默认，按需求研发负责人）或 taskOwner（按任务项负责人）
+     * @return 需求看板数据
+     */
+    public IntakeBoardResponse board(boolean includeClosed, String groupBy) {
+        BoardGroupDimension dimension = BoardGroupDimension.from(groupBy);
+        Map<String, String> displayNames = new HashMap<>();
+        if (userMapper != null) {
+            List<UserOptionResponse> users = userMapper.findActiveUsers();
+            if (users != null) {
+                for (UserOptionResponse user : users) {
+                    String userName = trimToNull(user.userName());
+                    if (userName != null) {
+                        displayNames.putIfAbsent(userName, trimToNull(user.displayName()));
+                    }
+                }
+            }
+        }
+        Map<String, List<IntakeBoardResponse.BoardRequirement>> requirementsByOwner = new LinkedHashMap<>();
+        for (IntakeRecordEntity entity : intakeMapper.findAll(null)) {
+            IntakeStructuredData structuredData = toStructuredData(entity);
+            String demandStatus = IntakeDemandStatusRules.resolve(entity, structuredData);
+            if (demandStatus == null || (!includeClosed && IntakeDemandStatusRules.isTerminalStatus(demandStatus))) {
+                continue;
+            }
+            DevelopmentAnalysisDraft draft = readDevelopmentAnalysisDraft(entity.getLatestDevelopmentDraftJson());
+            List<DevelopmentWorkItemDraft> workItems = draft == null || draft.workItems() == null ? List.of()
+                    : draft.workItems().stream().filter(Objects::nonNull).toList();
+            if (dimension == BoardGroupDimension.TASK_OWNER) {
+                if (workItems.isEmpty()) {
+                    // 没有任务项的需求不进入任务维度看板
+                    continue;
+                }
+                Map<String, List<DevelopmentWorkItemDraft>> tasksByOwner = new LinkedHashMap<>();
+                for (DevelopmentWorkItemDraft item : workItems) {
+                    String taskOwner = trimToNull(item.ownerUserName());
+                    tasksByOwner
+                            .computeIfAbsent(taskOwner == null ? "" : taskOwner, ignored -> new ArrayList<>())
+                            .add(item);
+                }
+                for (Map.Entry<String, List<DevelopmentWorkItemDraft>> entry : tasksByOwner.entrySet()) {
+                    requirementsByOwner
+                            .computeIfAbsent(entry.getKey(), ignored -> new ArrayList<>())
+                            .add(toBoardRequirement(entity, structuredData, demandStatus, workItems,
+                                    entry.getValue().size(), sumEffortHours(entry.getValue().stream()
+                                            .map(DevelopmentWorkItemDraft::estimatedEffort)
+                                            .toList())));
+                }
+            } else {
+                // 需求负责人维度，该人对整条需求负责。
+                String totalEstimatedEffort = IntakeProcessInfoSupport.estimates(entity, objectMapper)
+                        .get("totalEstimatedEffort");
+                String demandOwner = trimToNull(firstNonBlank(entity.getDevelopmentOwnerUserName(),
+                        structuredData == null ? null : structuredData.developmentOwnerUserName()));
+                requirementsByOwner
+                        .computeIfAbsent(demandOwner == null ? "" : demandOwner, ignored -> new ArrayList<>())
+                        .add(toBoardRequirement(entity, structuredData, demandStatus, workItems,
+                                workItems.size(), parseEffortHours(totalEstimatedEffort)));
+            }
+        }
+        List<IntakeBoardResponse.PersonBoard> people = new ArrayList<>();
+        for (Map.Entry<String, List<IntakeBoardResponse.BoardRequirement>> entry : requirementsByOwner.entrySet()) {
+            boolean unassigned = entry.getKey().isEmpty();
+            people.add(toPersonBoard(unassigned ? null : entry.getKey(),
+                    unassigned ? null : displayNames.get(entry.getKey()),
+                    entry.getValue()));
+        }
+        people.sort(Comparator
+                .comparing((IntakeBoardResponse.PersonBoard person) -> Boolean.valueOf(person.userName() == null))
+                .thenComparing(person -> person.displayName() == null ? "" : person.displayName()));
+        return new IntakeBoardResponse(dimension.value, includeClosed, people);
+    }
+
+    private IntakeBoardResponse.PersonBoard toPersonBoard(String userName,
+                                                          String displayName,
+                                                          List<IntakeBoardResponse.BoardRequirement> requirements) {
+        BigDecimal totalHours = BigDecimal.ZERO;
+        boolean hasEffort = false;
+        for (IntakeBoardResponse.BoardRequirement requirement : requirements) {
+            BigDecimal hours = parseEffortHours(requirement.ownedEstimatedEffort());
+            if (hours != null) {
+                totalHours = totalHours.add(hours);
+                hasEffort = true;
+            }
+        }
+        List<IntakeBoardResponse.BoardRequirement> sorted = requirements.stream()
+                .sorted(Comparator
+                        .comparing((IntakeBoardResponse.BoardRequirement item) -> parseBoardDate(item.dueDate()),
+                                Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(item -> DEMAND_PRIORITY_SORT_ORDER.indexOf(
+                                firstNonBlank(item.priority(), DEFAULT_DEMAND_PRIORITY)))
+                        .thenComparing(IntakeBoardResponse.BoardRequirement::id,
+                                Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+        return new IntakeBoardResponse.PersonBoard(
+                userName,
+                firstNonBlank(firstNonBlank(displayName, userName), "未指定负责人"),
+                sorted.size(),
+                hasEffort ? EffortUnitNormalizer.normalizeEffort(totalHours.stripTrailingZeros().toPlainString() + "h") : null,
+                sorted
+        );
+    }
+
+    private IntakeBoardResponse.BoardRequirement toBoardRequirement(IntakeRecordEntity entity,
+                                                                   IntakeStructuredData structuredData,
+                                                                   String demandStatus,
+                                                                   List<DevelopmentWorkItemDraft> workItems,
+                                                                   int ownedTaskCount,
+                                                                   BigDecimal ownedEffortHours) {
+        String totalEstimatedEffort = IntakeProcessInfoSupport.estimates(entity, objectMapper).get("totalEstimatedEffort");
+        LocalDate start = firstBoardDate(structuredData == null ? null : structuredData.developmentStartedDate(),
+                structuredData == null ? null : structuredData.plannedDevelopmentStartDate());
+        LocalDate due = firstBoardDate(structuredData == null ? null : structuredData.plannedDueDate(),
+                structuredData == null ? null : structuredData.plannedReleaseDate());
+        return new IntakeBoardResponse.BoardRequirement(
+                entity.getId(),
+                firstNonBlank(entity.getRequirementName(), structuredData == null ? null : structuredData.requirementName()),
+                entity.getApprovalCode(),
+                demandStatus,
+                entity.getRequirementType(),
+                entity.getPriority(),
+                firstNonBlank(entity.getBusinessLine(), structuredData == null ? null : structuredData.businessLine()),
+                entity.getBusinessLineCode(),
+                workItems.size(),
+                totalEstimatedEffort,
+                EffortUnitNormalizer.normalizeEffort(structuredData == null ? null : structuredData.actualEffort()),
+                start == null ? null : start.toString(),
+                due == null ? null : due.toString(),
+                ownedTaskCount,
+                ownedEffortHours == null
+                        ? null
+                        : EffortUnitNormalizer.normalizeEffort(ownedEffortHours.stripTrailingZeros().toPlainString() + "h")
+        );
+    }
+
+    private BigDecimal sumEffortHours(List<String> efforts) {
+        BigDecimal total = null;
+        for (String effort : efforts) {
+            BigDecimal hours = parseEffortHours(effort);
+            if (hours != null) {
+                total = total == null ? hours : total.add(hours);
+            }
+        }
+        return total;
+    }
+
+    private LocalDate firstBoardDate(String preferred, String fallback) {
+        LocalDate preferredDate = parseBoardDate(preferred);
+        return preferredDate != null ? preferredDate : parseBoardDate(fallback);
+    }
+
+    private LocalDate parseBoardDate(String value) {
+        String normalized = trimToNull(value);
+        if (normalized == null || "无".equals(normalized) || "-".equals(normalized)) {
+            return null;
+        }
+        String datePart = normalized.split("[T ]", 2)[0];
+        for (String pattern : new String[] {"uuuu/M/d", "uuuu-M-d"}) {
+            try {
+                return LocalDate.parse(datePart, DateTimeFormatter.ofPattern(pattern)
+                        .withResolverStyle(java.time.format.ResolverStyle.STRICT));
+            } catch (DateTimeParseException ignored) {
+                // 继续尝试其他日期格式
+            }
+        }
+        return null;
+    }
+
+    private BigDecimal parseEffortHours(String effort) {
+        String normalized = EffortUnitNormalizer.normalizeEffort(effort);
+        if (normalized == null || !normalized.endsWith("h")) {
+            return null;
+        }
+        try {
+            return new BigDecimal(normalized.substring(0, normalized.length() - 1));
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
     private List<IntakeDashboardResponse.StageCard> buildDashboardStageCards(List<IntakeSummaryResponse> records) {
         return DASHBOARD_DEMAND_GROUPS.stream()
                 .map(group -> new IntakeDashboardResponse.StageCard(
@@ -482,6 +761,9 @@ public class IntakeService {
                 stats.totalCount++;
             } else if (DASHBOARD_DEMAND_GROUPS.get(3).matches(record.demandStatus())) {
                 stats.pendingReleaseCount++;
+                stats.totalCount++;
+            } else if (DASHBOARD_DEMAND_GROUPS.get(4).matches(record.demandStatus())) {
+                stats.pausedCount++;
                 stats.totalCount++;
             }
         }
@@ -740,9 +1022,11 @@ public class IntakeService {
         }
 
         // 统一整理前端上传参数，复用现有待整理创建逻辑，避免上传入口单独维护一套字段规则。
+        requireActiveOwner(request.getDevelopmentOwnerUserName());
         IntakeCreateRequest intakeCreateRequest = new IntakeCreateRequest();
         intakeCreateRequest.setSenderName(request.getSenderName());
         intakeCreateRequest.setDevelopmentOwnerUserName(request.getDevelopmentOwnerUserName());
+        intakeCreateRequest.setDevelopmentStandard(request.getDevelopmentStandard());
         intakeCreateRequest.setSourceChannel(defaultChannel(request.getSourceChannel(), "需求截图录入"));
         intakeCreateRequest.setReceivedAt(request.getReceivedAt());
         BusinessLineEntity businessLine = resolveEnabledBusinessLine(request.getBusinessLineCode(), request.getBusinessLine(), false);
@@ -849,6 +1133,38 @@ public class IntakeService {
             recordHistory(id, "UPDATE", resolveStageActionSummary(action), historyDetail, operatorUserName);
         }
         schedulePostStageAutomation(id, action, nextStructuredData, request, operatorUserName);
+        return detail(id, null, false);
+    }
+
+    /**
+     * 阶段回退：退回上一阶段并必填原因写入历史；仅改变阶段状态，不触发任何阶段自动化（澄清/评估/AI 开发）。
+     */
+    @Transactional
+    public IntakeDetailResponse rollbackStage(Long id, IntakeStageRollbackRequest request, String operatorUserName) {
+        IntakeRecordEntity entity = requireExisting(id);
+        IntakeStructuredData structuredData = toStructuredData(entity, intakeStructuredFieldMapper.findByIntakeId(id));
+        String currentDemandStatus = IntakeDemandStatusRules.resolve(entity, structuredData);
+        if (currentDemandStatus == null) {
+            throw new IllegalArgumentException("需求尚未识别成功，暂不能回退业务阶段");
+        }
+        String reason = trimToNull(request == null ? null : request.getReason());
+        if (reason == null) {
+            throw new IllegalArgumentException("回退原因不能为空");
+        }
+        String nextDemandStatus = IntakeDemandStatusRules.resolveNextStatus(
+                currentDemandStatus,
+                structuredData == null ? null : structuredData.requirementType(),
+                IntakeDemandStatusRules.ACTION_ROLLBACK_STAGE
+        );
+        intakeMapper.updateManagementFields(
+                id,
+                entity.getStructuredDataJson(),
+                entity.getDevelopmentOwnerUserName(),
+                nextDemandStatus
+        );
+        recordHistory(id, "UPDATE", "阶段回退",
+                "阶段由「" + currentDemandStatus + "」回退到「" + nextDemandStatus + "」。原因：" + reason,
+                operatorUserName);
         return detail(id, null, false);
     }
 
@@ -1114,6 +1430,7 @@ public class IntakeService {
         entity.setReceivedAt(request.getReceivedAt() == null ? LocalDateTime.now() : request.getReceivedAt());
         entity.setRawContent(request.getRawContent().trim());
         entity.setDevelopmentOwnerUserName(trimToNull(request.getDevelopmentOwnerUserName()));
+        entity.setDevelopmentStandard(normalizeDevelopmentStandard(request.getDevelopmentStandard()));
         IntakeStructuredData structuredData = normalizeStructuredData(intakeStructuredDataExtractor.extract(entity.getRawContent()));
         intakeStructuredFieldNormalizer.applyStructuredData(entity, structuredData);
         if (trimToNull(entity.getPriority()) == null) {
@@ -1143,6 +1460,48 @@ public class IntakeService {
         return entity;
     }
 
+    /**
+     * 研发负责人必须是账号管理中的活跃账号；人员不再由录入流程自由填写或自动登记。
+     */
+    private void requireActiveOwner(String developmentOwnerUserName) {
+        if (userMapper == null) {
+            return;
+        }
+        String owner = trimToNull(developmentOwnerUserName);
+        if (owner == null) {
+            return;
+        }
+        boolean exists = userMapper.findActiveUsers().stream()
+                .anyMatch(user -> owner.equals(user.userName()));
+        if (!exists) {
+            throw new IllegalArgumentException("研发负责人「" + owner + "」不是有效账号，请先在账号管理中创建");
+        }
+    }
+
+    /**
+     * 研发规范取值归一：SDD 存 SDD，常规（含空值）存 NULL，与旧数据兼容；非法取值直接拒绝。
+     */
+    private String normalizeDevelopmentStandard(String developmentStandard) {
+        String normalized = trimToNull(developmentStandard);
+        if (normalized == null) {
+            return "SDD";
+        }
+        if ("SDD".equalsIgnoreCase(normalized)) {
+            return "SDD";
+        }
+        if ("STANDARD".equalsIgnoreCase(normalized)) {
+            return null;
+        }
+        throw new IllegalArgumentException("研发规范仅支持 SDD 或常规（STANDARD）");
+    }
+
+    /**
+     * SDD 规范判断：列值为 SDD 即走 SDD 模式，NULL/其他按常规处理。
+     */
+    public boolean isSddStandard(IntakeRecordEntity entity) {
+        return "SDD".equalsIgnoreCase(trimToNull(entity.getDevelopmentStandard()));
+    }
+
     private void replaceStructuredFields(Long intakeId, IntakeStructuredData structuredData) {
         intakeStructuredFieldMapper.deleteByIntakeId(intakeId);
         List<IntakeStructuredFieldEntity> fields = intakeStructuredFieldNormalizer.toFieldEntities(intakeId, structuredData);
@@ -1165,6 +1524,7 @@ public class IntakeService {
                 entity.getExternalMessageId(),
                 entity.getSenderName(),
                 entity.getDevelopmentOwnerUserName(),
+                entity.getDevelopmentStandard(),
                 entity.getReceivedAt(),
                 IntakeDemandStatusRules.resolve(entity, structuredData),
                 entity.getPausePreviousDemandStatus(),
@@ -2590,6 +2950,10 @@ public class IntakeService {
             runAfterCommit(() -> intakeClarificationAnalysisService.analyze(intakeId, operatorUserName));
         } else if (IntakeDemandStatusRules.ACTION_CONFIRM_CLARIFICATION.equals(action)) {
             runAfterCommit(() -> intakeClarificationAnalysisService.triggerDevelopmentAnalysis(intakeId, operatorUserName));
+        } else if (IntakeDemandStatusRules.ACTION_CONFIRM_DESIGN.equals(action)) {
+            if (intakeAiDevelopmentService != null) {
+                runAfterCommit(() -> intakeAiDevelopmentService.triggerAfterDesignConfirmed(intakeId, operatorUserName));
+            }
         }
     }
 
@@ -3083,6 +3447,7 @@ public class IntakeService {
         private int developingCount;
         private int testingCount;
         private int pendingReleaseCount;
+        private int pausedCount;
         private int totalCount;
         private int demandCount;
 
@@ -3111,6 +3476,7 @@ public class IntakeService {
                     developingCount,
                     testingCount,
                     pendingReleaseCount,
+                    pausedCount,
                     totalCount,
                     demandCount,
                     totalDemandCount == 0 ? 0 : (double) demandCount / totalDemandCount

@@ -20,12 +20,17 @@ public record XxlJobDashboardResponse(Long id,
                                       int triggerRunningCount,
                                       int triggerSuccessCount,
                                       int triggerFailedCount,
+                                      int executionFailedCount,
+                                      int stuckCount,
+                                      int silentJobCount,
                                       String reportUpdatedAt,
                                       int failedJobCount,
                                       int failedJobPage,
                                       int failedJobPageSize,
-                                      List<XxlJobFailedJobResponse> failedJobs) {
+                                      List<XxlJobFailedJobResponse> failedJobs,
+                                      List<XxlJobSilentJobResponse> silentJobs) {
 
+    /** 报表口径（collectSummary）无日志级五态与静默数据，细分字段固定为 0。 */
     public XxlJobDashboardResponse(Long id,
                                    String monitorKey,
                                    String businessLineCode,
@@ -63,10 +68,14 @@ public record XxlJobDashboardResponse(Long id,
                 triggerRunningCount,
                 triggerSuccessCount,
                 triggerFailedCount,
+                0,
+                0,
+                0,
                 reportUpdatedAt,
                 failedJobCount,
                 1,
                 failedJobs == null ? 0 : failedJobs.size(),
-                failedJobs);
+                failedJobs,
+                List.of());
     }
 }

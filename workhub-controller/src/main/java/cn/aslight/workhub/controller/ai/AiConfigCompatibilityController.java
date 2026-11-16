@@ -82,6 +82,13 @@ public class AiConfigCompatibilityController {
             Authentication authentication, HttpServletRequest httpRequest) {
         return ApiResponse.success(useCaseService.saveForManage(request, authentication.getName(), clientIp(httpRequest)));
     }
+    @DeleteMapping("/ai-use-case/{id}")
+    @PreAuthorize("hasAuthority('system:ai-config:update') or hasAuthority('system:ai-config:manage')")
+    public ApiResponse<Void> deleteUseCase(@PathVariable Long id, @RequestParam("version") Integer version,
+            Authentication authentication, HttpServletRequest httpRequest) {
+        useCaseService.deleteForManage(id, version, authentication.getName(), clientIp(httpRequest));
+        return ApiResponse.success(null);
+    }
     private String clientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         return forwarded != null && !forwarded.isBlank() ? forwarded.split(",")[0].trim() : request.getRemoteAddr();

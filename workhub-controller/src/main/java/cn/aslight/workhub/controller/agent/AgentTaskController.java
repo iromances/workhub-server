@@ -51,6 +51,20 @@ public class AgentTaskController {
         return ApiResponse.success(service.schedule(id, request, auth.getName()));
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('agent:task:operate')")
+    public ApiResponse<AgentTaskResponse> update(@PathVariable String id,
+            @Valid @RequestBody AgentTaskUpdateRequest request, Authentication auth) {
+        return ApiResponse.success(service.updateTask(id, request, auth.getName()));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('agent:manage')")
+    public ApiResponse<Void> delete(@PathVariable String id, @RequestParam long expectedVersion, Authentication auth) {
+        service.deleteTask(id, expectedVersion, auth.getName());
+        return ApiResponse.success(null);
+    }
+
     @PostMapping("/{id}/run")
     @PreAuthorize("hasAuthority('agent:task:operate')")
     public ApiResponse<AgentRunResponse> run(@PathVariable String id,
@@ -84,6 +98,14 @@ public class AgentTaskController {
     public ApiResponse<AgentRunReconciliationResult> reconcile(@PathVariable String id, @PathVariable String runId,
             @Valid @RequestBody AgentRunReconciliationRequest request, Authentication auth) {
         return ApiResponse.success(reconciliation.reconcile(id, runId, request, auth.getName()));
+    }
+
+    @DeleteMapping("/{id}/runs/{runId}")
+    @PreAuthorize("hasAuthority('agent:manage')")
+    public ApiResponse<Void> deleteRun(@PathVariable String id, @PathVariable String runId,
+            @RequestParam long expectedVersion, Authentication auth) {
+        service.deleteRun(id, runId, expectedVersion, auth.getName());
+        return ApiResponse.success(null);
     }
 
     @PostMapping("/{id}/runs/{runId}/cancel")

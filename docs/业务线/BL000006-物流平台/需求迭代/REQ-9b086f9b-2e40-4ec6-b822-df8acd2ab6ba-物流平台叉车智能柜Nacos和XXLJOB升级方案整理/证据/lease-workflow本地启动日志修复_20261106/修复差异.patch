@@ -1,0 +1,37 @@
+diff --git a/lease-workflow-start/src/main/resources/logback/logback-test.xml b/lease-workflow-start/src/main/resources/logback/logback-test.xml
+index ca1cd59..e486d11 100644
+--- a/lease-workflow-start/src/main/resources/logback/logback-test.xml
++++ b/lease-workflow-start/src/main/resources/logback/logback-test.xml
+@@ -154,24 +154,6 @@
+         </filter>
+     </appender>
+ 
+-    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+-        <param name="Encoding" value="UTF-8"/>
+-        <remoteHost>127.0.0.1</remoteHost>
+-        <port>4569</port>
+-        <encoder charset="UTF-8" class="net.logstash.logback.encoder.LogstashEncoder">
+-            <provider class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.logstash.TraceIdJsonProvider">
+-            </provider>
+-        </encoder>
+-
+-        <connectionStrategy>
+-            <roundRobin>
+-                <connectionTTL>5 minutes</connectionTTL>
+-            </roundRobin>
+-        </connectionStrategy>
+-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+-            <level>INFO</level>
+-        </filter>
+-    </appender>
+ 
+     <logger name="com.alibaba.nacos.client.naming" level="OFF"/>
+     <logger name="com.alibaba.nacos.client.config.impl.ClientWorker" level="OFF"/>
+@@ -188,7 +170,6 @@
+         <appender-ref ref="INFO_FILE"/>
+         <appender-ref ref="WARN_FILE"/>
+         <appender-ref ref="ERROR_FILE"/>
+-        <!--<appender-ref ref="LOGSTASH"/>-->
+     </root>
+ 
+ </configuration>

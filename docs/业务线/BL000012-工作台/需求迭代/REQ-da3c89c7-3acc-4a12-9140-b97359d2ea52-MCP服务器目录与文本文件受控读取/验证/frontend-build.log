@@ -1,0 +1,63 @@
+
+> workhub-web@0.1.0 build
+> vue-tsc --noEmit && vite build
+
+vite v6.4.1 building for production...
+transforming...
+✓ 1745 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                   0.97 kB │ gzip:   0.40 kB
+dist/assets/DeveloperResourceView-CdanulhI.css    0.09 kB │ gzip:   0.09 kB
+dist/assets/AuditLogView-Mt_sJ4Hb.css             0.09 kB │ gzip:   0.09 kB
+dist/assets/UserManagementView-BI4truik.css       0.13 kB │ gzip:   0.11 kB
+dist/assets/SystemConfigView-CZvzVovc.css         0.13 kB │ gzip:   0.11 kB
+dist/assets/RoleManagementView-FETkdOfP.css       0.29 kB │ gzip:   0.18 kB
+dist/assets/ForbiddenView-Bh_BmPKs.css            0.32 kB │ gzip:   0.21 kB
+dist/assets/index-BjESXWbU.css                    0.61 kB │ gzip:   0.43 kB
+dist/assets/LoginView-DVql81uF.css                0.71 kB │ gzip:   0.39 kB
+dist/assets/WorkItemListView-CE6_sPJa.css         0.71 kB │ gzip:   0.33 kB
+dist/assets/OpsMonitorView-CcJNyiby.css           1.11 kB │ gzip:   0.47 kB
+dist/assets/SystemAlertView-DREwuLo-.css          1.65 kB │ gzip:   0.57 kB
+dist/assets/ProjectListView-CPBf4_RC.css          1.86 kB │ gzip:   0.58 kB
+dist/assets/AccountingMonitorView-BI__Z05Z.css    2.21 kB │ gzip:   0.75 kB
+dist/assets/McpResourceView-DwDLyrLl.css          2.58 kB │ gzip:   0.83 kB
+dist/assets/DashboardView-DDkyTBE4.css            2.92 kB │ gzip:   0.86 kB
+dist/assets/IntakeBoardView-DGopGyV9.css          3.04 kB │ gzip:   0.85 kB
+dist/assets/AiConfigView-BxBWMM2A.css             3.52 kB │ gzip:   1.05 kB
+dist/assets/PaymentConfigView-B5fOOcZ4.css        4.29 kB │ gzip:   1.11 kB
+dist/assets/AppLayout-Cyg6G6AD.css                5.03 kB │ gzip:   1.27 kB
+dist/assets/IntakeListView-C7A4-ena.css          17.29 kB │ gzip:   3.67 kB
+dist/assets/vendor-element-plus-Plm10Dc1.css    352.47 kB │ gzip:  47.25 kB
+dist/assets/environment-C0eWyK6o.js               0.16 kB │ gzip:   0.16 kB
+dist/assets/system-config-BSBFjRb7.js             0.73 kB │ gzip:   0.26 kB
+dist/assets/ForbiddenView-BVFSuhph.js             0.83 kB │ gzip:   0.58 kB
+dist/assets/system-BxdAtE_c.js                    1.60 kB │ gzip:   0.42 kB
+dist/assets/ops-BG91dwkq.js                       1.72 kB │ gzip:   0.42 kB
+dist/assets/LoginView-WRr092Dp.js                 1.82 kB │ gzip:   1.06 kB
+dist/assets/project-DWfuCcTG.js                   3.08 kB │ gzip:   0.82 kB
+dist/assets/intake-bCAtc3do.js                    3.62 kB │ gzip:   1.02 kB
+dist/assets/AuditLogView-iqfQhdXF.js              4.35 kB │ gzip:   1.50 kB
+dist/assets/DeveloperResourceView-BQMRK0qX.js     5.03 kB │ gzip:   2.10 kB
+dist/assets/IntakeBoardView-BjExWAh-.js           6.35 kB │ gzip:   2.66 kB
+dist/assets/SystemConfigView-sidpiFBb.js          6.50 kB │ gzip:   2.54 kB
+dist/assets/RoleManagementView-tv9EiwOR.js        7.47 kB │ gzip:   2.76 kB
+dist/assets/UserManagementView-xcTgX5hy.js        8.85 kB │ gzip:   3.09 kB
+dist/assets/DashboardView-Bw0BUKpw.js            11.23 kB │ gzip:   4.78 kB
+dist/assets/index-C6oUdppD.js                    12.43 kB │ gzip:   4.20 kB
+dist/assets/AppLayout-B6fdctjm.js                13.72 kB │ gzip:   4.83 kB
+dist/assets/OpsMonitorView-B80YScSv.js           14.97 kB │ gzip:   4.80 kB
+dist/assets/WorkItemListView-D-5dUjAp.js         18.97 kB │ gzip:   4.93 kB
+dist/assets/AccountingMonitorView-DAwrQZFx.js    21.48 kB │ gzip:   6.76 kB
+dist/assets/vendor-element-icons-vHrMLiGs.js     23.13 kB │ gzip:   5.79 kB
+dist/assets/ProjectListView-B_MDcKd0.js          25.80 kB │ gzip:   6.74 kB
+dist/assets/vendor-vue-DUkM4ZJD.js               29.47 kB │ gzip:  11.71 kB
+dist/assets/SystemAlertView-COITnEPE.js          34.40 kB │ gzip:   9.50 kB
+dist/assets/vendor-axios-BEcps5oF.js             37.14 kB │ gzip:  14.83 kB
+dist/assets/AiConfigView-D45wcASU.js             42.42 kB │ gzip:  10.90 kB
+dist/assets/McpResourceView-B2A1XKia.js          45.44 kB │ gzip:  10.44 kB
+dist/assets/PaymentConfigView-hz2tQT8r.js        52.58 kB │ gzip:  11.54 kB
+dist/assets/IntakeListView--dukifPH.js          118.43 kB │ gzip:  28.77 kB
+dist/assets/vendor-Dtzm4W4C.js                  209.12 kB │ gzip:  77.33 kB
+dist/assets/vendor-element-plus-kJ9VvOzt.js     756.52 kB │ gzip: 239.47 kB
+✓ built in 4.08s

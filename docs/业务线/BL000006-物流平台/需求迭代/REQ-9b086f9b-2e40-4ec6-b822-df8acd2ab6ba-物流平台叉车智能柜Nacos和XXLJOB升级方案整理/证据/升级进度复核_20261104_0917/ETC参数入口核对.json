@@ -1,0 +1,121 @@
+[
+  {
+    "handler": "logoutCancelInsuranceNotice",
+    "method": "logoutCancelInsuranceNotice",
+    "parameter": "param",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/aftersale/AfterSaleWorkOrderRetryMsgJob.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "batchPushInspectRecoverCardJob",
+    "method": "batchPushInspectRecoverCardJob",
+    "parameter": "param",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/aftersale/AfterSaleWorkOrderUploadDealJob.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "dealUnNoticeInactiveCardJob",
+    "method": "dealUnNoticeInactiveCardJob",
+    "parameter": "params",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/DealUnNoticeInactiveCardJob.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "inactiveCardNoticeJob",
+    "method": "inactiveCardNoticeJob",
+    "parameter": "params",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/card/InactiveCardNoticeJob.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "dayCollectBuildJob",
+    "method": "dayCollectBuildJob",
+    "parameter": "jobParam",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/ConsumeDayCollectJob.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "consumeDetailCompensatePushJob",
+    "method": "compensatePush",
+    "parameter": "channelNo",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/ConsumeDetailCompensatePushJob.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "couponCompensationJob",
+    "method": "couponCompensationJob",
+    "parameter": "params",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/CouponCompensationJob.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "firstConsumePushMarketingJob",
+    "method": "execute",
+    "parameter": "jobParam",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/FirstConsumePushMarketingJob.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "pushConsume2BaigebaoJob",
+    "method": "execute",
+    "parameter": "jobParam",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/PushConsume2Baigebao.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "SanChuanBillConsumePushJob",
+    "method": "SanChuanBillConsumePushJob",
+    "parameter": "args",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/SanChuanBillConsumePushJob.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "SanChuanBillSettleJob",
+    "method": "sanChuanBillSetlleBizService",
+    "parameter": "args",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/SanChuanBillSettleJob.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "SanChuanCalcServiceJob",
+    "method": "SanChuanCalcServiceJob",
+    "parameter": "args",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/SanChuanCalcServiceJob.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "sanChuanOverdueFeeJob",
+    "method": "sanChuanOverdueFeeJob",
+    "parameter": "args",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/SanChuanOverdueFeeJob.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "sanChuanOverdueFeeSettleJob",
+    "method": "sanChuanOverdueFeeSettleJob",
+    "parameter": "args",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/SanChuanOverdueFeeJob.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "SanChuanUpdateAccountJob",
+    "method": "SanChuanUpdateAccountJob",
+    "parameter": "args",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/SanChuanUpdateAccountJob.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "sanChuanhandlePassBillBatchJob",
+    "method": "sanChuanhandlePassBillBatchJob",
+    "parameter": "args",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/consume/SanChuanhandlePassBillBatchJob.java",
+    "newFileReadsContext": true
+  },
+  {
+    "handler": "batchAuditNoticeJob",
+    "method": "batchAuditNoticeJob",
+    "parameter": "param",
+    "file": "etc-schedule/src/main/java/com/thctay/etc/schedule/sync/AuditVehicleUpdateJob.java",
+    "newFileReadsContext": true
+  }
+]

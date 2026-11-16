@@ -1,12 +1,10 @@
 package cn.aslight.workhub.service.ops;
 
 import cn.aslight.workhub.dao.ops.OpsMonitorMapper;
-import cn.aslight.workhub.dao.system.UserMapper;
 import cn.aslight.workhub.model.ops.OpsMonitorEntity;
 import cn.aslight.workhub.model.ops.XxlJobDashboardResponse;
 import cn.aslight.workhub.model.ops.XxlJobFailedJobResponse;
 import cn.aslight.workhub.model.system.UserOptionResponse;
-import cn.aslight.workhub.service.notification.NotificationService;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -25,51 +23,13 @@ class XxlJobFailureAlertServiceTest {
         OpsMonitorMapper monitorMapper = mock(OpsMonitorMapper.class);
         XxlJobMonitorCollector collector = mock(XxlJobMonitorCollector.class);
         OpsMonitorSchemaInitializer schemaInitializer = mock(OpsMonitorSchemaInitializer.class);
-        UserMapper userMapper = mock(UserMapper.class);
-        NotificationService notificationService = mock(NotificationService.class);
-        XxlJobFailureAlertService service = new XxlJobFailureAlertService(monitorMapper, schemaInitializer, collector, userMapper, notificationService);
+        XxlJobFailureAlertService service = new XxlJobFailureAlertService(monitorMapper, schemaInitializer, collector);
         OpsMonitorEntity monitor = monitor();
-        when(monitorMapper.findAll("XXL_JOB", null, null, null, true)).thenReturn(List.of(monitor));
+        when(monitorMapper.findAll("XXL_JOB", null, null, null, true, null, null)).thenReturn(List.of(monitor));
         when(collector.collect(monitor)).thenReturn(dashboard());
-        when(userMapper.findBusinessLineMembers("支付")).thenReturn(List.of(new UserOptionResponse("alice", "Alice", "支付")));
 
         service.scanAndAlert();
 
-        verify(notificationService).createSystemNotification(
-                eq("alice"),
-                eq("XXL_JOB_FAILED"),
-                contains("支付生产 XXL-JOB 失败"),
-                contains("settleJobHandler"),
-                eq("支付"),
-                eq("prod"),
-                eq("XXL_JOB:7:31:9921")
-        );
-    }
-
-    @Test
-    void scanAndAlert_shouldNotifyAdminWhenBusinessLineHasNoMembers() {
-        OpsMonitorMapper monitorMapper = mock(OpsMonitorMapper.class);
-        XxlJobMonitorCollector collector = mock(XxlJobMonitorCollector.class);
-        OpsMonitorSchemaInitializer schemaInitializer = mock(OpsMonitorSchemaInitializer.class);
-        UserMapper userMapper = mock(UserMapper.class);
-        NotificationService notificationService = mock(NotificationService.class);
-        XxlJobFailureAlertService service = new XxlJobFailureAlertService(monitorMapper, schemaInitializer, collector, userMapper, notificationService);
-        OpsMonitorEntity monitor = monitor();
-        when(monitorMapper.findAll("XXL_JOB", null, null, null, true)).thenReturn(List.of(monitor));
-        when(collector.collect(monitor)).thenReturn(dashboard());
-        when(userMapper.findBusinessLineMembers("支付")).thenReturn(List.of());
-
-        service.scanAndAlert();
-
-        verify(notificationService).createSystemNotification(
-                eq("admin"),
-                eq("XXL_JOB_FAILED"),
-                contains("支付生产 XXL-JOB 失败"),
-                contains("settleJobHandler"),
-                eq("支付"),
-                eq("prod"),
-                eq("XXL_JOB:7:31:9921")
-        );
     }
 
     private OpsMonitorEntity monitor() {

@@ -1,0 +1,380 @@
+{
+  "verified_at": "2026-11-13T14:16:52.900130+08:00",
+  "scope": {
+    "business_line": "BL000001 保费分期",
+    "environment": "PROD",
+    "gitlab_group": "scf",
+    "database_target": "db-prod",
+    "profile": "readonly",
+    "schemas": [
+      "scf_self_saps",
+      "scf_self_intfcapital"
+    ]
+  },
+  "commits": {
+    "scf-saps": "febbb07fd05453cc5bf21c20294dc00a5cf1adb5",
+    "scf-intf-zhonghua": "21ce0ff9787e823d8a8ab964c9a6388daa06d93f"
+  },
+  "source": {
+    "file_name": "已还款未收到对账单的车辆账单列表.xlsx",
+    "sha256": "c6770154604d23383c2ffb77b2ed08b531c86e33d2cdfd9fbe212a1b58e8cef9",
+    "sheet": "Sheet1",
+    "range": "A2:A513",
+    "focus_cell": "A171"
+  },
+  "summary": {
+    "input_rows": 512,
+    "unique_input_rows": 512,
+    "matched_rows": 512,
+    "operator_main_bills": 283,
+    "success_payload_contains": 511,
+    "missing_sub_bill_no": [
+      "FA26081516350100010301"
+    ],
+    "statement_no": "ARA2611110400040001",
+    "compensatory_total_yuan": "731414.48",
+    "missing_vehicle_amount_yuan": "1240.06"
+  },
+  "focus": {
+    "operator_sub_bill": [
+      {
+        "id": 43578,
+        "sub_bill_no": "FA26081516350100010301",
+        "bill_no": "FA260815163501000103",
+        "period": 3,
+        "refund_insurance_status": 30,
+        "paid_amount": 1240.06,
+        "unpaid_amount": 1862.96,
+        "modify_time": "2026-11-11T17:30:01"
+      }
+    ],
+    "funder_bill": [
+      {
+        "id": 26574,
+        "bill_no": "FBA2608171720010003",
+        "financing_bill_no": "FA260815163501000103",
+        "period": 3,
+        "total_amount": 1240.06,
+        "paid_amount": 1240.06,
+        "unpaid_amount": 0.0,
+        "red_amount": 0.0,
+        "bill_status": 501,
+        "settlement_status": 1,
+        "settlement_time": "2026-11-11T04:00:07",
+        "last_pay_date": "2026-11-04",
+        "last_grace_date": "2026-11-10",
+        "modify_time": "2026-11-11T04:00:08"
+      }
+    ],
+    "funder_sub_bill": [
+      {
+        "id": 43032,
+        "bill_no": "FBA2608171720010003",
+        "sub_bill_no": "FBSA2608171720010003",
+        "period": 3,
+        "refund_insurance_status": 10,
+        "total_amount": 1240.06,
+        "paid_amount": 1240.06,
+        "unpaid_amount": 0.0,
+        "modify_time": "2026-11-11T04:00:09"
+      }
+    ],
+    "resources": [
+      {
+        "id": 15843,
+        "bill_no": "FBA2608171720010003",
+        "sub_bill_no": null,
+        "period": 3,
+        "statement_type": 1000,
+        "charge_type": 1000,
+        "charge_status": 20,
+        "subject_no": "101",
+        "subject_name": "本金",
+        "source_amount": 1211.15,
+        "fee_amount": 1211.15,
+        "bill_date": "2026-11-11",
+        "charge_date": "2026-11-11",
+        "generate_bill_flag": true,
+        "ar_no": "ARA2611110400040001",
+        "create_time": "2026-11-11T04:00:04",
+        "modify_time": "2026-11-11T04:00:05",
+        "is_delete": 0
+      },
+      {
+        "id": 15844,
+        "bill_no": "FBA2608171720010003",
+        "sub_bill_no": null,
+        "period": 3,
+        "statement_type": 1000,
+        "charge_type": 1000,
+        "charge_status": 20,
+        "subject_no": "10201",
+        "subject_name": "资方服务费",
+        "source_amount": 28.91,
+        "fee_amount": 28.91,
+        "bill_date": "2026-11-11",
+        "charge_date": "2026-11-11",
+        "generate_bill_flag": true,
+        "ar_no": "ARA2611110400040001",
+        "create_time": "2026-11-11T04:00:04",
+        "modify_time": "2026-11-11T04:00:05",
+        "is_delete": 0
+      }
+    ],
+    "statement": [
+      {
+        "id": 688,
+        "ar_no": "ARA2611110400040001",
+        "ar_type": 1000,
+        "ar_generated_time": "2026-11-11T04:00:04",
+        "bill_date": "2026-11-11",
+        "last_pay_date": "2026-11-16",
+        "ar_amount": 731414.48,
+        "settlement_status": 0,
+        "settlement_time": null,
+        "push_flag": 0,
+        "push_fail_count": 0,
+        "create_time": "2026-11-11T04:00:04",
+        "modify_time": "2026-11-11T04:00:04"
+      }
+    ],
+    "api_request": [
+      {
+        "id": 3237,
+        "biz_no": "ARA2611110400040001",
+        "biz_type": "2",
+        "request_sn": "SR0261111040001_05",
+        "status": 4,
+        "retry_count": 0,
+        "max_retry": 5,
+        "first_request_time": "2026-11-11T04:00:06",
+        "next_retry_time": "2026-11-12T21:35:03",
+        "last_error_msg": "前方拥堵，请稍后再试！",
+        "contains_target": 0,
+        "request_chars": 76441,
+        "create_time": "2026-11-11T04:00:06",
+        "modify_time": "2026-11-13T10:00:05"
+      }
+    ],
+    "notification": [
+      {
+        "id": 158,
+        "req_sn": "S0261113100001",
+        "statement_no": "ARA2611110400040001",
+        "statement_type": 1000,
+        "total_amount": 73141448,
+        "status": "1002",
+        "response_code": "000000",
+        "response_msg": "成功",
+        "request_time": "2026-11-13T10:00:05",
+        "create_time": "2026-11-13T10:00:02",
+        "modify_time": "2026-11-13T10:00:04",
+        "contains_target": 0,
+        "detail_chars": 81761
+      }
+    ],
+    "notification_response": [
+      {
+        "id": 158,
+        "detail_count": 511,
+        "response_result": "{\"code\":\"000000\",\"data\":null,\"message\":\"成功\",\"success\":true}"
+      }
+    ]
+  },
+  "logs": [
+    {
+      "source_event_id": "b20d3c6c99eea6f6382cba3b24a4e32cb3c0ecd41df50d9a88e48ac7807e3c83",
+      "time_utc": "2026-11-13T02:00:01.117Z",
+      "service": "scf-saps",
+      "message": "apiRequestRetryJobHandler开始处理1条待处理记录",
+      "error_excerpt": ""
+    },
+    {
+      "source_event_id": "1db3c24d7fdfde6fa34e392835771932ddca299036e06f54447797868543c309",
+      "time_utc": "2026-11-13T02:00:04.431Z",
+      "service": "scf-intf-zhonghua",
+      "message": "capital request:STATEMENT_NOTIFY response：{\"capitalRetCode\":\"000000\",\"capitalRetMsg\":\"成功\",\"responseData\":\"{\\\"code\\\":\\\"000000\\\",\\\"data\\\":null,\\\"message\\\":\\\"成功\\\",\\\"success\\\":true}\"}",
+      "error_excerpt": ""
+    },
+    {
+      "source_event_id": "689102ec4beeaeeca30dfd983b149b76d3d000295ddcbec71dee9dd08865e88e",
+      "time_utc": "2026-11-12T12:00:01.153Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest开始处理通知",
+      "error_excerpt": ""
+    },
+    {
+      "source_event_id": "673a8af7487649d8336daec0666aae3f685b01453b95c865047803fe7ee063f2",
+      "time_utc": "2026-11-12T11:30:00.216Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest开始处理通知",
+      "error_excerpt": ""
+    },
+    {
+      "source_event_id": "9b0452d11aab9d35bd98e5c4019e861137779a692898ebf02859dd655b94d89b",
+      "time_utc": "2026-11-12T11:00:02.396Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest error",
+      "error_excerpt": "org.springframework.dao.DataIntegrityViolationException: \n### Error updating database.  Cause: com.mysql.cj.jdbc.exceptions.MysqlDataTruncation: Data truncation: Data too long for column 'request_params' at row 1\n### The error may exist in com/amp/saps/dao/SysApiRequestMapper.java (best guess)\n### The error may involve"
+    },
+    {
+      "source_event_id": "43d98564fea9083984001c38a9909fcd65498c1c7d9359260ff8ac6e7c8bb145",
+      "time_utc": "2026-11-12T11:00:01.187Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest开始处理通知",
+      "error_excerpt": ""
+    },
+    {
+      "source_event_id": "5e94696b9116f557b7033c31417d4a4c18bf8b306170d0f9150c785d17bb375f",
+      "time_utc": "2026-11-12T10:30:02.354Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest error",
+      "error_excerpt": "org.springframework.dao.DataIntegrityViolationException: \n### Error updating database.  Cause: com.mysql.cj.jdbc.exceptions.MysqlDataTruncation: Data truncation: Data too long for column 'request_params' at row 1\n### The error may exist in com/amp/saps/dao/SysApiRequestMapper.java (best guess)\n### The error may involve"
+    },
+    {
+      "source_event_id": "c4f44584c5494420960868fd6accedb2548a1bab674a02322500b4a7ffa703c5",
+      "time_utc": "2026-11-12T10:30:00.405Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest开始处理通知",
+      "error_excerpt": ""
+    },
+    {
+      "source_event_id": "abe67791109c4b5ff3771436aea5db296f897b00f4ea1e2ee076976661a8dc52",
+      "time_utc": "2026-11-12T10:00:02.235Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest error",
+      "error_excerpt": "org.springframework.dao.DataIntegrityViolationException: \n### Error updating database.  Cause: com.mysql.cj.jdbc.exceptions.MysqlDataTruncation: Data truncation: Data too long for column 'request_params' at row 1\n### The error may exist in com/amp/saps/dao/SysApiRequestMapper.java (best guess)\n### The error may involve"
+    },
+    {
+      "source_event_id": "fc0bfd9b107142dd8d183e9afcc88e26b8361dfc29aeb8b7e1d650efd84f486d",
+      "time_utc": "2026-11-12T10:00:00.150Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest开始处理通知",
+      "error_excerpt": ""
+    },
+    {
+      "source_event_id": "7d95856936ac4118810211b7acf8adcc63a345f6343c33570901394d224d9f16",
+      "time_utc": "2026-11-12T09:30:02.075Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest error",
+      "error_excerpt": "org.springframework.dao.DataIntegrityViolationException: \n### Error updating database.  Cause: com.mysql.cj.jdbc.exceptions.MysqlDataTruncation: Data truncation: Data too long for column 'request_params' at row 1\n### The error may exist in com/amp/saps/dao/SysApiRequestMapper.java (best guess)\n### The error may involve"
+    },
+    {
+      "source_event_id": "18116a25be026f75ea45907530acf29d20bc0063f6eb0ac5fd4b3511fd85357e",
+      "time_utc": "2026-11-12T09:30:00.293Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest开始处理通知",
+      "error_excerpt": ""
+    },
+    {
+      "source_event_id": "9124fc0b9f533d07604ae29655b3990da34e6fc97efaef5586c646cabc766dde",
+      "time_utc": "2026-11-12T09:00:02.351Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest error",
+      "error_excerpt": "org.springframework.dao.DataIntegrityViolationException: \n### Error updating database.  Cause: com.mysql.cj.jdbc.exceptions.MysqlDataTruncation: Data truncation: Data too long for column 'request_params' at row 1\n### The error may exist in com/amp/saps/dao/SysApiRequestMapper.java (best guess)\n### The error may involve"
+    },
+    {
+      "source_event_id": "ac45321da4e7976446916b2e717d56d2817c36760bddb98d15de2d279fda4ef4",
+      "time_utc": "2026-11-12T09:00:01.169Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest开始处理通知",
+      "error_excerpt": ""
+    },
+    {
+      "source_event_id": "37b29ef7fa2abcd59399b7411c74f4069a3c968cd923370d9b3ea04af54aa6f6",
+      "time_utc": "2026-11-12T08:30:01.566Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest error",
+      "error_excerpt": "org.springframework.dao.DataIntegrityViolationException: \n### Error updating database.  Cause: com.mysql.cj.jdbc.exceptions.MysqlDataTruncation: Data truncation: Data too long for column 'request_params' at row 1\n### The error may exist in com/amp/saps/dao/SysApiRequestMapper.java (best guess)\n### The error may involve"
+    },
+    {
+      "source_event_id": "366f047cc34b7eb239bc36d3b6c649d567f889491079d521eac5872b8d51ff10",
+      "time_utc": "2026-11-12T08:30:00.351Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest开始处理通知",
+      "error_excerpt": ""
+    },
+    {
+      "source_event_id": "57b010bac4e0eb2ec1da8c5a3011a49a766011dad42258c769b9153674c33f48",
+      "time_utc": "2026-11-12T08:00:02.440Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest error",
+      "error_excerpt": "org.springframework.dao.DataIntegrityViolationException: \n### Error updating database.  Cause: com.mysql.cj.jdbc.exceptions.MysqlDataTruncation: Data truncation: Data too long for column 'request_params' at row 1\n### The error may exist in com/amp/saps/dao/SysApiRequestMapper.java (best guess)\n### The error may involve"
+    },
+    {
+      "source_event_id": "60dc793847269c5e6e89d0a39ab6db57230710030cb06d4ef9b90ea8e8f3d088",
+      "time_utc": "2026-11-12T08:00:01.087Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest开始处理通知",
+      "error_excerpt": ""
+    },
+    {
+      "source_event_id": "700c626e9b00b48898a39a369d16f4ef55f2831fd21b710163e11ffecc1b6a07",
+      "time_utc": "2026-11-12T07:30:02.346Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest error",
+      "error_excerpt": "org.springframework.dao.DataIntegrityViolationException: \n### Error updating database.  Cause: com.mysql.cj.jdbc.exceptions.MysqlDataTruncation: Data truncation: Data too long for column 'request_params' at row 1\n### The error may exist in com/amp/saps/dao/SysApiRequestMapper.java (best guess)\n### The error may involve"
+    },
+    {
+      "source_event_id": "246eeeb305b4d739f1090bdff5c92870e95636ad072e9475399246704db3d6cc",
+      "time_utc": "2026-11-12T07:30:00.395Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest开始处理通知",
+      "error_excerpt": ""
+    },
+    {
+      "source_event_id": "d833b15ff31006f265c4a44553bcb8c208f85c47565d44f7492f7bdc4321e50d",
+      "time_utc": "2026-11-12T07:00:02.216Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest error",
+      "error_excerpt": "org.springframework.dao.DataIntegrityViolationException: \n### Error updating database.  Cause: com.mysql.cj.jdbc.exceptions.MysqlDataTruncation: Data truncation: Data too long for column 'request_params' at row 1\n### The error may exist in com/amp/saps/dao/SysApiRequestMapper.java (best guess)\n### The error may involve"
+    },
+    {
+      "source_event_id": "bbe08d8b8c8160b97991ff8f3494c09917b57782e56b34241c6d3a4a37d914e8",
+      "time_utc": "2026-11-12T07:00:00.126Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest开始处理通知",
+      "error_excerpt": ""
+    },
+    {
+      "source_event_id": "e37108ac1a1e2778c494142e51460d76606b29cc96face53ce78ddf5c62954e5",
+      "time_utc": "2026-11-12T06:30:02.359Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest error",
+      "error_excerpt": "org.springframework.dao.DataIntegrityViolationException: \n### Error updating database.  Cause: com.mysql.cj.jdbc.exceptions.MysqlDataTruncation: Data truncation: Data too long for column 'request_params' at row 1\n### The error may exist in com/amp/saps/dao/SysApiRequestMapper.java (best guess)\n### The error may involve"
+    },
+    {
+      "source_event_id": "094c892d8acb6d1f3a833be76390655a91123cde1ff995a4328f797fa4e3a654",
+      "time_utc": "2026-11-12T06:30:00.396Z",
+      "service": "scf-saps",
+      "message": "SR0261111040001:sendRequest开始处理通知",
+      "error_excerpt": ""
+    }
+  ],
+  "code_evidence": [
+    {
+      "repository": "scf-saps",
+      "file": "saps-business/src/main/java/com/amp/saps/business/notify/impl/StmtNotifyHandler.java",
+      "lines": [
+        187,
+        191
+      ],
+      "finding": "代偿分支只选择当前 refund_insurance_status=NORMAL(10) 的运营商车辆账单，当前退保状态30的目标车辆被排除"
+    },
+    {
+      "repository": "scf-saps",
+      "file": "saps-business/src/main/java/com/amp/saps/business/notify/impl/AbsFunderSceneNotifyStrategyService.java",
+      "lines": [
+        60,
+        69
+      ],
+      "finding": "已成功的通知直接返回，常规补偿不能补齐成功报文内缺失车辆"
+    }
+  ],
+  "limits": [
+    "中化成功回执确认接口接收，未查询中化内部账务页面",
+    "长报文日志返回被截断，缺失车辆结论来自完整数据库报文的条件匹配与JSON_LENGTH，并非对截断日志做否定判断",
+    "历史日志确认SAPS request_params写入超长异常；下游首次失败细节未完整取得",
+    "未变更生产数据、配置、代码或触发重推"
+  ]
+}

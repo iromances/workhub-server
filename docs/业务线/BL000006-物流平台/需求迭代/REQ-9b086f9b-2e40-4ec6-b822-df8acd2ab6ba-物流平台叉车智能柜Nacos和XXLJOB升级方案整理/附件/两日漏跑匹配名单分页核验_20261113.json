@@ -1,0 +1,7692 @@
+{
+  "scope": "当前有效账单按原名义任务时点回溯，含后来结清；不是仅实际补跑账单",
+  "queryFile": "两系统漏跑影响全量账单查询_20261113.sql",
+  "forkliftCount": 60,
+  "cabinetCount": 900,
+  "combinedDistinctCount": 960,
+  "settledCount": 13,
+  "excludedUncertainDeletedRecords": 84,
+  "note": "已删除且删除时间缺失的84笔另见SQL后两条，不计入页面有效账单匹配名单；不能仅凭当前状态确认完整历史快照。",
+  "rows": [
+    {
+      "system": "叉车",
+      "bill_id": 302,
+      "bill_no": "FX2403061707530018",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 2
+    },
+    {
+      "system": "叉车",
+      "bill_id": 303,
+      "bill_no": "FX2403061707530019",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 2
+    },
+    {
+      "system": "叉车",
+      "bill_id": 304,
+      "bill_no": "FX2403061707530020",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 2
+    },
+    {
+      "system": "叉车",
+      "bill_id": 311,
+      "bill_no": "FX2403061707530027",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 2
+    },
+    {
+      "system": "叉车",
+      "bill_id": 312,
+      "bill_no": "FX2403061707530028",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 2
+    },
+    {
+      "system": "叉车",
+      "bill_id": 313,
+      "bill_no": "FX2403061707530029",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 2
+    },
+    {
+      "system": "叉车",
+      "bill_id": 428,
+      "bill_no": "FX2408021649010024",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 2
+    },
+    {
+      "system": "叉车",
+      "bill_id": 569,
+      "bill_no": "FX2410221441290021",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 2
+    },
+    {
+      "system": "叉车",
+      "bill_id": 570,
+      "bill_no": "FX2410221441290022",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 2
+    },
+    {
+      "system": "叉车",
+      "bill_id": 572,
+      "bill_no": "FX2410221441290024",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 2
+    },
+    {
+      "system": "叉车",
+      "bill_id": 674,
+      "bill_no": "FX2411211458350006",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 675,
+      "bill_no": "FX2411211458350007",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 676,
+      "bill_no": "FX2411211458350008",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 677,
+      "bill_no": "FX2411211458350009",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 678,
+      "bill_no": "FX2411211458350010",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 679,
+      "bill_no": "FX2411211458350011",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 680,
+      "bill_no": "FX2411211458350012",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 681,
+      "bill_no": "FX2411211458350013",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 682,
+      "bill_no": "FX2411211458350014",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 683,
+      "bill_no": "FX2411211458350015",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 684,
+      "bill_no": "FX2411211458350016",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 685,
+      "bill_no": "FX2411211458350017",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 686,
+      "bill_no": "FX2411211458350018",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 687,
+      "bill_no": "FX2411211458350019",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 688,
+      "bill_no": "FX2411211458350020",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 689,
+      "bill_no": "FX2411211458350021",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 690,
+      "bill_no": "FX2411211458350022",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 691,
+      "bill_no": "FX2411211458350023",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 692,
+      "bill_no": "FX2411211458350024",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 816,
+      "bill_no": "FX2412111713420016",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 817,
+      "bill_no": "FX2412111713420017",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 818,
+      "bill_no": "FX2412111713420018",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 819,
+      "bill_no": "FX2412111713420019",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 820,
+      "bill_no": "FX2412111713420020",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 821,
+      "bill_no": "FX2412111713420021",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 822,
+      "bill_no": "FX2412111713420022",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 823,
+      "bill_no": "FX2412111713420023",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 824,
+      "bill_no": "FX2412111713420024",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 864,
+      "bill_no": "FX2501071101240004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 865,
+      "bill_no": "FX2501071101240005",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 866,
+      "bill_no": "FX2501071101240006",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 867,
+      "bill_no": "FX2501071101240007",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 868,
+      "bill_no": "FX2501071101240008",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 869,
+      "bill_no": "FX2501071101240009",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 870,
+      "bill_no": "FX2501071101240010",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 871,
+      "bill_no": "FX2501071101240011",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 872,
+      "bill_no": "FX2501071101240012",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 873,
+      "bill_no": "FX2501071101240013",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 874,
+      "bill_no": "FX2501071101240014",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 875,
+      "bill_no": "FX2501071101240015",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 876,
+      "bill_no": "FX2501071101240016",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 877,
+      "bill_no": "FX2501071101240017",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 878,
+      "bill_no": "FX2501071101240018",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 879,
+      "bill_no": "FX2501071101240019",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 880,
+      "bill_no": "FX2501071101240020",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 881,
+      "bill_no": "FX2501071101240021",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 882,
+      "bill_no": "FX2501071101240022",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 883,
+      "bill_no": "FX2501071101240023",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 1724,
+      "bill_no": "C2507281017280016",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "叉车",
+      "bill_id": 2282,
+      "bill_no": "C2603251259540008",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 16,
+      "bill_no": "BFX2408191147350004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 17,
+      "bill_no": "BFX2408191147350005",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 18,
+      "bill_no": "BFX2408191147350006",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 19,
+      "bill_no": "BFX2408191147350007",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 20,
+      "bill_no": "BFX2408191147350008",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 21,
+      "bill_no": "BFX2408191147350009",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 22,
+      "bill_no": "BFX2408191147350010",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 23,
+      "bill_no": "BFX2408191147350011",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 24,
+      "bill_no": "BFX2408191147350012",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 25,
+      "bill_no": "BFX2408191147350013",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 26,
+      "bill_no": "BFX2408191147350014",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 27,
+      "bill_no": "BFX2408191147350015",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 28,
+      "bill_no": "BFX2408191147350016",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 29,
+      "bill_no": "BFX2408191147350017",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 30,
+      "bill_no": "BFX2408191147350018",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 31,
+      "bill_no": "BFX2408191147350019",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 32,
+      "bill_no": "BFX2408191147350020",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 33,
+      "bill_no": "BFX2408191147350021",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 34,
+      "bill_no": "BFX2408191147350022",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 35,
+      "bill_no": "BFX2408191147350023",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 36,
+      "bill_no": "BFX2408191147350024",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 37,
+      "bill_no": "BFX2408191147350025",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 38,
+      "bill_no": "BFX2408191147350026",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 39,
+      "bill_no": "BFX2408191147350027",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 142,
+      "bill_no": "BFX2409191504350007",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 143,
+      "bill_no": "BFX2409191504350008",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 144,
+      "bill_no": "BFX2409191504350009",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 145,
+      "bill_no": "BFX2409191504350010",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 146,
+      "bill_no": "BFX2409191504350011",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 147,
+      "bill_no": "BFX2409191504350012",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 148,
+      "bill_no": "BFX2409191504350013",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 149,
+      "bill_no": "BFX2409191504350014",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 150,
+      "bill_no": "BFX2409191504350015",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 151,
+      "bill_no": "BFX2409191504350016",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 152,
+      "bill_no": "BFX2409191504350017",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 153,
+      "bill_no": "BFX2409191504350018",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 154,
+      "bill_no": "BFX2409191504350019",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 155,
+      "bill_no": "BFX2409191504350020",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 156,
+      "bill_no": "BFX2409191504350021",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 157,
+      "bill_no": "BFX2409191504350022",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 158,
+      "bill_no": "BFX2409191504350023",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 159,
+      "bill_no": "BFX2409191504350024",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 160,
+      "bill_no": "BFX2409191504350025",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 161,
+      "bill_no": "BFX2409191504350026",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3721,
+      "bill_no": "ZD2606231209380001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3722,
+      "bill_no": "ZD2606231209380002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3723,
+      "bill_no": "ZD2606231209380003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3724,
+      "bill_no": "ZD2606231209380004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3733,
+      "bill_no": "ZD2606231224120001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3734,
+      "bill_no": "ZD2606231224120002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3735,
+      "bill_no": "ZD2606231224120003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3736,
+      "bill_no": "ZD2606231224120004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3745,
+      "bill_no": "ZD2606231228260001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3746,
+      "bill_no": "ZD2606231228260002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3747,
+      "bill_no": "ZD2606231228260003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3748,
+      "bill_no": "ZD2606231228260004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3757,
+      "bill_no": "ZD2606231246310001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3758,
+      "bill_no": "ZD2606231246310002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3759,
+      "bill_no": "ZD2606231246310003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3760,
+      "bill_no": "ZD2606231246310004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3769,
+      "bill_no": "ZD2606231249070001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3770,
+      "bill_no": "ZD2606231249070002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3771,
+      "bill_no": "ZD2606231249070003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3772,
+      "bill_no": "ZD2606231249070004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3781,
+      "bill_no": "ZD2606231252040001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3782,
+      "bill_no": "ZD2606231252040002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3783,
+      "bill_no": "ZD2606231252040003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3784,
+      "bill_no": "ZD2606231252040004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3805,
+      "bill_no": "ZD2606231255090001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3806,
+      "bill_no": "ZD2606231255090002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3807,
+      "bill_no": "ZD2606231255090003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3808,
+      "bill_no": "ZD2606231255090004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3817,
+      "bill_no": "ZD2606231258080001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3818,
+      "bill_no": "ZD2606231258080002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3819,
+      "bill_no": "ZD2606231258080003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3820,
+      "bill_no": "ZD2606231258080004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3829,
+      "bill_no": "ZD2606231301320001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3830,
+      "bill_no": "ZD2606231301320002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3831,
+      "bill_no": "ZD2606231301320003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3832,
+      "bill_no": "ZD2606231301320004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3841,
+      "bill_no": "ZD2606231304360001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3842,
+      "bill_no": "ZD2606231304360002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3843,
+      "bill_no": "ZD2606231304360003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3844,
+      "bill_no": "ZD2606231304360004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3853,
+      "bill_no": "ZD2606231307410001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3854,
+      "bill_no": "ZD2606231307410002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3855,
+      "bill_no": "ZD2606231307410003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3856,
+      "bill_no": "ZD2606231307410004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3865,
+      "bill_no": "ZD2606231329260001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3866,
+      "bill_no": "ZD2606231329260002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3867,
+      "bill_no": "ZD2606231329260003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3868,
+      "bill_no": "ZD2606231329260004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3877,
+      "bill_no": "ZD2606231333420001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3878,
+      "bill_no": "ZD2606231333420002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3879,
+      "bill_no": "ZD2606231333420003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3880,
+      "bill_no": "ZD2606231333420004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3889,
+      "bill_no": "ZD2606231338090001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3890,
+      "bill_no": "ZD2606231338090002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3891,
+      "bill_no": "ZD2606231338090003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3892,
+      "bill_no": "ZD2606231338090004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3901,
+      "bill_no": "ZD2606231350060001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3902,
+      "bill_no": "ZD2606231350060002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3903,
+      "bill_no": "ZD2606231350060003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 3904,
+      "bill_no": "ZD2606231350060004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4201,
+      "bill_no": "ZD2606241615270001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4202,
+      "bill_no": "ZD2606241615270002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4203,
+      "bill_no": "ZD2606241615270003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4204,
+      "bill_no": "ZD2606241615270004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4213,
+      "bill_no": "ZD2606241619130001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4214,
+      "bill_no": "ZD2606241619130002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4215,
+      "bill_no": "ZD2606241619130003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4216,
+      "bill_no": "ZD2606241619130004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4225,
+      "bill_no": "ZD2606241622100001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4226,
+      "bill_no": "ZD2606241622100002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4227,
+      "bill_no": "ZD2606241622100003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4228,
+      "bill_no": "ZD2606241622100004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4237,
+      "bill_no": "ZD2606241626390001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4238,
+      "bill_no": "ZD2606241626390002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4239,
+      "bill_no": "ZD2606241626390003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4240,
+      "bill_no": "ZD2606241626390004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4249,
+      "bill_no": "ZD2606241630310001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4250,
+      "bill_no": "ZD2606241630310002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4251,
+      "bill_no": "ZD2606241630310003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4252,
+      "bill_no": "ZD2606241630310004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4261,
+      "bill_no": "ZD2606241634360001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4262,
+      "bill_no": "ZD2606241634360002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4263,
+      "bill_no": "ZD2606241634360003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4264,
+      "bill_no": "ZD2606241634360004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4273,
+      "bill_no": "ZD2606241639050001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4274,
+      "bill_no": "ZD2606241639050002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4275,
+      "bill_no": "ZD2606241639050003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4276,
+      "bill_no": "ZD2606241639050004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4285,
+      "bill_no": "ZD2606241642270001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4286,
+      "bill_no": "ZD2606241642270002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4287,
+      "bill_no": "ZD2606241642270003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4288,
+      "bill_no": "ZD2606241642270004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4297,
+      "bill_no": "ZD2606241646010001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4298,
+      "bill_no": "ZD2606241646010002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4299,
+      "bill_no": "ZD2606241646010003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4300,
+      "bill_no": "ZD2606241646010004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4309,
+      "bill_no": "ZD2606241649100001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4310,
+      "bill_no": "ZD2606241649100002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4311,
+      "bill_no": "ZD2606241649100003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4312,
+      "bill_no": "ZD2606241649100004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4321,
+      "bill_no": "ZD2606241653050001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4322,
+      "bill_no": "ZD2606241653050002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4323,
+      "bill_no": "ZD2606241653050003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4324,
+      "bill_no": "ZD2606241653050004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4333,
+      "bill_no": "ZD2606241656350001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4334,
+      "bill_no": "ZD2606241656350002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4335,
+      "bill_no": "ZD2606241656350003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4336,
+      "bill_no": "ZD2606241656350004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4345,
+      "bill_no": "ZD2606241702040001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4346,
+      "bill_no": "ZD2606241702040002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4347,
+      "bill_no": "ZD2606241702040003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4348,
+      "bill_no": "ZD2606241702040004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4357,
+      "bill_no": "ZD2606241705400001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4358,
+      "bill_no": "ZD2606241705400002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4359,
+      "bill_no": "ZD2606241705400003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4360,
+      "bill_no": "ZD2606241705400004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4369,
+      "bill_no": "ZD2606241709440001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4370,
+      "bill_no": "ZD2606241709440002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4371,
+      "bill_no": "ZD2606241709440003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4372,
+      "bill_no": "ZD2606241709440004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4381,
+      "bill_no": "ZD2606241713110001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4382,
+      "bill_no": "ZD2606241713110002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4383,
+      "bill_no": "ZD2606241713110003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4384,
+      "bill_no": "ZD2606241713110004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4393,
+      "bill_no": "ZD2606241717300001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4394,
+      "bill_no": "ZD2606241717300002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4395,
+      "bill_no": "ZD2606241717300003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4396,
+      "bill_no": "ZD2606241717300004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4405,
+      "bill_no": "ZD2606241721550001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4406,
+      "bill_no": "ZD2606241721550002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4407,
+      "bill_no": "ZD2606241721550003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4408,
+      "bill_no": "ZD2606241721550004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4417,
+      "bill_no": "ZD2606241725190001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4418,
+      "bill_no": "ZD2606241725190002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4419,
+      "bill_no": "ZD2606241725190003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4420,
+      "bill_no": "ZD2606241725190004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4429,
+      "bill_no": "ZD2606241730550001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4430,
+      "bill_no": "ZD2606241730550002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4431,
+      "bill_no": "ZD2606241730550003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4432,
+      "bill_no": "ZD2606241730550004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4453,
+      "bill_no": "ZD2606241815330001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4454,
+      "bill_no": "ZD2606241815330002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4455,
+      "bill_no": "ZD2606241815330003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4456,
+      "bill_no": "ZD2606241815330004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4465,
+      "bill_no": "ZD2606241818420001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4466,
+      "bill_no": "ZD2606241818420002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4467,
+      "bill_no": "ZD2606241818420003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4468,
+      "bill_no": "ZD2606241818420004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4477,
+      "bill_no": "ZD2606241821580001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4478,
+      "bill_no": "ZD2606241821580002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4479,
+      "bill_no": "ZD2606241821580003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4480,
+      "bill_no": "ZD2606241821580004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4489,
+      "bill_no": "ZD2606241825580001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4490,
+      "bill_no": "ZD2606241825580002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4491,
+      "bill_no": "ZD2606241825580003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4492,
+      "bill_no": "ZD2606241825580004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4501,
+      "bill_no": "ZD2606241829180001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4502,
+      "bill_no": "ZD2606241829180002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4503,
+      "bill_no": "ZD2606241829180003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4504,
+      "bill_no": "ZD2606241829180004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4513,
+      "bill_no": "ZD2606241833320001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4514,
+      "bill_no": "ZD2606241833320002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4515,
+      "bill_no": "ZD2606241833320003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4516,
+      "bill_no": "ZD2606241833320004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4537,
+      "bill_no": "ZD2606241837250001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4538,
+      "bill_no": "ZD2606241837250002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4539,
+      "bill_no": "ZD2606241837250003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4540,
+      "bill_no": "ZD2606241837250004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4549,
+      "bill_no": "ZD2606241840320001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4550,
+      "bill_no": "ZD2606241840320002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4551,
+      "bill_no": "ZD2606241840320003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4552,
+      "bill_no": "ZD2606241840320004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4561,
+      "bill_no": "ZD2606241844150001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4562,
+      "bill_no": "ZD2606241844150002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4563,
+      "bill_no": "ZD2606241844150003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4564,
+      "bill_no": "ZD2606241844150004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4573,
+      "bill_no": "ZD2606241847330001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4574,
+      "bill_no": "ZD2606241847340001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4575,
+      "bill_no": "ZD2606241847340002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4576,
+      "bill_no": "ZD2606241847340003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4669,
+      "bill_no": "ZD2606251642040001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4670,
+      "bill_no": "ZD2606251642040002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4671,
+      "bill_no": "ZD2606251642040003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4672,
+      "bill_no": "ZD2606251642040004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4681,
+      "bill_no": "ZD2606251646000001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4682,
+      "bill_no": "ZD2606251646000002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4683,
+      "bill_no": "ZD2606251646000003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4684,
+      "bill_no": "ZD2606251646000004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4693,
+      "bill_no": "ZD2606251649090001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4694,
+      "bill_no": "ZD2606251649090002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4695,
+      "bill_no": "ZD2606251649090003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4696,
+      "bill_no": "ZD2606251649090004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4705,
+      "bill_no": "ZD2606251657490001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4706,
+      "bill_no": "ZD2606251657490002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4707,
+      "bill_no": "ZD2606251657490003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4708,
+      "bill_no": "ZD2606251657490004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4717,
+      "bill_no": "ZD2606251702000001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4718,
+      "bill_no": "ZD2606251702000002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4719,
+      "bill_no": "ZD2606251702000003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4720,
+      "bill_no": "ZD2606251702000004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4729,
+      "bill_no": "ZD2606251705160001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4730,
+      "bill_no": "ZD2606251705160002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4731,
+      "bill_no": "ZD2606251705160003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4732,
+      "bill_no": "ZD2606251705160004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4741,
+      "bill_no": "ZD2606251708400001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4742,
+      "bill_no": "ZD2606251708400002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4743,
+      "bill_no": "ZD2606251708400003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4744,
+      "bill_no": "ZD2606251708400004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4753,
+      "bill_no": "ZD2606251711520001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4754,
+      "bill_no": "ZD2606251711520002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4755,
+      "bill_no": "ZD2606251711520003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4756,
+      "bill_no": "ZD2606251711520004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4765,
+      "bill_no": "ZD2606251715090001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4766,
+      "bill_no": "ZD2606251715090002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4767,
+      "bill_no": "ZD2606251715090003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4768,
+      "bill_no": "ZD2606251715090004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4777,
+      "bill_no": "ZD2606251718110001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4778,
+      "bill_no": "ZD2606251718110002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4779,
+      "bill_no": "ZD2606251718110003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4780,
+      "bill_no": "ZD2606251718110004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4789,
+      "bill_no": "ZD2606251721290001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4790,
+      "bill_no": "ZD2606251721290002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4791,
+      "bill_no": "ZD2606251721290003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4792,
+      "bill_no": "ZD2606251721290004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4801,
+      "bill_no": "ZD2606251724480001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4802,
+      "bill_no": "ZD2606251724480002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4803,
+      "bill_no": "ZD2606251724480003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4804,
+      "bill_no": "ZD2606251724480004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4813,
+      "bill_no": "ZD2606251728160001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4814,
+      "bill_no": "ZD2606251728160002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4815,
+      "bill_no": "ZD2606251728160003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4816,
+      "bill_no": "ZD2606251728160004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4825,
+      "bill_no": "ZD2606251731260001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4826,
+      "bill_no": "ZD2606251731260002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4827,
+      "bill_no": "ZD2606251731260003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4828,
+      "bill_no": "ZD2606251731260004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4837,
+      "bill_no": "ZD2606251737050001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4838,
+      "bill_no": "ZD2606251737050002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4839,
+      "bill_no": "ZD2606251737050003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4840,
+      "bill_no": "ZD2606251737050004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4849,
+      "bill_no": "ZD2606251740370001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4850,
+      "bill_no": "ZD2606251740370002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4851,
+      "bill_no": "ZD2606251740370003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4852,
+      "bill_no": "ZD2606251740370004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4861,
+      "bill_no": "ZD2606251745130001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4862,
+      "bill_no": "ZD2606251745130002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4863,
+      "bill_no": "ZD2606251745130003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4864,
+      "bill_no": "ZD2606251745130004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4873,
+      "bill_no": "ZD2606251748330001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4874,
+      "bill_no": "ZD2606251748330002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4875,
+      "bill_no": "ZD2606251748330003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4876,
+      "bill_no": "ZD2606251748330004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4885,
+      "bill_no": "ZD2606251752360001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4886,
+      "bill_no": "ZD2606251752360002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4887,
+      "bill_no": "ZD2606251752360003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4888,
+      "bill_no": "ZD2606251752360004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4897,
+      "bill_no": "ZD2606251756110001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4898,
+      "bill_no": "ZD2606251756110002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4899,
+      "bill_no": "ZD2606251756110003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4900,
+      "bill_no": "ZD2606251756110004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4909,
+      "bill_no": "ZD2606251756120001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4910,
+      "bill_no": "ZD2606251756120002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4911,
+      "bill_no": "ZD2606251756120003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4912,
+      "bill_no": "ZD2606251756120004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4921,
+      "bill_no": "ZD2606251759250001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4922,
+      "bill_no": "ZD2606251759250002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4923,
+      "bill_no": "ZD2606251759250003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4924,
+      "bill_no": "ZD2606251759250004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4933,
+      "bill_no": "ZD2606251802450001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4934,
+      "bill_no": "ZD2606251802450002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4935,
+      "bill_no": "ZD2606251802450003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 4936,
+      "bill_no": "ZD2606251802450004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5101,
+      "bill_no": "ZD2606280958430001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5102,
+      "bill_no": "ZD2606280958430002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5103,
+      "bill_no": "ZD2606280958430003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5104,
+      "bill_no": "ZD2606280958430004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5113,
+      "bill_no": "ZD2606281001450001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5114,
+      "bill_no": "ZD2606281001450002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5115,
+      "bill_no": "ZD2606281001450003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5116,
+      "bill_no": "ZD2606281001450004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5125,
+      "bill_no": "ZD2606281005230001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5126,
+      "bill_no": "ZD2606281005230002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5127,
+      "bill_no": "ZD2606281005230003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5128,
+      "bill_no": "ZD2606281005230004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5137,
+      "bill_no": "ZD2606281008320001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5138,
+      "bill_no": "ZD2606281008320002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5139,
+      "bill_no": "ZD2606281008320003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5140,
+      "bill_no": "ZD2606281008320004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5149,
+      "bill_no": "ZD2606281011390001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5150,
+      "bill_no": "ZD2606281011390002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5151,
+      "bill_no": "ZD2606281011390003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5152,
+      "bill_no": "ZD2606281011390004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5161,
+      "bill_no": "ZD2606281015070001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5162,
+      "bill_no": "ZD2606281015070002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5163,
+      "bill_no": "ZD2606281015070003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5164,
+      "bill_no": "ZD2606281015070004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5173,
+      "bill_no": "ZD2606281018070001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5174,
+      "bill_no": "ZD2606281018070002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5175,
+      "bill_no": "ZD2606281018070003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5176,
+      "bill_no": "ZD2606281018070004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5185,
+      "bill_no": "ZD2606281022240001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5186,
+      "bill_no": "ZD2606281022240002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5187,
+      "bill_no": "ZD2606281022240003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5188,
+      "bill_no": "ZD2606281022240004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5197,
+      "bill_no": "ZD2606281025380001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5198,
+      "bill_no": "ZD2606281025380002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5199,
+      "bill_no": "ZD2606281025380003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5200,
+      "bill_no": "ZD2606281025380004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5209,
+      "bill_no": "ZD2606281030070001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5210,
+      "bill_no": "ZD2606281030070002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5211,
+      "bill_no": "ZD2606281030070003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5212,
+      "bill_no": "ZD2606281030070004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5221,
+      "bill_no": "ZD2606281033470001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5222,
+      "bill_no": "ZD2606281033470002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5223,
+      "bill_no": "ZD2606281033470003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5224,
+      "bill_no": "ZD2606281033470004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5233,
+      "bill_no": "ZD2606281037010001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5234,
+      "bill_no": "ZD2606281037010002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5235,
+      "bill_no": "ZD2606281037010003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5236,
+      "bill_no": "ZD2606281037010004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5245,
+      "bill_no": "ZD2606281040080001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5246,
+      "bill_no": "ZD2606281040080002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5247,
+      "bill_no": "ZD2606281040080003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5248,
+      "bill_no": "ZD2606281040080004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5269,
+      "bill_no": "ZD2606281056510001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5270,
+      "bill_no": "ZD2606281056510002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5271,
+      "bill_no": "ZD2606281056510003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5272,
+      "bill_no": "ZD2606281056510004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5281,
+      "bill_no": "ZD2606281100230001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5282,
+      "bill_no": "ZD2606281100230002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5283,
+      "bill_no": "ZD2606281100230003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5284,
+      "bill_no": "ZD2606281100230004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5293,
+      "bill_no": "ZD2606281103180001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5294,
+      "bill_no": "ZD2606281103180002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5295,
+      "bill_no": "ZD2606281103180003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5296,
+      "bill_no": "ZD2606281103180004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5305,
+      "bill_no": "ZD2606281106350001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5306,
+      "bill_no": "ZD2606281106350002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5307,
+      "bill_no": "ZD2606281106350003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5308,
+      "bill_no": "ZD2606281106350004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5317,
+      "bill_no": "ZD2606281109470001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5318,
+      "bill_no": "ZD2606281109470002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5319,
+      "bill_no": "ZD2606281109470003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5320,
+      "bill_no": "ZD2606281109470004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5329,
+      "bill_no": "ZD2606281114080001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5330,
+      "bill_no": "ZD2606281114080002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5331,
+      "bill_no": "ZD2606281114080003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5332,
+      "bill_no": "ZD2606281114080004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5353,
+      "bill_no": "ZD2606281117470001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5354,
+      "bill_no": "ZD2606281117470002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5355,
+      "bill_no": "ZD2606281117470003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5356,
+      "bill_no": "ZD2606281117470004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5365,
+      "bill_no": "ZD2606281120550001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5366,
+      "bill_no": "ZD2606281120550002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5367,
+      "bill_no": "ZD2606281120550003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5368,
+      "bill_no": "ZD2606281120550004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5377,
+      "bill_no": "ZD2606281123390001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5378,
+      "bill_no": "ZD2606281123390002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5379,
+      "bill_no": "ZD2606281123390003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5380,
+      "bill_no": "ZD2606281123390004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5389,
+      "bill_no": "ZD2606281127530001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5390,
+      "bill_no": "ZD2606281127530002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5391,
+      "bill_no": "ZD2606281127530003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5392,
+      "bill_no": "ZD2606281127530004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5401,
+      "bill_no": "ZD2606281130500001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5402,
+      "bill_no": "ZD2606281130500002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5403,
+      "bill_no": "ZD2606281130500003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5404,
+      "bill_no": "ZD2606281130500004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5413,
+      "bill_no": "ZD2606281134110001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5414,
+      "bill_no": "ZD2606281134110002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5415,
+      "bill_no": "ZD2606281134110003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5416,
+      "bill_no": "ZD2606281134110004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5437,
+      "bill_no": "ZD2606281137390001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5438,
+      "bill_no": "ZD2606281137390002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5439,
+      "bill_no": "ZD2606281137390003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5440,
+      "bill_no": "ZD2606281137390004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5449,
+      "bill_no": "ZD2606281141020001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5450,
+      "bill_no": "ZD2606281141020002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5451,
+      "bill_no": "ZD2606281141020003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5452,
+      "bill_no": "ZD2606281141020004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5461,
+      "bill_no": "ZD2606281144120001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5462,
+      "bill_no": "ZD2606281144120002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5463,
+      "bill_no": "ZD2606281144120003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5464,
+      "bill_no": "ZD2606281144120004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5473,
+      "bill_no": "ZD2606281146510001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5474,
+      "bill_no": "ZD2606281146510002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5475,
+      "bill_no": "ZD2606281146510003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5476,
+      "bill_no": "ZD2606281146510004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5485,
+      "bill_no": "ZD2606281149320001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5486,
+      "bill_no": "ZD2606281149320002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5487,
+      "bill_no": "ZD2606281149320003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5488,
+      "bill_no": "ZD2606281149320004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5497,
+      "bill_no": "ZD2606281153360001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5498,
+      "bill_no": "ZD2606281153360002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5499,
+      "bill_no": "ZD2606281153360003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5500,
+      "bill_no": "ZD2606281153360004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5509,
+      "bill_no": "ZD2606281156480001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5510,
+      "bill_no": "ZD2606281156480002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5511,
+      "bill_no": "ZD2606281156480003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5512,
+      "bill_no": "ZD2606281156480004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5521,
+      "bill_no": "ZD2606281200230001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5522,
+      "bill_no": "ZD2606281200230002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5523,
+      "bill_no": "ZD2606281200230003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5524,
+      "bill_no": "ZD2606281200230004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5533,
+      "bill_no": "ZD2606281203120001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5534,
+      "bill_no": "ZD2606281203120002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5535,
+      "bill_no": "ZD2606281203120003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5536,
+      "bill_no": "ZD2606281203120004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5545,
+      "bill_no": "ZD2606281206300001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5546,
+      "bill_no": "ZD2606281206300002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5547,
+      "bill_no": "ZD2606281206300003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5548,
+      "bill_no": "ZD2606281206300004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5557,
+      "bill_no": "ZD2606281209190001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5558,
+      "bill_no": "ZD2606281209190002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5559,
+      "bill_no": "ZD2606281209190003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5560,
+      "bill_no": "ZD2606281209190004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5569,
+      "bill_no": "ZD2606281212230001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5570,
+      "bill_no": "ZD2606281212230002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5571,
+      "bill_no": "ZD2606281212230003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5572,
+      "bill_no": "ZD2606281212230004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5581,
+      "bill_no": "ZD2606281216380001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5582,
+      "bill_no": "ZD2606281216380002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5583,
+      "bill_no": "ZD2606281216380003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5584,
+      "bill_no": "ZD2606281216380004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5593,
+      "bill_no": "ZD2606281219290001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5594,
+      "bill_no": "ZD2606281219290002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5595,
+      "bill_no": "ZD2606281219290003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5596,
+      "bill_no": "ZD2606281219290004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5605,
+      "bill_no": "ZD2606281222000001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5606,
+      "bill_no": "ZD2606281222000002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5607,
+      "bill_no": "ZD2606281222000003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5608,
+      "bill_no": "ZD2606281222000004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5617,
+      "bill_no": "ZD2606281224290001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5618,
+      "bill_no": "ZD2606281224290002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5619,
+      "bill_no": "ZD2606281224290003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5620,
+      "bill_no": "ZD2606281224290004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5629,
+      "bill_no": "ZD2606281227000001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5630,
+      "bill_no": "ZD2606281227000002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5631,
+      "bill_no": "ZD2606281227000003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5632,
+      "bill_no": "ZD2606281227000004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5641,
+      "bill_no": "ZD2606281229260001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5642,
+      "bill_no": "ZD2606281229260002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5643,
+      "bill_no": "ZD2606281229260003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5644,
+      "bill_no": "ZD2606281229260004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5749,
+      "bill_no": "ZD2606291538190001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5750,
+      "bill_no": "ZD2606291538190002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5751,
+      "bill_no": "ZD2606291538190003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5752,
+      "bill_no": "ZD2606291538190004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5761,
+      "bill_no": "ZD2606291541280001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5762,
+      "bill_no": "ZD2606291541280002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5763,
+      "bill_no": "ZD2606291541280003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5764,
+      "bill_no": "ZD2606291541280004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5773,
+      "bill_no": "ZD2606291544570001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5774,
+      "bill_no": "ZD2606291544570002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5775,
+      "bill_no": "ZD2606291544570003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5776,
+      "bill_no": "ZD2606291544570004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5797,
+      "bill_no": "ZD2606291548150001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5798,
+      "bill_no": "ZD2606291548150002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5799,
+      "bill_no": "ZD2606291548150003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5800,
+      "bill_no": "ZD2606291548150004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5809,
+      "bill_no": "ZD2606291551530001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5810,
+      "bill_no": "ZD2606291551530002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5811,
+      "bill_no": "ZD2606291551530003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5812,
+      "bill_no": "ZD2606291551530004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5821,
+      "bill_no": "ZD2606291554400001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5822,
+      "bill_no": "ZD2606291554400002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5823,
+      "bill_no": "ZD2606291554400003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5824,
+      "bill_no": "ZD2606291554400004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5833,
+      "bill_no": "ZD2606291557210001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5834,
+      "bill_no": "ZD2606291557210002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5835,
+      "bill_no": "ZD2606291557210003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5836,
+      "bill_no": "ZD2606291557210004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5845,
+      "bill_no": "ZD2606291559510001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5846,
+      "bill_no": "ZD2606291559510002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5847,
+      "bill_no": "ZD2606291559510003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5848,
+      "bill_no": "ZD2606291559510004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5857,
+      "bill_no": "ZD2606291602480001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5858,
+      "bill_no": "ZD2606291602480002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5859,
+      "bill_no": "ZD2606291602480003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5860,
+      "bill_no": "ZD2606291602480004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5869,
+      "bill_no": "ZD2606291605490001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5870,
+      "bill_no": "ZD2606291605490002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5871,
+      "bill_no": "ZD2606291605490003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5872,
+      "bill_no": "ZD2606291605490004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5881,
+      "bill_no": "ZD2606291609140001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5882,
+      "bill_no": "ZD2606291609140002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5883,
+      "bill_no": "ZD2606291609140003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5884,
+      "bill_no": "ZD2606291609140004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5893,
+      "bill_no": "ZD2606291611460001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5894,
+      "bill_no": "ZD2606291611460002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5895,
+      "bill_no": "ZD2606291611460003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5896,
+      "bill_no": "ZD2606291611460004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5905,
+      "bill_no": "ZD2606291614400001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5906,
+      "bill_no": "ZD2606291614400002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5907,
+      "bill_no": "ZD2606291614400003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5908,
+      "bill_no": "ZD2606291614400004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5917,
+      "bill_no": "ZD2606291617510001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5918,
+      "bill_no": "ZD2606291617510002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5919,
+      "bill_no": "ZD2606291617510003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5920,
+      "bill_no": "ZD2606291617510004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5929,
+      "bill_no": "ZD2606291620490001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5930,
+      "bill_no": "ZD2606291620490002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5931,
+      "bill_no": "ZD2606291620490003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5932,
+      "bill_no": "ZD2606291620490004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5941,
+      "bill_no": "ZD2606291624580001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5942,
+      "bill_no": "ZD2606291624580002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5943,
+      "bill_no": "ZD2606291624580003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5944,
+      "bill_no": "ZD2606291624580004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5953,
+      "bill_no": "ZD2606291631490001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5954,
+      "bill_no": "ZD2606291631490002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5955,
+      "bill_no": "ZD2606291631490003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5956,
+      "bill_no": "ZD2606291631490004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5965,
+      "bill_no": "ZD2606291634180001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5966,
+      "bill_no": "ZD2606291634180002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5967,
+      "bill_no": "ZD2606291634180003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5968,
+      "bill_no": "ZD2606291634180004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5977,
+      "bill_no": "ZD2606291636530001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5978,
+      "bill_no": "ZD2606291636530002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5979,
+      "bill_no": "ZD2606291636530003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 5980,
+      "bill_no": "ZD2606291636530004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6001,
+      "bill_no": "ZD2606291639310001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6002,
+      "bill_no": "ZD2606291639310002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6003,
+      "bill_no": "ZD2606291639310003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6004,
+      "bill_no": "ZD2606291639310004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6013,
+      "bill_no": "ZD2606291642240001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6014,
+      "bill_no": "ZD2606291642240002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6015,
+      "bill_no": "ZD2606291642240003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6016,
+      "bill_no": "ZD2606291642240004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6025,
+      "bill_no": "ZD2606291645150001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6026,
+      "bill_no": "ZD2606291645150002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6027,
+      "bill_no": "ZD2606291645150003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6028,
+      "bill_no": "ZD2606291645150004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6037,
+      "bill_no": "ZD2606291648200001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6038,
+      "bill_no": "ZD2606291648200002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6039,
+      "bill_no": "ZD2606291648200003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6040,
+      "bill_no": "ZD2606291648200004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6049,
+      "bill_no": "ZD2606291651080001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6050,
+      "bill_no": "ZD2606291651080002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6051,
+      "bill_no": "ZD2606291651080003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6052,
+      "bill_no": "ZD2606291651080004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6061,
+      "bill_no": "ZD2606291653530001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6062,
+      "bill_no": "ZD2606291653530002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6063,
+      "bill_no": "ZD2606291653530003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6064,
+      "bill_no": "ZD2606291653530004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6073,
+      "bill_no": "ZD2606291657370001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6074,
+      "bill_no": "ZD2606291657370002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6075,
+      "bill_no": "ZD2606291657370003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6076,
+      "bill_no": "ZD2606291657370004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6085,
+      "bill_no": "ZD2606291700030001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6086,
+      "bill_no": "ZD2606291700030002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6087,
+      "bill_no": "ZD2606291700030003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6088,
+      "bill_no": "ZD2606291700030004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6109,
+      "bill_no": "ZD2606291702370001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6110,
+      "bill_no": "ZD2606291702370002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6111,
+      "bill_no": "ZD2606291702370003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6112,
+      "bill_no": "ZD2606291702370004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6133,
+      "bill_no": "ZD2606291705040001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6134,
+      "bill_no": "ZD2606291705040002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6135,
+      "bill_no": "ZD2606291705040003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6136,
+      "bill_no": "ZD2606291705040004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6145,
+      "bill_no": "ZD2606291707440001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6146,
+      "bill_no": "ZD2606291707440002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6147,
+      "bill_no": "ZD2606291707440003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6148,
+      "bill_no": "ZD2606291707440004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6157,
+      "bill_no": "ZD2606291710370001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6158,
+      "bill_no": "ZD2606291710370002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6159,
+      "bill_no": "ZD2606291710370003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6160,
+      "bill_no": "ZD2606291710370004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6169,
+      "bill_no": "ZD2606291714380001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6170,
+      "bill_no": "ZD2606291714380002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6171,
+      "bill_no": "ZD2606291714380003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6172,
+      "bill_no": "ZD2606291714380004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6181,
+      "bill_no": "ZD2606291717590001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6182,
+      "bill_no": "ZD2606291717590002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6183,
+      "bill_no": "ZD2606291717590003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6184,
+      "bill_no": "ZD2606291717590004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6193,
+      "bill_no": "ZD2606291721210001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6194,
+      "bill_no": "ZD2606291721210002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6195,
+      "bill_no": "ZD2606291721210003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6196,
+      "bill_no": "ZD2606291721210004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6205,
+      "bill_no": "ZD2606291724070001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6206,
+      "bill_no": "ZD2606291724070002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6207,
+      "bill_no": "ZD2606291724070003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6208,
+      "bill_no": "ZD2606291724070004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6217,
+      "bill_no": "ZD2606291728020001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6218,
+      "bill_no": "ZD2606291728020002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6219,
+      "bill_no": "ZD2606291728020003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6220,
+      "bill_no": "ZD2606291728020004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6337,
+      "bill_no": "ZD2606301507450001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6338,
+      "bill_no": "ZD2606301507450002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6339,
+      "bill_no": "ZD2606301507450003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6340,
+      "bill_no": "ZD2606301507450004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6349,
+      "bill_no": "ZD2606301517020001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6350,
+      "bill_no": "ZD2606301517020002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6351,
+      "bill_no": "ZD2606301517020003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6352,
+      "bill_no": "ZD2606301517020004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6361,
+      "bill_no": "ZD2606301521220001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6362,
+      "bill_no": "ZD2606301521220002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6363,
+      "bill_no": "ZD2606301521220003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6364,
+      "bill_no": "ZD2606301521220004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6385,
+      "bill_no": "ZD2606301524500001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6386,
+      "bill_no": "ZD2606301524500002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6387,
+      "bill_no": "ZD2606301524500003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6388,
+      "bill_no": "ZD2606301524500004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6397,
+      "bill_no": "ZD2606301528340001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6398,
+      "bill_no": "ZD2606301528340002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6399,
+      "bill_no": "ZD2606301528340003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6400,
+      "bill_no": "ZD2606301528340004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6409,
+      "bill_no": "ZD2606301532580001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6410,
+      "bill_no": "ZD2606301532580002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6411,
+      "bill_no": "ZD2606301532580003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6412,
+      "bill_no": "ZD2606301532580004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6421,
+      "bill_no": "ZD2606301537320001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6422,
+      "bill_no": "ZD2606301537320002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6423,
+      "bill_no": "ZD2606301537320003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6424,
+      "bill_no": "ZD2606301537320004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6433,
+      "bill_no": "ZD2606301541310001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6434,
+      "bill_no": "ZD2606301541310002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6435,
+      "bill_no": "ZD2606301541310003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6436,
+      "bill_no": "ZD2606301541310004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6445,
+      "bill_no": "ZD2606301545300001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6446,
+      "bill_no": "ZD2606301545300002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6447,
+      "bill_no": "ZD2606301545300003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6448,
+      "bill_no": "ZD2606301545300004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6457,
+      "bill_no": "ZD2606301549240001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6458,
+      "bill_no": "ZD2606301549240002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6459,
+      "bill_no": "ZD2606301549240003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6460,
+      "bill_no": "ZD2606301549240004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6469,
+      "bill_no": "ZD2606301554150001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6470,
+      "bill_no": "ZD2606301554150002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6471,
+      "bill_no": "ZD2606301554150003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6472,
+      "bill_no": "ZD2606301554150004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6481,
+      "bill_no": "ZD2606301557360001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6482,
+      "bill_no": "ZD2606301557360002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6483,
+      "bill_no": "ZD2606301557360003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6484,
+      "bill_no": "ZD2606301557360004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6493,
+      "bill_no": "ZD2606301601090001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6494,
+      "bill_no": "ZD2606301601090002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6495,
+      "bill_no": "ZD2606301601090003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6496,
+      "bill_no": "ZD2606301601090004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6505,
+      "bill_no": "ZD2606301604260001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6506,
+      "bill_no": "ZD2606301604260002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6507,
+      "bill_no": "ZD2606301604260003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6508,
+      "bill_no": "ZD2606301604260004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6517,
+      "bill_no": "ZD2606301607360001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6518,
+      "bill_no": "ZD2606301607360002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6519,
+      "bill_no": "ZD2606301607360003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6520,
+      "bill_no": "ZD2606301607360004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6529,
+      "bill_no": "ZD2606301610460001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6530,
+      "bill_no": "ZD2606301610460002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6531,
+      "bill_no": "ZD2606301610460003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6532,
+      "bill_no": "ZD2606301610460004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6541,
+      "bill_no": "ZD2606301614010001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6542,
+      "bill_no": "ZD2606301614010002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6543,
+      "bill_no": "ZD2606301614010003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6544,
+      "bill_no": "ZD2606301614010004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6553,
+      "bill_no": "ZD2606301618120001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6554,
+      "bill_no": "ZD2606301618120002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6555,
+      "bill_no": "ZD2606301618120003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6556,
+      "bill_no": "ZD2606301618120004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6565,
+      "bill_no": "ZD2606301621420001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6566,
+      "bill_no": "ZD2606301621420002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6567,
+      "bill_no": "ZD2606301621420003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6568,
+      "bill_no": "ZD2606301621420004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6577,
+      "bill_no": "ZD2606301625090001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6578,
+      "bill_no": "ZD2606301625090002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6579,
+      "bill_no": "ZD2606301625090003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6580,
+      "bill_no": "ZD2606301625090004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6589,
+      "bill_no": "ZD2606301628230001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6590,
+      "bill_no": "ZD2606301628230002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6591,
+      "bill_no": "ZD2606301628230003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6592,
+      "bill_no": "ZD2606301628230004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6601,
+      "bill_no": "ZD2606301631550001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6602,
+      "bill_no": "ZD2606301631550002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6603,
+      "bill_no": "ZD2606301631550003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6604,
+      "bill_no": "ZD2606301631550004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6613,
+      "bill_no": "ZD2606301634470001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6614,
+      "bill_no": "ZD2606301634470002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6615,
+      "bill_no": "ZD2606301634470003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6616,
+      "bill_no": "ZD2606301634470004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6625,
+      "bill_no": "ZD2606301638030001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6626,
+      "bill_no": "ZD2606301638030002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6627,
+      "bill_no": "ZD2606301638030003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6628,
+      "bill_no": "ZD2606301638030004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6637,
+      "bill_no": "ZD2606301641060001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6638,
+      "bill_no": "ZD2606301641060002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6639,
+      "bill_no": "ZD2606301641060003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6640,
+      "bill_no": "ZD2606301641060004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6649,
+      "bill_no": "ZD2606301643460001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6650,
+      "bill_no": "ZD2606301643460002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6651,
+      "bill_no": "ZD2606301643460003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6652,
+      "bill_no": "ZD2606301643460004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6661,
+      "bill_no": "ZD2606301646590001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6662,
+      "bill_no": "ZD2606301646590002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6663,
+      "bill_no": "ZD2606301646590003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6664,
+      "bill_no": "ZD2606301646590004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6673,
+      "bill_no": "ZD2606301649580001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6674,
+      "bill_no": "ZD2606301649580002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6675,
+      "bill_no": "ZD2606301649580003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6676,
+      "bill_no": "ZD2606301649580004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6685,
+      "bill_no": "ZD2606301652230001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6686,
+      "bill_no": "ZD2606301652230002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6687,
+      "bill_no": "ZD2606301652230003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6688,
+      "bill_no": "ZD2606301652230004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6697,
+      "bill_no": "ZD2606301654530001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6698,
+      "bill_no": "ZD2606301654530002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6699,
+      "bill_no": "ZD2606301654530003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6700,
+      "bill_no": "ZD2606301654530004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6709,
+      "bill_no": "ZD2606301658320001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6710,
+      "bill_no": "ZD2606301658320002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6711,
+      "bill_no": "ZD2606301658320003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6712,
+      "bill_no": "ZD2606301658320004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6721,
+      "bill_no": "ZD2606301701480001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6722,
+      "bill_no": "ZD2606301701480002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6723,
+      "bill_no": "ZD2606301701480003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6724,
+      "bill_no": "ZD2606301701480004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6733,
+      "bill_no": "ZD2606301706110001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6734,
+      "bill_no": "ZD2606301706110002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6735,
+      "bill_no": "ZD2606301706110003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6736,
+      "bill_no": "ZD2606301706110004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6745,
+      "bill_no": "ZD2606301709340001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6746,
+      "bill_no": "ZD2606301709340002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6747,
+      "bill_no": "ZD2606301709340003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6748,
+      "bill_no": "ZD2606301709340004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6757,
+      "bill_no": "ZD2606301712440001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6758,
+      "bill_no": "ZD2606301712440002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6759,
+      "bill_no": "ZD2606301712440003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6760,
+      "bill_no": "ZD2606301712440004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6769,
+      "bill_no": "ZD2606301715450001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6770,
+      "bill_no": "ZD2606301715450002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6771,
+      "bill_no": "ZD2606301715450003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6772,
+      "bill_no": "ZD2606301715450004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6781,
+      "bill_no": "ZD2606301719160001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6782,
+      "bill_no": "ZD2606301719160002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6783,
+      "bill_no": "ZD2606301719160003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6784,
+      "bill_no": "ZD2606301719160004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6793,
+      "bill_no": "ZD2606301722100001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6794,
+      "bill_no": "ZD2606301722100002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6795,
+      "bill_no": "ZD2606301722100003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6796,
+      "bill_no": "ZD2606301722100004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6805,
+      "bill_no": "ZD2606301753330001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6806,
+      "bill_no": "ZD2606301753330002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6807,
+      "bill_no": "ZD2606301753330003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6808,
+      "bill_no": "ZD2606301753330004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6817,
+      "bill_no": "ZD2606301757480001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6818,
+      "bill_no": "ZD2606301757480002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6819,
+      "bill_no": "ZD2606301757480003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6820,
+      "bill_no": "ZD2606301757480004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6829,
+      "bill_no": "ZD2606301803120001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6830,
+      "bill_no": "ZD2606301803120002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6831,
+      "bill_no": "ZD2606301803120003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6832,
+      "bill_no": "ZD2606301803120004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6841,
+      "bill_no": "ZD2606301806320001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6842,
+      "bill_no": "ZD2606301806320002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6843,
+      "bill_no": "ZD2606301806320003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6844,
+      "bill_no": "ZD2606301806320004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6853,
+      "bill_no": "ZD2606301809580001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6854,
+      "bill_no": "ZD2606301809580002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6855,
+      "bill_no": "ZD2606301809580003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6856,
+      "bill_no": "ZD2606301809580004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6865,
+      "bill_no": "ZD2606301813090001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6866,
+      "bill_no": "ZD2606301813090002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6867,
+      "bill_no": "ZD2606301813090003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6868,
+      "bill_no": "ZD2606301813090004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6877,
+      "bill_no": "ZD2606301816330001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6878,
+      "bill_no": "ZD2606301816330002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6879,
+      "bill_no": "ZD2606301816330003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6880,
+      "bill_no": "ZD2606301816330004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6889,
+      "bill_no": "ZD2606301819240001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6890,
+      "bill_no": "ZD2606301819240002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6891,
+      "bill_no": "ZD2606301819240003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6892,
+      "bill_no": "ZD2606301819240004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6901,
+      "bill_no": "ZD2606301822230001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6902,
+      "bill_no": "ZD2606301822230002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6903,
+      "bill_no": "ZD2606301822230003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6904,
+      "bill_no": "ZD2606301822230004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6913,
+      "bill_no": "ZD2606301825480001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6914,
+      "bill_no": "ZD2606301825480002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6915,
+      "bill_no": "ZD2606301825480003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6916,
+      "bill_no": "ZD2606301825480004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6925,
+      "bill_no": "ZD2606301829170001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6926,
+      "bill_no": "ZD2606301829170002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6927,
+      "bill_no": "ZD2606301829170003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6928,
+      "bill_no": "ZD2606301829170004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6937,
+      "bill_no": "ZD2606301832050001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6938,
+      "bill_no": "ZD2606301832050002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6939,
+      "bill_no": "ZD2606301832050003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6940,
+      "bill_no": "ZD2606301832050004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6949,
+      "bill_no": "ZD2606301835010001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6950,
+      "bill_no": "ZD2606301835010002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6951,
+      "bill_no": "ZD2606301835010003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6952,
+      "bill_no": "ZD2606301835010004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6961,
+      "bill_no": "ZD2606301838030001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6962,
+      "bill_no": "ZD2606301838030002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6963,
+      "bill_no": "ZD2606301838030003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6964,
+      "bill_no": "ZD2606301838030004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6973,
+      "bill_no": "ZD2606301845040001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6974,
+      "bill_no": "ZD2606301845040002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6975,
+      "bill_no": "ZD2606301845040003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6976,
+      "bill_no": "ZD2606301845040004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6985,
+      "bill_no": "ZD2606301847510001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6986,
+      "bill_no": "ZD2606301847510002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6987,
+      "bill_no": "ZD2606301847510003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6988,
+      "bill_no": "ZD2606301847510004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6997,
+      "bill_no": "ZD2606301850320001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6998,
+      "bill_no": "ZD2606301850320002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 6999,
+      "bill_no": "ZD2606301850320003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 7000,
+      "bill_no": "ZD2606301850320004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 7815,
+      "bill_no": "ZD2607061520520003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 7816,
+      "bill_no": "ZD2607061520520004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 7972,
+      "bill_no": "ZD2607071341580004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 8080,
+      "bill_no": "ZD2607071611260004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 8500,
+      "bill_no": "ZD2607082111300004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 8512,
+      "bill_no": "ZD2607082115380004",
+      "affected_20261112": 1,
+      "affected_20261113": 0,
+      "current_settlement_status": 1
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 8524,
+      "bill_no": "ZD2607082133390004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 8896,
+      "bill_no": "ZD2607101207230004",
+      "affected_20261112": 1,
+      "affected_20261113": 0,
+      "current_settlement_status": 1
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 9064,
+      "bill_no": "ZD2607110810270004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 1
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 9088,
+      "bill_no": "ZD2607111040120004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 9148,
+      "bill_no": "ZD2607111156470004",
+      "affected_20261112": 1,
+      "affected_20261113": 0,
+      "current_settlement_status": 1
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 9232,
+      "bill_no": "ZD2607111551520004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 9316,
+      "bill_no": "ZD2607111749520004",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 9352,
+      "bill_no": "ZD2607111915170004",
+      "affected_20261112": 1,
+      "affected_20261113": 0,
+      "current_settlement_status": 1
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 9364,
+      "bill_no": "ZD2607111923380004",
+      "affected_20261112": 1,
+      "affected_20261113": 0,
+      "current_settlement_status": 1
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 9520,
+      "bill_no": "ZD2607121021180004",
+      "affected_20261112": 0,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 9640,
+      "bill_no": "ZD2607121355170004",
+      "affected_20261112": 0,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 12194,
+      "bill_no": "ZD2607201111350002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 12195,
+      "bill_no": "ZD2607201111350003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 12435,
+      "bill_no": "ZD2607210122520003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 12758,
+      "bill_no": "ZD2607211801570002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 12759,
+      "bill_no": "ZD2607211801570003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 14533,
+      "bill_no": "ZD2607271047400001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 14534,
+      "bill_no": "ZD2607271047400002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 14535,
+      "bill_no": "ZD2607271047400003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 17243,
+      "bill_no": "ZD2608041944150002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 17244,
+      "bill_no": "ZD2608041944150003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 17664,
+      "bill_no": "ZD2608061014380003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 18768,
+      "bill_no": "ZD2608100932590003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 19092,
+      "bill_no": "ZD2608111142090003",
+      "affected_20261112": 1,
+      "affected_20261113": 0,
+      "current_settlement_status": 1
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 19116,
+      "bill_no": "ZD2608111320090003",
+      "affected_20261112": 1,
+      "affected_20261113": 0,
+      "current_settlement_status": 1
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 20604,
+      "bill_no": "ZD2608111842190003",
+      "affected_20261112": 1,
+      "affected_20261113": 0,
+      "current_settlement_status": 1
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 20616,
+      "bill_no": "ZD2608111902510003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 20628,
+      "bill_no": "ZD2608111920170003",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 20700,
+      "bill_no": "ZD2608121144010003",
+      "affected_20261112": 0,
+      "affected_20261113": 1,
+      "current_settlement_status": 1
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 20808,
+      "bill_no": "ZD2608121627310003",
+      "affected_20261112": 0,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 20856,
+      "bill_no": "ZD2608121721040003",
+      "affected_20261112": 0,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 25043,
+      "bill_no": "ZD2608250845380002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 29435,
+      "bill_no": "ZD2609041729120002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 29987,
+      "bill_no": "ZD2609062110420002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 30851,
+      "bill_no": "ZD2609111202320002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 30899,
+      "bill_no": "ZD2609111432280002",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 31055,
+      "bill_no": "ZD2609111914000002",
+      "affected_20261112": 1,
+      "affected_20261113": 0,
+      "current_settlement_status": 1
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 31163,
+      "bill_no": "ZD2609121334300002",
+      "affected_20261112": 0,
+      "affected_20261113": 1,
+      "current_settlement_status": 1
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 33574,
+      "bill_no": "ZD2609241342540001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 38434,
+      "bill_no": "ZD2610111211000001",
+      "affected_20261112": 1,
+      "affected_20261113": 0,
+      "current_settlement_status": 1
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 38482,
+      "bill_no": "ZD2610111342530001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    },
+    {
+      "system": "智能柜",
+      "bill_id": 38530,
+      "bill_no": "ZD2610111734500001",
+      "affected_20261112": 1,
+      "affected_20261113": 1,
+      "current_settlement_status": 0
+    }
+  ]
+}

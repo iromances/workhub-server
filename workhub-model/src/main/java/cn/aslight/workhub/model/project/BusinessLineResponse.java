@@ -12,6 +12,7 @@ public record BusinessLineResponse(Long id,
                                    String gitlabGroupName,
                                    String description,
                                    Boolean enabled,
+                                   List<String> supportedEnvironments,
                                    List<BusinessLineAccessConfigResponse> accessConfigs,
                                    LocalDateTime createdAt,
                                    LocalDateTime updatedAt) {

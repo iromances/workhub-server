@@ -182,7 +182,7 @@ public class AgentCodeWorkspaceService {
             }
             active(context);
             String candidate = git.revise(resolved.directory(), workspace.candidateSha(), workspace.baseSha(), path,
-                    content, entry == null ? "100644" : entry.mode(), "WorkHub Agent task " + context.taskId() + " revision " + (version + 1),
+                    content, entry == null ? "100644" : entry.mode(), "Agent task " + context.taskId() + " revision " + (version + 1),
                     workspace.createdAt().toEpochSecond(ZoneOffset.UTC) + version + 1);
             active(context);
             String blob = delete ? "MISSING" : git.entries(resolved.directory(), candidate).stream().filter(item -> item.path().equals(path)).findFirst().orElseThrow().blob();

@@ -1,0 +1,8 @@
+{
+  "historyRows" : 43,
+  "uniqueMissingVersion" : "20261103.190110",
+  "checksumsDescriptionsTypesMatch" : true,
+  "noFailedMigrations" : true,
+  "checkedAt" : "2026-11-04T03:45:13.366189Z",
+  "approvedAction" : "mark only 20261103.190110 deleted; no migrate, no application startup"
+}

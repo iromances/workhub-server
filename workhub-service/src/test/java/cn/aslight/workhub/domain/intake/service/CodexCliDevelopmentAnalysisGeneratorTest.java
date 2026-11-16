@@ -19,6 +19,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CodexCliDevelopmentAnalysisGeneratorTest {
@@ -103,7 +104,8 @@ class CodexCliDevelopmentAnalysisGeneratorTest {
         assertEquals("实现绑卡核验", draft.workItems().getFirst().title());
         assertEquals("2h", draft.workItems().getFirst().estimatedEffort());
         assertEquals("dev-a", draft.workItems().getFirst().ownerUserName());
-        String capturedPrompt = String.valueOf(aiGatewayClient.capturedRequest.variables().get("prompt"));
+        String capturedPrompt = cn.aslight.workhub.service.ai.TestPromptTemplates.render(
+                "intake.development.analyze", aiGatewayClient.capturedRequest.variables());
         assertTrue(capturedPrompt.contains("结构化识别字段"));
         assertTrue(capturedPrompt.contains("需求 Markdown 文件"));
         assertTrue(capturedPrompt.contains("知识库需求迭代文件：供应链科技/供应链项目/需求迭代/2026/202603250009-新增绑卡核验规则.md"));
@@ -126,9 +128,68 @@ class CodexCliDevelopmentAnalysisGeneratorTest {
         assertEquals("intake.development.adjust", aiGatewayClient.capturedRequest.useCaseCode());
     }
 
+    @Test
+    void generate_shouldRejectEmptyWorkItemsInsteadOfSavingNarrationDraft() {
+        RecordingAiGatewayClient aiGatewayClient = new RecordingAiGatewayClient();
+        aiGatewayClient.outputOverride = """
+                {
+                  "summary": "我先梳理需求材料，再按约束检索代码，最后输出评估 JSON。",
+                  "requirementChangePoints": ["新增字段"],
+                  "impactedModules": [],
+                                    "workItems": []
+                }
+                """;
+        CodexCliDevelopmentAnalysisGenerator generator = new CodexCliDevelopmentAnalysisGenerator(
+                aiGatewayClient, new ChinaWorkdayCalendar(), new ObjectMapper());
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> generator.generate(
+                new IntakeRecordEntity(), minimalStructuredData(), minimalProject(), minimalBundle(), List.of(), "需求材料", "知识库"));
+        assertTrue(error.getMessage().contains("AI 未产出任务拆解"));
+    }
+
+    @Test
+    void adjust_shouldRejectEmptyWorkItemsToProtectExistingBreakdown() {
+        RecordingAiGatewayClient aiGatewayClient = new RecordingAiGatewayClient();
+        CodexCliDevelopmentAnalysisGenerator generator = new CodexCliDevelopmentAnalysisGenerator(
+                aiGatewayClient, new ChinaWorkdayCalendar(), new ObjectMapper());
+        DevelopmentAnalysisDraft current = generator.generate(
+                new IntakeRecordEntity(), minimalStructuredData(), minimalProject(), minimalBundle(),
+                List.of(new UserOptionResponse("dev-a", "研发A", "供应链科技")), "需求材料", "知识库");
+        aiGatewayClient.outputOverride = """
+                {
+                  "summary": "已按要求清空任务",
+                  "requirementChangePoints": [],
+                  "impactedModules": [],
+                                    "workItems": []
+                }
+                """;
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> generator.adjust(
+                current, "清空任务", minimalProject(), minimalBundle(), List.of()));
+        assertTrue(error.getMessage().contains("AI 未产出任务拆解"));
+    }
+
+    private IntakeStructuredData minimalStructuredData() {
+        return new IntakeStructuredData(
+                "需求审批", "测试需求", "周拓", null, "202611130001", "2026/11/13 10:00", "研发需求",
+                "feature/demo_202611130001", null, "测试", "测试需求", "测试需求描述。", "部门", "业务线", "中", null,
+                null, null, null, null, null, null, null, null, "业务线", List.of(), List.of(), null);
+    }
+
+    private ProjectDetailResponse minimalProject() {
+        return new ProjectDetailResponse(1L, "DEMO", "演示项目", "研发", "业务线", "owner", "ACTIVE", "描述",
+                LocalDateTime.now(), LocalDateTime.now());
+    }
+
+    private GitlabRepositoryService.GitlabRepositoryBundle minimalBundle() {
+        return new GitlabRepositoryService.GitlabRepositoryBundle(
+                "demo", Path.of("/tmp/workhub-demo"),
+                List.of(new GitlabRepositoryService.GitlabRepository("https://gitlab.example.com/workhub/demo.git", Path.of("/tmp/workhub-demo/demo"))));
+    }
+
     private static class RecordingAiGatewayClient implements AiGatewayClient {
 
         private AiGatewayRequest capturedRequest;
+        /** 置空则返回默认含任务拆解的成功载荷；用于模拟模型只交过程叙述的失败形态。 */
+        private String outputOverride;
 
         @Override
         public boolean isConfigured(String useCaseCode) {
@@ -143,14 +204,15 @@ class CodexCliDevelopmentAnalysisGeneratorTest {
         @Override
         public AiGatewayResult executeStructured(AiGatewayRequest request) {
             this.capturedRequest = request;
+            if (outputOverride != null) {
+                return AiGatewayResult.succeeded(outputOverride, "test-provider", "test-model", 1L);
+            }
             return AiGatewayResult.succeeded("""
                     {
                       "summary": "新增绑卡核验规则",
                       "requirementChangePoints": ["绑卡需要增加核验规则"],
                       "impactedModules": ["binding"],
-                      "risks": [],
-                      "questions": [],
-                      "workItems": [
+                                            "workItems": [
                         {
                           "title": "实现绑卡核验",
                           "description": "增加绑卡核验接口和异常提示",

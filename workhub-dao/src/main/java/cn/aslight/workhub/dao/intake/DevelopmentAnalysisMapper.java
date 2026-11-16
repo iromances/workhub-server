@@ -8,6 +8,8 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.util.List;
+
 /**
  * 研发分析草稿数据访问接口。
  */
@@ -21,6 +23,7 @@ public interface DevelopmentAnalysisMapper {
     @Select("""
             SELECT a.id, a.intake_id, a.project_id, a.business_line_code, bl.business_line_name AS business_line,
                    a.repository_url, a.analysis_status, a.analysis_message,
+                   a.started_at, a.finished_at,
                    CASE WHEN JSON_VALID(a.draft_json) THEN JSON_SET(JSON_REMOVE(a.draft_json, '$.businessLine'), '$.businessLineCode', a.business_line_code, '$.businessLine', bl.business_line_name) ELSE a.draft_json END AS draft_json,
                    a.zentao_sync_status, a.zentao_sync_message, a.created_by, a.updated_by, a.created_at, a.updated_at
             FROM pm_intake_development_analysis a
@@ -33,6 +36,7 @@ public interface DevelopmentAnalysisMapper {
     @Select("""
             SELECT a.id, a.intake_id, a.project_id, a.business_line_code, bl.business_line_name AS business_line,
                    a.repository_url, a.analysis_status, a.analysis_message,
+                   a.started_at, a.finished_at,
                    CASE WHEN JSON_VALID(a.draft_json) THEN JSON_SET(JSON_REMOVE(a.draft_json, '$.businessLine'), '$.businessLineCode', a.business_line_code, '$.businessLine', bl.business_line_name) ELSE a.draft_json END AS draft_json,
                    a.zentao_sync_status, a.zentao_sync_message, a.created_by, a.updated_by, a.created_at, a.updated_at
             FROM pm_intake_development_analysis a
@@ -43,6 +47,33 @@ public interface DevelopmentAnalysisMapper {
             LIMIT 1
             """)
     DevelopmentAnalysisEntity findLatestByIntakeId(Long intakeId);
+
+    @Select("""
+            SELECT a.id, a.intake_id, a.project_id, a.business_line_code, bl.business_line_name AS business_line,
+                   a.repository_url, a.analysis_status, a.analysis_message,
+                   a.started_at, a.finished_at,
+                   CASE WHEN JSON_VALID(a.draft_json) THEN JSON_SET(JSON_REMOVE(a.draft_json, '$.businessLine'), '$.businessLineCode', a.business_line_code, '$.businessLine', bl.business_line_name) ELSE a.draft_json END AS draft_json,
+                   a.zentao_sync_status, a.zentao_sync_message, a.created_by, a.updated_by, a.created_at, a.updated_at
+            FROM pm_intake_development_analysis a
+            LEFT JOIN pm_business_line bl
+              ON CAST(bl.business_line_code AS BINARY) = CAST(a.business_line_code AS BINARY)
+            WHERE a.intake_id = #{intakeId}
+            ORDER BY a.id DESC
+            """)
+    List<DevelopmentAnalysisEntity> listByIntakeId(Long intakeId);
+
+    @Update("""
+            UPDATE pm_intake_development_analysis
+            SET analysis_status = 'FAILED',
+                analysis_message = #{message},
+                updated_by = #{updatedBy},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE intake_id = #{intakeId}
+              AND analysis_status IN ('PENDING', 'RUNNING')
+            """)
+    int failInFlightByIntakeId(@Param("intakeId") Long intakeId,
+                               @Param("message") String message,
+                               @Param("updatedBy") String updatedBy);
 
     @Insert("""
             INSERT INTO pm_intake_development_analysis (
@@ -64,6 +95,8 @@ public interface DevelopmentAnalysisMapper {
                 repository_url = #{repositoryUrl},
                 analysis_status = #{analysisStatus},
                 analysis_message = #{analysisMessage},
+                started_at = CASE WHEN #{analysisStatus} = 'RUNNING' AND started_at IS NULL THEN CURRENT_TIMESTAMP ELSE started_at END,
+                finished_at = CASE WHEN #{analysisStatus} IN ('DRAFT', 'CONFIRMED', 'FAILED') AND finished_at IS NULL THEN CURRENT_TIMESTAMP ELSE finished_at END,
                 draft_json = CASE WHEN JSON_VALID(#{draftJson}) THEN JSON_REMOVE(#{draftJson}, '$.businessLine') ELSE #{draftJson} END,
                 zentao_sync_status = #{zentaoSyncStatus},
                 zentao_sync_message = #{zentaoSyncMessage},
@@ -80,6 +113,8 @@ public interface DevelopmentAnalysisMapper {
                 repository_url = #{repositoryUrl},
                 analysis_status = #{analysisStatus},
                 analysis_message = #{analysisMessage},
+                started_at = CASE WHEN #{analysisStatus} = 'RUNNING' AND started_at IS NULL THEN CURRENT_TIMESTAMP ELSE started_at END,
+                finished_at = CASE WHEN #{analysisStatus} IN ('DRAFT', 'CONFIRMED', 'FAILED') AND finished_at IS NULL THEN CURRENT_TIMESTAMP ELSE finished_at END,
                 draft_json = CASE WHEN JSON_VALID(#{draftJson}) THEN JSON_REMOVE(#{draftJson}, '$.businessLine') ELSE #{draftJson} END,
                 updated_by = #{updatedBy},
                 updated_at = CURRENT_TIMESTAMP
@@ -91,6 +126,8 @@ public interface DevelopmentAnalysisMapper {
             UPDATE pm_intake_development_analysis
             SET analysis_status = #{analysisStatus},
                 analysis_message = #{analysisMessage},
+                started_at = CASE WHEN #{analysisStatus} = 'RUNNING' AND started_at IS NULL THEN CURRENT_TIMESTAMP ELSE started_at END,
+                finished_at = CASE WHEN #{analysisStatus} IN ('DRAFT', 'CONFIRMED', 'FAILED') AND finished_at IS NULL THEN CURRENT_TIMESTAMP ELSE finished_at END,
                 zentao_sync_status = #{zentaoSyncStatus},
                 zentao_sync_message = #{zentaoSyncMessage},
                 updated_by = #{updatedBy},

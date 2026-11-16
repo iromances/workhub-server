@@ -15,6 +15,10 @@ public final class FakeAgentCliProcess {
         if (!prompt.contains("完整任务") && !prompt.contains("完整")) throw new IllegalStateException("缺少完整任务");
         if ("hang".equals(args[2])) { Thread.sleep(300_000); return; }
         if ("expect-new-input".equals(args[2]) && !prompt.contains("新的巡检要求")) throw new IllegalStateException("重新规划没有纳入人工补充");
+        if ("none".equals(args[0])) { // 未配置平台 MCP Token 时 CLI 不接 MCP，仅产出结论
+            Files.writeString(Path.of(args[1]), "{\"type\":\"RESULT\",\"summary\":\"无 MCP 时仅依据职责描述完成报告\"}");
+            return;
+        }
         try (var client = HttpClient.newHttpClient()) {
             var request = HttpRequest.newBuilder(URI.create(args[0])).timeout(Duration.ofSeconds(5))
                     .header("Authorization", "Bearer " + System.getenv("WORKHUB_AGENT_RUN_TOKEN"))

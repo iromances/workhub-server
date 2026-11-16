@@ -107,7 +107,7 @@ class KnowledgeArchiveIntegrationTest {
         }
         service.appendAnalysisNote(1L, 0L, "生成评估", Map.of("summary", "分析 0"), source, "tester");
         String notes = Files.readString(documents().resolve("notes.md"));
-        assertEquals(24, notes.split("<!-- workhub-analysis:", -1).length - 1);
+        assertEquals(24, notes.split("<!-- analysis-record:", -1).length - 1);
         assertTrue(notes.startsWith("# 工作笔记\n\n## 投资\n保留投资"));
         assertTrue(notes.endsWith("\n## 研发\n保留研发\n"));
         assertTrue(notes.contains("旧记录"));
@@ -125,7 +125,7 @@ class KnowledgeArchiveIntegrationTest {
                 draft(source, "第一轮结论"), "reviewer", "2026-10-18T12:01:00");
         assertEquals(first, Files.readString(location.wikiPath()));
         assertFalse(Files.exists(location.wikiFolderPath().resolve("历史版本")));
-        String index = Files.readString(documents().resolve("requirements/index.md"));
+        String index = Files.readString(documents().resolve("业务线/index.md"));
         assertEquals(1, index.split(java.util.regex.Pattern.quote("(<" + location.wikiPath() + ">)"), -1).length - 1);
         service.publishConfirmedAnalysis(intake("原始需求"), input(), project(), 2L,
                 draft(source, "修订结论"), "reviewer", "2026-10-18T12:02:00");
@@ -200,7 +200,7 @@ class KnowledgeArchiveIntegrationTest {
         service.appendAnalysisNote(1L, 7L, "回复需求澄清项", Map.of("response", "已经回复"), null, "tester");
         service.appendAnalysisNote(1L, 7L, "回复需求澄清项", Map.of("response", "已经回复"), null, "tester");
         String notes = Files.readString(documents().resolve("notes.md"));
-        assertEquals(2, notes.split("<!-- workhub-analysis:", -1).length - 1);
+        assertEquals(2, notes.split("<!-- analysis-record:", -1).length - 1);
         assertEquals(2, notes.split(java.util.regex.Pattern.quote("- 来源：[来源版本](<" + documents().resolve(source) + ">)"), -1).length - 1);
         assertFalse(notes.contains("历史分析未记录输入版本"));
     }
@@ -228,7 +228,7 @@ class KnowledgeArchiveIntegrationTest {
         var report = service.publishConfirmedAnalysis(intake("材料"), input(), project(), 9L,
                 draft(source.rawRelativePath(), "确认结论"), "reviewer", "2026-10-30T12:00:00");
         assertTrue(report.rawPath().startsWith(repository.resolve("docs/requirement-sources")));
-        assertTrue(report.wikiPath().startsWith(repository.resolve("docs/requirements")));
+        assertTrue(report.wikiPath().startsWith(repository.resolve("docs/业务线")));
         assertTrue(Files.readString(documents().resolve("notes.md")).contains("过程记录"));
         assertNull(report.wikiObsidianUrl());
         assertEquals("知识库仅保留手工知识笔记", Files.readString(vault.resolve("notes.md")));
@@ -247,7 +247,7 @@ class KnowledgeArchiveIntegrationTest {
         Files.writeString(binding, legacy);
         service.appendAnalysisNote(1L, 7L, "回复需求澄清项", Map.of("response", "回答"), null, "tester");
         service.appendAnalysisNote(1L, 7L, "回复需求澄清项", Map.of("response", "回答"), null, "tester");
-        assertEquals(1, Files.readString(documents().resolve("notes.md")).split("<!-- workhub-analysis:", -1).length - 1);
+        assertEquals(1, Files.readString(documents().resolve("notes.md")).split("<!-- analysis-record:", -1).length - 1);
         var location = service.publishConfirmedAnalysis(intake("材料"), input(), project(), 7L,
                 draft(legacy, "已确认"), "reviewer", "2026-10-30T12:00:00");
         String report = Files.readString(location.wikiPath());

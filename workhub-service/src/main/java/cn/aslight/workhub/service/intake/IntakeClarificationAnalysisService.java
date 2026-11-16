@@ -12,6 +12,8 @@ import cn.aslight.workhub.model.intake.IntakeHistoryEntity;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * 研发需求澄清分析与逐项回复服务。
@@ -32,13 +35,15 @@ import java.util.concurrent.Executor;
 @Service
 public class IntakeClarificationAnalysisService {
 
+    private static final Logger log = LoggerFactory.getLogger(IntakeClarificationAnalysisService.class);
+
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_RUNNING = "RUNNING";
     private static final String STATUS_DRAFT = "DRAFT";
     private static final String STATUS_FAILED = "FAILED";
     private static final String STATUS_CONFIRMED = "CONFIRMED";
-    private static final String MESSAGE_PENDING = "需求澄清分析已提交，系统正在后台拉取 GitLab 最新代码并调用 AI 分析。";
     private static final String MESSAGE_RUNNING = "需求澄清分析正在执行，请稍后刷新查看结果。";
+    private static final String MESSAGE_SUPERSEDED = "超时未完成，已被新一次澄清分析取代。";
     private static final Duration EXECUTION_STALE_TIMEOUT = Duration.ofMinutes(30);
 
     private final IntakeMapper intakeMapper;
@@ -79,6 +84,12 @@ public class IntakeClarificationAnalysisService {
         return entity == null ? null : toResponse(entity);
     }
 
+    public List<IntakeClarificationAnalysisResponse> history(Long intakeId) {
+        return clarificationAnalysisMapper.listByIntakeId(intakeId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     public IntakeClarificationAnalysisResponse analyze(Long intakeId, String operatorUserName) {
         IntakeRecordEntity intake = requireIntake(intakeId);
         IntakeStructuredData structuredData = readStructuredData(intake.getStructuredDataJson());
@@ -95,16 +106,20 @@ public class IntakeClarificationAnalysisService {
             projectKnowledgeBaseService.appendAnalysisNote(intakeId, existing.getId(), "重评前保留澄清记录",
                     readItems(existing.getItemsJson()), null, operatorUserName);
         }
-        IntakeClarificationAnalysisEntity entity = upsertExecutionState(
-                existing,
+        clarificationAnalysisMapper.failInFlightByIntakeId(intakeId, MESSAGE_SUPERSEDED, operatorUserName);
+        IntakeClarificationAnalysisEntity entity = insertExecutionState(
                 intakeId,
                 resolveBusinessLine(structuredData),
-                STATUS_PENDING,
-                MESSAGE_PENDING,
-                null,
                 operatorUserName
         );
-        workhubTaskExecutor.execute(() -> executeAnalysis(entity.getId(), intakeId, operatorUserName));
+        try {
+            workhubTaskExecutor.execute(() -> executeAnalysis(entity.getId(), intakeId, operatorUserName));
+        } catch (RejectedExecutionException ex) {
+            String message = "澄清分析任务提交失败，系统繁忙，请稍后重试。";
+            markAnalysisFailed(entity.getId(), message, operatorUserName);
+            recordHistory(intakeId, "需求澄清分析失败", message + "原因：" + summarizeException(ex), operatorUserName);
+            throw new IllegalStateException(message, ex);
+        }
         return toResponse(entity);
     }
 
@@ -165,6 +180,27 @@ public class IntakeClarificationAnalysisService {
     }
 
     void executeAnalysis(Long analysisId, Long intakeId, String operatorUserName) {
+        long startedAt = System.currentTimeMillis();
+        log.info("需求澄清分析开始执行 analysisId={}, intakeId={}, operator={}", analysisId, intakeId, operatorUserName);
+        try {
+            runAnalysis(analysisId, intakeId, operatorUserName);
+        } catch (Throwable ex) {
+            log.error("需求澄清分析异常终止 analysisId={}, intakeId={}, 耗时={}ms",
+                    analysisId, intakeId, System.currentTimeMillis() - startedAt, ex);
+            try {
+                markAnalysisFailed(analysisId, "分析异常终止：" + summarizeThrowable(ex), operatorUserName);
+                recordHistory(intakeId, "需求澄清分析失败",
+                        "分析异常终止，已兜底置为失败：" + summarizeThrowable(ex), operatorUserName);
+            } catch (Throwable fallbackEx) {
+                log.error("需求澄清分析失败状态写入失败 analysisId={}, intakeId={}", analysisId, intakeId, fallbackEx);
+            }
+            return;
+        }
+        log.info("需求澄清分析执行结束 analysisId={}, intakeId={}, 耗时={}ms",
+                analysisId, intakeId, System.currentTimeMillis() - startedAt);
+    }
+
+    private void runAnalysis(Long analysisId, Long intakeId, String operatorUserName) {
         IntakeClarificationAnalysisEntity running = requireAnalysisEntity(analysisId);
         running.setAnalysisStatus(STATUS_RUNNING);
         running.setAnalysisMessage(MESSAGE_RUNNING);
@@ -221,31 +257,28 @@ public class IntakeClarificationAnalysisService {
                 ex -> recordHistory(intakeId, "澄清归档失败", "业务结果已保存，可独立重试归档：" + ex.getMessage(), operator));
     }
 
-    private IntakeClarificationAnalysisEntity upsertExecutionState(IntakeClarificationAnalysisEntity existing,
-                                                                   Long intakeId,
+    private IntakeClarificationAnalysisEntity insertExecutionState(Long intakeId,
                                                                    String businessLine,
-                                                                   String status,
-                                                                   String message,
-                                                                   String itemsJson,
                                                                    String operatorUserName) {
-        IntakeClarificationAnalysisEntity entity = existing;
-        if (entity == null) {
-            entity = new IntakeClarificationAnalysisEntity();
-            entity.setIntakeId(intakeId);
-            entity.setCreatedBy(operatorUserName);
-        }
+        IntakeClarificationAnalysisEntity entity = new IntakeClarificationAnalysisEntity();
+        entity.setIntakeId(intakeId);
         entity.setBusinessLineCode(resolveBusinessLineCode(businessLine));
         entity.setBusinessLine(null);
-        entity.setAnalysisStatus(status);
-        entity.setAnalysisMessage(message);
-        entity.setItemsJson(itemsJson);
+        entity.setAnalysisStatus(STATUS_PENDING);
+        entity.setAnalysisMessage(null);
+        entity.setItemsJson(null);
+        entity.setCreatedBy(operatorUserName);
         entity.setUpdatedBy(operatorUserName);
-        if (entity.getId() == null) {
-            clarificationAnalysisMapper.insert(entity);
-        } else {
-            clarificationAnalysisMapper.update(entity);
-        }
+        clarificationAnalysisMapper.insert(entity);
         return clarificationAnalysisMapper.findLatestByIntakeId(intakeId);
+    }
+
+    private void markAnalysisFailed(Long analysisId, String message, String operatorUserName) {
+        IntakeClarificationAnalysisEntity failed = requireAnalysisEntity(analysisId);
+        failed.setAnalysisStatus(STATUS_FAILED);
+        failed.setAnalysisMessage(message);
+        failed.setUpdatedBy(operatorUserName);
+        clarificationAnalysisMapper.updateExecutionState(failed);
     }
 
     private ProjectDetailResponse resolveProjectForGroup(IntakeStructuredData structuredData) {
@@ -353,10 +386,20 @@ public class IntakeClarificationAnalysisService {
                 entity.getIntakeId(),
                 entity.getAnalysisStatus(),
                 entity.getAnalysisMessage(),
+                isRetryable(entity),
+                entity.getStartedAt(),
+                entity.getFinishedAt(),
                 readItems(entity.getItemsJson()),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
+    }
+
+    private boolean isRetryable(IntakeClarificationAnalysisEntity entity) {
+        if (entity == null) {
+            return true;
+        }
+        return !isExecutionInProgress(entity.getAnalysisStatus()) || isStaleExecution(entity);
     }
 
     private IntakeStructuredData readStructuredData(String json) {
@@ -432,5 +475,10 @@ public class IntakeClarificationAnalysisService {
     private String summarizeException(Exception ex) {
         String message = ex.getMessage();
         return message == null || message.isBlank() ? ex.getClass().getSimpleName() : message;
+    }
+
+    private String summarizeThrowable(Throwable ex) {
+        String message = ex.getMessage();
+        return message == null || message.isBlank() ? ex.getClass().getName() : message;
     }
 }

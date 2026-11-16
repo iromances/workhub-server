@@ -1,0 +1,276 @@
+{
+  "time": "2026-11-04T09:11:14.889707+08:00",
+  "operation": "git fetch origin; no checkout/reset",
+  "results": [
+    {
+      "repo": "bpm-framework",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "etc-doc",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "etc-tools",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "insurance-exinterface",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "intf-abc",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "intf-bank",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "intf-boc",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "intf-ccb",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "intf-common",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "intf-credit",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "intf-gs",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "intf-hs",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "intf-icbc",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "intf-qdccb",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "intf-risk",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "intf-sence-back",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "invoice-exinterface",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "mock-server",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "saps-account-checker",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "saps-back",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-account",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-auth",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-cashloan",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-cms",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-contract",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-crm",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-devicemanage",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-eas",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-ebaby-gateway",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-ems-logistics",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-etc",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-etc-issue",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-front-gateway",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-guangdong-tools",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-lianrongbao",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-marketing",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-marketing-back",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-marketing-gateway",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-message",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-op-gateway",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-partner-gateway",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-payment",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-public",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-report",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-risk-backend",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-saps",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-saps-core-common",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-scaffold",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-scene",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-sf-logistics",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-user",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "thctay-wms",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "xxl-job-admin",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "repo": "xxt-front-scafold",
+      "exitCode": 0,
+      "error": ""
+    }
+  ]
+}

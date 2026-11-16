@@ -14,7 +14,9 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 基于 Codex CLI 的研发需求澄清项生成器。
@@ -77,9 +79,9 @@ public class CodexCliClarificationAnalysisGenerator {
         if (!aiGatewayClient.isConfigured(USE_CASE_CODE)) {
             throw new IllegalArgumentException("AI 场景未配置或已停用，不能执行需求澄清分析");
         }
-        AiGatewayResult result = aiGatewayClient.executeStructured(AiGatewayRequest.structured(
+        AiGatewayResult result = aiGatewayClient.executeStructured(AiGatewayRequest.withVariables(
                 USE_CASE_CODE,
-                buildPrompt(intake, structuredData, project, requirementMarkdownContext, knowledgeBaseContext),
+                buildVariables(intake, structuredData, project, requirementMarkdownContext, knowledgeBaseContext),
                 repositoryBundle.localRoot(),
                 repositoryBundle.repositories().stream().map(item -> item.localPath().toString()).toList(),
                 List.of(),
@@ -96,64 +98,26 @@ public class CodexCliClarificationAnalysisGenerator {
         }
     }
 
-    private String buildPrompt(IntakeRecordEntity intake,
-                               IntakeStructuredData structuredData,
-                               ProjectDetailResponse project,
-                               String requirementMarkdownContext,
-                               String knowledgeBaseContext) {
-        return """
-                你是 WorkHub 的研发需求澄清助手。
-                请结合需求材料、结构化字段、项目知识库和代码仓库，列出澄清阶段需要人工逐项确认的问题和风险。
-
-                输出要求：
-                1. confirmationItems 只放需要业务或产品逐项回复的待确认项。
-                2. riskItems 只放需要人工知晓并确认接受的风险项。
-                3. 每一项必须独立、可回复，不要把多个问题合在一个条目里。
-                4. 不要输出研发任务，不要估算工时，不要修改代码。
-                5. 如果需求已经明确，可以返回空数组；不要为了凑数制造问题。
-                6. evidence 写明来自需求材料、结构化字段、知识库或代码的依据；证据不足时说明“不足”。
-
-                项目信息：
-                - 项目：%s
-                - 业务线：%s
-                - 负责人：%s
-
-                需求 Markdown 文件：
-                %s
-
-                需求信息：
-                - 审批编号：%s
-                - 需求名称：%s
-                - 需求描述：%s
-                - 业务线：%s
-                - 备注：%s
-
-                结构化识别字段：
-                %s
-
-                附件内容摘要：
-                %s
-
-                项目知识库参考：
-                %s
-
-                原始内容：
-                %s
-                """.formatted(
-                value(project.name()),
-                value(project.businessLine()),
-                value(project.ownerUserName()),
-                value(requirementMarkdownContext),
-                value(structuredData.approvalCode()),
-                value(structuredData.requirementNameOrTitle()),
-                value(structuredData.requirementSummary()),
-                value(structuredData.businessLine()),
-                value(structuredData.remark()),
-                formatStructuredFields(structuredData.fields()),
-                formatAttachmentSummaries(structuredData.attachmentSummaries()),
-                value(knowledgeBaseContext),
-                value(intake.getRawContent())
-        );
+    Map<String, Object> buildVariables(IntakeRecordEntity intake,
+                                       IntakeStructuredData structuredData,
+                                       ProjectDetailResponse project,
+                                       String requirementMarkdownContext,
+                                       String knowledgeBaseContext) {
+        Map<String, Object> variables = new LinkedHashMap<>();
+        variables.put("projectInfo", "- 项目：" + value(project.name())
+                + "\n- 业务线：" + value(project.businessLine())
+                + "\n- 负责人：" + value(project.ownerUserName()));
+        variables.put("requirementMarkdown", value(requirementMarkdownContext));
+        variables.put("intakeInfo", "- 审批编号：" + value(structuredData.approvalCode())
+                + "\n- 需求名称：" + value(structuredData.requirementNameOrTitle())
+                + "\n- 需求描述：" + value(structuredData.requirementSummary())
+                + "\n- 业务线：" + value(structuredData.businessLine())
+                + "\n- 备注：" + value(structuredData.remark()));
+        variables.put("structuredFields", formatStructuredFields(structuredData.fields()));
+        variables.put("attachmentSummaries", formatAttachmentSummaries(structuredData.attachmentSummaries()));
+        variables.put("knowledgeBase", value(knowledgeBaseContext));
+        variables.put("rawContent", value(intake.getRawContent()));
+        return variables;
     }
 
     private List<IntakeClarificationItem> normalize(RawClarificationAnalysis raw) {

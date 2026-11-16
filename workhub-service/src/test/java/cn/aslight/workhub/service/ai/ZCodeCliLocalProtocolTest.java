@@ -148,17 +148,17 @@ class ZCodeCliLocalProtocolTest {
         } finally { assertTrue(ZCodeCliClient.stopTree(process, descendants)); }
     }
     @Test void actualZcodeModelOnlyTaskHasNoHostTools() throws Exception {
-        String result = client.execute(provider, provider.getDefaultModel(), "disabled", "返回本地测试结果。", 20);
+        String result = client.execute(provider, provider.getDefaultModel(), "disabled", "返回本地测试结果。", 20, List.of(), null, null, null, List.of());
         assertEquals("RESULT", json.readTree(result).path("type").asText()); assertNull(handlerFailure.get()); assertEquals(1, requests.size());
     }
     @Test void forgedBashCallCannotWriteToHost() throws Exception {
         attack = true;
-        try { client.execute(provider, provider.getDefaultModel(), "disabled", "本地工具限制测试。", 15); }
+        try { client.execute(provider, provider.getDefaultModel(), "disabled", "本地工具限制测试。", 15, List.of(), null, null, null, List.of()); }
         catch (IllegalStateException | IllegalArgumentException expected) { /* 拒绝是允许的失败结果。 */ }
         assertFalse(Files.exists(directory.resolve("forbidden-write"))); assertEquals(0, mcpCalls.get()); assertNull(handlerFailure.get()); assertFalse(requests.isEmpty());
     }
     @Test void timedOutActualZcodeIsStoppedAndDoesNotProduceSuccess() {
         hang = true;
-        assertThrows(IllegalStateException.class, () -> client.execute(provider, provider.getDefaultModel(), "disabled", "超时测试。", 2));
+        assertThrows(IllegalStateException.class, () -> client.execute(provider, provider.getDefaultModel(), "disabled", "超时测试。", 2, List.of(), null, null, null, List.of()));
     }
 }

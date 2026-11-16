@@ -2,6 +2,7 @@ package cn.aslight.workhub.service.intake;
 
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
+import cn.aslight.workhub.model.intake.IntakeSddDocuments;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisDraft;
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
 import cn.aslight.workhub.service.system.SysConfigService;
@@ -45,6 +46,8 @@ public class ProjectKnowledgeBaseService {
 
     public static final String CONFIG_GROUP = "knowledge.project";
     public static final String CONFIG_KEY_VAULT_PATH = "vaultPath";
+    public static final String CONFIG_KEY_SDD_PROCESS_PATH = "sddProcessPath";
+    public static final String DEFAULT_SDD_PROCESS_PATH = "schema/研发/SDD/流程.md";
 
     private static final Logger log = LoggerFactory.getLogger(ProjectKnowledgeBaseService.class);
     private static final int MAX_SCAN_FILES = 800;
@@ -100,6 +103,31 @@ public class ProjectKnowledgeBaseService {
         if (contexts.isEmpty()) { return "- 未在项目文档或知识库中命中相关内容"; }
         int budget = (MAX_CONTEXT_CHARS - (contexts.size() - 1) * 2) / contexts.size();
         return String.join("\n\n", contexts.stream().map(text -> text.substring(0, Math.min(text.length(), budget))).toList());
+    }
+
+    /**
+     * 定向读取知识库中的 SDD 流程规范全文，供 SDD 模式设计评估使用。
+     *
+     * @return 规范文本（超长按读取上限截断）
+     * @throws IllegalStateException 知识库根目录未配置或规范文件不存在
+     */
+    public String readSddProcessSpec() {
+        String configuredPath = trimToNull(sysConfigService.findPlainValue(CONFIG_GROUP, CONFIG_KEY_VAULT_PATH));
+        if (configuredPath == null) {
+            throw new IllegalStateException("SDD 模式需要先在系统配置中维护知识库根目录（knowledge.project.vaultPath）");
+        }
+        Path vaultRoot = Path.of(configuredPath).toAbsolutePath().normalize();
+        String relative = trimToNull(sysConfigService.findPlainValue(CONFIG_GROUP, CONFIG_KEY_SDD_PROCESS_PATH));
+        Path specPath = vaultRoot.resolve(relative == null ? DEFAULT_SDD_PROCESS_PATH : relative).normalize();
+        if (!specPath.startsWith(vaultRoot) || !Files.isRegularFile(specPath)) {
+            throw new IllegalStateException("知识库中未找到 SDD 流程规范文件：" + specPath);
+        }
+        try {
+            String content = Files.readString(specPath);
+            return content.length() <= MAX_READ_CHARS ? content : content.substring(0, MAX_READ_CHARS);
+        } catch (Exception ex) {
+            throw new IllegalStateException("读取 SDD 流程规范失败：" + ex.getMessage(), ex);
+        }
     }
 
     /** 评估前仅归档原始材料；返回本轮不可变来源快照，供提示词与后续分析追溯。 */
@@ -169,11 +197,19 @@ public class ProjectKnowledgeBaseService {
             KnowledgeArchiveFiles.locked(vault, () -> {
                 // 来源绑定不是分析正文：用于同一澄清记录的后续回复和独立重试关联原输入。
                 String family = phase.contains("澄清") ? "clarification" : "development";
-                Path binding = KnowledgeArchiveFiles.checked(vault, vault.resolve("requirement-sources/.workhub-analysis-sources")
-                        .resolve(intakeId + "-" + analysisId + "-" + family + ".txt"));
+                String bindingName = intakeId + "-" + analysisId + "-" + family + ".txt";
+                Path binding = KnowledgeArchiveFiles.checked(vault, vault.resolve("requirement-sources/.analysis-sources")
+                        .resolve(bindingName));
+                // 2026-11-13 前的来源绑定写在 .workhub-analysis-sources，读取时兼容旧目录
+                Path legacyBinding = KnowledgeArchiveFiles.checked(vault,
+                        vault.resolve("requirement-sources/.workhub-analysis-sources").resolve(bindingName));
                 String resolvedSource = sourcePath;
-                if ((resolvedSource == null || resolvedSource.isBlank()) && Files.exists(binding)) {
-                    resolvedSource = Files.readString(binding);
+                if (resolvedSource == null || resolvedSource.isBlank()) {
+                    if (Files.exists(binding)) {
+                        resolvedSource = Files.readString(binding);
+                    } else if (Files.exists(legacyBinding)) {
+                        resolvedSource = Files.readString(legacyBinding);
+                    }
                 }
                 String source = sourceLink(vault, resolvedSource);
                 if (resolvedSource != null && !resolvedSource.isBlank()) {
@@ -181,16 +217,18 @@ public class ProjectKnowledgeBaseService {
                 }
                 String fingerprint = KnowledgeArchiveFiles.digest((intakeId + "|" + analysisId + "|" + family + "|" + resolvedSource + "|" + json)
                         .getBytes(StandardCharsets.UTF_8));
-                String marker = "<!-- workhub-analysis:" + fingerprint + " -->";
+                String marker = "<!-- analysis-record:" + fingerprint + " -->";
+                // 2026-11-13 前的幂等标记为 workhub-analysis，同指纹视为已追加
+                String legacyMarker = "<!-- workhub-analysis:" + fingerprint + " -->";
                 Path notes = KnowledgeArchiveFiles.checked(vault, vault.resolve("notes.md"));
                 String previous = Files.exists(notes) ? Files.readString(notes) : "# 工作笔记\n";
-                if (previous.contains(marker)) { return null; }
+                if (previous.contains(marker) || previous.contains(legacyMarker)) { return null; }
                 String heading = "\n## 公司项目\n";
                 if (!previous.contains(heading)) { previous += heading; }
                 int start = previous.indexOf(heading) + heading.length();
                 int end = previous.indexOf("\n## ", start);
                 if (end < 0) { end = previous.length(); }
-                String record = "\n\n### WorkHub 临时分析 · " + phase + " · 需求 " + intakeId
+                String record = "\n\n### 临时分析 · " + phase + " · 需求 " + intakeId
                         + "\n\n" + marker + "\n\n- 状态：待确认／过程记录，不代表正式审批\n- 分析 ID：" + analysisId
                         + "\n- 记录时间：" + LocalDateTime.now() + "\n- 操作者：" + operator
                         + "\n- 来源：" + source + "\n\n" + fenced(json, "json") + "\n";
@@ -253,7 +291,8 @@ public class ProjectKnowledgeBaseService {
     }
 
     private void indexConfirmedReport(RequirementKnowledgeLocation location) throws IOException {
-        Path index = KnowledgeArchiveFiles.checked(location.vaultRoot(), location.vaultRoot().resolve("requirements/index.md"));
+        Path index = KnowledgeArchiveFiles.checked(location.vaultRoot(),
+                location.vaultRoot().resolve(RepositoryDocumentPaths.BUSINESS_LINES).resolve("index.md"));
         String previous = Files.exists(index) ? Files.readString(index) : "# 公司项目研发需求\n";
         String link = "[" + location.wikiRelativePath().replace('\\', '/') + "](<" + location.wikiPath() + ">)";
         if (!previous.contains(location.wikiPath().toString())) {
@@ -316,8 +355,8 @@ public class ProjectKnowledgeBaseService {
 
     private Path buildWikiRequirementPath(Path vaultRoot, IntakeStructuredData structuredData, ProjectDetailResponse project, Long intakeId) {
         return vaultRoot
-                .resolve(RepositoryDocumentPaths.REQUIREMENTS)
-                .resolve(businessLineSegment(project))
+                .resolve(RepositoryDocumentPaths.BUSINESS_LINES)
+                .resolve(businessLineDirSegment(project))
                 .resolve("需求迭代")
                 .resolve(projectNameSegment(project))
                 .resolve(resolveRequirementYear(structuredData))
@@ -326,9 +365,72 @@ public class ProjectKnowledgeBaseService {
                 .normalize();
     }
 
+    /**
+     * SDD 模式确认后，将 AI 草稿中的三件套内容发布为需求迭代目录下的 proposal/design/tasks Markdown。
+     * 逐份独立写入：某一份内容为空时跳过该份，已存在同指纹文件时不重复写。
+     */
+    public void publishSddDocuments(IntakeRecordEntity intake,
+                                    IntakeStructuredData structuredData,
+                                    ProjectDetailResponse project,
+                                    Long analysisId,
+                                    DevelopmentAnalysisDraft draft,
+                                    String confirmedBy,
+                                    String confirmedAt) {
+        if (draft == null || draft.sddDocuments() == null || !draft.sddDocuments().hasAny()) {
+            return;
+        }
+        RequirementKnowledgeLocation location = resolveRequirementIterationLocation(structuredData, project, intake.getId());
+        Path folder = location.wikiPath().getParent();
+        IntakeSddDocuments documents = draft.sddDocuments();
+        writeSddDocument(location.vaultRoot(), folder, "proposal.md", "Proposal", documents.sddProposal(),
+                intake, analysisId, confirmedBy, confirmedAt);
+        writeSddDocument(location.vaultRoot(), folder, "design.md", "Design", documents.sddDesign(),
+                intake, analysisId, confirmedBy, confirmedAt);
+        writeSddDocument(location.vaultRoot(), folder, "tasks.md", "Tasks", documents.sddTasks(),
+                intake, analysisId, confirmedBy, confirmedAt);
+    }
+
+    private void writeSddDocument(Path vaultRoot, Path folder, String fileName, String label, String content,
+                                  IntakeRecordEntity intake, Long analysisId, String confirmedBy, String confirmedAt) {
+        if (content == null || content.isBlank()) {
+            return;
+        }
+        String fingerprint = KnowledgeArchiveFiles.digest((intake.getId() + "|" + analysisId + "|" + label + "|" + content)
+                .getBytes(StandardCharsets.UTF_8));
+        String marker = "<!-- workhub-sdd:" + fingerprint + " -->";
+        try {
+            KnowledgeArchiveFiles.locked(vaultRoot, () -> {
+                Path target = KnowledgeArchiveFiles.checked(vaultRoot, folder.resolve(fileName));
+                if (Files.exists(target) && Files.readString(target).contains(marker)) {
+                    return null;
+                }
+                String body = content.strip();
+                String markdown = "# " + label + "（SDD 设计评估产出）\n\n"
+                        + marker + "\n\n"
+                        + "- 需求 ID：" + intake.getId() + "\n"
+                        + "- 分析 ID：" + analysisId + "\n"
+                        + "- 确认人：" + confirmedBy + "\n"
+                        + "- 确认时间：" + confirmedAt + "\n"
+                        + "- 状态：AI 草稿经人工确认发布，后续修订以人工版本为准\n\n---\n\n"
+                        + body + "\n";
+                KnowledgeArchiveFiles.versionedWrite(vaultRoot, target, markdown.getBytes(StandardCharsets.UTF_8));
+                return null;
+            });
+        } catch (IOException ex) {
+            throw new IllegalStateException("SDD 三件套发布失败：" + fileName, ex);
+        }
+    }
+
     private String businessLineSegment(ProjectDetailResponse project) {
         String businessLine = safePathSegment(firstNonBlank(project == null ? null : project.businessLine(), "未归类业务线"));
         return businessLine;
+    }
+
+    /** 业务线归档目录统一为 {业务线编码}-{业务线名称}；无编码或编码与名称相同时退回名称。 */
+    private String businessLineDirSegment(ProjectDetailResponse project) {
+        String code = trimToNull(project == null ? null : project.businessLineCode());
+        String name = businessLineSegment(project);
+        return code == null || code.equals(name) ? name : safePathSegment(code + "-" + name);
     }
 
     private String projectNameSegment(ProjectDetailResponse project) {
@@ -373,7 +475,7 @@ public class ProjectKnowledgeBaseService {
         );
         StringBuilder builder = new StringBuilder();
         builder.append("# ").append(title).append("\n\n");
-        builder.append("> 本文件由 WorkHub 在 AI 任务评估前自动归档，用于保存散落的原始需求材料；本文件不总结需求点，不拆任务。\n\n");
+        builder.append("> 本文件由系统在 AI 任务评估前自动归档，用于保存散落的原始需求材料；本文件不总结需求点，不拆任务。\n\n");
         builder.append("## 元信息\n\n");
         appendMetadata(builder, "项目文档路径", vaultRoot.relativize(rawPath).toString());
         appendMetadata(builder, "需求ID", intake == null ? null : String.valueOf(intake.getId()));

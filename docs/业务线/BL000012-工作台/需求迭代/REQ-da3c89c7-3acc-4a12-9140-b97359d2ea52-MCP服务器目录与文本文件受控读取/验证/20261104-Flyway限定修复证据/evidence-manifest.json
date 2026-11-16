@@ -1,0 +1,62 @@
+{
+  "history-before.json": {
+    "bytes": 14581,
+    "sha256": "2ba45459ed45a031c0a39b6b91f26edb77c6db97ae34898ca9acb769e9bddb95"
+  },
+  "history-after.json": {
+    "bytes": 14917,
+    "sha256": "aef4dabae6dadd6f2457b036e676823e6898e1039c2282aa9c682ae9b5da631f"
+  },
+  "columns-before.json": {
+    "bytes": 336,
+    "sha256": "025a3e73ae5dd336ea25bac7f874c24923681d4d0a589e2fcde89d98aef14272"
+  },
+  "columns-after.json": {
+    "bytes": 336,
+    "sha256": "025a3e73ae5dd336ea25bac7f874c24923681d4d0a589e2fcde89d98aef14272"
+  },
+  "migration-manifest.json": {
+    "bytes": 5727,
+    "sha256": "0eae570f46d7eda5491f25cc6238d11fd946bf95ed54e0099ff2b77c0db59f49"
+  },
+  "info-before.json": {
+    "bytes": 15840,
+    "sha256": "f7f9dc3e393d91cb76dc893dadc977b218512eb9e2ca46b88d635bf21e587e96"
+  },
+  "info-after.json": {
+    "bytes": 15832,
+    "sha256": "88e7bb6fe3eded8740474dfc5281f3967290a51eb5b2e1c4a0a5c1bec3405cb8"
+  },
+  "validation-before.json": {
+    "bytes": 1545,
+    "sha256": "5d5835a0bc481beefcc662f30e7a2f92759b9e752fdd5d55305d7582cf828138"
+  },
+  "validation-after-default.json": {
+    "bytes": 999,
+    "sha256": "4cc451d6b87bbe8a6746f160fd8f95efedf5ac4a70f6065aea825e3dda5e4384"
+  },
+  "validation-after-applied.json": {
+    "bytes": 246,
+    "sha256": "651ddb2a160dd47cb5807bc11b73bc65605685571de83be1b98363d23dc0d51b"
+  },
+  "preflight-summary.json": {
+    "bytes": 2252,
+    "sha256": "2b82b7eb8ec2278bea0e9eaa507bd8f81042df7b5890c54232c41dcb1cfdd8b9"
+  },
+  "repair-gate.json": {
+    "bytes": 287,
+    "sha256": "5ad9baa5cb83f44639b5e4f7de1daedb292a64644e2ffc0ca0896a77a36a2f93"
+  },
+  "repair-result.json": {
+    "bytes": 368,
+    "sha256": "4dda17c2d4bc8db50bb7058f253e409f2b80ce3dd809d336769609291e5517f9"
+  },
+  "repair-verification.json": {
+    "bytes": 1199,
+    "sha256": "4045b3f7add91059a5f416af90ccc7ca91335d6f83af90d931d430d2cf84ddde"
+  },
+  "repair.log": {
+    "bytes": 2583,
+    "sha256": "9df000675f760e26225c16dcdc0733a1e84a0ec495cccd4cb89a7fb712ccfd6e"
+  }
+}

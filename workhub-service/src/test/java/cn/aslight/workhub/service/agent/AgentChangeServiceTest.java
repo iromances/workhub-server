@@ -131,8 +131,8 @@ class AgentChangeServiceTest {
             @Override public AgentChangeService getObject() { return service; }
         }, testEvidence, access, json, clock);
         runs = proxy(new AgentRunStore(agents, json, access, data, providers, clock, acceptance));
-        var config = new AgentConfiguration("Code", "修复", 1L, "fixture", List.of(scope), List.of(), 100, 3600, 2);
-        var specification = new AgentTaskSpecification("修复代码", "输入", "实际测试后交付", List.of("CHANGE_SET", "TEST_REPORT"), List.of(scope), List.of());
+        var config = new AgentConfiguration("Code", "修复", 1L, "fixture", List.of(scope), 100, 3600, 2);
+        var specification = new AgentTaskSpecification("修复代码", "输入", "实际测试后交付", List.of("CHANGE_SET", "TEST_REPORT"), List.of(scope));
         LocalDateTime now = LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC);
         agents.insertAgent(new AgentDefinitionEntity("agent", "Code", json.writeValueAsString(config), true, "owner", 0, now, now));
         agents.insertRun(new AgentRunEntity("run", "task", "agent", "manual", "owner", json.writeValueAsString(config), json.writeValueAsString(specification),
@@ -286,17 +286,10 @@ class AgentChangeServiceTest {
         assertFalse(mapper.find(value.id()).manifestJson().contains("fixture-secret-value"));
     }
 
-    @Test void modelCannotSubmitItsOwnShaOrForgeReadinessThroughToolArguments() {
+    @Test void changeDetailStaysBoundedAndDraftIsNotReadyWithoutRealEvidence() {
         preparedWorkspaces();
-        var tools = new AgentChangeTools(service, access, json);
-        assertThrows(AgentTool.Rejected.class, () -> tools.agentChangePrepareTool().execute(context, json.readTree("{\"requestKey\":\"bad\",\"resultSha\":\"forged\",\"tested\":true}")));
         var value = service.prepare(context, "draft", null, plan());
-        for (String section : List.of("SUMMARY", "PLAN", "REPOSITORY")) {
-            var arguments = json.createObjectNode().put("changeSetId", value.id()).put("section", section);
-            if ("REPOSITORY".equals(section)) arguments.put("repositoryId", "server");
-            Object result = tools.agentChangeDetailTool().execute(context, arguments);
-            assertFalse(new AgentToolData(json).sanitize(result).path("truncated").asBoolean());
-        }
+        assertFalse(new AgentToolData(json).sanitize(service.detail(context, value.id())).path("truncated").asBoolean());
         assertFalse(service.detail(context, value.id()).readyForReview());
     }
 
@@ -437,11 +430,11 @@ class AgentChangeServiceTest {
         verify(publishing, times(1)).publish(any(), any(), anyString(), anyString()); verify(gitLab, times(1)).create(any(), anyString(), anyString(), anyString(), anyString());
     }
 
-    @Test void modelCannotSupplyRemoteAddressOrClaimTestSuccess() {
+    @Test void publishOutcomeComesFromPlatformVerificationNotCallerClaims() {
         preparedWorkspaces(); var value = service.prepare(context, "arguments", null, plan()); remoteFixture();
-        var tool = new AgentDeliveryTools(deliveryService, access, json).agentPublishChangeTool();
-        var arguments = json.createObjectNode().put("changeSetId", value.id()).put("repositoryId", "server").put("url", "https://unbound.invalid").put("tested", true);
-        assertThrows(AgentTool.Rejected.class, () -> tool.execute(context, arguments)); verifyNoInteractions(gitLab, publishing); assertTrue(deliveries.list(value.id()).isEmpty());
+        var published = deliveryService.publish(context, value.id(), "server");
+        assertEquals("REMOTE_CONFIRMED", published.get("status")); assertEquals(false, published.get("tested"));
+        verify(publishing, times(1)).publish(any(), any(), anyString(), anyString());
     }
 
 
@@ -605,11 +598,11 @@ class AgentChangeServiceTest {
 
     @ParameterizedTest @ValueSource(booleans = {false, true})
     void committedTestStartRecoversApiOrCliResultAfterLostToolResponse(boolean nativeProtocol) {
-        var change = delivered(); var tests = independentTests(); var tool = new AgentBuildTestTools(tests, json).agentBuildTestStartTool();
+        var change = delivered(); var tests = independentTests();
         if (nativeProtocol) runs.beginNative("run", "lease", "native:test", "local-fixture");
-        var arguments = json.createObjectNode().put("changeSetId", change.id()).put("bindingId", "test").put("requestKey", "recovery");
-        runs.beginTool("run", "lease", "test:start", tool, arguments, true);
-        var result = tool.execute(context, arguments);
+        recordLegacyToolIntent("test:start", AgentBuildTestStore.START,
+                Map.of("changeSetId", change.id(), "bindingId", "test", "requestKey", "recovery"));
+        var result = tests.start(context, change.id(), "test", "recovery");
         String request = json.valueToTree(result).path("id").asText();
         assertEquals("PREPARED", testMapper.find(request).status()); assertNull(agents.findEventByKey("run", "test:start:result"));
         jdbc.update("UPDATE pm_agent_run SET lease_until=? WHERE id='run'", LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC).minusSeconds(1));
@@ -626,6 +619,36 @@ class AgentChangeServiceTest {
         assertEquals("PREPARED", testMapper.find(request).status());
     }
 
+    /** 历史运行的工具调用句柄与意图直接落库；对账按原样识别已提交事务，不重放调用。 */
+    private void recordLegacyToolIntent(String key, String toolCode, Object arguments) {
+        agents.insertEvent(new AgentEventEntity(UUID.randomUUID().toString(), "run", key + ":request", agents.nextEventOrdinal("run"),
+                "TOOL_REQUEST", json.writeValueAsString(Map.of("tool", toolCode, "arguments", arguments)), "agent-runtime",
+                LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC)));
+        var tool = json.createObjectNode().put("kind", "TOOL").put("key", key).put("tool", toolCode).put("readOnly", false);
+        String current = agents.findRun("run").externalHandle();
+        if (current == null) {
+            jdbc.update("UPDATE pm_agent_run SET external_handle=? WHERE id='run'", json.writeValueAsString(tool));
+        } else {
+            var handle = (tools.jackson.databind.node.ObjectNode) json.readTree(current);
+            handle.set("activeTool", tool);
+            jdbc.update("UPDATE pm_agent_run SET external_handle=? WHERE id='run'", json.writeValueAsString(handle));
+        }
+    }
+
+    private void endLegacyTool(String key) {
+        agents.insertEvent(new AgentEventEntity(UUID.randomUUID().toString(), "run", key + ":result", agents.nextEventOrdinal("run"),
+                "TOOL_RESULT", json.writeValueAsString(Map.of("fixture", true)), "agent-runtime",
+                LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC)));
+        String current = agents.findRun("run").externalHandle();
+        if (current != null && "CLI".equals(json.readTree(current).path("kind").asText())) {
+            var handle = (tools.jackson.databind.node.ObjectNode) json.readTree(current);
+            handle.remove("activeTool");
+            jdbc.update("UPDATE pm_agent_run SET external_handle=? WHERE id='run'", json.writeValueAsString(handle));
+        } else {
+            jdbc.update("UPDATE pm_agent_run SET external_handle=NULL WHERE id='run'");
+        }
+    }
+
     private AgentBuildTestStore independentTests() {
         var instance = new AgentJenkinsPolicy.Instance("instance", "Jenkins fixture", "https://jenkins.example.invalid/", "fixture", "jenkins", "token", true);
         var binding = new AgentJenkinsPolicy.JobBinding("test", "Independent test", "instance", scope, "workhub", "BUILD_TEST", List.of("team", "test"),
@@ -635,11 +658,10 @@ class AgentChangeServiceTest {
         return proxy(new AgentBuildTestStore(testMapper, testResources, agents, runs, service, access, new AgentBuildTestPolicy(testJenkins), testJenkins, new AgentToolData(json), json, clock));
     }
     private AgentBuildTestEntity producePassingTest(AgentChangeView change) {
-        var tests = independentTests(); var tool = new AgentBuildTestTools(tests, json).agentBuildTestStartTool();
-        var arguments = json.createObjectNode().put("changeSetId", change.id()).put("bindingId", "test").put("requestKey", "test");
-        runs.beginTool("run", "lease", "test:start", tool, arguments, true);
-        var result = tool.execute(context, arguments); String request = json.valueToTree(result).path("id").asText();
-        runs.endTool("run", "lease", "test:start", result);
+        var tests = independentTests();
+        recordLegacyToolIntent("test:start", AgentBuildTestStore.START, Map.of("changeSetId", change.id(), "bindingId", "test", "requestKey", "test"));
+        var result = tests.start(context, change.id(), "test", "test"); String request = json.valueToTree(result).path("id").asText();
+        endLegacyTool("test:start");
         var client = mock(AgentJenkinsClient.class);
         var probe = new AgentJenkinsClient.Probe("team/test", true, testJenkins.requiredParameters(testJenkins.binding("test").binding()));
         when(client.probe(any())).thenReturn(probe);
@@ -662,7 +684,7 @@ class AgentChangeServiceTest {
 
     private void expected(String... kinds) {
         var spec = context.specification();
-        var next = new AgentTaskSpecification(spec.objective(), spec.context(), spec.acceptanceCriteria(), List.of(kinds), spec.scopes(), spec.toolCodes());
+        var next = new AgentTaskSpecification(spec.objective(), spec.context(), spec.acceptanceCriteria(), List.of(kinds), spec.scopes());
         jdbc.update("UPDATE pm_agent_run SET specification_json=? WHERE id='run'", json.writeValueAsString(next));
         context = runs.context(runs.get("run"));
     }

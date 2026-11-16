@@ -1,0 +1,611 @@
+[
+  {
+    "repo": "bpm-framework",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "2e473432a6071b8afa24737fa8638fa04c37be47",
+    "previousSha": "2e473432a6071b8afa24737fa8638fa04c37be47",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 2e473432a6071b8afa24737fa8638fa04c37be47"
+    ]
+  },
+  {
+    "repo": "etc-doc",
+    "ref": "origin/main",
+    "sha": "1be2be6ec0e5430032dea538cc51630c169439ad",
+    "previousSha": "1be2be6ec0e5430032dea538cc51630c169439ad",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "etc-tools",
+    "ref": "origin/ql-etc-tools",
+    "sha": "71a93c6e2a5d5c8240180d25f3d6f88e107c590e",
+    "previousSha": "71a93c6e2a5d5c8240180d25f3d6f88e107c590e",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "insurance-exinterface",
+    "ref": "origin/master",
+    "sha": "71f393bb7563bb5cc95f1fb8375faed3740139eb",
+    "previousSha": "71f393bb7563bb5cc95f1fb8375faed3740139eb",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "intf-abc",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "041807dfabf331fd452a97c04ae08ff5426aae05",
+    "previousSha": "041807dfabf331fd452a97c04ae08ff5426aae05",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 041807dfabf331fd452a97c04ae08ff5426aae05"
+    ]
+  },
+  {
+    "repo": "intf-bank",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "96b7fac79dd8f5c1a0284bd7770e461bd5193b91",
+    "previousSha": "96b7fac79dd8f5c1a0284bd7770e461bd5193b91",
+    "jobFilesVerified": 1,
+    "jobCount": 1,
+    "modern": 1,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 96b7fac79dd8f5c1a0284bd7770e461bd5193b91"
+    ]
+  },
+  {
+    "repo": "intf-boc",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "b5f119fc6e1ce747f041be9ecb63fe6578ee8bc7",
+    "previousSha": "b5f119fc6e1ce747f041be9ecb63fe6578ee8bc7",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 b5f119fc6e1ce747f041be9ecb63fe6578ee8bc7"
+    ]
+  },
+  {
+    "repo": "intf-ccb",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "cb65714c8d778d4604f45bb04fb2c717ce364fc5",
+    "previousSha": "cb65714c8d778d4604f45bb04fb2c717ce364fc5",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 cb65714c8d778d4604f45bb04fb2c717ce364fc5"
+    ]
+  },
+  {
+    "repo": "intf-common",
+    "ref": "origin/master",
+    "sha": "13f4fad4b0d3d1f68bf11f744f9d331a18abfeee",
+    "previousSha": "13f4fad4b0d3d1f68bf11f744f9d331a18abfeee",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "intf-credit",
+    "ref": "origin/master",
+    "sha": "453d37b07fbdbc60694385c63478e06e242f56d5",
+    "previousSha": "453d37b07fbdbc60694385c63478e06e242f56d5",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "intf-gs",
+    "ref": "origin/master",
+    "sha": "945708952046fc213e9ca76b142018fc19ffc7cc",
+    "previousSha": "945708952046fc213e9ca76b142018fc19ffc7cc",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "intf-hs",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "2c28b694b960b991599a982ea06f73ae643d83ed",
+    "previousSha": "2c28b694b960b991599a982ea06f73ae643d83ed",
+    "jobFilesVerified": 29,
+    "jobCount": 32,
+    "modern": 32,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 2c28b694b960b991599a982ea06f73ae643d83ed"
+    ]
+  },
+  {
+    "repo": "intf-icbc",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "8697bfb305c40081531e48c2ce4779307f52c8a5",
+    "previousSha": "8697bfb305c40081531e48c2ce4779307f52c8a5",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 8697bfb305c40081531e48c2ce4779307f52c8a5"
+    ]
+  },
+  {
+    "repo": "intf-qdccb",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "29fd02fcc8fa1af8d39e98c1b3e5bc12e5f2bbb6",
+    "previousSha": "29fd02fcc8fa1af8d39e98c1b3e5bc12e5f2bbb6",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 29fd02fcc8fa1af8d39e98c1b3e5bc12e5f2bbb6"
+    ]
+  },
+  {
+    "repo": "intf-risk",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "d4320324cdf1b32b8e067a57a26b7d5b05a746b7",
+    "previousSha": "d4320324cdf1b32b8e067a57a26b7d5b05a746b7",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 d4320324cdf1b32b8e067a57a26b7d5b05a746b7"
+    ]
+  },
+  {
+    "repo": "intf-sence-back",
+    "ref": "origin/master",
+    "sha": "f2d197825c7d203a92a6e1a61c04952d1d3bead5",
+    "previousSha": "f2d197825c7d203a92a6e1a61c04952d1d3bead5",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "invoice-exinterface",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "203c9de707b1261223a100c3a614d1970b151088",
+    "previousSha": "203c9de707b1261223a100c3a614d1970b151088",
+    "jobFilesVerified": 3,
+    "jobCount": 3,
+    "modern": 3,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 203c9de707b1261223a100c3a614d1970b151088"
+    ]
+  },
+  {
+    "repo": "mock-server",
+    "ref": "origin/mock_v1",
+    "sha": "05bddfd9b684822b915741ef804c80787be6b54d",
+    "previousSha": "05bddfd9b684822b915741ef804c80787be6b54d",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "saps-account-checker",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "6a3360057a6a4e39802a3c407c025678445f450e",
+    "previousSha": "6a3360057a6a4e39802a3c407c025678445f450e",
+    "jobFilesVerified": 4,
+    "jobCount": 4,
+    "modern": 4,
+    "upgradeRefs": [
+      "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102 6a3360057a6a4e39802a3c407c025678445f450e",
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 6a3360057a6a4e39802a3c407c025678445f450e"
+    ]
+  },
+  {
+    "repo": "saps-back",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "9c9c8ab5bb281f13115279e49165d90006315788",
+    "previousSha": "aa1f91664d8b16d0858fce087961a254f76fa764",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 9c9c8ab5bb281f13115279e49165d90006315788"
+    ]
+  },
+  {
+    "repo": "thctay-account",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "479f2052d95d33e58b674e6890bf235dc77ffaf8",
+    "previousSha": "479f2052d95d33e58b674e6890bf235dc77ffaf8",
+    "jobFilesVerified": 5,
+    "jobCount": 7,
+    "modern": 7,
+    "upgradeRefs": [
+      "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102 479f2052d95d33e58b674e6890bf235dc77ffaf8",
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 479f2052d95d33e58b674e6890bf235dc77ffaf8"
+    ]
+  },
+  {
+    "repo": "thctay-auth",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "404f565d1ce09249844d1d47cefaa4b60743b044",
+    "previousSha": "404f565d1ce09249844d1d47cefaa4b60743b044",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 404f565d1ce09249844d1d47cefaa4b60743b044"
+    ]
+  },
+  {
+    "repo": "thctay-cashloan",
+    "ref": "origin/master",
+    "sha": "b23696139d350f4e9302fe48c5928283315570be",
+    "previousSha": "b23696139d350f4e9302fe48c5928283315570be",
+    "jobFilesVerified": 7,
+    "jobCount": 7,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "thctay-cms",
+    "ref": "origin/master",
+    "sha": "3c5a41bc0d56092c5a3590ed8ba9fc4ac568d400",
+    "previousSha": "3c5a41bc0d56092c5a3590ed8ba9fc4ac568d400",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "thctay-contract",
+    "ref": "origin/master",
+    "sha": "3182bff5291ec7e1ef9a8f14f80fa46ba0c64bbc",
+    "previousSha": "3182bff5291ec7e1ef9a8f14f80fa46ba0c64bbc",
+    "jobFilesVerified": 5,
+    "jobCount": 5,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "thctay-crm",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "a79a599b7cbdfadecea554ecb4c3988ce5dee7f8",
+    "previousSha": "a79a599b7cbdfadecea554ecb4c3988ce5dee7f8",
+    "jobFilesVerified": 27,
+    "jobCount": 29,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 a79a599b7cbdfadecea554ecb4c3988ce5dee7f8"
+    ]
+  },
+  {
+    "repo": "thctay-devicemanage",
+    "ref": "origin/master",
+    "sha": "21fe064e5d66ab55c63decd2f380cce1f874b1c8",
+    "previousSha": "21fe064e5d66ab55c63decd2f380cce1f874b1c8",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "thctay-eas",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "0cf07fdc16f9ac6e6a3d34c50e08586eebb89285",
+    "previousSha": "0cf07fdc16f9ac6e6a3d34c50e08586eebb89285",
+    "jobFilesVerified": 10,
+    "jobCount": 16,
+    "modern": 16,
+    "upgradeRefs": [
+      "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102 0cf07fdc16f9ac6e6a3d34c50e08586eebb89285",
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 0cf07fdc16f9ac6e6a3d34c50e08586eebb89285"
+    ]
+  },
+  {
+    "repo": "thctay-ebaby-gateway",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "e38a3bbc5e7527226ddaf2ef01907aff24df6e3e",
+    "previousSha": "e38a3bbc5e7527226ddaf2ef01907aff24df6e3e",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 e38a3bbc5e7527226ddaf2ef01907aff24df6e3e"
+    ]
+  },
+  {
+    "repo": "thctay-ems-logistics",
+    "ref": "origin/master",
+    "sha": "793a0df73b024c4242e73dbb863e0bbf6c0435e1",
+    "previousSha": "793a0df73b024c4242e73dbb863e0bbf6c0435e1",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "thctay-etc",
+    "ref": "origin/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "8030ee092f6c0ef5aa053d5c362574d43a130b30",
+    "previousSha": "8030ee092f6c0ef5aa053d5c362574d43a130b30",
+    "jobFilesVerified": 40,
+    "jobCount": 55,
+    "modern": 55,
+    "upgradeRefs": [
+      "origin/nacos-2.5.4-xxljob-2.5.0_20261027 8030ee092f6c0ef5aa053d5c362574d43a130b30"
+    ]
+  },
+  {
+    "repo": "thctay-etc-issue",
+    "ref": "origin/master",
+    "sha": "8761b83781fe22450d6ba1e6c83d189c1080f635",
+    "previousSha": "8761b83781fe22450d6ba1e6c83d189c1080f635",
+    "jobFilesVerified": 1,
+    "jobCount": 1,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "thctay-front-gateway",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "78ac549ca1bfb6ddefce83fad8a11921f7181aeb",
+    "previousSha": "78ac549ca1bfb6ddefce83fad8a11921f7181aeb",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 78ac549ca1bfb6ddefce83fad8a11921f7181aeb"
+    ]
+  },
+  {
+    "repo": "thctay-guangdong-tools",
+    "ref": "origin/master",
+    "sha": "69cbbdb2f1314b64c6c85174f0846c987ac9f52c",
+    "previousSha": "69cbbdb2f1314b64c6c85174f0846c987ac9f52c",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "thctay-lianrongbao",
+    "ref": "origin/master",
+    "sha": "59aeb2ef4d0ea52cf174066eb9c1777ae5dd82a6",
+    "previousSha": "59aeb2ef4d0ea52cf174066eb9c1777ae5dd82a6",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "thctay-marketing",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "b3459269bfd9157639ffd678863bfac09a56386d",
+    "previousSha": "b3459269bfd9157639ffd678863bfac09a56386d",
+    "jobFilesVerified": 9,
+    "jobCount": 12,
+    "modern": 12,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 b3459269bfd9157639ffd678863bfac09a56386d"
+    ]
+  },
+  {
+    "repo": "thctay-marketing-back",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "6046c032bac7b476652ee60b49df7156144969ad",
+    "previousSha": "6046c032bac7b476652ee60b49df7156144969ad",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102 6046c032bac7b476652ee60b49df7156144969ad",
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 e5e5e2ba0fd72d37bca80b4d06ea13aa53c43cb5"
+    ]
+  },
+  {
+    "repo": "thctay-marketing-gateway",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "6209f58c827889e7b745eae46e3a170c6bf2c54a",
+    "previousSha": "6209f58c827889e7b745eae46e3a170c6bf2c54a",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 6209f58c827889e7b745eae46e3a170c6bf2c54a"
+    ]
+  },
+  {
+    "repo": "thctay-message",
+    "ref": "origin/master",
+    "sha": "bc28a3081ffdf82faa84a0c19402f4b7e201fa96",
+    "previousSha": "bc28a3081ffdf82faa84a0c19402f4b7e201fa96",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "thctay-op-gateway",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "342a0e2a88ebd97f7444a88fcc40e2eb9657f84e",
+    "previousSha": "f7efe2875e9d880abc00cda8ff471299e219b7e9",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 342a0e2a88ebd97f7444a88fcc40e2eb9657f84e"
+    ]
+  },
+  {
+    "repo": "thctay-partner-gateway",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "43b12748612d5ac5ed6925924aff000af8e6fe0a",
+    "previousSha": "43b12748612d5ac5ed6925924aff000af8e6fe0a",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 43b12748612d5ac5ed6925924aff000af8e6fe0a"
+    ]
+  },
+  {
+    "repo": "thctay-payment",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "ea725eccc1b81a38ae597dec5bd492f43932f12a",
+    "previousSha": "ea725eccc1b81a38ae597dec5bd492f43932f12a",
+    "jobFilesVerified": 19,
+    "jobCount": 21,
+    "modern": 21,
+    "upgradeRefs": [
+      "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102 ea725eccc1b81a38ae597dec5bd492f43932f12a",
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 ea725eccc1b81a38ae597dec5bd492f43932f12a"
+    ]
+  },
+  {
+    "repo": "thctay-public",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027-v2",
+    "sha": "71494aa9133c1a973c2cf0a48ecc11004e31a6e8",
+    "previousSha": "71494aa9133c1a973c2cf0a48ecc11004e31a6e8",
+    "jobFilesVerified": 1,
+    "jobCount": 1,
+    "modern": 1,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 4252fe537d3c64700b715ebf7d2287b52d5a10c8",
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027-v2 71494aa9133c1a973c2cf0a48ecc11004e31a6e8"
+    ]
+  },
+  {
+    "repo": "thctay-report",
+    "ref": "origin/master",
+    "sha": "54efa6a4a8a4b2c1d37cb419eaf8f92128e93b2b",
+    "previousSha": "54efa6a4a8a4b2c1d37cb419eaf8f92128e93b2b",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "thctay-risk-backend",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "cedeb919d2b0448f651c584dbc5b8604e395bb94",
+    "previousSha": "cedeb919d2b0448f651c584dbc5b8604e395bb94",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 cedeb919d2b0448f651c584dbc5b8604e395bb94"
+    ]
+  },
+  {
+    "repo": "thctay-saps",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "9cd0d5aa6de19844aed32375408356d9a0f8110a",
+    "previousSha": "9cd0d5aa6de19844aed32375408356d9a0f8110a",
+    "jobFilesVerified": 53,
+    "jobCount": 59,
+    "modern": 59,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 9cd0d5aa6de19844aed32375408356d9a0f8110a"
+    ]
+  },
+  {
+    "repo": "thctay-saps-core-common",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "0e088ce5ac02df0d601c960fc227db047e0a67c9",
+    "previousSha": "0e088ce5ac02df0d601c960fc227db047e0a67c9",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102 0e088ce5ac02df0d601c960fc227db047e0a67c9",
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 0e088ce5ac02df0d601c960fc227db047e0a67c9"
+    ]
+  },
+  {
+    "repo": "thctay-scaffold",
+    "ref": "origin/master",
+    "sha": "36d4f0d571337bc72a14df0ccc338d368f369fb0",
+    "previousSha": "36d4f0d571337bc72a14df0ccc338d368f369fb0",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "thctay-scene",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "70f064d7c721ad4fce1e9afe339c6c4e3a8f10dd",
+    "previousSha": "70f064d7c721ad4fce1e9afe339c6c4e3a8f10dd",
+    "jobFilesVerified": 1,
+    "jobCount": 4,
+    "modern": 4,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 70f064d7c721ad4fce1e9afe339c6c4e3a8f10dd"
+    ]
+  },
+  {
+    "repo": "thctay-sf-logistics",
+    "ref": "origin/master",
+    "sha": "9ebec822690d7c40b6dc2b5c342980e5e8d953cc",
+    "previousSha": "9ebec822690d7c40b6dc2b5c342980e5e8d953cc",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "thctay-user",
+    "ref": "origin/master",
+    "sha": "c10fef4cb7908e1c6513744a3e5c683c9dce9b85",
+    "previousSha": "c10fef4cb7908e1c6513744a3e5c683c9dce9b85",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "thctay-wms",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "859d8ac5f03efca2f8954ff9e577ab82b9d60623",
+    "previousSha": "4360ad111ed342a219c59a49c4d55dcf97931134",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": [
+      "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027 859d8ac5f03efca2f8954ff9e577ab82b9d60623"
+    ]
+  },
+  {
+    "repo": "xxl-job-admin",
+    "ref": "origin/master",
+    "sha": "3332af1565c8365f2603d741a6ad0fd30faefde8",
+    "previousSha": "3332af1565c8365f2603d741a6ad0fd30faefde8",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  },
+  {
+    "repo": "xxt-front-scafold",
+    "ref": "origin/master",
+    "sha": "9267d9dfc24403e01c3e484d1228f1fd66301fd4",
+    "previousSha": "9267d9dfc24403e01c3e484d1228f1fd66301fd4",
+    "jobFilesVerified": 0,
+    "jobCount": 0,
+    "modern": 0,
+    "upgradeRefs": []
+  }
+]

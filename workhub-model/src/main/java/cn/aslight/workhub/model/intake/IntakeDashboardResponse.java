@@ -28,6 +28,7 @@ public record IntakeDashboardResponse(String demandType,
                                     int developingCount,
                                     int testingCount,
                                     int pendingReleaseCount,
+                                    int pausedCount,
                                     int totalCount,
                                     int demandCount,
                                     double demandRatio) {

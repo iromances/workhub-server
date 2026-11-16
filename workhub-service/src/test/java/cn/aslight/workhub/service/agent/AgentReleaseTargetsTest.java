@@ -65,7 +65,7 @@ class AgentReleaseTargetsTest {
         assertThrows(IllegalArgumentException.class, () -> AgentReleaseTargets.requireAllowed(task(List.of(aTest, aProd)), mismatched));
     }
     private AgentTaskSpecification task(List<AgentScope> targets) {
-        return new AgentTaskSpecification("分环境发布", "", "目标全部完成", List.of("DEPLOYMENT", "VERIFICATION"), List.of(aTest, aProd, bTest, bProd, new AgentScope("C", "TEST")), List.of(), targets);
+        return new AgentTaskSpecification("分环境发布", "", "目标全部完成", List.of("DEPLOYMENT", "VERIFICATION"), List.of(aTest, aProd, bTest, bProd, new AgentScope("C", "TEST")), targets);
     }
     private AgentChangeManifest manifest(AgentTaskSpecification task, List<AgentChangePlan.Dependency> dependencies) {
         return new AgentChangeManifest(1, "run", "task", task, new AgentChangePlan("修复", "影响", "验收", "回退", dependencies), null,

@@ -1,5 +1,6 @@
 package cn.aslight.workhub.service.mcp;
 
+import cn.aslight.workhub.mcp.security.ServerFilePolicy;
 import cn.aslight.workhub.dao.mcp.McpResourceMapper;
 import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.dao.project.ProjectInvolvedSystemMapper;
@@ -22,22 +23,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Service
 public class McpResourceService {
 
     private static final String DATABASE = "DATABASE";
     private static final String SERVER = "SERVER";
+    private static final Pattern ENVIRONMENT_CODE_PATTERN = Pattern.compile("[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}");
 
     private final McpResourceMapper mcpResourceMapper;
     private final McpCryptoService mcpCryptoService;
@@ -275,10 +278,10 @@ public class McpResourceService {
             knowledge.put("projectDocumentPathError", ex.getMessage());
         }
         knowledge.put("requirementRawPathPattern", "requirement-sources/{业务线}/{项目名称}/{年份}/{审批编号}/source.md");
-        knowledge.put("requirementWikiPathPattern", "requirements/{业务线}/需求迭代/{项目名称}/{年份}/{审批编号}-{需求名称}/研发评估.md");
+        knowledge.put("requirementWikiPathPattern", "业务线/{业务线编码}-{业务线名称}/需求迭代/{项目名称}/{年份}/{审批编号}-{需求名称}/研发评估.md");
         knowledge.put("temporaryAnalysisPath", "notes.md#公司项目");
         knowledge.put("historyDirectory", "历史版本/{版本ID}/");
-        knowledge.put("wikiPublishRule", "用户确认后发布到项目 docs/requirements；原始材料与过程记录同样保存在项目 docs，知识库只读");
+        knowledge.put("wikiPublishRule", "用户确认后发布到项目 docs/业务线/{业务线编码}-{业务线名称}/需求迭代，WorkHub 平台需求即 BL000012-工作台，按同样结构归档；原始材料与过程记录同样保存在项目 docs，知识库只读");
         return knowledge;
     }
 
@@ -335,6 +338,31 @@ public class McpResourceService {
         return tunnel;
     }
 
+    private String normalizeEnvironmentCode(String environmentCode, String businessLineCode) {
+        String normalized = trimToNull(environmentCode);
+        if (normalized == null) {
+            throw new IllegalArgumentException("环境不能为空");
+        }
+        normalized = normalized.toUpperCase(Locale.ROOT);
+        if (!ENVIRONMENT_CODE_PATTERN.matcher(normalized).matches()) {
+            throw new IllegalArgumentException("环境编码不合法：" + normalized);
+        }
+        if (trimToNull(businessLineCode) == null) {
+            return normalized;
+        }
+        BusinessLineEntity businessLine = businessLineMapper.findByCode(businessLineCode);
+        if (businessLine != null && businessLine.getSupportedEnvironments() != null) {
+            List<String> supported = Arrays.stream(businessLine.getSupportedEnvironments().split(","))
+                    .map(String::trim)
+                    .filter(code -> !code.isEmpty())
+                    .toList();
+            if (!supported.isEmpty() && !supported.contains(normalized)) {
+                throw new IllegalArgumentException("环境 " + normalized + " 不在业务线支持环境内");
+            }
+        }
+        return normalized;
+    }
+
     private McpResourceEntity requireExisting(Long id) {
         McpResourceEntity entity = mcpResourceMapper.findById(id);
         if (entity == null) {
@@ -354,7 +382,7 @@ public class McpResourceService {
         entity.setPublicResource(publicResource);
         entity.setFeatureTagsJson(writeJson(normalizeFeatureTags(request.getFeatureTags())));
         entity.setBusinessLineCode(publicResource ? "" : businessLineCodes.getFirst());
-        entity.setEnvironmentCode(requireValue(request.getEnvironmentCode(), "环境不能为空"));
+        entity.setEnvironmentCode(normalizeEnvironmentCode(request.getEnvironmentCode(), entity.getBusinessLineCode()));
         entity.setName(generatedTarget.name());
         entity.setSystemName(writeJson(normalizeSystemNames(request)));
         entity.setHost(requireValue(request.getHost(), "目标主机不能为空"));
@@ -378,7 +406,9 @@ public class McpResourceService {
             entity.setSshIdentityFile(trimToNull(request.getSshIdentityFile()));
         }
         entity.setAllowedServicesJson(writeJson(request.getAllowedServices() == null ? List.of() : request.getAllowedServices()));
-        entity.setAllowedLogPathsJson(writeJson(normalizeAllowedLogPaths(resourceType, request.getAllowedLogPaths())));
+        if (!SERVER.equals(resourceType) || create || request.getAllowedLogPaths() != null) {
+            entity.setAllowedLogPathsJson(writeJson(normalizeAllowedLogPaths(resourceType, request.getAllowedLogPaths())));
+        }
         entity.setProfilesJson(writeJson(normalizeProfiles(request.getProfiles(), resourceType)));
         entity.setEnabled(request.getEnabled() == null || request.getEnabled());
         entity.setRemark(trimToNull(request.getRemark()));
@@ -545,29 +575,13 @@ public class McpResourceService {
     }
 
     private List<String> normalizeAllowedLogPaths(String resourceType, List<String> paths) {
-        List<String> values = new ArrayList<>();
+        if (!SERVER.equals(resourceType)) {
+            return List.of();
+        }
         if (paths == null) {
-            return values;
+            return List.of("/mnt");
         }
-        for (String value : paths) {
-            String normalized = trimToNull(value);
-            if (normalized == null) {
-                continue;
-            }
-            if (SERVER.equals(resourceType)) {
-                try {
-                    Path path = Path.of(normalized).normalize();
-                    if (!path.isAbsolute()) {
-                        throw new IllegalArgumentException("日志目录白名单必须配置绝对路径：" + normalized);
-                    }
-                    normalized = path.toString();
-                } catch (InvalidPathException ex) {
-                    throw new IllegalArgumentException("日志目录白名单路径无效：" + normalized, ex);
-                }
-            }
-            addUnique(values, normalized);
-        }
-        return values;
+        return paths.stream().map(ServerFilePolicy::normalizeRoot).distinct().toList();
     }
 
     private void addUnique(List<String> values, String value) {

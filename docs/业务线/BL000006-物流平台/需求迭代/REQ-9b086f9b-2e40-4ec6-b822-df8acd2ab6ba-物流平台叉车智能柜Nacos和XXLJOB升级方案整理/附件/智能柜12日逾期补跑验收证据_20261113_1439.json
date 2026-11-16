@@ -1,0 +1,200 @@
+{
+  "scope": "智能柜 PROD，用户已执行12日补跑，助手仅只读验收",
+  "queries": {
+    "verify12-log": {
+      "tool": "run_readonly_query",
+      "arguments": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT id,job_id,trigger_time,handle_time,trigger_code,handle_code,executor_param,handle_msg FROM lease_xxl_job_250.xxl_job_log WHERE job_id=43 AND trigger_time>='2026-11-13 14:00:00' AND trigger_time<=NOW() ORDER BY id DESC LIMIT 20"
+      },
+      "retrievedAt": "2026-11-13T14:39:50.175505+08:00",
+      "data": {
+        "targetKey": "db-prod",
+        "dataMasked": true,
+        "profileKey": "readonly",
+        "result": {
+          "truncatedByBytes": false,
+          "dataMasked": true,
+          "rows": [
+            {
+              "id": 11528,
+              "job_id": 43,
+              "trigger_time": "2026-11-13T14:37:38",
+              "handle_time": "2026-11-13T14:37:40",
+              "trigger_code": 200,
+              "handle_code": 200,
+              "executor_param": "{\"executeDate\":\"2026-11-12\"}",
+              "handle_msg": ""
+            }
+          ],
+          "columns": [
+            "id",
+            "job_id",
+            "trigger_time",
+            "handle_time",
+            "trigger_code",
+            "handle_code",
+            "executor_param",
+            "handle_msg"
+          ]
+        },
+        "sql": "SELECT id,job_id,trigger_time,handle_time,trigger_code,handle_code,executor_param,handle_msg FROM lease_xxl_job_250.xxl_job_log WHERE job_id=43 AND trigger_time>='***' AND trigger_time<=NOW() ORDER BY id DESC LIMIT 20"
+      }
+    },
+    "verify12-summary": {
+      "tool": "run_readonly_query",
+      "arguments": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT NOW() AS checked_at,start_date,end_date,subject_no,COUNT(*) AS records,COUNT(DISTINCT bill_no) AS bills,SUM(fee_amount) AS total_fee,MIN(create_time) AS first_created,MAX(create_time) AS last_created,SUM(is_cancel) AS cancelled,SUM(is_delete) AS deleted FROM ol_saps.bill_fee_record WHERE end_date IN ('2026-11-12','2026-11-13') GROUP BY start_date,end_date,subject_no LIMIT 20"
+      },
+      "retrievedAt": "2026-11-13T14:39:50.175989+08:00",
+      "data": {
+        "targetKey": "db-prod",
+        "dataMasked": true,
+        "profileKey": "readonly",
+        "result": {
+          "truncatedByBytes": false,
+          "dataMasked": true,
+          "rows": [
+            {
+              "checked_at": "2026-11-13T14:39:50",
+              "start_date": "2026-11-12",
+              "end_date": "2026-11-12",
+              "subject_no": "10301",
+              "records": 883,
+              "bills": 883,
+              "total_fee": 495.9,
+              "first_created": "2026-11-13T14:37:38",
+              "last_created": "2026-11-13T14:37:40",
+              "cancelled": 0,
+              "deleted": 0
+            }
+          ],
+          "columns": [
+            "checked_at",
+            "start_date",
+            "end_date",
+            "subject_no",
+            "records",
+            "bills",
+            "total_fee",
+            "first_created",
+            "last_created",
+            "cancelled",
+            "deleted"
+          ]
+        },
+        "sql": "SELECT NOW() AS checked_at,start_date,end_date,subject_no,COUNT(*) AS records,COUNT(DISTINCT bill_no) AS bills,SUM(fee_amount) AS total_fee,MIN(create_time) AS first_created,MAX(create_time) AS last_created,SUM(is_cancel) AS cancelled,SUM(is_delete) AS deleted FROM ol_saps.bill_fee_record WHERE end_date IN ('***','***') GROUP BY start_date,end_date,subject_no LIMIT 20"
+      }
+    },
+    "verify12-coverage": {
+      "tool": "run_readonly_query",
+      "arguments": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT COUNT(*) AS open_candidates,SUM(EXISTS(SELECT 1 FROM ol_saps.bill_fee_record r WHERE r.bill_no=b.bill_no AND r.start_date='2026-11-12' AND r.is_delete=0)) AS covered,SUM(NOT EXISTS(SELECT 1 FROM ol_saps.bill_fee_record r WHERE r.bill_no=b.bill_no AND r.start_date='2026-11-12' AND r.is_delete=0)) AS missing FROM ol_saps.customer_bill b WHERE b.is_delete=0 AND b.settlement_status<>1 AND b.last_grace_date<'2026-11-12' LIMIT 1"
+      },
+      "retrievedAt": "2026-11-13T14:39:50.388102+08:00",
+      "data": {
+        "targetKey": "db-prod",
+        "dataMasked": true,
+        "profileKey": "readonly",
+        "result": {
+          "truncatedByBytes": false,
+          "dataMasked": true,
+          "rows": [
+            {
+              "open_candidates": 883,
+              "covered": 883,
+              "missing": 0
+            }
+          ],
+          "columns": [
+            "open_candidates",
+            "covered",
+            "missing"
+          ]
+        },
+        "sql": "SELECT COUNT(*) AS open_candidates,SUM(EXISTS(SELECT 1 FROM ol_saps.bill_fee_record r WHERE r.bill_no=b.bill_no AND r.start_date='***' AND r.is_delete=0)) AS covered,SUM(NOT EXISTS(SELECT 1 FROM ol_saps.bill_fee_record r WHERE r.bill_no=b.bill_no AND r.start_date='***' AND r.is_delete=0)) AS missing FROM ol_saps.customer_bill b WHERE b.is_delete=0 AND b.settlement_status<>1 AND b.last_grace_date<'***' LIMIT 1"
+      }
+    },
+    "verify12-duplicates": {
+      "tool": "run_readonly_query",
+      "arguments": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT bill_no,start_date,end_date,subject_no,COUNT(*) AS cnt,SUM(fee_amount) AS total_fee FROM ol_saps.bill_fee_record WHERE end_date IN ('2026-11-12','2026-11-13') AND is_delete=0 GROUP BY bill_no,start_date,end_date,subject_no HAVING COUNT(*)>1 LIMIT 100"
+      },
+      "retrievedAt": "2026-11-13T14:39:51.416422+08:00",
+      "data": {
+        "targetKey": "db-prod",
+        "dataMasked": true,
+        "profileKey": "readonly",
+        "result": {
+          "truncatedByBytes": false,
+          "dataMasked": true,
+          "rows": [],
+          "columns": [
+            "bill_no",
+            "start_date",
+            "end_date",
+            "subject_no",
+            "cnt",
+            "total_fee"
+          ]
+        },
+        "sql": "SELECT bill_no,start_date,end_date,subject_no,COUNT(*) AS cnt,SUM(fee_amount) AS total_fee FROM ol_saps.bill_fee_record WHERE end_date IN ('***','***') AND is_delete=0 GROUP BY bill_no,start_date,end_date,subject_no HAVING COUNT(*)>1 LIMIT 100"
+      }
+    },
+    "verify12-amount-check": {
+      "tool": "run_readonly_query",
+      "arguments": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT b.project_no,COUNT(*) AS records,SUM(r.fee_amount) AS actual_fee,SUM(ROUND(r.principal*r.fee_rate,2)) AS calculated_fee,SUM(r.fee_amount<>ROUND(r.principal*r.fee_rate,2)) AS mismatched_rows,MIN(r.fee_rate) AS min_rate,MAX(r.fee_rate) AS max_rate FROM ol_saps.bill_fee_record r JOIN ol_saps.customer_bill b ON b.bill_no=r.bill_no AND b.is_delete=0 WHERE r.start_date='2026-11-12' AND r.end_date='2026-11-12' AND r.is_delete=0 GROUP BY b.project_no LIMIT 10"
+      },
+      "retrievedAt": "2026-11-13T14:39:51.280168+08:00",
+      "data": {
+        "targetKey": "db-prod",
+        "dataMasked": true,
+        "profileKey": "readonly",
+        "result": {
+          "truncatedByBytes": false,
+          "dataMasked": true,
+          "rows": [
+            {
+              "project_no": "PRJ0000001",
+              "records": 44,
+              "actual_fee": 12.2,
+              "calculated_fee": 12.2,
+              "mismatched_rows": 0,
+              "min_rate": 0.001,
+              "max_rate": 0.001
+            },
+            {
+              "project_no": "PRJ000088",
+              "records": 839,
+              "actual_fee": 483.7,
+              "calculated_fee": 483.7,
+              "mismatched_rows": 0,
+              "min_rate": 0.001,
+              "max_rate": 0.001
+            }
+          ],
+          "columns": [
+            "project_no",
+            "records",
+            "actual_fee",
+            "calculated_fee",
+            "mismatched_rows",
+            "min_rate",
+            "max_rate"
+          ]
+        },
+        "sql": "SELECT b.project_no,COUNT(*) AS records,SUM(r.fee_amount) AS actual_fee,SUM(ROUND(r.principal*r.fee_rate,2)) AS calculated_fee,SUM(r.fee_amount<>ROUND(r.principal*r.fee_rate,2)) AS mismatched_rows,MIN(r.fee_rate) AS min_rate,MAX(r.fee_rate) AS max_rate FROM ol_saps.bill_fee_record r JOIN ol_saps.customer_bill b ON b.bill_no=r.bill_no AND b.is_delete=0 WHERE r.start_date='***' AND r.end_date='***' AND r.is_delete=0 GROUP BY b.project_no LIMIT 10"
+      }
+    }
+  }
+}

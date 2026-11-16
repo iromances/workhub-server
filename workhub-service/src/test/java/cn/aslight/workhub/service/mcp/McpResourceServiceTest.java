@@ -317,7 +317,7 @@ class McpResourceServiceTest {
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.create(request));
 
-        assertEquals("日志目录白名单必须配置绝对路径：logs/assets-saps", ex.getMessage());
+        assertEquals("文件路径必须是绝对路径且不能包含上级目录引用", ex.getMessage());
     }
 
     @Test

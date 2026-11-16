@@ -1,0 +1,13 @@
+[ {
+  "TABLE_NAME" : "mcp_resource_config",
+  "COLUMN_NAME" : "allowed_file_paths_json",
+  "COLUMN_TYPE" : "text",
+  "IS_NULLABLE" : "YES",
+  "COLUMN_DEFAULT" : null
+}, {
+  "TABLE_NAME" : "mcp_resource_config",
+  "COLUMN_NAME" : "allowed_log_paths_json",
+  "COLUMN_TYPE" : "text",
+  "IS_NULLABLE" : "YES",
+  "COLUMN_DEFAULT" : null
+} ]

@@ -2,6 +2,8 @@ package cn.aslight.workhub.controller.ai;
 
 import cn.aslight.workhub.model.ai.AiProviderProbeResponse;
 import cn.aslight.workhub.model.ai.AiProviderConnectionTestResponse;
+import cn.aslight.workhub.model.ai.AiUseCaseConfigResponse;
+import cn.aslight.workhub.model.ai.AiUseCaseConfigRow;
 import cn.aslight.workhub.service.ai.AiGatewayConfigService;
 import cn.aslight.workhub.service.ai.AiProviderConfigService;
 import cn.aslight.workhub.service.ai.AiProviderConnectionTestService;
@@ -13,11 +15,14 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -60,6 +65,35 @@ class AiConfigCompatibilityControllerTest {
                 eq("admin"),
                 eq("10.0.0.1")
         );
+    }
+
+    @Test
+    void useCase_shouldExposeCapabilityFields() throws Exception {
+        AiUseCaseConfigService useCaseService = mock(AiUseCaseConfigService.class);
+        when(useCaseService.detailForManage(3L)).thenReturn(AiUseCaseConfigResponse.fromRow(
+                new AiUseCaseConfigRow(3L, "intake.clarification.analyze", "需求澄清分析", "INTAKE", null, 1L,
+                        "codex-cli-default", "Codex CLI通道", "CLI", null, "OPENAI",
+                        null, null, null, null,
+                        null, null, null, null, null, null, null, null,
+                        true, null, "SENSITIVE_PROMPT", null, 1, "checksum", true, null),
+                "LOCAL_REPOSITORY_READ", List.of("CLI"), List.of("CODEX")));
+
+        AiConfigCompatibilityController controller = new AiConfigCompatibilityController(
+                mock(AiGatewayConfigService.class),
+                mock(AiProviderConfigService.class),
+                mock(AiProviderProbeService.class),
+                mock(AiProviderConnectionTestService.class),
+                useCaseService
+        );
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+        mockMvc.perform(get("/api/manage/system/ai-use-case/3")
+                        .principal(new UsernamePasswordAuthenticationToken("admin", "")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.useCaseCode").value("intake.clarification.analyze"))
+                .andExpect(jsonPath("$.data.capability").value("LOCAL_REPOSITORY_READ"))
+                .andExpect(jsonPath("$.data.allowedChannelTypes[0]").value("CLI"))
+                .andExpect(jsonPath("$.data.allowedCliTypes[0]").value("CODEX"));
     }
 
     @Test

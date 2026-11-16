@@ -72,4 +72,11 @@ public class AgentController {
             @Valid @RequestBody AgentTaskCreateRequest request, Authentication auth) {
         return ApiResponse.success(service.createTask(id, request, auth.getName()));
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('agent:manage')")
+    public ApiResponse<Void> delete(@PathVariable String id, @RequestParam long expectedVersion, Authentication auth) {
+        service.deleteAgent(id, expectedVersion, auth.getName());
+        return ApiResponse.success(null);
+    }
 }

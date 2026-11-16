@@ -13,6 +13,8 @@ public class IntakeClarificationAnalysisEntity {
     private String businessLine;
     private String analysisStatus;
     private String analysisMessage;
+    private LocalDateTime startedAt;
+    private LocalDateTime finishedAt;
     private String itemsJson;
     private String createdBy;
     private String updatedBy;
@@ -65,6 +67,22 @@ public class IntakeClarificationAnalysisEntity {
 
     public void setAnalysisMessage(String analysisMessage) {
         this.analysisMessage = analysisMessage;
+    }
+
+    public LocalDateTime getStartedAt() {
+        return startedAt;
+    }
+
+    public void setStartedAt(LocalDateTime startedAt) {
+        this.startedAt = startedAt;
+    }
+
+    public LocalDateTime getFinishedAt() {
+        return finishedAt;
+    }
+
+    public void setFinishedAt(LocalDateTime finishedAt) {
+        this.finishedAt = finishedAt;
     }
 
     public String getItemsJson() {

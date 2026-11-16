@@ -16,6 +16,7 @@ import cn.aslight.workhub.service.ai.AiGatewayResult;
 import cn.aslight.workhub.service.ai.AiAgentApiRequest;
 import cn.aslight.workhub.service.auth.PermissionContextService;
 import cn.aslight.workhub.service.autonomy.*;
+import cn.aslight.workhub.model.autonomy.AutonomyProposal;
 import jakarta.validation.Validation;
 import jakarta.validation.ValidatorFactory;
 import org.apache.ibatis.session.Configuration;
@@ -68,7 +69,6 @@ class AgentInspectionServiceTest {
     private AgentInspectionService inspections;
     private AccountingExecutionEvidenceService executionEvidence;
     private AgentAccessService access;
-    private AgentToolCatalog catalog;
     private AgentDefinitionResponse agent;
 
     @BeforeEach void setup() throws Exception {
@@ -117,21 +117,8 @@ class AgentInspectionServiceTest {
         validation = Validation.buildDefaultValidatorFactory();
         cases = proxy(new AutonomyCaseService(autonomy, agents, runs, access, new AutonomyEvidence(json), data, json, validation.getValidator(), sources));
         inspections = service(mapper);
-        var tools = new AgentInspectionTools(inspections, access, json); var caseTools = new AutonomyCaseTools(cases, access, json);
-        catalog = new AgentToolCatalog(List.of(tools.agentInspectionNextTool(), tools.agentInspectionAckTool(), tools.agentInspectionPendingTool(),
-                caseTools.autonomyCaseRecordTool(), caseTools.autonomyCaseClaimTool(), caseTools.autonomyCaseProposeTool(),
-                caseTools.autonomyCaseLinkBugTool(), caseTools.autonomyCaseBugsTool(),
-                new AgentBugTools(sources, access, data, json).agentBugDetailTool(), new AgentTool() {
-                    public String code() { return "monitor.accounting.detail"; }
-                    public String description() { return "固定规则证据"; }
-                    public JsonNode inputSchema() { return json.createObjectNode(); }
-                    public Set<String> permissions() { return Set.of("ops:accounting:view"); }
-                    public boolean readOnly() { return true; }
-                    public Object execute(AgentToolContext context, JsonNode args) { return observations.capture(context, code(), args); }
-                }));
-        workbench = proxy(new AgentWorkbenchService(agents, access, providers, catalog, json, clock));
-        agent = workbench.create(new AgentSaveRequest(null, new AgentConfiguration("巡检", "主动巡检", 1L, "fixture", List.of(scope),
-                catalog.all().stream().map(AgentTool::code).toList(), 200, 3600, 8)), "owner");
+        workbench = proxy(new AgentWorkbenchService(agents, access, providers, json, clock));
+        agent = workbench.create(new AgentSaveRequest(null, new AgentConfiguration("巡检", "主动巡检", 1L, "fixture", List.of(scope), 200, 3600, 8)), "owner");
         agent = workbench.setEnabled(agent.id(), agent.version(), true, "owner");
     }
     @AfterEach void close() throws Exception { if (validation != null) validation.close(); if (keepAlive != null) keepAlive.close(); }
@@ -140,10 +127,10 @@ class AgentInspectionServiceTest {
         bug(1, 1, "原始描述"); bug(2, 1, "后续");
         var run = run(null); var args = nextArgs(BUG);
         String key = begin(run, "inspection.next", args);
-        var first = (JsonNode) catalog.require("inspection.next").execute(run, args);
-        assertEquals(json.writeValueAsString(first), json.writeValueAsString(catalog.require("inspection.next").execute(run, args)));
+        var first = (JsonNode) raw(run, "inspection.next", args);
+        assertEquals(json.writeValueAsString(first), json.writeValueAsString(raw(run, "inspection.next", args)));
         assertThrows(IllegalArgumentException.class, () -> inspections.next(run, BUG, "BL000012", null, 999L));
-        runs.endTool(run.runId(), run.ownerToken(), key, first);
+        endTool(run, key, first);
         assertEquals(first.path("itemId"), next(run, BUG).path("itemId"));
         ack(run, first, "NO_FINDING");
         var second = next(run, BUG); assertEquals(2L, second.path("sourceId").asLong());
@@ -202,7 +189,7 @@ class AgentInspectionServiceTest {
         inspections = service(mapper); // 模拟服务重建，状态完全来自数据库。
         String key = begin(other, "inspection.next", nextArgs(SYSTEM_ALERT));
         var recovered = inspections.next(other, SYSTEM_ALERT, "BL000012", "TEST", null);
-        runs.endTool(other.runId(), other.ownerToken(), key, recovered);
+        endTool(other, key, recovered);
         assertEquals("AWAITING_ANALYSIS", recovered.path("state").asText());
         assertEquals(other.runId(), autonomy.observation(recovered.at("/observation/observationId").asText()).runId());
         assertEquals(2, count("pm_agent_observation"));
@@ -213,14 +200,12 @@ class AgentInspectionServiceTest {
         var run = run(null); var item = next(run, BUG); assertEquals(2, item.path("sourceId").asInt());
         assertEquals("SCAN_ADVANCED", next(run, SYSTEM_ALERT).path("state").asText());
         var invalid = nextArgs(BUG); invalid.put("environmentCode", "TEST");
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "inspection.next", invalid));
+        assertThrows(IllegalArgumentException.class, () -> invoke(run, "inspection.next", invalid));
         var otherTask = run(null);
-        assertThrows(AgentTool.Rejected.class, () -> ack(otherTask, item, "NO_FINDING"));
+        assertThrows(IllegalArgumentException.class, () -> ack(otherTask, item, "NO_FINDING"));
         grants.remove("ops:system-alert:view");
-        assertThrows(AgentTool.Rejected.class, () -> next(run, SYSTEM_ALERT));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> next(run, SYSTEM_ALERT));
         assertNull(agents.findRun(run.runId()).externalHandle());
-        var unknown = nextArgs(BUG); unknown.put("sql", "select secrets");
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "inspection.next", unknown));
     }
 
     @Test void receiptFailureRollsBackSnapshotsCursorAndObservationTogether() {
@@ -230,14 +215,14 @@ class AgentInspectionServiceTest {
         assertThrows(IllegalStateException.class, () -> service.next(run, SYSTEM_ALERT, "BL000012", "TEST", null));
         for (String table : List.of("pm_agent_inspection_stream", "pm_agent_inspection_item", "pm_agent_inspection_call", "pm_agent_observation")) assertEquals(0, count(table), table);
         var retried = inspections.next(run, SYSTEM_ALERT, "BL000012", "TEST", null);
-        runs.endTool(run.runId(), run.ownerToken(), key, retried);
+        endTool(run, key, retried);
         assertEquals(1, retried.path("sourceId").asInt());
     }
 
     @Test void findingMustMatchActualSignalAndDeduplicatedSignalsRemainUsable() {
         alert(1, "TEST", "同一条异常"); var run = run(null); var item = next(run, SYSTEM_ALERT);
         var args = ackArgs(item, "FINDING"); args.put("caseId", "missing");
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "inspection.ack", args));
+        assertThrows(IllegalArgumentException.class, () -> invoke(run, "inspection.ack", args));
         String caseId = record(run, item.at("/observation/observationId").asText(), "/data/events/0", "APPLICATION_ERROR");
         // 未确认的记录交给后续运行，再登记将复用同一个 signal，而不强制 signal 的原 observation 等于新 observation。
         jdbc.update("UPDATE pm_agent_run SET status='COMPLETED',owner_token=NULL,external_handle=NULL WHERE id=?", run.runId());
@@ -261,7 +246,7 @@ class AgentInspectionServiceTest {
         assertEquals(json.writeValueAsString(saved), json.writeValueAsString(replay));
         assertThrows(IllegalArgumentException.class, () -> inspections.acknowledge(run, id, "NO_FINDING", "更改结论", null, null, null));
         assertEquals(1, count("pm_agent_inspection_analysis"));
-        runs.endTool(run.runId(), run.ownerToken(), key, saved);
+        endTool(run, key, saved);
     }
 
     @Test void completedAccountingRunsAreScopedAndLateCompletionIsRescanned() {
@@ -306,7 +291,7 @@ class AgentInspectionServiceTest {
         String wrongCase = record(run, wrong.path("observationId").asText(), "/data/results/0", "DATA_DISCREPANCY");
         String rightCase = record(run, right.path("observationId").asText(), "/data/results/0", "DATA_DISCREPANCY");
         var args = ackArgs(item, "FINDING"); args.put("caseId", wrongCase).put("findingObservationId", wrong.path("observationId").asText()).put("findingPointer", "/data/results/0");
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "inspection.ack", args));
+        assertThrows(IllegalArgumentException.class, () -> invoke(run, "inspection.ack", args));
         args.put("caseId", rightCase).put("findingObservationId", right.path("observationId").asText());
         assertEquals("FINDING", invoke(run, "inspection.ack", args).at("/analysis/outcome").asText());
     }
@@ -317,7 +302,7 @@ class AgentInspectionServiceTest {
         assertTrue(item.path("itemId").asLong() > 0); assertTrue(item.at("/observation/truncated").asBoolean());
         assertFalse(json.writeValueAsString(item).contains("private-inspection-secret"));
         assertFalse(jdbc.queryForObject("SELECT payload_json FROM pm_agent_inspection_item", String.class).contains("private-inspection-secret"));
-        assertThrows(AgentTool.Rejected.class, () -> ack(run, item, "NO_FINDING"));
+        assertThrows(IllegalArgumentException.class, () -> ack(run, item, "NO_FINDING"));
         ack(run, item, "NEEDS_INPUT");
     }
 
@@ -335,7 +320,7 @@ class AgentInspectionServiceTest {
         String reason = "Authorization: Bearer x\n".repeat(80);
         assertTrue(reason.length() <= 2000); assertTrue(new AgentToolData(json).sanitize(reason).asText().length() > 2000);
         var args = ackArgs(item, "NEEDS_INPUT"); args.put("reason", reason);
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "inspection.ack", args));
+        assertThrows(IllegalArgumentException.class, () -> invoke(run, "inspection.ack", args));
         assertEquals("PENDING", mapper.item(item.path("itemId").asLong()).status());
         assertEquals(0, count("pm_agent_inspection_analysis"));
     }
@@ -377,11 +362,12 @@ class AgentInspectionServiceTest {
             assertTrue(prompt.contains("已提交的巡检快照")); assertTrue(prompt.contains("TOOL_RECEIPT_RECOVERED"));
             return AiGatewayResult.succeeded("{\"type\":\"NEEDS_INPUT\",\"plan\":\"基于原回执继续定位\",\"summary\":\"缺陷环境待补充\"}", "fixture", "fixture", 1);
         });
-        new AgentApiExecutionAdapter(runs, catalog, new AgentToolData(json), gateway, json).execute(run.runId(), next.ownerToken());
+        new AgentApiExecutionAdapter(runs, new AgentToolData(json), gateway,
+                cn.aslight.workhub.service.ai.TestPromptTemplates.stubEnabledConfigService(),
+                new cn.aslight.workhub.service.ai.AiPromptTemplateRenderer(json), plainGuide(), json).execute(run.runId(), next.ownerToken());
         verify(gateway, times(1)).executeAgentApi(any());
         assertEquals("WAITING_INPUT", runs.get(run.runId()).status());
         assertEquals(1, count("pm_agent_inspection_call")); assertEquals(1, count("pm_agent_inspection_item"));
-        assertThrows(AgentRunStore.LeaseLost.class, () -> runs.endTool(run.runId(), run.ownerToken(), lost.key(), receipt));
     }
 
     @Test void cancellationKeepsCommittedAcknowledgmentAndDoesNotRepeatAnalysis() {
@@ -401,8 +387,8 @@ class AgentInspectionServiceTest {
         for (boolean stoppedFirst : List.of(false, true)) {
             var run = run(null); String attempt = "cli:inspection", key = attempt + ":rpc:1";
             runs.beginNative(run.runId(), run.ownerToken(), attempt, "fixture-host");
-            runs.beginTool(run.runId(), run.ownerToken(), key, catalog.require("inspection.next"), nextArgs(BUG), true);
-            var value = catalog.require("inspection.next").execute(run, nextArgs(BUG));
+            begin(run, "inspection.next", nextArgs(BUG), key);
+            var value = raw(run, "inspection.next", nextArgs(BUG));
             var stopProof = Map.of("processTreeStopped", true, "exitCode", 0, "result", Map.of("type", "NEEDS_INPUT", "summary", "需补充环境"));
             expire(run);
             if (stoppedFirst) runs.endNative(run.runId(), run.ownerToken(), attempt, stopProof);
@@ -430,7 +416,7 @@ class AgentInspectionServiceTest {
         bug(1, 1, "其他运行的事实"); var first = run(null);
         var committed = committedWithoutCallback(first, "inspection.next", nextArgs(BUG));
         var other = run(null);
-        runs.beginTool(other.runId(), other.ownerToken(), committed.key(), catalog.require("inspection.next"), nextArgs(BUG), true);
+        begin(other, "inspection.next", nextArgs(BUG), committed.key());
         expire(other); runs.recoverExpired(other.runId());
         assertEquals("WAITING_RESOURCE", runs.get(other.runId()).status());
         assertEquals(other.ownerToken(), runs.get(other.runId()).ownerToken());
@@ -465,19 +451,22 @@ class AgentInspectionServiceTest {
             assertTrue(prompt.contains("补充前已取得的事实")); assertTrue(prompt.contains("等待环境确认"));
             return AiGatewayResult.succeeded("{\"type\":\"NEEDS_INPUT\",\"plan\":\"保留事实\",\"summary\":\"等待环境确认\"}", "fixture", "fixture", 1);
         });
-        new AgentApiExecutionAdapter(runs, catalog, new AgentToolData(json), gateway, json).execute(run.runId(), reclaimed.ownerToken());
+        new AgentApiExecutionAdapter(runs, new AgentToolData(json), gateway,
+                cn.aslight.workhub.service.ai.TestPromptTemplates.stubEnabledConfigService(),
+                new cn.aslight.workhub.service.ai.AiPromptTemplateRenderer(json), plainGuide(), json).execute(run.runId(), reclaimed.ownerToken());
+        // 恢复的旧回执没有携带决策，按格式错误丢弃后依据新指令重新规划；已提交事实保留在轨迹中。
         var changed = runs.event(run.runId(), lost.key().replace(":tool", ":handled"));
-        assertEquals("INPUT_CHANGED", changed.kind()); assertTrue(changed.payloadJson().contains("原工具回执已保存"));
-        assertFalse(changed.payloadJson().contains("未发出")); assertEquals(1, count("pm_agent_inspection_call"));
+        assertEquals("FORMAT_ERROR", changed.kind());
+        assertEquals("WAITING_INPUT", runs.get(run.runId()).status());
+        assertEquals(1, count("pm_agent_inspection_call"));
     }
 
     private LostCall committedWithoutCallback(AgentToolContext context, String code, JsonNode arguments) {
         int step = runs.beginModel(context.runId(), context.ownerToken(), Map.of("fixture", true));
-        runs.endModel(context.runId(), context.ownerToken(), step, Map.of("succeeded", true,
-                "decision", new AgentApiDecision("TOOL_CALL", "读取或确认巡检事实", code, arguments, null)));
+        runs.endModel(context.runId(), context.ownerToken(), step, Map.of("succeeded", true));
         String key = "step:" + step + ":tool";
-        runs.beginApiTool(context.runId(), context.ownerToken(), key, catalog.require(code), arguments, "step:" + step + ":request");
-        return new LostCall(key, json.valueToTree(catalog.require(code).execute(context, arguments)));
+        begin(context, code, arguments, key);
+        return new LostCall(key, json.valueToTree(raw(context, code, arguments)));
     }
     private void expire(AgentToolContext run) {
         jdbc.update("UPDATE pm_agent_run SET lease_until=? WHERE id=?", LocalDateTime.ofInstant(clock.instant().minusSeconds(1), ZoneOffset.UTC), run.runId());
@@ -492,7 +481,7 @@ class AgentInspectionServiceTest {
         assertEquals("UNRESOLVED", item.at("/observation/environmentState").asText());
         String caseId = record(run, observed.at("/observation/observationId").asText(), "/data/events/0", "APPLICATION_ERROR");
         var finding = ackArgs(item, "FINDING"); finding.put("caseId", caseId);
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "inspection.ack", finding));
+        assertThrows(IllegalArgumentException.class, () -> invoke(run, "inspection.ack", finding));
         claim(run, caseId);
         var args = linkArgs(caseId, item, observed, "link-1");
         var linked = invoke(run, "case.link_bug", args);
@@ -515,7 +504,7 @@ class AgentInspectionServiceTest {
         assertEquals(1, count("pm_autonomy_bug_link")); assertEquals(2, count("pm_autonomy_bug_link_request"));
         assertEquals(1, cases.bugsForUser(agent.id(), caseId, "owner", 1, 5).total());
         var conflict = args.deepCopy(); conflict.put("reason", "更改原请求依据");
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "case.link_bug", conflict));
+        assertThrows(IllegalArgumentException.class, () -> invoke(run, "case.link_bug", conflict));
     }
 
     @Test void editedBugInvalidatesPlanningAndNewAssociationRetainsHistory() {
@@ -530,8 +519,8 @@ class AgentInspectionServiceTest {
         var staleSummary = cases.detailForUser(agent.id(), caseId, "owner", 1, 1, 1).bugContext();
         assertEquals(1, staleSummary.bugCount()); assertEquals(1, staleSummary.changedCount()); assertEquals(0, staleSummary.unavailableCount());
         assertEquals("CHANGED", invoke(run, "case.bugs", json.valueToTree(Map.of("caseId", caseId))).at("/items/0/sourceState").asText());
-        assertThrows(AgentTool.Rejected.class, () -> propose(run, caseId, "stale-plan"));
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "case.link_bug", linkArgs(caseId, item, observed, "stale-link")));
+        assertThrows(IllegalArgumentException.class, () -> propose(run, caseId, "stale-plan"));
+        assertThrows(IllegalArgumentException.class, () -> invoke(run, "case.link_bug", linkArgs(caseId, item, observed, "stale-link")));
         var changed = invoke(run, "workhub.bugs.detail", json.valueToTree(Map.of("businessLineCode", "BL000012", "workItemId", 1)));
         var newLink = linkArgs(caseId, item, observed, "updated"); newLink.put("workItemVersion", changed.path("workItemVersion").asText());
         invoke(run, "case.link_bug", newLink);
@@ -544,7 +533,7 @@ class AgentInspectionServiceTest {
         assertEquals(2, revisedSummary.historyCount()); assertEquals(1, revisedSummary.bugCount());
         assertEquals(0, revisedSummary.changedCount()); // 旧关联原文不同不应令最新已重核的方案继续失效。
         var finding = ackArgs(item, "FINDING"); finding.put("caseId", caseId);
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "inspection.ack", finding));
+        assertThrows(IllegalArgumentException.class, () -> invoke(run, "inspection.ack", finding));
         ack(run, item, "NEEDS_INPUT");
         var newItem = next(run, BUG);
         finding.put("itemId", newItem.path("itemId").asLong());
@@ -554,7 +543,7 @@ class AgentInspectionServiceTest {
         assertTrue(cases.bugContextChanged(autonomy.find(caseId)));
         assertEquals("UNAVAILABLE", cases.bugsForUser(agent.id(), caseId, "owner", 1, 1).items().getFirst().sourceState());
         assertEquals(1, cases.detailForUser(agent.id(), caseId, "owner", 1, 1, 1).bugContext().unavailableCount());
-        assertThrows(AgentTool.Rejected.class, () -> propose(run, caseId, "moved-plan"));
+        assertThrows(IllegalArgumentException.class, () -> propose(run, caseId, "moved-plan"));
     }
 
     @Test void bugContextSummaryCoversLatestAssociationsBeyondVisibleHistoryPage() {
@@ -583,21 +572,21 @@ class AgentInspectionServiceTest {
         claim(run, caseId);
         var valid = linkArgs(caseId, item, observed, "valid");
         var foreign = valid.deepCopy(); foreign.put("workItemId", 2);
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "case.link_bug", foreign));
+        assertThrows(IllegalArgumentException.class, () -> invoke(run, "case.link_bug", foreign));
         var other = run(null); var otherEvidence = next(other, SYSTEM_ALERT);
         var wrongRun = valid.deepCopy(); wrongRun.put("observationId", otherEvidence.at("/observation/observationId").asText());
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "case.link_bug", wrongRun));
+        assertThrows(IllegalArgumentException.class, () -> invoke(run, "case.link_bug", wrongRun));
         var wrongPointer = valid.deepCopy(); wrongPointer.put("pointer", "/data/events/1");
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "case.link_bug", wrongPointer));
+        assertThrows(IllegalArgumentException.class, () -> invoke(run, "case.link_bug", wrongPointer));
         grants.remove("work-item:view");
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "case.link_bug", valid));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> invoke(run, "case.link_bug", valid));
         assertEquals(0, count("pm_autonomy_bug_link"));
         grants.add("work-item:view"); invoke(run, "case.link_bug", valid);
         grants.remove("work-item:view");
         assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> cases.detailForUser(agent.id(), caseId, "owner", 1, 1, 1));
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "case.bugs", json.valueToTree(Map.of("caseId", caseId))));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> invoke(run, "case.bugs", json.valueToTree(Map.of("caseId", caseId))));
         grants.add("work-item:view"); grants.remove("ops:system-alert:view");
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "case.bugs", json.valueToTree(Map.of("caseId", caseId))));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> invoke(run, "case.bugs", json.valueToTree(Map.of("caseId", caseId))));
     }
 
     @Test void concurrentBugAssociationReplaysOneCommittedRevision() throws Exception {
@@ -631,7 +620,7 @@ class AgentInspectionServiceTest {
         var source = sources.bug("BL000012", 1);
         var large = args.deepCopy(); large.put("requestKey", "large").put("version", autonomy.find(caseId).version())
                 .put("workItemVersion", AutonomyEvidence.digest(json.writeValueAsString(source)));
-        assertThrows(AgentTool.Rejected.class, () -> invoke(run, "case.link_bug", large));
+        assertThrows(IllegalArgumentException.class, () -> invoke(run, "case.link_bug", large));
         assertEquals(1, count("pm_autonomy_bug_link")); assertTrue(cases.bugContextChanged(autonomy.find(caseId)));
     }
 
@@ -648,6 +637,11 @@ class AgentInspectionServiceTest {
                 .put("facts", "已关联实际缺陷与运行证据").put("hypothesis", "待验证的根因").put("impact", "测试环境")
                 .put("plan", "按当前缺陷版本修复").put("acceptance", "独立测试").put("rollback", "恢复基线").put("unknowns", "尚未验证修复").put("changeType", "CODE");
         invoke(run, "case.propose", args);
+    }
+
+    private AgentPlatformGuide plainGuide() {
+        var configs = mock(cn.aslight.workhub.service.system.SysConfigService.class);
+        return new AgentPlatformGuide(configs);
     }
 
     private AgentInspectionService service(AgentInspectionMapper repository) {
@@ -672,19 +666,78 @@ class AgentInspectionServiceTest {
                 "scopeBasis", "CURRENT_MONITOR_CONFIGURATION", "historicalEnvironmentVerified", false,
                 "data", Map.of("run", Map.of("id", id, "configId", 1), "results", List.of(Map.of("id", id * 10, "runId", id, "ruleCode", "BALANCE", "status", "WARN", "differenceAmount", "12.34", "createdAt", "2026-11-04T10:00:00"))))));
     }
+    /** 历史工具调用按原服务分发：手柄与回执直接落库，业务语义与原工具包装一致。 */
     private JsonNode invoke(AgentToolContext run, String code, JsonNode args) {
-        String key = begin(run, code, args);
+        String key = begin(run, code, args, null);
         try {
-            var result = json.valueToTree(catalog.require(code).execute(run, args));
-            runs.endTool(run.runId(), run.ownerToken(), key, result); return result;
-        } catch (RuntimeException ex) { runs.endTool(run.runId(), run.ownerToken(), key, Map.of("fixtureFailure", true)); throw ex; }
+            var result = json.valueToTree(raw(run, code, args));
+            endTool(run, key, result); return result;
+        } catch (RuntimeException ex) { endTool(run, key, Map.of("fixtureFailure", true)); throw ex; }
     }
-    private String begin(AgentToolContext run, String code, JsonNode args) {
-        String key = "inspection-test:" + sequence.incrementAndGet(); runs.beginTool(run.runId(), run.ownerToken(), key, catalog.require(code), args, true); return key;
+    private Object raw(AgentToolContext run, String code, JsonNode args) {
+        return switch (code) {
+            case "inspection.next" -> inspections.next(run, AgentInspectionService.Source.valueOf(args.path("source").asText()),
+                    args.path("businessLineCode").asText(), args.hasNonNull("environmentCode") ? args.path("environmentCode").asText() : null,
+                    args.hasNonNull("retryItemId") ? args.path("retryItemId").asLong() : null);
+            case "inspection.ack" -> inspections.acknowledge(run, args.path("itemId").asLong(), args.path("outcome").asText(),
+                    args.path("reason").asText(), args.hasNonNull("caseId") ? args.path("caseId").asText() : null,
+                    args.hasNonNull("findingObservationId") ? args.path("findingObservationId").asText() : null,
+                    args.hasNonNull("findingPointer") ? args.path("findingPointer").asText() : null);
+            case "inspection.pending" -> inspections.pending(run, AgentInspectionService.Source.valueOf(args.path("source").asText()),
+                    args.path("businessLineCode").asText(), args.hasNonNull("environmentCode") ? args.path("environmentCode").asText() : null,
+                    args.hasNonNull("afterItemId") ? args.path("afterItemId").asLong() : 0L);
+            case "case.record" -> cases.record(run, args.path("observationId").asText(), args.path("pointer").asText(),
+                    args.path("category").asText(), args.path("title").asText(), null);
+            case "case.claim" -> cases.claim(run, args.path("caseId").asText(), args.path("version").asLong());
+            case "case.propose" -> cases.propose(run, args.path("caseId").asText(), args.path("version").asLong(), args.path("requestKey").asText(),
+                    new AutonomyProposal(args.path("facts").asText(), args.path("hypothesis").asText(), args.path("impact").asText(),
+                            args.path("plan").asText(), args.path("acceptance").asText(), args.path("rollback").asText(),
+                            args.path("unknowns").asText(), args.path("changeType").asText()));
+            case "case.link_bug" -> cases.linkBug(run, args.path("caseId").asText(), args.path("version").asLong(), args.path("requestKey").asText(),
+                    args.path("workItemId").asLong(), args.path("workItemVersion").asText(), args.path("observationId").asText(),
+                    args.path("pointer").asText(), args.path("reason").asText(), null);
+            case "case.bugs" -> cases.bugs(run, args.path("caseId").asText(), 1, 5);
+            case "monitor.accounting.detail" -> observations.capture(run, code, args);
+            case "workhub.bugs.detail" -> {
+                var record = sources.bug(args.path("businessLineCode").asText(), args.path("workItemId").asLong());
+                if (record == null) throw new IllegalArgumentException("该业务线中不存在所指定的缺陷工作项");
+                yield json.createObjectNode().put("workItemVersion", AutonomyEvidence.digest(json.writeValueAsString(record)));
+            }
+            default -> throw new IllegalArgumentException("未知调用: " + code);
+        };
+    }
+    private String begin(AgentToolContext run, String code, JsonNode args) { return begin(run, code, args, null); }
+    private String begin(AgentToolContext run, String code, JsonNode args, String explicitKey) {
+        String key = explicitKey != null ? explicitKey : "inspection-test:" + sequence.incrementAndGet();
+        agents.insertEvent(new AgentEventEntity(UUID.randomUUID().toString(), run.runId(), key + ":request", agents.nextEventOrdinal(run.runId()),
+                "TOOL_REQUEST", json.writeValueAsString(Map.of("tool", code, "arguments", args)), "agent-runtime",
+                LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC)));
+        var tool = json.createObjectNode().put("kind", "TOOL").put("key", key).put("tool", code).put("readOnly", true);
+        String current = agents.findRun(run.runId()).externalHandle();
+        if (current == null) {
+            jdbc.update("UPDATE pm_agent_run SET external_handle=? WHERE id=?", json.writeValueAsString(tool), run.runId());
+        } else {
+            var handle = (tools.jackson.databind.node.ObjectNode) json.readTree(current);
+            handle.set("activeTool", tool);
+            jdbc.update("UPDATE pm_agent_run SET external_handle=? WHERE id=?", json.writeValueAsString(handle), run.runId());
+        }
+        return key;
+    }
+    private void endTool(AgentToolContext run, String key, Object result) {
+        agents.insertEvent(new AgentEventEntity(UUID.randomUUID().toString(), run.runId(), key + ":result", agents.nextEventOrdinal(run.runId()),
+                "TOOL_RESULT", json.writeValueAsString(result), "agent-runtime", LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC)));
+        String current = agents.findRun(run.runId()).externalHandle();
+        if (current != null && "CLI".equals(json.readTree(current).path("kind").asText())) {
+            var handle = (tools.jackson.databind.node.ObjectNode) json.readTree(current);
+            handle.remove("activeTool");
+            jdbc.update("UPDATE pm_agent_run SET external_handle=? WHERE id=?", json.writeValueAsString(handle), run.runId());
+        } else {
+            jdbc.update("UPDATE pm_agent_run SET external_handle=NULL WHERE id=?", run.runId());
+        }
     }
     private AgentToolContext run(String taskId) {
         if (taskId == null) {
-            var specification = new AgentTaskSpecification("巡检", "本地固定来源", "保存结论", List.of("REPORT"), List.of(scope), catalog.all().stream().map(AgentTool::code).toList());
+            var specification = new AgentTaskSpecification("巡检", "本地固定来源", "保存结论", List.of("REPORT"), List.of(scope));
             workbench.createTask(agent.id(), new AgentTaskCreateRequest(UUID.randomUUID().toString(), specification,
                     new AgentScheduleRequest(null, "MANUAL", null, "Asia/Shanghai", "RUN_ONCE", false), true), "owner");
         } else workbench.run(taskId, new AgentRunRequest(UUID.randomUUID().toString(), 0L), "owner");

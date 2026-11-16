@@ -1,0 +1,44 @@
+11:45:12.712 [main] INFO org.flywaydb.core.FlywayExecutor -- Database: jdbc:mysql://10.10.116.53:3308/workhub?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false (MySQL 8.0)
+11:45:13.612 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory -- Repair of failed migration in Schema History table `workhub`.`flyway_schema_history` not necessary. No failed migration detected.
+11:45:13.678 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory -- Repairing Schema History table for version "20261103.190110" (Marking as DELETED)  ...
+11:45:13.770 [main] INFO org.flywaydb.core.internal.command.DbRepair -- Successfully repaired schema history table `workhub`.`flyway_schema_history` (execution time 00:00.227s).
+11:45:13.771 [main] INFO org.flywaydb.core.internal.command.DbRepair -- Please ensure the previous contents of the deleted migrations are removed from the database, or moved into an existing migration.
+11:45:14.734 [main] INFO org.flywaydb.core.FlywayExecutor -- Database: jdbc:mysql://10.10.116.53:3308/workhub?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false (MySQL 8.0)
+11:45:14.902 [main] INFO org.flywaydb.core.internal.command.DbValidate -- Successfully validated 45 migrations (execution time 00:00.090s)
+{
+  "completedAt" : "2026-11-04T03:45:15.041337Z",
+  "target" : "10.10.116.53:3308/workhub",
+  "historyRowsBefore" : 43,
+  "historyRowsAfter" : 44,
+  "existingHistoryUnchanged" : true,
+  "onlyNewMarker" : {
+    "installed_rank" : 44,
+    "version" : "20261103.190110",
+    "description" : "mcp server file read paths",
+    "type" : "DELETE",
+    "script" : "V20261103_190110__mcp_server_file_read_paths.sql",
+    "checksum" : 1496732278,
+    "installed_by" : "root",
+    "installed_on" : "2026-11-04 11:45:36",
+    "execution_time" : 0,
+    "success" : true
+  },
+  "removedMigrations" : [ ],
+  "alignedMigrations" : [ ],
+  "appliedMigrationsValidationSuccessful" : true,
+  "pendingMigrations" : [ {
+    "version" : "20261103.193242",
+    "state" : "PENDING",
+    "description" : "unify mcp ai read paths default mnt",
+    "script" : "V20261103_193242__unify_mcp_ai_read_paths_default_mnt.sql",
+    "installedRank" : null,
+    "checksumMatching" : true,
+    "descriptionMatching" : true,
+    "typeMatching" : true,
+    "appliedChecksum" : null,
+    "resolvedChecksum" : 1506032370
+  } ],
+  "relevantColumnMetadataUnchanged" : true,
+  "newMigrationsExecuted" : false,
+  "applicationStarted" : false
+}

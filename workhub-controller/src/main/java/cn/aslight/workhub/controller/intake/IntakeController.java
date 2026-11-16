@@ -7,6 +7,11 @@ import cn.aslight.workhub.model.intake.DevelopmentAnalysisConfirmResponse;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisDraftUpdateRequest;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisOwnerUpdateRequest;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisResponse;
+import cn.aslight.workhub.model.intake.DevelopmentZentaoSyncResponse;
+import cn.aslight.workhub.model.intake.IntakeAiDevelopmentResponse;
+import cn.aslight.workhub.model.intake.IntakeSubmitTestConfirmRequest;
+import cn.aslight.workhub.model.intake.IntakeSubmitTestReviewResponse;
+import cn.aslight.workhub.model.intake.IntakeBoardResponse;
 import cn.aslight.workhub.model.intake.IntakeBusinessLineUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeDashboardResponse;
 import cn.aslight.workhub.model.intake.IntakeDevelopmentBranchRequest;
@@ -20,6 +25,7 @@ import cn.aslight.workhub.model.intake.IntakePriorityUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeRequirementFolderResponse;
 import cn.aslight.workhub.model.intake.IntakeRequirementTypeUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeStageActionRequest;
+import cn.aslight.workhub.model.intake.IntakeStageRollbackRequest;
 import cn.aslight.workhub.model.intake.IntakeSummaryResponse;
 import cn.aslight.workhub.model.intake.IntakeTodoCreateRequest;
 import cn.aslight.workhub.model.intake.IntakeTodoResponse;
@@ -64,6 +70,8 @@ public class IntakeController {
     private final RequirementFolderService requirementFolderService;
     private final DevelopmentPlanFolderService developmentPlanFolderService;
     private final IntakeTodoService intakeTodoService;
+    private final cn.aslight.workhub.service.intake.IntakeAiDevelopmentService intakeAiDevelopmentService;
+    private final cn.aslight.workhub.service.intake.IntakeSubmitTestReviewService intakeSubmitTestReviewService;
 
     @Autowired
     public IntakeController(IntakeService intakeService,
@@ -71,24 +79,28 @@ public class IntakeController {
                             IntakeClarificationAnalysisService intakeClarificationAnalysisService,
                             RequirementFolderService requirementFolderService,
                             DevelopmentPlanFolderService developmentPlanFolderService,
-                            IntakeTodoService intakeTodoService) {
+                            IntakeTodoService intakeTodoService,
+                            cn.aslight.workhub.service.intake.IntakeAiDevelopmentService intakeAiDevelopmentService,
+                            cn.aslight.workhub.service.intake.IntakeSubmitTestReviewService intakeSubmitTestReviewService) {
         this.intakeService = intakeService;
         this.developmentAnalysisService = developmentAnalysisService;
         this.intakeClarificationAnalysisService = intakeClarificationAnalysisService;
         this.requirementFolderService = requirementFolderService;
         this.developmentPlanFolderService = developmentPlanFolderService;
         this.intakeTodoService = intakeTodoService;
+        this.intakeAiDevelopmentService = intakeAiDevelopmentService;
+        this.intakeSubmitTestReviewService = intakeSubmitTestReviewService;
     }
 
     IntakeController(IntakeService intakeService,
                      DevelopmentAnalysisService developmentAnalysisService) {
-        this(intakeService, developmentAnalysisService, null, null, null, null);
+        this(intakeService, developmentAnalysisService, null, null, null, null, null, null);
     }
 
     IntakeController(IntakeService intakeService,
                      DevelopmentAnalysisService developmentAnalysisService,
                      IntakeTodoService intakeTodoService) {
-        this(intakeService, developmentAnalysisService, null, null, null, intakeTodoService);
+        this(intakeService, developmentAnalysisService, null, null, null, intakeTodoService, null, null);
     }
 
     /**
@@ -124,6 +136,20 @@ public class IntakeController {
     @PreAuthorize("hasAuthority('dashboard:view') or hasAuthority('intake:record:view')")
     public ApiResponse<IntakeDashboardResponse> dashboard(@RequestParam(required = false, defaultValue = "ALL") String demandType) {
         return ApiResponse.success(intakeService.dashboard(demandType));
+    }
+
+    /**
+     * 查询需求看板：按负责人维度聚合在负责的需求。
+     *
+     * @param includeClosed 是否包含已完成、终止关闭的终态需求
+     * @param groupBy 聚合维度：demandOwner（默认，按需求研发负责人）或 taskOwner（按任务项负责人）
+     * @return 需求看板数据
+     */
+    @GetMapping("/board")
+    @PreAuthorize("hasAuthority('intake:record:view')")
+    public ApiResponse<IntakeBoardResponse> board(@RequestParam(required = false, defaultValue = "false") boolean includeClosed,
+                                                  @RequestParam(required = false, defaultValue = "demandOwner") String groupBy) {
+        return ApiResponse.success(intakeService.board(includeClosed, groupBy));
     }
 
     /**
@@ -390,6 +416,15 @@ public class IntakeController {
         return ApiResponse.success(intakeService.advanceStage(id, request, authentication.getName()));
     }
 
+    /** 阶段回退：退回上一阶段，必填原因写入历史；不触发阶段自动化。 */
+    @PostMapping("/{id}/stage-rollback")
+    @PreAuthorize("hasAuthority('intake:stage:operate')")
+    public ApiResponse<IntakeDetailResponse> rollbackStage(@PathVariable Long id,
+                                                           @Valid @RequestBody IntakeStageRollbackRequest request,
+                                                           Authentication authentication) {
+        return ApiResponse.success(intakeService.rollbackStage(id, request, authentication.getName()));
+    }
+
     /**
      * 通过 multipart 执行需求阶段动作，并可选上传阶段产出数据文件。
      *
@@ -422,6 +457,77 @@ public class IntakeController {
                                                               @RequestBody IntakeZentaoLinkRequest request,
                                                               Authentication authentication) {
         return ApiResponse.success(intakeService.updateZentaoLink(id, request, authentication.getName()));
+    }
+
+    /**
+     * 更新需求审核员（澄清阶段选择，任务负责人默认值）。
+     *
+    /**
+     * 查询需求 AI 分支开发执行状态（设计完成后自动触发）。
+     *
+     * @param id 待整理记录 ID
+     * @return AI 开发执行状态；未触发时 data 为空
+     */
+    @GetMapping("/{id}/ai-development")
+    @PreAuthorize("hasAuthority('intake:record:detail')")
+    public ApiResponse<IntakeAiDevelopmentResponse> aiDevelopmentStatus(@PathVariable Long id) {
+        return ApiResponse.success(intakeAiDevelopmentService.detail(id));
+    }
+
+    /**
+     * 重试失败的 AI 分支开发。
+     *
+     * @param id 待整理记录 ID
+     * @param authentication 当前认证信息
+     * @return 重试后的 AI 开发执行状态
+     */
+    @PostMapping("/{id}/ai-development/retry")
+    @PreAuthorize("hasAuthority('intake:stage:operate')")
+    public ApiResponse<IntakeAiDevelopmentResponse> retryAiDevelopment(@PathVariable Long id,
+                                                                       Authentication authentication) {
+        return ApiResponse.success(intakeAiDevelopmentService.retry(id, authentication.getName()));
+    }
+
+    /**
+     * 查询提测 AI 审核状态。
+     *
+     * @param id 待整理记录 ID
+     * @return 审核状态与缺陷清单；未审核时 data 为空
+     */
+    @GetMapping("/{id}/submit-test-review")
+    @PreAuthorize("hasAuthority('intake:record:detail')")
+    public ApiResponse<IntakeSubmitTestReviewResponse> submitTestReviewStatus(@PathVariable Long id) {
+        return ApiResponse.success(intakeSubmitTestReviewService.detail(id));
+    }
+
+    /**
+     * 触发提测 AI 审核（异步执行，前端轮询状态）。
+     *
+     * @param id 待整理记录 ID
+     * @param authentication 当前认证信息
+     * @return 当前审核状态
+     */
+    @PostMapping("/{id}/submit-test-review")
+    @PreAuthorize("hasAuthority('intake:stage:operate')")
+    public ApiResponse<IntakeSubmitTestReviewResponse> startSubmitTestReview(@PathVariable Long id,
+                                                                             Authentication authentication) {
+        return ApiResponse.success(intakeSubmitTestReviewService.startReview(id, authentication.getName()));
+    }
+
+    /**
+     * 确认提测：审核通过或人工强制确认后创建禅道测试单并触发测试环境 Jenkins 构建。
+     *
+     * @param id 待整理记录 ID
+     * @param request 提测确认请求
+     * @param authentication 当前认证信息
+     * @return 提测回执（测试单与构建信息）
+     */
+    @PostMapping("/{id}/submit-test-review/confirm")
+    @PreAuthorize("hasAuthority('intake:stage:operate')")
+    public ApiResponse<IntakeSubmitTestReviewResponse> confirmSubmitTest(@PathVariable Long id,
+                                                                         @Valid @RequestBody IntakeSubmitTestConfirmRequest request,
+                                                                         Authentication authentication) {
+        return ApiResponse.success(intakeSubmitTestReviewService.confirmAndSubmit(id, request, authentication.getName()));
     }
 
     /**
@@ -510,6 +616,12 @@ public class IntakeController {
         return ApiResponse.success(intakeClarificationAnalysisService.detail(id));
     }
 
+    @GetMapping("/{id}/clarification-analysis/history")
+    @PreAuthorize("hasAuthority('intake:record:view')")
+    public ApiResponse<List<IntakeClarificationAnalysisResponse>> clarificationAnalysisHistory(@PathVariable Long id) {
+        return ApiResponse.success(intakeClarificationAnalysisService.history(id));
+    }
+
     @PostMapping("/{id}/clarification-analysis")
     @PreAuthorize("hasAuthority('intake:ai:operate')")
     public ApiResponse<IntakeClarificationAnalysisResponse> analyzeClarification(@PathVariable Long id,
@@ -531,12 +643,26 @@ public class IntakeController {
         return ApiResponse.success(developmentAnalysisService.detail(id));
     }
 
+    @GetMapping("/{id}/development-analysis/history")
+    @PreAuthorize("hasAuthority('intake:record:view')")
+    public ApiResponse<List<DevelopmentAnalysisResponse>> developmentAnalysisHistory(@PathVariable Long id) {
+        return ApiResponse.success(developmentAnalysisService.history(id));
+    }
+
     @PostMapping("/{id}/development-analysis")
     @PreAuthorize("hasAuthority('intake:ai:operate')")
     public ApiResponse<DevelopmentAnalysisResponse> analyzeDevelopment(@PathVariable Long id,
                                                                        @RequestParam(required = false) String businessLine,
                                                                        Authentication authentication) {
         return ApiResponse.success(developmentAnalysisService.analyze(id, businessLine, authentication.getName()));
+    }
+
+    /** 研发任务同步禅道（独立按钮）：新建/更新/取消，可重复执行；不依赖评估确认状态。 */
+    @PostMapping("/{id}/development-analysis/zentao-sync")
+    @PreAuthorize("hasAuthority('intake:ai:operate')")
+    public ApiResponse<DevelopmentZentaoSyncResponse> syncDevelopmentZentao(@PathVariable Long id,
+                                                                            Authentication authentication) {
+        return ApiResponse.success(developmentAnalysisService.syncZentaoTasks(id, authentication.getName()));
     }
 
     @PostMapping("/{id}/development-analysis/chat")

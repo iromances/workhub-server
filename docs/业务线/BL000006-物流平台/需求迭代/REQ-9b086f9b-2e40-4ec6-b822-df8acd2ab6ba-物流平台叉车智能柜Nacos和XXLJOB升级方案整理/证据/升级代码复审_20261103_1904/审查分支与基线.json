@@ -1,0 +1,290 @@
+[
+  {
+    "repo": "bpm-framework",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "2e473432a6071b8afa24737fa8638fa04c37be47",
+    "base": "43e5efa9fbde2fbb85870b14d5b4b0ea25711f38",
+    "prev": "2e473432a6071b8afa24737fa8638fa04c37be47",
+    "date": "2026-11-02T11:27:08+08:00"
+  },
+  {
+    "repo": "intf-abc",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "041807dfabf331fd452a97c04ae08ff5426aae05",
+    "base": "63fc29d5828f3a68517b20043847c2af11845a17",
+    "prev": "041807dfabf331fd452a97c04ae08ff5426aae05",
+    "date": "2026-11-03T16:36:45+08:00"
+  },
+  {
+    "repo": "intf-bank",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "96b7fac79dd8f5c1a0284bd7770e461bd5193b91",
+    "base": "6b5a422edc9790655663693e2c801389828e0717",
+    "prev": "96b7fac79dd8f5c1a0284bd7770e461bd5193b91",
+    "date": "2026-11-03T16:36:47+08:00"
+  },
+  {
+    "repo": "intf-boc",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "b5f119fc6e1ce747f041be9ecb63fe6578ee8bc7",
+    "base": "31417e771e3dffacf41102cfb570a7376e686c7a",
+    "prev": "b5f119fc6e1ce747f041be9ecb63fe6578ee8bc7",
+    "date": "2026-11-03T16:36:48+08:00"
+  },
+  {
+    "repo": "intf-ccb",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "cb65714c8d778d4604f45bb04fb2c717ce364fc5",
+    "base": "7e27b68f3452fd39c5dd0711080544ddcf0d839b",
+    "prev": "cb65714c8d778d4604f45bb04fb2c717ce364fc5",
+    "date": "2026-11-03T16:36:50+08:00"
+  },
+  {
+    "repo": "intf-hs",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "2c28b694b960b991599a982ea06f73ae643d83ed",
+    "base": "df6684c3efb1134f7d084c4cea8f84861d611059",
+    "prev": "2c28b694b960b991599a982ea06f73ae643d83ed",
+    "date": "2026-11-03T16:36:52+08:00"
+  },
+  {
+    "repo": "intf-icbc",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "8697bfb305c40081531e48c2ce4779307f52c8a5",
+    "base": "6feab6a665c8f6d8337faec8441ae6bdfd2a3b60",
+    "prev": "8697bfb305c40081531e48c2ce4779307f52c8a5",
+    "date": "2026-11-03T16:36:53+08:00"
+  },
+  {
+    "repo": "intf-qdccb",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "29fd02fcc8fa1af8d39e98c1b3e5bc12e5f2bbb6",
+    "base": "2f1fdc95ea39e6db0d73dfd022110c6eac61d6d0",
+    "prev": "29fd02fcc8fa1af8d39e98c1b3e5bc12e5f2bbb6",
+    "date": "2026-11-03T16:36:55+08:00"
+  },
+  {
+    "repo": "intf-risk",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "d4320324cdf1b32b8e067a57a26b7d5b05a746b7",
+    "base": "4d0b55ddfb22d07427b036ad19c2a573b6bf4e41",
+    "prev": "d4320324cdf1b32b8e067a57a26b7d5b05a746b7",
+    "date": "2026-11-03T10:43:16+08:00"
+  },
+  {
+    "repo": "invoice-exinterface",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "203c9de707b1261223a100c3a614d1970b151088",
+    "base": "2b283bdf6e7d830691298e0b29e6d34fcbad4136",
+    "prev": "2b283bdf6e7d830691298e0b29e6d34fcbad4136",
+    "date": "2026-11-03T17:55:46+08:00"
+  },
+  {
+    "repo": "saps-account-checker",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "6a3360057a6a4e39802a3c407c025678445f450e",
+    "base": "5f976e9a937f52d5727898a33eda8741230d60af",
+    "prev": "6a3360057a6a4e39802a3c407c025678445f450e",
+    "date": "2026-11-03T15:51:32+08:00"
+  },
+  {
+    "repo": "saps-account-checker",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "6a3360057a6a4e39802a3c407c025678445f450e",
+    "base": "5f976e9a937f52d5727898a33eda8741230d60af",
+    "prev": "6a3360057a6a4e39802a3c407c025678445f450e",
+    "date": "2026-11-03T15:51:32+08:00"
+  },
+  {
+    "repo": "thctay-account",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "479f2052d95d33e58b674e6890bf235dc77ffaf8",
+    "base": "54d001b2527df6058de8485de927651a1b39edb7",
+    "prev": "479f2052d95d33e58b674e6890bf235dc77ffaf8",
+    "date": "2026-11-03T15:29:42+08:00"
+  },
+  {
+    "repo": "thctay-account",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "479f2052d95d33e58b674e6890bf235dc77ffaf8",
+    "base": "54d001b2527df6058de8485de927651a1b39edb7",
+    "prev": "479f2052d95d33e58b674e6890bf235dc77ffaf8",
+    "date": "2026-11-03T15:29:42+08:00"
+  },
+  {
+    "repo": "thctay-auth",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "404f565d1ce09249844d1d47cefaa4b60743b044",
+    "base": "f15d3e68eb389d3d8e30747d88ccf28301386b9b",
+    "prev": "29ffce84ef1ea902259809d8f86e984136917462",
+    "date": "2026-11-03T17:38:12+08:00"
+  },
+  {
+    "repo": "thctay-crm",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "a79a599b7cbdfadecea554ecb4c3988ce5dee7f8",
+    "base": "89e9678c449babc67d595dd90153d297d7c12060",
+    "prev": "a79a599b7cbdfadecea554ecb4c3988ce5dee7f8",
+    "date": "2026-11-03T17:00:37+08:00"
+  },
+  {
+    "repo": "thctay-eas",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "0cf07fdc16f9ac6e6a3d34c50e08586eebb89285",
+    "base": "bf81ca73cd968bceceb9c32d461e25198ebc13e3",
+    "prev": "0cf07fdc16f9ac6e6a3d34c50e08586eebb89285",
+    "date": "2026-11-03T15:58:29+08:00"
+  },
+  {
+    "repo": "thctay-eas",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "0cf07fdc16f9ac6e6a3d34c50e08586eebb89285",
+    "base": "bf81ca73cd968bceceb9c32d461e25198ebc13e3",
+    "prev": "0cf07fdc16f9ac6e6a3d34c50e08586eebb89285",
+    "date": "2026-11-03T15:58:29+08:00"
+  },
+  {
+    "repo": "thctay-ebaby-gateway",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "e38a3bbc5e7527226ddaf2ef01907aff24df6e3e",
+    "base": "03c30405922bf14a1ecf7afc0cbb7e7c80d925da",
+    "prev": "e38a3bbc5e7527226ddaf2ef01907aff24df6e3e",
+    "date": "2026-11-03T16:36:37+08:00"
+  },
+  {
+    "repo": "thctay-etc",
+    "ref": "origin/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "dcacecb9c2eaab95bad04d1a5f8826d0480285b2",
+    "base": "dcacecb9c2eaab95bad04d1a5f8826d0480285b2",
+    "prev": "dcacecb9c2eaab95bad04d1a5f8826d0480285b2",
+    "date": "2026-08-14T16:01:12+08:00"
+  },
+  {
+    "repo": "thctay-front-gateway",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "78ac549ca1bfb6ddefce83fad8a11921f7181aeb",
+    "base": "ebe47205640caeeeb750a6b6457e6e854d1c21be",
+    "prev": "78ac549ca1bfb6ddefce83fad8a11921f7181aeb",
+    "date": "2026-11-03T16:36:39+08:00"
+  },
+  {
+    "repo": "thctay-marketing",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "b3459269bfd9157639ffd678863bfac09a56386d",
+    "base": "211febabfc8f50e56e10779cc3cf3c8af9bd7918",
+    "prev": "e1d7db18539d0f99dc2acc36def5943d602b54d0",
+    "date": "2026-11-03T17:38:36+08:00"
+  },
+  {
+    "repo": "thctay-marketing-back",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "6046c032bac7b476652ee60b49df7156144969ad",
+    "base": "92942add51adb587a4fa2fd08c6d5bd2d66911e5",
+    "prev": "6046c032bac7b476652ee60b49df7156144969ad",
+    "date": "2026-11-03T15:29:53+08:00"
+  },
+  {
+    "repo": "thctay-marketing-back",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "e5e5e2ba0fd72d37bca80b4d06ea13aa53c43cb5",
+    "base": "92942add51adb587a4fa2fd08c6d5bd2d66911e5",
+    "prev": "6046c032bac7b476652ee60b49df7156144969ad",
+    "date": "2026-11-03T10:43:16+08:00"
+  },
+  {
+    "repo": "thctay-marketing-gateway",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "6209f58c827889e7b745eae46e3a170c6bf2c54a",
+    "base": "a1e958046c84ef5b1cc7ebdd5335c631f15448f5",
+    "prev": "6209f58c827889e7b745eae46e3a170c6bf2c54a",
+    "date": "2026-11-03T16:36:40+08:00"
+  },
+  {
+    "repo": "thctay-op-gateway",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "f7efe2875e9d880abc00cda8ff471299e219b7e9",
+    "base": "2b1164dd9ca35c51f5d5ed778a80adc92c181bde",
+    "prev": "f7efe2875e9d880abc00cda8ff471299e219b7e9",
+    "date": "2026-11-03T16:36:42+08:00"
+  },
+  {
+    "repo": "thctay-partner-gateway",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "43b12748612d5ac5ed6925924aff000af8e6fe0a",
+    "base": "fd1a1e1525364f1683d3ac8215f1f0c02e64688f",
+    "prev": "43b12748612d5ac5ed6925924aff000af8e6fe0a",
+    "date": "2026-11-03T16:36:43+08:00"
+  },
+  {
+    "repo": "thctay-payment",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "ea725eccc1b81a38ae597dec5bd492f43932f12a",
+    "base": "ee34164c6651ec2e0d9832c4d4e388647e6d549b",
+    "prev": "ea725eccc1b81a38ae597dec5bd492f43932f12a",
+    "date": "2026-11-03T15:37:00+08:00"
+  },
+  {
+    "repo": "thctay-payment",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "ea725eccc1b81a38ae597dec5bd492f43932f12a",
+    "base": "ee34164c6651ec2e0d9832c4d4e388647e6d549b",
+    "prev": "ea725eccc1b81a38ae597dec5bd492f43932f12a",
+    "date": "2026-11-03T15:37:00+08:00"
+  },
+  {
+    "repo": "thctay-public",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "d44d555c252b751af4d367fdea656fdb1fda41cb",
+    "base": "3bb5e766c850ef43bde4bdb58de0eb211aaaabc9",
+    "prev": "d44d555c252b751af4d367fdea656fdb1fda41cb",
+    "date": "2026-10-30T16:10:45+08:00"
+  },
+  {
+    "repo": "thctay-risk-backend",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "cedeb919d2b0448f651c584dbc5b8604e395bb94",
+    "base": "35a04472e740080a8e07e1e60d8393ecc92dd9f2",
+    "prev": "cedeb919d2b0448f651c584dbc5b8604e395bb94",
+    "date": "2026-11-03T10:43:16+08:00"
+  },
+  {
+    "repo": "thctay-saps",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "9cd0d5aa6de19844aed32375408356d9a0f8110a",
+    "base": "4f4a228aba8190c99ca78d4e55e9d66f1e80d244",
+    "prev": "9cd0d5aa6de19844aed32375408356d9a0f8110a",
+    "date": "2026-11-03T15:51:27+08:00"
+  },
+  {
+    "repo": "thctay-saps-core-common",
+    "ref": "origin/feature/nacos-2.5.4-xxljob-2.5.0_20261102",
+    "sha": "0e088ce5ac02df0d601c960fc227db047e0a67c9",
+    "base": "75736cfc7d4dbb0f65bb49629c195cef2f591ba9",
+    "prev": "0e088ce5ac02df0d601c960fc227db047e0a67c9",
+    "date": "2026-11-03T14:03:53+08:00"
+  },
+  {
+    "repo": "thctay-saps-core-common",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "0e088ce5ac02df0d601c960fc227db047e0a67c9",
+    "base": "75736cfc7d4dbb0f65bb49629c195cef2f591ba9",
+    "prev": "0e088ce5ac02df0d601c960fc227db047e0a67c9",
+    "date": "2026-11-03T14:03:53+08:00"
+  },
+  {
+    "repo": "thctay-scene",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "70f064d7c721ad4fce1e9afe339c6c4e3a8f10dd",
+    "base": "95e9640e7cda7d2db3f9025b613d3c6487ad8dbb",
+    "prev": "70f064d7c721ad4fce1e9afe339c6c4e3a8f10dd",
+    "date": "2026-11-03T10:43:16+08:00"
+  },
+  {
+    "repo": "thctay-wms",
+    "ref": "origin/release/nacos-2.5.4-xxljob-2.5.0_20261027",
+    "sha": "4360ad111ed342a219c59a49c4d55dcf97931134",
+    "base": "bde451827a511bda1d0e9e2a3382d06635e7b2c7",
+    "prev": "4360ad111ed342a219c59a49c4d55dcf97931134",
+    "date": "2026-11-03T14:29:33+08:00"
+  }
+]

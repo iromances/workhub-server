@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-05",
+  "python": "3.9.6",
+  "unit_tests": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest -v test_migration.py",
+    "passed": 24,
+    "failed": 0,
+    "network": "mock only"
+  },
+  "static_checks": {
+    "python_ast": "passed",
+    "insert_select_matches_original_except_prod_nacos_schema": true,
+    "empty_nacos_scope_rejected_before_login": true,
+    "supplied_credentials_not_embedded": true
+  },
+  "not_executed": [
+    "production config read",
+    "Nacos publish",
+    "XXL stop/start/trigger",
+    "SQL on a MySQL instance"
+  ],
+  "pending": [
+    "Nacos explicit DataId/Group scope",
+    "isolated full integration rehearsal",
+    "production cutover snapshot and authorization"
+  ],
+  "files": {
+    "01-nacos-import-prod.sql": "809b2bd819056ab34739457c173e8ba3e506259462890b5167b96044b195719b",
+    "02-xxljob-import-prod.sql": "1cd537037897cc741bf6ad8cc74c8e7c0e181819713f05ac755eb27d5a81c470",
+    "README.md": "38da5eb2821ee18635df6fc457e27e733072688c4702528a56524b1f0c52f7c3",
+    "migration_http.py": "c4e0a63c407cf2185f3d40221a3751ea79ca74d0e02c3c829657b94433eab871",
+    "nacos-scope.example.json": "5766b1915686081749a782eb383286fa7c0a9e04701dd163627ba430ffb22cd4",
+    "nacos_xxl_patch.py": "83c5d07520824d79babc979b6d8671798119676520a404803f6fde402781820d",
+    "test_migration.py": "e8c919f410e20ed6589a2f13ec085a61d6a5f826ca40ed586483a779369f75be",
+    "xxl_job_cutover.py": "05ffa1ec62c33e1858404b9b640e35f72b64ce5294a81b6fc61012ca523e4280"
+  }
+}

@@ -2,9 +2,11 @@ package cn.aslight.workhub.service.workitem;
 
 import cn.aslight.workhub.model.workitem.WorkItemAssignRequest;
 import cn.aslight.workhub.model.workitem.WorkItemDetailResponse;
+import cn.aslight.workhub.dao.system.UserMapper;
 import cn.aslight.workhub.dao.workitem.WorkItemMapper;
 import cn.aslight.workhub.model.workitem.WorkItemEntity;
 import cn.aslight.workhub.integration.wecom.WecomRobotNotifier;
+import cn.aslight.workhub.model.system.UserOptionResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,15 +20,18 @@ public class WorkItemAssignmentService {
     private final WorkItemService workItemService;
     private final WorkItemFollowUpService workItemFollowUpService;
     private final WecomRobotNotifier wecomRobotNotifier;
+    private final UserMapper userMapper;
 
     public WorkItemAssignmentService(WorkItemMapper workItemMapper,
                                      WorkItemService workItemService,
                                      WorkItemFollowUpService workItemFollowUpService,
-                                     WecomRobotNotifier wecomRobotNotifier) {
+                                     WecomRobotNotifier wecomRobotNotifier,
+                                     UserMapper userMapper) {
         this.workItemMapper = workItemMapper;
         this.workItemService = workItemService;
         this.workItemFollowUpService = workItemFollowUpService;
         this.wecomRobotNotifier = wecomRobotNotifier;
+        this.userMapper = userMapper;
     }
 
     @Transactional
@@ -35,6 +40,8 @@ public class WorkItemAssignmentService {
 
         String newOwner = request.getOwnerUserName().trim();
         String newFollower = request.getFollowerUserName().trim();
+        requireActiveAccount(newOwner, "负责人");
+        requireActiveAccount(newFollower, "跟进人");
         String reason = trimToNull(request.getReason());
         if (newOwner.equals(workItem.getOwnerUserName()) && newFollower.equals(workItem.getFollowerUserName())) {
             throw new IllegalArgumentException("负责人和跟进人未发生变化");
@@ -53,6 +60,20 @@ public class WorkItemAssignmentService {
         WorkItemDetailResponse detail = workItemService.detail(workItemId);
         wecomRobotNotifier.notifyAssignment(detail, previousOwner, previousFollower, reason, operatorUserName);
         return detail;
+    }
+
+    /**
+     * 指派对象必须是账号管理中的活跃账号。
+     */
+    private void requireActiveAccount(String userName, String label) {
+        if (userName == null || userName.isBlank()) {
+            return;
+        }
+        boolean exists = userMapper.findActiveUsers().stream()
+                .anyMatch((UserOptionResponse user) -> userName.equals(user.userName()));
+        if (!exists) {
+            throw new IllegalArgumentException("工作项" + label + "「" + userName + "」不是有效账号，请先在账号管理中创建");
+        }
     }
 
     private String trimToNull(String value) {

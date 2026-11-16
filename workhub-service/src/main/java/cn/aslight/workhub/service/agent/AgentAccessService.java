@@ -55,18 +55,7 @@ public class AgentAccessService {
         }
     }
 
-    public void requireTool(Actor actor, AgentTool tool) {
-        if (tool.permissions().stream().noneMatch(actor::has)) {
-            throw new AccessDeniedException("无权使用工具: " + tool.code());
-        }
-    }
-
-    /** 每次调用实时取交集，配置快照不冻结已被撤销的权限。 */
-    public void requireExecution(AgentToolContext context, AgentTool tool) {
-        requireExecution(context, tool.code(), tool.permissions());
-    }
-
-    /** 多步骤外部操作在每次写入前复核同一工具授权，不能只依赖入口时的权限。 */
+    /** 多步骤外部操作在每次写入前复核同一操作授权，不能只依赖入口时的权限。 */
     public void requireExecution(AgentToolContext context, String toolCode, Set<String> requiredPermissions) {
         requireRunAuthorization(context);
         AgentDefinitionEntity current = mapper.findAgent(context.agentId());
@@ -74,12 +63,6 @@ public class AgentAccessService {
         requireAgent(requester, current);
         requester.require("agent:task:assign");
         if (!current.enabled()) throw new AccessDeniedException("Agent 已停用");
-        AgentConfiguration currentConfig = json.readValue(current.configurationJson(), AgentConfiguration.class);
-        if (!context.configuration().toolCodes().contains(toolCode)
-                || !context.specification().toolCodes().contains(toolCode)
-                || !currentConfig.toolCodes().contains(toolCode)) {
-            throw new AccessDeniedException("工具超出任务或 Agent 范围");
-        }
         if (requiredPermissions.stream().noneMatch(requester::has) || requiredPermissions.stream().noneMatch(actor(current.ownerName())::has)) {
             throw new AccessDeniedException("无权使用工具: " + toolCode);
         }

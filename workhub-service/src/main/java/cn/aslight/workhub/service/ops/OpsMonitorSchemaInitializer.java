@@ -46,6 +46,8 @@ public class OpsMonitorSchemaInitializer {
         if (tableExists(connection)) {
             ensureColumn(connection, "xxl_job_database_name",
                     "ALTER TABLE `ops_monitor_config` ADD COLUMN `xxl_job_database_name` VARCHAR(128) NULL AFTER `password_encrypted`");
+            ensureColumn(connection, "stale_threshold_minutes",
+                    "ALTER TABLE `ops_monitor_config` ADD COLUMN `stale_threshold_minutes` INT NULL AFTER `mq_lag_threshold`");
             return;
         }
         try (Statement statement = connection.createStatement()) {
@@ -67,6 +69,7 @@ public class OpsMonitorSchemaInitializer {
                       `mq_topic` VARCHAR(255) NULL,
                       `mq_consumer_group` VARCHAR(255) NULL,
                       `mq_lag_threshold` INT NULL,
+                      `stale_threshold_minutes` INT NULL,
                       `enabled` TINYINT(1) NOT NULL DEFAULT 1,
                       `last_status` VARCHAR(32) NULL,
                       `last_message` VARCHAR(1000) NULL,

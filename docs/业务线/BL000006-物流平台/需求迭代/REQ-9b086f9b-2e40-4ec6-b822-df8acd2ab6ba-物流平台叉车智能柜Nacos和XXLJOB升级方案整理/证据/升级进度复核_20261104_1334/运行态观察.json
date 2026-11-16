@@ -1,0 +1,325 @@
+{
+  "summarizedAt": "2026-11-04T13:34:00+08:00",
+  "environment": "TEST",
+  "nacos": {
+    "url": "http://10.10.116.110:8848/nacos/",
+    "version": "2.5.4",
+    "namespace": "bae98fd5-aa76-427b-a5fc-c32f81befa38",
+    "namespaceName": "sit",
+    "hideEmpty": false,
+    "total": 28,
+    "services": [
+      {
+        "name": "thctay-intfbank",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-eas",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-payment",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-risk",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-saps",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-wms",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-crm",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-marketing",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-front-gateway",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-partner-gateway",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-intfqdccb",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-intfrisk",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-hlj",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-intfccb",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-intf-hs-scene",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-datashield",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-account",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-opgateway",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "invoice-exinterface",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-admin",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-etc",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-gzgs",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-intfcommon",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-jsgs",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-intfboc",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-intfabc",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-saps-back",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      },
+      {
+        "name": "thctay-sdgs",
+        "instances": 1,
+        "healthy": 1,
+        "group": "DEFAULT_GROUP"
+      }
+    ],
+    "listPages": [
+      [
+        "thctay-intfbank",
+        "thctay-eas",
+        "thctay-payment",
+        "thctay-risk",
+        "thctay-saps",
+        "thctay-wms",
+        "thctay-crm",
+        "thctay-marketing",
+        "thctay-front-gateway",
+        "thctay-partner-gateway"
+      ],
+      [
+        "thctay-intfqdccb",
+        "thctay-intfrisk",
+        "thctay-hlj",
+        "thctay-intfccb",
+        "thctay-intf-hs-scene",
+        "thctay-datashield",
+        "thctay-account",
+        "thctay-opgateway",
+        "invoice-exinterface",
+        "thctay-admin"
+      ],
+      [
+        "thctay-etc",
+        "thctay-gzgs",
+        "thctay-intfcommon",
+        "thctay-jsgs",
+        "thctay-intfboc",
+        "thctay-intfabc",
+        "thctay-saps-back",
+        "thctay-sdgs"
+      ]
+    ]
+  },
+  "xxlJob": {
+    "url": "http://10.10.116.110:28080/xxl-job-admin/jobgroup",
+    "version": "2.5.0",
+    "definitions": 21,
+    "onlineGroups": 12,
+    "onlineAddresses": 13,
+    "online": [
+      {
+        "appname": "invoice-exinterface",
+        "addressCount": 1
+      },
+      {
+        "appname": "thctay-account",
+        "addressCount": 1
+      },
+      {
+        "appname": "thctay-crm",
+        "addressCount": 1
+      },
+      {
+        "appname": "thctay-eas",
+        "addressCount": 1
+      },
+      {
+        "appname": "thctay-etc",
+        "addressCount": 1
+      },
+      {
+        "appname": "thctay-intf-hs",
+        "addressCount": 2
+      },
+      {
+        "appname": "thctay-intf-jsgs",
+        "addressCount": 1
+      },
+      {
+        "appname": "thctay-intf-sdgs",
+        "addressCount": 1
+      },
+      {
+        "appname": "thctay-marketing",
+        "addressCount": 1
+      },
+      {
+        "appname": "thctay-payment",
+        "addressCount": 1
+      },
+      {
+        "appname": "thctay-risk",
+        "addressCount": 1
+      },
+      {
+        "appname": "thctay-saps",
+        "addressCount": 1
+      }
+    ],
+    "noOnlineAddress": [
+      "thctay-board",
+      "thctay-cashLoan",
+      "thctay-contract",
+      "thctay-etc-issue",
+      "thctay-intf-gdgs",
+      "thctay-intf-gzgs",
+      "thctay-sanchuan",
+      "thctay-saps-checkbill",
+      "xxl-job-executor-sample"
+    ],
+    "registrationType": "AUTO"
+  },
+  "validation": "完整读取新 Nacos sit 三页 10+10+8，28 项均 1 健康实例，隐藏空服务关闭；新 XXL .110 执行器页改为每页25，完整21项，12在线名称/13地址/9无地址。未触发任务。任务管理页另见发票3个任务为 STOP，仅为该执行器页面观察，不代表全平台任务状态。",
+  "observedBetween": [
+    "2026-11-04T13:29:00+08:00",
+    "2026-11-04T13:31:00+08:00"
+  ],
+  "limitations": [
+    "注册态未证明成品 SHA 与业务验收。",
+    "SAPS 进程已见 saps-controller，checker 独立部署及同名归属仍不能完全排除。",
+    "scene 独立 jar 进程已见，XXL thctay-intf-hs 两地址来源仍未对应，Nacos 同名不重复计两仓库完成。",
+    "thctay-risk 当前 Nacos/XXL 均在线，既有54仓库归属未确认。"
+  ],
+  "mcpCheck": {
+    "result": "已恢复；list_mcp_targets/get_service_status 成功",
+    "serverLogs": "python3 不存在导致目录/读取/搜索失败；另一次 SSH 拒绝认证",
+    "requirementContext": "keyword Nacos + BL000006 + TEST 无匹配；归档 REQ UUID 不是数字 intakeId，不用它冒充系统需求编号"
+  },
+  "deltaFrom1151": {
+    "nacosAdded": [
+      "invoice-exinterface",
+      "thctay-intf-hs-scene",
+      "thctay-intfccb",
+      "thctay-intfcommon",
+      "thctay-intfqdccb",
+      "thctay-intfrisk",
+      "thctay-risk"
+    ],
+    "nacosNoLongerObserved": [
+      "thctay-sanchuan"
+    ],
+    "xxlOnlineAdded": [
+      "invoice-exinterface",
+      "thctay-intf-sdgs",
+      "thctay-risk"
+    ],
+    "xxlNewDefinitions": [
+      "thctay-intf-sdgs"
+    ]
+  }
+}

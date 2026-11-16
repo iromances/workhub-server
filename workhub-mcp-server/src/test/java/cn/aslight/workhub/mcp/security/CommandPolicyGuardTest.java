@@ -64,7 +64,7 @@ class CommandPolicyGuardTest {
                         "logPath", "/etc/passwd"
                 )));
 
-        assertEquals("日志路径不在目录白名单中：/etc/passwd", ex.getMessage());
+        assertEquals("路径不在允许 AI 读取的白名单目录内，其他目录需用户明确授权：/etc/passwd", ex.getMessage());
     }
 
     @Test
@@ -74,7 +74,7 @@ class CommandPolicyGuardTest {
                         "logPath", "/data/logs/workhub-backup/app.log"
                 )));
 
-        assertEquals("日志路径不在目录白名单中：/data/logs/workhub-backup/app.log", ex.getMessage());
+        assertEquals("路径不在允许 AI 读取的白名单目录内，其他目录需用户明确授权：/data/logs/workhub-backup/app.log", ex.getMessage());
     }
 
     @Test
@@ -84,7 +84,7 @@ class CommandPolicyGuardTest {
                         "logPath", "/data/logs/workhub/../../secrets.txt"
                 )));
 
-        assertEquals("日志路径不在目录白名单中：/data/secrets.txt", ex.getMessage());
+        assertEquals("路径不在允许 AI 读取的白名单目录内，其他目录需用户明确授权：/data/secrets.txt", ex.getMessage());
     }
 
     @Test
@@ -130,15 +130,13 @@ class CommandPolicyGuardTest {
     }
 
     @Test
-    void buildCommand_shouldAllowAnyLogPathWhenWhitelistIsBlank() {
+    void buildCommand_shouldRejectLogPathWhenWhitelistIsBlank() {
         McpResourceCatalog.ServerTarget unrestrictedTarget = targetWithWhitelists(List.of("workhub-server"), List.of());
 
-        List<String> command = guard.buildCommand(unrestrictedTarget, profile, "tail_log_file", Map.of(
-                "logPath", "/var/log/messages",
-                "lines", "20"
-        ));
-
-        assertEquals(List.of("tail", "-n", "20", "/var/log/messages"), command);
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> guard.buildCommand(unrestrictedTarget, profile, "tail_log_file", Map.of(
+                        "logPath", "/var/log/messages", "lines", "20")));
+        assertEquals("未配置允许 AI 读取的白名单目录，路径读取已关闭", error.getMessage());
     }
 
     @Test
@@ -210,7 +208,7 @@ class CommandPolicyGuardTest {
                         "keyword", "root"
                 )));
 
-        assertEquals("日志路径不在目录白名单中：/etc/passwd", ex.getMessage());
+        assertEquals("路径不在允许 AI 读取的白名单目录内，其他目录需用户明确授权：/etc/passwd", ex.getMessage());
     }
 
     @Test

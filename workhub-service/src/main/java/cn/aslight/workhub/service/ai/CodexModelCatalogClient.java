@@ -22,7 +22,8 @@ public class CodexModelCatalogClient {
 
     @Autowired
     public CodexModelCatalogClient(ObjectMapper mapper) {
-        this(mapper, 10_000);
+        // codex 启动后先联网刷新模型列表、失败才回退本地数据，正常查询就需要数秒，预算留足抖动空间
+        this(mapper, 30_000);
     }
 
     CodexModelCatalogClient(ObjectMapper mapper, long timeoutMillis) {

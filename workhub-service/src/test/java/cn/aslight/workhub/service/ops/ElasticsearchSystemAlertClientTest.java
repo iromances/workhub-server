@@ -321,7 +321,9 @@ class ElasticsearchSystemAlertClientTest {
         AtomicBoolean closed = new AtomicBoolean();
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/workhub-logs-*/_pit", e -> {
-            assertTrue(e.getRequestURI().getQuery().contains("allow_partial_search_results=false"));
+            // _pit 端点在 ES 7.16 及以下不接受 allow_partial_search_results，携带即 HTTP 400
+            assertTrue(e.getRequestURI().getQuery().contains("keep_alive=1m"));
+            assertFalse(e.getRequestURI().getQuery().contains("allow_partial_search_results"));
             respond(e,200,"{\"id\":\"pit-1\"}");
         });
         server.createContext("/_search", e -> {
@@ -459,6 +461,25 @@ class ElasticsearchSystemAlertClientTest {
         var changed=new SystemAlertLogSource.Position(first.next().pitId(),first.next().searchAfterJson(),"0".repeat(64));
         assertThrows(SystemAlertLogSource.RestartRequired.class,()->client.readErrorPage(null,List.of(),"TEST",from,to,changed));
         assertEquals(2,query.get());
+    }
+
+    @Test
+    void readErrorPageAcceptsBoundaryRoundedEventButRejectsDriftBeyondTolerance() throws Exception {
+        var json=new com.fasterxml.jackson.databind.ObjectMapper();
+        var response=new java.util.concurrent.atomic.AtomicReference<String>();
+        server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
+        server.createContext("/workhub-logs-*/_pit",e->respond(e,200,"{\"id\":\"pit-1\"}"));
+        server.createContext("/_search",e->{var body=json.readTree(e.getRequestBody());
+            respond(e,200,body.has("aggs")?discoveredActivity("2026-08-22T23:59:00Z"):response.get());});
+        server.createContext("/_pit",e->respond(e,200,"{}"));server.start();
+        var client=new ElasticsearchSystemAlertClient(properties());
+        Instant from=Instant.parse("2026-08-22T23:50:00Z"),to=Instant.parse("2026-08-23T00:00:00Z");
+        response.set(oneHit("2026-08-23T00:00:00.000900Z",true));
+        var accepted=client.readErrorPage(null,List.of(),"TEST",from,to,null);
+        assertEquals(1,accepted.events().size());assertTrue(accepted.complete());
+        response.set(oneHit("2026-08-23T00:00:00.002Z",true));
+        var error=assertThrows(IllegalStateException.class,()->client.readErrorPage(null,List.of(),"TEST",from,to,null));
+        assertEquals("ELK返回日志超出采集区间",error.getMessage());
     }
 
     private ElkAlertProperties properties() {

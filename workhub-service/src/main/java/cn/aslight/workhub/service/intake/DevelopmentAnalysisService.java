@@ -16,6 +16,7 @@ import cn.aslight.workhub.model.intake.DevelopmentAnalysisEntity;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisOwnerUpdateRequest;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisResponse;
 import cn.aslight.workhub.model.intake.DevelopmentWorkItemDraft;
+import cn.aslight.workhub.model.intake.DevelopmentZentaoSyncResponse;
 import cn.aslight.workhub.model.intake.IntakeClarificationAnalysisEntity;
 import cn.aslight.workhub.model.intake.IntakeClarificationItem;
 import cn.aslight.workhub.model.intake.IntakeHistoryEntity;
@@ -28,6 +29,8 @@ import cn.aslight.workhub.model.system.UserOptionResponse;
 import cn.aslight.workhub.model.workitem.WorkItemCreateRequest;
 import cn.aslight.workhub.model.workitem.WorkItemDetailResponse;
 import cn.aslight.workhub.service.workitem.WorkItemService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,6 +40,7 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -47,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -56,13 +61,16 @@ import java.util.regex.Pattern;
 @Service
 public class DevelopmentAnalysisService {
 
+    private static final Logger log = LoggerFactory.getLogger(DevelopmentAnalysisService.class);
+
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_RUNNING = "RUNNING";
     private static final String STATUS_DRAFT = "DRAFT";
     private static final String STATUS_FAILED = "FAILED";
     private static final String STATUS_CONFIRMED = "CONFIRMED";
-    private static final String MESSAGE_PENDING = "任务评估已提交，系统正在后台拉取 GitLab 最新代码并调用 AI 分析。";
     private static final String MESSAGE_RUNNING = "任务评估正在执行，请稍后刷新查看结果。";
+    private static final String MESSAGE_SUPERSEDED = "超时未完成，已被新一次任务评估取代。";
+    private static final Duration EXECUTION_STALE_TIMEOUT = Duration.ofMinutes(30);
     private static final Pattern NORMALIZED_HOUR_PATTERN = Pattern.compile("^([0-9]+(?:\\.[0-9]+)?)h$");
     private static final List<DateTimeFormatter> DATE_FORMATTERS = List.of(
             DateTimeFormatter.ofPattern("yyyy/MM/dd"),
@@ -83,6 +91,7 @@ public class DevelopmentAnalysisService {
     private final WorkItemService workItemService;
     private final Executor workhubTaskExecutor;
     private final ObjectMapper objectMapper;
+    private final ZentaoClient zentaoClient;
 
     @Autowired
     public DevelopmentAnalysisService(IntakeMapper intakeMapper,
@@ -98,7 +107,8 @@ public class DevelopmentAnalysisService {
                                       CodexCliDevelopmentAnalysisGenerator analysisGenerator,
                                       WorkItemService workItemService,
                                       @Qualifier("workhubTaskExecutor") Executor workhubTaskExecutor,
-                                      ObjectMapper objectMapper) {
+                                      ObjectMapper objectMapper,
+                                      ZentaoClient zentaoClient) {
         this.intakeMapper = intakeMapper;
         this.intakeHistoryMapper = intakeHistoryMapper;
         this.developmentAnalysisMapper = developmentAnalysisMapper;
@@ -113,6 +123,7 @@ public class DevelopmentAnalysisService {
         this.workItemService = workItemService;
         this.workhubTaskExecutor = workhubTaskExecutor;
         this.objectMapper = objectMapper;
+        this.zentaoClient = zentaoClient;
     }
 
     DevelopmentAnalysisService(IntakeMapper intakeMapper,
@@ -141,7 +152,8 @@ public class DevelopmentAnalysisService {
                 analysisGenerator,
                 workItemService,
                 workhubTaskExecutor,
-                objectMapper
+                objectMapper,
+                null
         );
     }
 
@@ -187,6 +199,22 @@ public class DevelopmentAnalysisService {
         public int updateExecutionState(IntakeClarificationAnalysisEntity entity) {
             return 0;
         }
+
+        @Override
+        public List<IntakeClarificationAnalysisEntity> listByIntakeId(Long intakeId) {
+            return List.of();
+        }
+
+        @Override
+        public int failInFlightByIntakeId(Long intakeId, String message, String updatedBy) {
+            return 0;
+        }
+    }
+
+    public List<DevelopmentAnalysisResponse> history(Long intakeId) {
+        return developmentAnalysisMapper.listByIntakeId(intakeId).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     public DevelopmentAnalysisResponse detail(Long intakeId) {
@@ -200,10 +228,7 @@ public class DevelopmentAnalysisService {
             return null;
         }
         ProjectDetailResponse project = resolveProjectOrNull(structuredData);
-        List<String> developerPool = resolveDevelopers(
-                        project == null ? structuredData.projectHint() : project.businessLine(),
-                        project == null ? intake.getDevelopmentOwnerUserName() : project.ownerUserName()
-                ).stream()
+        List<String> developerPool = resolveDevelopers().stream()
                 .map(UserOptionResponse::userName)
                 .distinct()
                 .toList();
@@ -234,10 +259,11 @@ public class DevelopmentAnalysisService {
                 "禅道同步接口已预留，当前不会调用禅道。",
                 LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
                 "manual",
+                null,
                 null
         );
         LocalDateTime now = LocalDateTime.now();
-        return new DevelopmentAnalysisResponse(0L, intakeId, STATUS_DRAFT, "人工录入研发任务草稿", draft, now, now);
+        return new DevelopmentAnalysisResponse(0L, intakeId, STATUS_DRAFT, "人工录入研发任务草稿", true, null, null, draft, now, now);
     }
 
     public DevelopmentAnalysisResponse analyze(Long intakeId, String operatorUserName) {
@@ -255,7 +281,7 @@ public class DevelopmentAnalysisService {
         intakeMapper.updateStructuredData(intakeId, nextStructuredDataJson);
 
         DevelopmentAnalysisEntity existing = developmentAnalysisMapper.findLatestByIntakeId(intakeId);
-        if (existing != null && isExecutionInProgress(existing.getAnalysisStatus())) {
+        if (existing != null && isExecutionInProgress(existing.getAnalysisStatus()) && !isStaleExecution(existing)) {
             return toResponse(existing);
         }
 
@@ -264,17 +290,20 @@ public class DevelopmentAnalysisService {
             projectKnowledgeBaseService.appendAnalysisNote(intakeId, existing.getId(), "重评前保留原评估",
                     previous, previous.requirementRawPath(), operatorUserName);
         }
-        DevelopmentAnalysisEntity entity = upsertExecutionState(
-                existing,
+        developmentAnalysisMapper.failInFlightByIntakeId(intakeId, MESSAGE_SUPERSEDED, operatorUserName);
+        DevelopmentAnalysisEntity entity = insertExecutionState(
                 intakeId,
                 trimToNull(nextStructuredData.projectHint()),
-                STATUS_PENDING,
-                MESSAGE_PENDING,
-                null,
                 operatorUserName
         );
-        Runnable task = () -> executeAnalysis(entity.getId(), intakeId, operatorUserName);
-        workhubTaskExecutor.execute(task);
+        try {
+            workhubTaskExecutor.execute(() -> executeAnalysis(entity.getId(), intakeId, operatorUserName));
+        } catch (RejectedExecutionException ex) {
+            String message = "任务评估任务提交失败，系统繁忙，请稍后重试。";
+            markAnalysisFailed(entity.getId(), message, operatorUserName);
+            recordHistory(intakeId, "任务评估失败", message + "原因：" + summarizeException(ex), operatorUserName);
+            throw new IllegalStateException(message, ex);
+        }
         return toResponse(entity);
     }
 
@@ -286,7 +315,7 @@ public class DevelopmentAnalysisService {
             throw new IllegalArgumentException("当前任务评估尚未生成可调整的草稿");
         }
         ProjectDetailResponse project = resolveProjectForDraft(currentDraft);
-        List<UserOptionResponse> developers = resolveDevelopers(project.businessLine(), project.ownerUserName());
+        List<UserOptionResponse> developers = resolveDevelopers();
         GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle = gitlabRepositoryService.resolveAndFetchGroup(project);
         DevelopmentAnalysisDraft adjusted = attachRequirementKnowledgeNote(
                 analysisGenerator.adjust(currentDraft, request.getMessage().trim(), project, repositoryBundle, developers),
@@ -324,8 +353,12 @@ public class DevelopmentAnalysisService {
         }
         List<Long> workItemIds = new ArrayList<>();
         if (draft.projectId() != null && draft.workItems() != null && !draft.workItems().isEmpty()) {
+            boolean sddMode = "SDD".equalsIgnoreCase(trimToNull(intake.getDevelopmentStandard()));
             for (int i = 0; i < draft.workItems().size(); i++) {
                 DevelopmentWorkItemDraft item = draft.workItems().get(i);
+                if (sddMode && trimToNull(item.ownerUserName()) == null) {
+                    throw new IllegalArgumentException("SDD 模式任务「" + item.title() + "」未指派负责人，请指派任务负责人后再确认");
+                }
                 WorkItemDetailResponse created = workItemService.create(toWorkItemCreateRequest(draft, item), operatorUserName);
                 workItemIds.add(created.id());
                 linkWorkItem(intakeId, created.id(), i);
@@ -348,9 +381,259 @@ public class DevelopmentAnalysisService {
         String historySummary = workItemIds.isEmpty()
                 ? "已确认研发评估，未创建正式工作项。"
                 : "已创建正式工作项：" + workItemIds;
+        if (draft.sddDocuments() != null && draft.sddDocuments().hasAny()) {
+            projectKnowledgeBaseService.publishSddDocuments(intake, structuredData,
+                    resolveProjectForDraft(draft), entity.getId(), draft,
+                    operatorUserName, LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            historySummary += " SDD 三件套已发布到需求迭代目录。";
+        }
         scheduleArchive(intakeId, entity.getId(), draft, STATUS_CONFIRMED, "确认研发评估", operatorUserName);
         recordHistory(intakeId, "确认研发评估", historySummary, operatorUserName);
         return new DevelopmentAnalysisConfirmResponse(intakeId, workItemIds, "RESERVED", historySummary);
+    }
+
+    /**
+     * 研发任务同步禅道（独立于评估确认）：已有映射的更新、无映射的新建、历史已同步但拆解中已删除的取消。
+     * 逐项 best-effort，单项失败不中断；结束后回写草稿映射与同步状态并记历史。
+     */
+    public DevelopmentZentaoSyncResponse syncZentaoTasks(Long intakeId, String operatorUserName) {
+        if (zentaoClient == null) {
+            throw new IllegalArgumentException("禅道客户端不可用，无法同步研发任务");
+        }
+        IntakeRecordEntity intake = requireIntake(intakeId);
+        IntakeStructuredData structuredData = readStructuredData(intake.getStructuredDataJson());
+        DevelopmentAnalysisEntity entity = developmentAnalysisMapper.findLatestByIntakeId(intakeId);
+        DevelopmentAnalysisDraft draft = entity == null ? null : readDraft(entity.getDraftJson());
+        if (draft == null || draft.workItems() == null || draft.workItems().isEmpty()) {
+            throw new IllegalArgumentException("当前没有可同步的研发任务拆解，请先生成任务评估");
+        }
+        ZentaoClient.ZentaoMapping mapping = zentaoClient.resolveTaskMapping(
+                structuredData.businessLineCode(), intake.getZentaoUrl());
+        // 该禅道实例任务必填『相关研发需求』：产品下按需求名查找，没有则创建，全部任务挂载
+        String storyTitle = trimToNull(structuredData.requirementNameOrTitle());
+        if (storyTitle == null) {
+            storyTitle = trimToNull(structuredData.requirementSummary());
+        }
+        if (storyTitle == null) {
+            throw new IllegalArgumentException("需求缺少名称，无法关联禅道研发需求");
+        }
+        long zentaoStoryId = zentaoClient.resolveOrCreateStory(mapping, storyTitle);
+
+        List<DevelopmentWorkItemDraft> syncedItems = new ArrayList<>();
+        List<DevelopmentZentaoSyncResponse.ZentaoSyncItemResult> results = new ArrayList<>();
+        List<String> syncedTaskIds = draft.zentaoSyncedTaskIds() == null
+                ? new ArrayList<>() : new ArrayList<>(draft.zentaoSyncedTaskIds());
+        int created = 0;
+        int updated = 0;
+        for (DevelopmentWorkItemDraft item : draft.workItems()) {
+            if (item == null || trimToNull(item.title()) == null) {
+                continue;
+            }
+            String existingTaskId = trimToNull(item.zentaoTaskId());
+            try {
+                if (existingTaskId == null) {
+                    ZentaoClient.ZentaoDevTask devTask = zentaoClient.createDevTask(mapping, item.title().trim(),
+                            taskDescHtml(item), item.ownerUserName(), effortHours(item.estimatedEffort()),
+                            priorityRank(item.priority()),
+                            zentaoDate(item.plannedStartDate()), zentaoDate(item.plannedEndDate()), zentaoStoryId);
+                    syncedItems.add(withZentaoTask(item, devTask.taskId(), devTask.url()));
+                    syncedTaskIds.add(devTask.taskId());
+                    results.add(new DevelopmentZentaoSyncResponse.ZentaoSyncItemResult(
+                            item.title(), devTask.taskId(), devTask.url(), "CREATED", null));
+                    created++;
+                } else {
+                    zentaoClient.updateDevTask(Long.parseLong(existingTaskId), item.title().trim(), taskDescHtml(item),
+                            item.ownerUserName(), effortHours(item.estimatedEffort()), priorityRank(item.priority()));
+                    syncedItems.add(withZentaoTask(item, existingTaskId, zentaoClient.taskUrl(Long.parseLong(existingTaskId))));
+                    results.add(new DevelopmentZentaoSyncResponse.ZentaoSyncItemResult(
+                            item.title(), existingTaskId, zentaoClient.taskUrl(Long.parseLong(existingTaskId)), "UPDATED", null));
+                    updated++;
+                }
+            } catch (Exception ex) {
+                // 单项失败保留原映射，不中断其余任务同步
+                syncedItems.add(item);
+                results.add(new DevelopmentZentaoSyncResponse.ZentaoSyncItemResult(
+                        item.title(), existingTaskId, item.zentaoTaskUrl(), "FAILED", summarizeException(ex)));
+            }
+        }
+        // 历史已同步、但本次拆解中已删除的任务 → 取消；取消失败保留映射，下次同步再试
+        java.util.Set<String> currentTaskIds = new java.util.HashSet<>();
+        syncedItems.forEach(item -> {
+            if (item != null && trimToNull(item.zentaoTaskId()) != null) {
+                currentTaskIds.add(item.zentaoTaskId().trim());
+            }
+        });
+        int cancelled = 0;
+        for (String syncedTaskId : new ArrayList<>(syncedTaskIds)) {
+            if (currentTaskIds.contains(syncedTaskId)) {
+                continue;
+            }
+            try {
+                zentaoClient.cancelDevTask(Long.parseLong(syncedTaskId));
+                syncedTaskIds.remove(syncedTaskId);
+                results.add(new DevelopmentZentaoSyncResponse.ZentaoSyncItemResult(
+                        "（已从任务拆解中移除）", syncedTaskId, zentaoClient.taskUrl(Long.parseLong(syncedTaskId)), "CANCELLED", null));
+                cancelled++;
+            } catch (Exception ex) {
+                results.add(new DevelopmentZentaoSyncResponse.ZentaoSyncItemResult(
+                        "（已从任务拆解中移除）", syncedTaskId, zentaoClient.taskUrl(Long.parseLong(syncedTaskId)), "FAILED",
+                        "取消失败：" + summarizeException(ex)));
+            }
+        }
+        long failed = results.stream().filter(result -> "FAILED".equals(result.action())).count();
+        String syncStatus = failed == 0 ? "SYNCED" : (created + updated + cancelled == 0 ? "FAILED" : "PARTIAL");
+        String summary = "禅道任务同步：" + created + " 新建、" + updated + " 更新、" + cancelled + " 取消、" + failed + " 失败"
+                + (mapping == null ? "" : "（迭代 " + mapping.executionId() + "）");
+        if (failed > 0) {
+            String failures = results.stream()
+                    .filter(result -> "FAILED".equals(result.action()))
+                    .map(result -> result.title() + "：" + result.error())
+                    .limit(3)
+                    .reduce((left, right) -> left + "；" + right)
+                    .orElse("");
+            summary += "。失败明细：" + failures;
+        }
+        // 库列 varchar(1000)，写库/草稿/历史统一截断；接口响应返回完整 summary
+        String persistedSummary = summary.length() > 900 ? summary.substring(0, 900) + "…" : summary;
+
+        DevelopmentAnalysisDraft syncedDraft = new DevelopmentAnalysisDraft(
+                draft.status(),
+                draft.businessLine(),
+                draft.projectId(),
+                draft.projectName(),
+                draft.repositoryUrl(),
+                draft.requirementRawPath(),
+                draft.requirementWikiPath(),
+                draft.requirementWikiUrl(),
+                draft.summary(),
+                draft.requirementChangePoints(),
+                draft.impactedModules(),
+                draft.risks(),
+                draft.questions(),
+                draft.developerPool(),
+                syncedItems,
+                draft.totalEstimatedEffort(),
+                draft.developmentEstimatedEffort(),
+                draft.testingEstimatedEffort(),
+                draft.plannedDueDate(),
+                draft.plannedTestingStartDate(),
+                draft.plannedTestingEndDate(),
+                draft.plannedReleaseDate(),
+                syncStatus,
+                persistedSummary,
+                draft.generatedAt(),
+                draft.generator(),
+                draft.plannedDevelopmentStartDate(),
+                draft.sddDocuments(),
+                syncedTaskIds
+        );
+        entity.setDraftJson(writeDraftJson(syncedDraft));
+        entity.setZentaoSyncStatus(syncStatus);
+        entity.setZentaoSyncMessage(persistedSummary);
+        entity.setUpdatedBy(operatorUserName);
+        developmentAnalysisMapper.update(entity);
+        recordHistory(intakeId, "任务同步禅道", persistedSummary, operatorUserName);
+        return new DevelopmentZentaoSyncResponse(intakeId, syncStatus, summary, results);
+    }
+
+    /** 按标题在既有草稿中查找工作项（用于手工保存时保留禅道任务映射）。 */
+    private DevelopmentWorkItemDraft findExistingItemByTitle(DevelopmentAnalysisDraft draft, String title) {
+        if (draft == null || draft.workItems() == null || title == null) {
+            return null;
+        }
+        for (DevelopmentWorkItemDraft item : draft.workItems()) {
+            if (item != null && title.equals(trimToNull(item.title()))) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /** 工作项同步禅道后补写任务映射字段，其余字段原样保留。 */
+    private DevelopmentWorkItemDraft withZentaoTask(DevelopmentWorkItemDraft item, String taskId, String taskUrl) {
+        return new DevelopmentWorkItemDraft(
+                item.title(),
+                item.description(),
+                item.requirementChangePoint(),
+                item.taskType(),
+                item.targetResources(),
+                item.changePoints(),
+                item.systemTags(),
+                item.evidenceRefs(),
+                item.confidence(),
+                item.moduleName(),
+                item.relatedFiles(),
+                item.estimatedEffort(),
+                item.ownerUserName(),
+                item.priority(),
+                item.plannedStartDate(),
+                item.plannedEndDate(),
+                item.dependency(),
+                item.risk(),
+                taskId,
+                taskUrl
+        );
+    }
+
+    /** 禅道任务描述（HTML）：描述 + 变更点 + 相关文件 + 证据 + 工时。 */
+    private String taskDescHtml(DevelopmentWorkItemDraft item) {
+        StringBuilder html = new StringBuilder();
+        if (trimToNull(item.description()) != null) {
+            html.append(escapeHtml(item.description().trim())).append("<br/>");
+        }
+        if (item.changePoints() != null && !item.changePoints().isEmpty()) {
+            html.append("<br/>变更点：<br/>");
+            item.changePoints().forEach(point -> html.append("- ").append(escapeHtml(point)).append("<br/>"));
+        }
+        if (item.relatedFiles() != null && !item.relatedFiles().isEmpty()) {
+            html.append("<br/>相关文件：<br/>");
+            item.relatedFiles().forEach(file -> html.append("- ").append(escapeHtml(file)).append("<br/>"));
+        }
+        if (item.evidenceRefs() != null && !item.evidenceRefs().isEmpty()) {
+            html.append("<br/>证据：<br/>");
+            item.evidenceRefs().forEach(evidence -> html.append("- ").append(escapeHtml(evidence)).append("<br/>"));
+        }
+        if (trimToNull(item.estimatedEffort()) != null) {
+            html.append("<br/>预估工时：").append(escapeHtml(item.estimatedEffort()));
+        }
+        String content = html.toString();
+        return content.isBlank() ? null : content;
+    }
+
+    /** 评估工时（已归一形态如 4h / 0.5h）转小时数；无法解析返回 null。 */
+    private Double effortHours(String estimatedEffort) {
+        String normalized = trimToNull(estimatedEffort);
+        if (normalized == null) {
+            return null;
+        }
+        Matcher matcher = NORMALIZED_HOUR_PATTERN.matcher(normalized);
+        return matcher.matches() ? Double.parseDouble(matcher.group(1)) : null;
+    }
+
+    /** 优先级 1-4 转整数，非法或缺省取 3。 */
+    private int priorityRank(String priority) {
+        String normalized = trimToNull(priority);
+        return List.of("1", "2", "3", "4").contains(normalized) ? Integer.parseInt(normalized) : 3;
+    }
+
+    /** 草稿日期（yyyy/MM/dd 或 ISO）转禅道 yyyy-MM-dd；无法解析返回 null。 */
+    private String zentaoDate(String value) {
+        String normalized = trimToNull(value);
+        if (normalized == null) {
+            return null;
+        }
+        for (DateTimeFormatter formatter : DATE_FORMATTERS) {
+            try {
+                return LocalDate.parse(normalized, formatter).toString();
+            } catch (DateTimeParseException ignored) {
+                // 尝试下一种支持的日期格式
+            }
+        }
+        return null;
+    }
+
+    private String escapeHtml(String value) {
+        return value == null ? "" : value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     private void validateConfirmableDraft(DevelopmentAnalysisDraft draft) {
@@ -395,8 +678,8 @@ public class DevelopmentAnalysisService {
         for (int i = 0; i < draft.workItems().size(); i++) {
             DevelopmentWorkItemDraft item = draft.workItems().get(i);
             String owner = ownerByIndex.containsKey(i) ? ownerByIndex.get(i) : item.ownerUserName();
+            requireActiveAccount(owner);
             addDeveloperIfMissing(developerPool, owner);
-            persistDeveloperCandidate(owner);
             workItems.add(new DevelopmentWorkItemDraft(
                     item.title(),
                     item.description(),
@@ -415,7 +698,9 @@ public class DevelopmentAnalysisService {
                     normalizeDate(item.plannedStartDate(), "预计开始日期"),
                     normalizeDate(item.plannedEndDate(), "截止日期"),
                     item.dependency(),
-                    item.risk()
+                    item.risk(),
+                    item.zentaoTaskId(),
+                    item.zentaoTaskUrl()
             ));
         }
 
@@ -446,7 +731,8 @@ public class DevelopmentAnalysisService {
                 draft.zentaoSyncMessage(),
                 draft.generatedAt(),
                 draft.generator(),
-                draft.plannedDevelopmentStartDate()
+                draft.plannedDevelopmentStartDate(),
+                draft.sddDocuments()
         );
         entity.setDraftJson(writeDraftJson(updated));
         entity.setAnalysisStatus(updated.status());
@@ -493,12 +779,14 @@ public class DevelopmentAnalysisService {
             String plannedEndDate = normalizeDate(item.plannedEndDate(), "截止日期");
             validateDraftDateRange(plannedStartDate, plannedEndDate);
             String owner = trimToNull(item.ownerUserName());
+            requireActiveAccount(owner);
             addDeveloperIfMissing(developerPool, owner);
-            persistDeveloperCandidate(owner);
             List<String> systemTags = sanitizeList(item.systemTags());
             if (systemTags.isEmpty()) {
                 throw new IllegalArgumentException("研发任务必须选择涉及系统");
             }
+            // 手工保存不改变禅道映射：按标题从既有草稿合并（改标题视为新任务，重新同步时新建）
+            DevelopmentWorkItemDraft existingItem = findExistingItemByTitle(existingDraft, firstNonBlank(title, description));
             workItems.add(new DevelopmentWorkItemDraft(
                     firstNonBlank(title, description),
                     description,
@@ -517,7 +805,9 @@ public class DevelopmentAnalysisService {
                     plannedStartDate,
                     plannedEndDate,
                     trimToNull(item.dependency()),
-                    trimToNull(item.risk())
+                    trimToNull(item.risk()),
+                    existingItem == null ? null : existingItem.zentaoTaskId(),
+                    existingItem == null ? null : existingItem.zentaoTaskUrl()
             ));
         }
         workItems = canonicalizeWorkItemSystemTags(workItems, businessLineKeyForValidation(project, businessLine), existingDraft);
@@ -565,7 +855,8 @@ public class DevelopmentAnalysisService {
                 draft == null ? "禅道同步接口已预留，当前不会调用禅道。" : draft.zentaoSyncMessage(),
                 draft == null ? LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : draft.generatedAt(),
                 draft == null ? "manual" : draft.generator(),
-                null
+                null,
+                draft == null ? null : draft.sddDocuments()
         );
         if (updated.requirementRawPath() == null) {
             updated = attachRequirementKnowledgeNote(updated, projectKnowledgeBaseService.upsertRequirementIterationNote(
@@ -612,6 +903,27 @@ public class DevelopmentAnalysisService {
     }
 
     void executeAnalysis(Long analysisId, Long intakeId, String operatorUserName) {
+        long startedAt = System.currentTimeMillis();
+        log.info("任务评估开始执行 analysisId={}, intakeId={}, operator={}", analysisId, intakeId, operatorUserName);
+        try {
+            runAnalysis(analysisId, intakeId, operatorUserName);
+        } catch (Throwable ex) {
+            log.error("任务评估异常终止 analysisId={}, intakeId={}, 耗时={}ms",
+                    analysisId, intakeId, System.currentTimeMillis() - startedAt, ex);
+            try {
+                markAnalysisFailed(analysisId, "评估异常终止：" + summarizeThrowable(ex), operatorUserName);
+                recordHistory(intakeId, "任务评估失败",
+                        "评估异常终止，已兜底置为失败：" + summarizeThrowable(ex), operatorUserName);
+            } catch (Throwable fallbackEx) {
+                log.error("任务评估失败状态写入失败 analysisId={}, intakeId={}", analysisId, intakeId, fallbackEx);
+            }
+            return;
+        }
+        log.info("任务评估执行结束 analysisId={}, intakeId={}, 耗时={}ms",
+                analysisId, intakeId, System.currentTimeMillis() - startedAt);
+    }
+
+    private void runAnalysis(Long analysisId, Long intakeId, String operatorUserName) {
         DevelopmentAnalysisEntity running = requireAnalysisEntity(analysisId);
         running.setAnalysisStatus(STATUS_RUNNING);
         running.setAnalysisMessage(MESSAGE_RUNNING);
@@ -622,7 +934,7 @@ public class DevelopmentAnalysisService {
             IntakeStructuredData structuredData = readStructuredData(intake.getStructuredDataJson());
             requireDevelopmentRequirement(structuredData);
             ProjectDetailResponse project = resolveProjectForStructuredData(structuredData);
-            List<UserOptionResponse> developers = resolveDevelopers(project.businessLine(), project.ownerUserName());
+            List<UserOptionResponse> developers = resolveDevelopers();
             GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle = gitlabRepositoryService.resolveAndFetchGroup(project);
             ProjectKnowledgeBaseService.RequirementKnowledgeNote requirementNote =
                     projectKnowledgeBaseService.upsertRequirementIterationNote(intake, structuredData, project);
@@ -630,8 +942,12 @@ public class DevelopmentAnalysisService {
                     projectKnowledgeBaseService.buildContext(structuredData, project),
                     readClarificationItems(intakeId)
             );
+            boolean sddMode = "SDD".equalsIgnoreCase(trimToNull(intake.getDevelopmentStandard()));
+            DevelopmentAnalysisDraft generated = sddMode
+                    ? analysisGenerator.generateSdd(intake, structuredData, project, repositoryBundle, developers, requirementNote.asPromptContext(), knowledgeBaseContext, projectKnowledgeBaseService.readSddProcessSpec())
+                    : analysisGenerator.generate(intake, structuredData, project, repositoryBundle, developers, requirementNote.asPromptContext(), knowledgeBaseContext);
             DevelopmentAnalysisDraft draft = attachRequirementKnowledgeNote(
-                    analysisGenerator.generate(intake, structuredData, project, repositoryBundle, developers, requirementNote.asPromptContext(), knowledgeBaseContext),
+                    generated,
                     requirementNote
             );
             intakeMapper.updateManagementFields(
@@ -776,7 +1092,8 @@ public class DevelopmentAnalysisService {
                 draft.zentaoSyncMessage(),
                 draft.generatedAt(),
                 draft.generator(),
-                draft.plannedDevelopmentStartDate()
+                draft.plannedDevelopmentStartDate(),
+                draft.sddDocuments()
         );
     }
 
@@ -789,7 +1106,8 @@ public class DevelopmentAnalysisService {
         request.setSourceType("需求管理");
         request.setSourceChannel("AI研发拆解");
         request.setPriority(firstNonBlank(normalizePriority(item.priority()), "3"));
-        request.setOwnerUserName(firstNonBlank(item.ownerUserName(), draft.developerPool().isEmpty() ? "admin" : draft.developerPool().getFirst()));
+        request.setOwnerUserName(firstNonBlank(item.ownerUserName(),
+                draft.developerPool().isEmpty() ? "admin" : draft.developerPool().getFirst()));
         request.setFollowerUserName(request.getOwnerUserName());
         request.setAcceptanceCriteria("按需求拆解完成开发、自测并通过代码评审。");
         request.setPlannedStartAt(parseDraftDate(item.plannedStartDate()));
@@ -887,35 +1205,32 @@ public class DevelopmentAnalysisService {
         return developmentAnalysisMapper.findLatestByIntakeId(intakeId);
     }
 
-    private DevelopmentAnalysisEntity upsertExecutionState(DevelopmentAnalysisEntity existing,
-                                                           Long intakeId,
+    private DevelopmentAnalysisEntity insertExecutionState(Long intakeId,
                                                            String businessLine,
-                                                           String status,
-                                                           String message,
-                                                           String draftJson,
                                                            String operatorUserName) {
-        DevelopmentAnalysisEntity entity = existing;
-        if (entity == null) {
-            entity = new DevelopmentAnalysisEntity();
-            entity.setIntakeId(intakeId);
-            entity.setCreatedBy(operatorUserName);
-            entity.setZentaoSyncStatus("RESERVED");
-            entity.setZentaoSyncMessage("禅道同步接口已预留，当前不会调用禅道。");
-        }
+        DevelopmentAnalysisEntity entity = new DevelopmentAnalysisEntity();
+        entity.setIntakeId(intakeId);
+        entity.setCreatedBy(operatorUserName);
+        entity.setZentaoSyncStatus("RESERVED");
+        entity.setZentaoSyncMessage("禅道同步接口已预留，当前不会调用禅道。");
         entity.setProjectId(null);
         entity.setBusinessLineCode(resolveBusinessLineCode(null, businessLine));
         entity.setBusinessLine(null);
         entity.setRepositoryUrl(null);
-        entity.setAnalysisStatus(status);
-        entity.setAnalysisMessage(message);
-        entity.setDraftJson(draftJson);
+        entity.setAnalysisStatus(STATUS_PENDING);
+        entity.setAnalysisMessage(null);
+        entity.setDraftJson(null);
         entity.setUpdatedBy(operatorUserName);
-        if (entity.getId() == null) {
-            developmentAnalysisMapper.insert(entity);
-        } else {
-            developmentAnalysisMapper.update(entity);
-        }
+        developmentAnalysisMapper.insert(entity);
         return developmentAnalysisMapper.findLatestByIntakeId(intakeId);
+    }
+
+    private void markAnalysisFailed(Long analysisId, String message, String operatorUserName) {
+        DevelopmentAnalysisEntity failed = requireAnalysisEntity(analysisId);
+        failed.setAnalysisStatus(STATUS_FAILED);
+        failed.setAnalysisMessage(message);
+        failed.setUpdatedBy(operatorUserName);
+        developmentAnalysisMapper.updateExecutionState(failed);
     }
 
     private IntakeRecordEntity requireIntake(Long intakeId) {
@@ -1136,18 +1451,24 @@ public class DevelopmentAnalysisService {
         );
     }
 
-    private List<UserOptionResponse> resolveDevelopers(String businessLine, String projectOwner) {
-        Map<String, UserOptionResponse> merged = new LinkedHashMap<>();
+    private List<UserOptionResponse> resolveDevelopers() {
         List<UserOptionResponse> activeUsers = userMapper.findActiveUsers();
-        if (activeUsers != null) {
-            for (UserOptionResponse item : activeUsers) {
-                merged.putIfAbsent(item.userName(), new UserOptionResponse(item.userName(), item.displayName(), null));
-            }
+        return activeUsers == null ? List.of() : activeUsers;
+    }
+
+    /**
+     * 任务负责人必须是账号管理中的活跃账号，人员不再由业务流程自动登记。
+     */
+    private void requireActiveAccount(String owner) {
+        String normalized = trimToNull(owner);
+        if (normalized == null) {
+            return;
         }
-        if (merged.isEmpty()) {
-            merged.put("admin", new UserOptionResponse("admin", "admin", null));
+        boolean exists = userMapper.findActiveUsers().stream()
+                .anyMatch(user -> normalized.equals(user.userName()));
+        if (!exists) {
+            throw new IllegalArgumentException("任务负责人「" + normalized + "」不是有效账号，请先在账号管理中创建");
         }
-        return new ArrayList<>(merged.values());
     }
 
     private DevelopmentAnalysisResponse toResponse(DevelopmentAnalysisEntity entity) {
@@ -1157,6 +1478,9 @@ public class DevelopmentAnalysisService {
                 entity.getIntakeId(),
                 entity.getAnalysisStatus(),
                 entity.getAnalysisMessage(),
+                isRetryable(entity),
+                entity.getStartedAt(),
+                entity.getFinishedAt(),
                 draft,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
@@ -1167,20 +1491,11 @@ public class DevelopmentAnalysisService {
         if (draft == null) {
             return null;
         }
-        List<String> developerPool = new ArrayList<>(draft.developerPool() == null ? List.of() : draft.developerPool());
-        if (draft.workItems() != null) {
-            for (DevelopmentWorkItemDraft item : draft.workItems()) {
-                addDeveloperIfMissing(developerPool, item == null ? null : item.ownerUserName());
-            }
-        }
-        String projectOwner = null;
-        if (trimToNull(draft.businessLine()) != null) {
-            ProjectDetailResponse project = projectMapper.findFirstDetailByBusinessLine(draft.businessLine());
-            projectOwner = project == null ? null : project.ownerUserName();
-        }
-        for (UserOptionResponse developer : resolveDevelopers(draft.businessLine(), projectOwner)) {
-            addDeveloperIfMissing(developerPool, developer.userName());
-        }
+        // 人员候选统一来自账号管理，不再合并历史草稿池与任务项里的自由文本负责人。
+        List<String> developerPool = resolveDevelopers().stream()
+                .map(UserOptionResponse::userName)
+                .distinct()
+                .toList();
         return new DevelopmentAnalysisDraft(
                 draft.status(),
                 draft.businessLine(),
@@ -1209,7 +1524,8 @@ public class DevelopmentAnalysisService {
                 draft.zentaoSyncMessage(),
                 draft.generatedAt(),
                 draft.generator(),
-                draft.plannedDevelopmentStartDate()
+                draft.plannedDevelopmentStartDate(),
+                draft.sddDocuments()
         );
     }
 
@@ -1324,17 +1640,6 @@ public class DevelopmentAnalysisService {
             return;
         }
         developerPool.add(normalized);
-    }
-
-    private void persistDeveloperCandidate(String userName) {
-        String normalized = trimToNull(userName);
-        if (normalized == null) {
-            return;
-        }
-        if (normalized.length() > 64) {
-            throw new IllegalArgumentException("负责人不能超过 64 个字符");
-        }
-        userMapper.upsertActiveUser(normalized, normalized);
     }
 
     private List<String> sanitizeList(List<String> values) {
@@ -1463,7 +1768,9 @@ public class DevelopmentAnalysisService {
                 item.plannedStartDate(),
                 item.plannedEndDate(),
                 item.dependency(),
-                item.risk()
+                item.risk(),
+                item.zentaoTaskId(),
+                item.zentaoTaskUrl()
         );
     }
 
@@ -1652,6 +1959,29 @@ public class DevelopmentAnalysisService {
 
     private boolean isExecutionInProgress(String status) {
         return STATUS_PENDING.equals(status) || STATUS_RUNNING.equals(status);
+    }
+
+    private boolean isStaleExecution(DevelopmentAnalysisEntity entity) {
+        if (entity == null || !isExecutionInProgress(entity.getAnalysisStatus())) {
+            return false;
+        }
+        LocalDateTime updatedAt = entity.getUpdatedAt();
+        if (updatedAt == null) {
+            return true;
+        }
+        return updatedAt.plus(EXECUTION_STALE_TIMEOUT).isBefore(LocalDateTime.now());
+    }
+
+    private boolean isRetryable(DevelopmentAnalysisEntity entity) {
+        if (entity == null) {
+            return true;
+        }
+        return !isExecutionInProgress(entity.getAnalysisStatus()) || isStaleExecution(entity);
+    }
+
+    private String summarizeThrowable(Throwable ex) {
+        String message = ex.getMessage();
+        return message == null || message.isBlank() ? ex.getClass().getName() : message;
     }
 
     private String summarizeException(Exception ex) {

@@ -93,6 +93,39 @@ public class AttachmentTextExtractionService {
         return new AttachmentExtractionBatch(summaries, warnings);
     }
 
+    /** 单附件的按需文本提取（供 MCP 空中读取），全程内存、不写本地文件；图片不提取文本，类型不支持时返回说明。 */
+    public InMemoryAttachmentText extractTextInMemory(AttachmentService.AttachmentFileContext attachment) {
+        if (attachment == null) {
+            throw new IllegalArgumentException("附件不存在");
+        }
+        if (isImage(attachment)) {
+            return new InMemoryAttachmentText(attachment.fileName(), detectFileType(attachment), true, null, false,
+                    "图片附件不做文本提取；解析时的图片内容摘要在需求 structuredData.attachmentSummaries 中。");
+        }
+        try {
+            String normalized = normalizeText(extractText(attachment));
+            if (normalized == null) {
+                return new InMemoryAttachmentText(attachment.fileName(), detectFileType(attachment), false, null, false,
+                        "未提取到可读正文。");
+            }
+            boolean truncated = normalized.length() > MAX_TEXT_LENGTH;
+            return new InMemoryAttachmentText(attachment.fileName(), detectFileType(attachment), false,
+                    truncate(normalized), truncated, null);
+        } catch (IllegalArgumentException | IOException | InvalidFormatException ex) {
+            return new InMemoryAttachmentText(attachment.fileName(), detectFileType(attachment), false, null, false,
+                    "文本提取失败：" + ex.getMessage());
+        }
+    }
+
+    /** 内存提取结果；text 为空时以 note 说明原因。 */
+    public record InMemoryAttachmentText(String fileName,
+                                         String fileType,
+                                         boolean image,
+                                         String text,
+                                         boolean truncated,
+                                         String note) {
+    }
+
     String extractText(AttachmentService.AttachmentFileContext attachment) throws IOException, InvalidFormatException {
         String extension = fileExtension(attachment.fileName());
         byte[] content = resolveContent(attachment);

@@ -3,6 +3,9 @@ package cn.aslight.workhub.service.ai;
 import cn.aslight.workhub.model.ai.AiProviderConfigEntity;
 import cn.aslight.workhub.model.ai.AiUseCaseConfigEntity;
 import cn.aslight.workhub.service.intake.CodexCliClient;
+import cn.aslight.workhub.config.McpProperties;
+import cn.aslight.workhub.service.mcp.McpRuntimeService;
+import org.springframework.beans.factory.ObjectProvider;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
@@ -13,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -26,10 +30,10 @@ class DefaultAiGatewayClientTest {
     @Test
     void zcodeConnectionTestUsesNativeClientWithExactModelAndReasoning() throws Exception {
         var context = new TestContext(); var provider = zcodeProvider();
-        when(context.zcodeCliClient.execute(eq(provider), eq("GLM/glm-4.6"), eq("disabled"), any(), eq(30)))
+        when(context.zcodeCliClient.execute(eq(provider), eq("GLM/glm-4.6"), eq("disabled"), any(), eq(30), any(), any(), any(), any(), any()))
                 .thenReturn("{\"status\":\"OK\"}");
         assertTrue(context.gateway.testConnection(provider, null).succeeded());
-        verify(context.zcodeCliClient).execute(eq(provider), eq("GLM/glm-4.6"), eq("disabled"), any(), eq(30));
+        verify(context.zcodeCliClient).execute(eq(provider), eq("GLM/glm-4.6"), eq("disabled"), any(), eq(30), any(), any(), any(), any(), any());
         verifyNoInteractions(context.codexCliClient, context.chatClient, context.responsesClient);
     }
 
@@ -40,31 +44,138 @@ class DefaultAiGatewayClientTest {
         useCase.setModel(null); useCase.setReasoningLevel(null);
         when(context.useCaseService.requireEnabledByCode(useCase.getUseCaseCode())).thenReturn(useCase);
         when(context.providerService.requireExisting(7L)).thenReturn(provider);
-        when(context.zcodeCliClient.execute(eq(provider), eq("GLM/glm-4.6"), eq("disabled"), any(), eq(30)))
+        when(context.zcodeCliClient.execute(eq(provider), eq("GLM/glm-4.6"), eq("disabled"), any(), eq(30), any(), any(), any(), any(), any()))
                 .thenReturn("{\"status\":\"OK\"}");
-        var request = AiGatewayRequest.structured(useCase.getUseCaseCode(), "整理需求", Path.of("/tmp"), List.of(), List.of(), "{\"type\":\"object\"}");
+        var request = AiGatewayRequest.withVariables(useCase.getUseCaseCode(), variables(useCase.getUseCaseCode(), "整理需求"),
+                Path.of("/tmp"), List.of(), List.of(), "{\"type\":\"object\"}");
         assertTrue(context.gateway.isConfigured(useCase.getUseCaseCode()));
         assertTrue(context.gateway.executeStructured(request).succeeded());
         verify(context.zcodeCliClient).execute(eq(provider), eq("GLM/glm-4.6"), eq("disabled"),
-                argThat(prompt -> prompt.contains("整理需求") && prompt.contains("\"type\":\"object\"")), eq(30));
+                argThat(prompt -> prompt.contains("整理需求") && prompt.contains("\"type\":\"object\"")), eq(30), any(), any(), any(), any(), any());
         verifyNoInteractions(context.codexCliClient, context.chatClient, context.responsesClient);
     }
 
     @Test
-    void zcodeRejectsUnsupportedLegacyRepositoryImagesAndSpeedBeforeStarting() {
-        for (String scenario : List.of("repository", "images", "speed")) {
-            var context = new TestContext(); var provider = zcodeProvider();
-            var useCase = useCase(scenario.equals("repository") ? AiUseCaseDefinitions.DEVELOPMENT_ANALYZE : AiUseCaseDefinitions.STRUCTURED_EXTRACT, 7L);
-            useCase.setModel(null); useCase.setReasoningLevel(null);
-            when(context.useCaseService.requireEnabledByCode(useCase.getUseCaseCode())).thenReturn(useCase);
-            when(context.providerService.requireExisting(7L)).thenReturn(provider);
-            var request = new AiGatewayRequest(useCase.getUseCaseCode(), java.util.Map.of("prompt", "测试"), Path.of("/tmp"), List.of(),
-                    scenario.equals("images") ? List.of("/tmp/image.png") : List.of(), "{\"type\":\"object\"}",
-                    null, null, null, scenario.equals("speed") ? "FAST" : null, null, null);
-            assertFalse(context.gateway.executeStructured(request).succeeded());
-            if (scenario.equals("repository")) assertFalse(context.gateway.isConfigured(useCase.getUseCaseCode()));
-            verifyNoInteractions(context.zcodeCliClient, context.codexCliClient, context.chatClient, context.responsesClient);
-        }
+    void zcodeRejectsUnsupportedLegacySpeedBeforeStarting() {
+        var context = new TestContext(); var provider = zcodeProvider();
+        var useCase = useCase(AiUseCaseDefinitions.STRUCTURED_EXTRACT, 7L);
+        useCase.setModel(null); useCase.setReasoningLevel(null);
+        when(context.useCaseService.requireEnabledByCode(useCase.getUseCaseCode())).thenReturn(useCase);
+        when(context.providerService.requireExisting(7L)).thenReturn(provider);
+        var request = new AiGatewayRequest(useCase.getUseCaseCode(), variables(useCase.getUseCaseCode(), "测试"), Path.of("/tmp"), List.of(),
+                List.of(), "{\"type\":\"object\"}",
+                null, null, null, "FAST", null, null);
+        assertFalse(context.gateway.executeStructured(request).succeeded());
+        verifyNoInteractions(context.zcodeCliClient, context.codexCliClient, context.chatClient, context.responsesClient);
+    }
+
+    @Test
+    void zcodeRepositorySceneRequiresMcpTokenBeforeStarting() {
+        var context = new TestContext(); var provider = zcodeProvider();
+        var useCase = useCase(AiUseCaseDefinitions.DEVELOPMENT_ANALYZE, 7L);
+        useCase.setModel(null); useCase.setReasoningLevel(null);
+        when(context.useCaseService.requireEnabledByCode(useCase.getUseCaseCode())).thenReturn(useCase);
+        when(context.providerService.requireExisting(7L)).thenReturn(provider);
+        var request = new AiGatewayRequest(useCase.getUseCaseCode(), variables(useCase.getUseCaseCode(), "测试"), Path.of("/tmp"), List.of(),
+                List.of(), "{\"type\":\"object\"}",
+                null, null, null, null, null, null);
+        assertFalse(context.gateway.executeStructured(request).succeeded());
+        verifyNoInteractions(context.zcodeCliClient, context.codexCliClient, context.chatClient, context.responsesClient);
+    }
+
+    @Test
+    void zcodeRepositoryScenePassesRepositoryContextToNativeClient() throws Exception {
+        var context = new TestContext(); var provider = zcodeProvider();
+        var useCase = useCase(AiUseCaseDefinitions.DEVELOPMENT_ANALYZE, 7L);
+        useCase.setModel(null); useCase.setReasoningLevel(null);
+        when(context.useCaseService.requireEnabledByCode(useCase.getUseCaseCode())).thenReturn(useCase);
+        when(context.providerService.requireExisting(7L)).thenReturn(provider);
+        when(context.mcpRuntime.toolNames()).thenReturn(List.of("list_repository_files", "read_repository_text_file"));
+        when(context.mcpRuntimeProvider.getIfAvailable()).thenReturn(context.mcpRuntime);
+        context.mcpProperties.setAccessToken("test-token");
+        when(context.zcodeCliClient.executeStructuredWithoutCliSchema(eq(provider), any(), any(), any(), eq(30), any(), any(), any(), any(), any()))
+                .thenReturn("{}");
+        var request = new AiGatewayRequest(useCase.getUseCaseCode(), variables(useCase.getUseCaseCode(), "测试"), Path.of("/tmp"), List.of(),
+                List.of(), "{\"type\":\"object\"}",
+                null, null, null, null, null, null);
+        assertTrue(context.gateway.executeStructured(request).succeeded());
+        verify(context.zcodeCliClient).executeStructuredWithoutCliSchema(eq(provider), any(), any(),
+                argThat(prompt -> prompt.contains("代码读取约束") && prompt.contains("/tmp")),
+                eq(30), any(),
+                argThat(schema -> schema != null && schema.contains("object")),
+                eq("http://127.0.0.1:8080/api/mcp/runtime"), eq("test-token"),
+                eq(List.of("list_repository_files", "read_repository_text_file")));
+        verifyNoInteractions(context.codexCliClient, context.chatClient, context.responsesClient);
+    }
+
+    @Test
+    void zcodeRepositorySceneDoesNotPassCliSchemaToKeepToolsUsable() throws Exception {
+        var context = new TestContext(); var provider = zcodeProvider();
+        var useCase = useCase(AiUseCaseDefinitions.DEVELOPMENT_ANALYZE, 7L);
+        useCase.setModel(null); useCase.setReasoningLevel(null);
+        when(context.useCaseService.requireEnabledByCode(useCase.getUseCaseCode())).thenReturn(useCase);
+        when(context.providerService.requireExisting(7L)).thenReturn(provider);
+        when(context.mcpRuntime.toolNames()).thenReturn(List.of("list_repository_files", "read_repository_text_file"));
+        when(context.mcpRuntimeProvider.getIfAvailable()).thenReturn(context.mcpRuntime);
+        context.mcpProperties.setAccessToken("test-token");
+        when(context.zcodeCliClient.executeStructuredWithoutCliSchema(any(), any(), any(),
+                argThat(prompt -> prompt.contains("先调查后作答") && prompt.contains("\"type\":\"object\"")),
+                anyInt(), any(), argThat(schema -> schema != null), any(), any(), any()))
+                .thenReturn("{\"summary\":\"s\",\"workItems\":[]}");
+        var request = AiGatewayRequest.withVariables(useCase.getUseCaseCode(), variables(useCase.getUseCaseCode(), "测试"),
+                Path.of("/tmp"), List.of(), List.of(), "{\"type\":\"object\"}");
+        assertTrue(context.gateway.executeStructured(request).succeeded());
+        verify(context.zcodeCliClient).executeStructuredWithoutCliSchema(any(), any(), any(), any(), anyInt(), any(),
+                argThat(schema -> schema != null), any(), any(), any());
+        verify(context.zcodeCliClient, never()).execute(any(), any(), any(), any(), anyInt(), any(), argThat(schema -> schema == null), any(), any(), any());
+    }
+
+    @Test
+    void isConfigured_allowsZcodeRepositorySceneWhenMcpBridgeReady() {
+        var context = new TestContext(); var provider = zcodeProvider();
+        var useCase = useCase(AiUseCaseDefinitions.CLARIFICATION_ANALYZE, 7L);
+        when(context.useCaseService.requireEnabledByCode(useCase.getUseCaseCode())).thenReturn(useCase);
+        when(context.providerService.requireExisting(7L)).thenReturn(provider);
+        when(context.mcpRuntime.toolNames()).thenReturn(List.of("list_repository_files", "read_repository_text_file"));
+        when(context.mcpRuntimeProvider.getIfAvailable()).thenReturn(context.mcpRuntime);
+        context.mcpProperties.setAccessToken("test-token");
+
+        assertTrue(context.gateway.isConfigured(useCase.getUseCaseCode()));
+    }
+
+    @Test
+    void isConfigured_rejectsZcodeRepositorySceneWithoutMcpBridge() {
+        var context = new TestContext(); var provider = zcodeProvider();
+        var useCase = useCase(AiUseCaseDefinitions.CLARIFICATION_ANALYZE, 7L);
+        when(context.useCaseService.requireEnabledByCode(useCase.getUseCaseCode())).thenReturn(useCase);
+        when(context.providerService.requireExisting(7L)).thenReturn(provider);
+
+        assertFalse(context.gateway.isConfigured(useCase.getUseCaseCode()));
+
+        when(context.mcpRuntimeProvider.getIfAvailable()).thenReturn(context.mcpRuntime);
+        context.mcpProperties.setAccessToken("test-token");
+        when(context.mcpRuntime.toolNames()).thenReturn(List.of());
+        assertFalse(context.gateway.isConfigured(useCase.getUseCaseCode()));
+
+        when(context.mcpRuntime.toolNames()).thenReturn(List.of("search_business_logs"));
+        assertFalse(context.gateway.isConfigured(useCase.getUseCaseCode()));
+    }
+
+    @Test
+    void zcodePassesImageAttachmentsThroughToNativeClient() throws Exception {
+        var context = new TestContext(); var provider = zcodeProvider();
+        var useCase = useCase(AiUseCaseDefinitions.STRUCTURED_EXTRACT, 7L);
+        useCase.setModel(null); useCase.setReasoningLevel(null);
+        when(context.useCaseService.requireEnabledByCode(useCase.getUseCaseCode())).thenReturn(useCase);
+        when(context.providerService.requireExisting(7L)).thenReturn(provider);
+        when(context.zcodeCliClient.execute(eq(provider), any(), any(), any(), eq(30), any(), any(), any(), any(), any())).thenReturn("{}");
+        var request = new AiGatewayRequest(useCase.getUseCaseCode(), variables(useCase.getUseCaseCode(), "测试"), Path.of("/tmp"), List.of(),
+                List.of("/tmp/image.png"), "{\"type\":\"object\"}",
+                null, null, null, null, null, null);
+        assertTrue(context.gateway.executeStructured(request).succeeded());
+        verify(context.zcodeCliClient).execute(eq(provider), any(), any(), any(), eq(30),
+                argThat(images -> images != null && images.equals(List.of("/tmp/image.png"))), any(), any(), any(), any());
+        verifyNoInteractions(context.codexCliClient, context.chatClient, context.responsesClient);
     }
 
     private AiProviderConfigEntity zcodeProvider() {
@@ -107,9 +218,9 @@ class DefaultAiGatewayClientTest {
             return "{\"status\":\"OK\"}";
         });
 
-        AiGatewayResult result = context.gateway.executeStructured(AiGatewayRequest.structured(
+        AiGatewayResult result = context.gateway.executeStructured(AiGatewayRequest.withVariables(
                 useCase.getUseCaseCode(),
-                "业务提示词",
+                variables(useCase.getUseCaseCode(), "业务提示词"),
                 Path.of("/tmp"),
                 List.of(),
                 List.of(),
@@ -129,9 +240,9 @@ class DefaultAiGatewayClientTest {
         when(context.useCaseService.requireEnabledByCode(useCase.getUseCaseCode())).thenReturn(useCase);
         when(context.providerService.requireExisting(7L)).thenReturn(provider);
 
-        AiGatewayResult result = context.gateway.executeStructured(AiGatewayRequest.structured(
+        AiGatewayResult result = context.gateway.executeStructured(AiGatewayRequest.withVariables(
                 useCase.getUseCaseCode(),
-                "分析仓库",
+                variables(useCase.getUseCaseCode(), "分析仓库"),
                 Path.of("/tmp/repo"),
                 List.of("/tmp/repo/service"),
                 List.of(),
@@ -156,9 +267,9 @@ class DefaultAiGatewayClientTest {
                 any(CodexCliClient.CodexCliExecutionOptions.class)))
                 .thenReturn(CodexCliClient.CodexCliResult.succeeded("{\"status\":\"OK\"}"));
 
-        AiGatewayResult result = context.gateway.executeStructured(AiGatewayRequest.structured(
+        AiGatewayResult result = context.gateway.executeStructured(AiGatewayRequest.withVariables(
                 useCase.getUseCaseCode(),
-                "分析仓库",
+                variables(useCase.getUseCaseCode(), "分析仓库"),
                 Path.of("/tmp/repo"),
                 List.of("/tmp/repo/service"),
                 List.of(),
@@ -192,7 +303,7 @@ class DefaultAiGatewayClientTest {
             return "{}";
         });
         AiGatewayRequest request = new AiGatewayRequest(useCase.getUseCaseCode(),
-                java.util.Map.of("prompt", "业务提示词"), Path.of("/tmp"), List.of(), List.of(),
+                variables(useCase.getUseCaseCode(), "业务提示词"), Path.of("/tmp"), List.of(), List.of(),
                 "{\"type\":\"object\"}", 9L, "override-model", "HIGH", "FAST", 45, null);
         assertTrue(context.gateway.executeStructured(request).succeeded());
         verify(context.chatClient).execute(any());
@@ -298,9 +409,21 @@ class DefaultAiGatewayClientTest {
         entity.setSpeedMode("STANDARD");
         entity.setTimeoutSeconds(30);
         entity.setJsonSchemaEnabled(true);
-        entity.setPromptTemplate("网关模板：${prompt}");
+        StringBuilder template = new StringBuilder("网关模板：");
+        for (String variable : AiUseCaseDefinitions.require(code).allowedPromptVariables()) {
+            template.append("${").append(variable).append('}');
+        }
+        entity.setPromptTemplate(template.toString());
         entity.setEnabled(true);
         return entity;
+    }
+
+    private java.util.Map<String, Object> variables(String code, String value) {
+        java.util.Map<String, Object> vars = new java.util.LinkedHashMap<>();
+        for (String name : AiUseCaseDefinitions.require(code).allowedPromptVariables()) {
+            vars.put(name, value);
+        }
+        return vars;
     }
 
     private AiProviderConfigEntity provider(Long id, String channelType, String protocol) {
@@ -325,14 +448,23 @@ class DefaultAiGatewayClientTest {
         private final ZCodeCliClient zcodeCliClient = mock(ZCodeCliClient.class);
         private final OpenAiResponsesClient responsesClient = mock(OpenAiResponsesClient.class);
         private final OpenAiChatClient chatClient = mock(OpenAiChatClient.class);
-        private final DefaultAiGatewayClient gateway = new DefaultAiGatewayClient(
+            private final McpRuntimeService mcpRuntime = mock(McpRuntimeService.class);
+            @SuppressWarnings("unchecked")
+            private final ObjectProvider<McpRuntimeService> mcpRuntimeProvider = mock(ObjectProvider.class);
+            private final McpProperties mcpProperties = new McpProperties();
+            private final DefaultAiGatewayClient gateway = new DefaultAiGatewayClient(
                 useCaseService,
                 providerService,
                 codexCliClient,
                 zcodeCliClient,
                 responsesClient,
                 chatClient,
-                new ObjectMapper()
-        );
+                new AiPromptTemplateRenderer(new ObjectMapper()),
+                new ObjectMapper(),
+                mcpRuntimeProvider,
+                mcpProperties,
+                "",
+                "8080",
+                "");
     }
 }

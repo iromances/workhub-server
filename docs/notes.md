@@ -2,6 +2,398 @@
 
 ## 公司项目
 
+### 2026-11-13 漏跑影响账单查询口径更正
+
+- 用户明确要12、13日漏跑的全量候选，含已结清；原按补跑记录查947笔的口径不符。改为主表按创建、宽限和结清时间回溯：叉车60、智能柜900，合计960笔，含13笔已结清。已提供只读校验后的修正版SQL。另84笔已删除记录缺少删除时间，独立附查询供历史核对，不混算为确认影响；当前主表回溯不冒充完整历史快照。已结清不再补算的用户决定不变。
+
+### 2026-11-13 14:50 叉车报表刷新验收及默认范围更正
+
+- 用户执行Job38空参数成功，14:49:25重建1104条，默认融资类应有1104笔全部覆盖，无重复；逾期科目金额逐笔对源无差异，包含本次融资类58笔新增399.76元。更正此前“全范围”表述：空参数默认产品类型FORKLIFT，不覆盖租赁类2笔新增16.02元；这两笔费用此前已核验入账，不建议切换筛选条件重跑清表任务。验收证据已归档，报表刷新待办关闭。
+
+### 2026-11-13 14:46 叉车两日逾期补跑验收
+
+- 用户已补叉车13日，60笔、207.89元，逐笔金额与试算一致，逾期天数较补跑前累计加2；两日覆盖无缺失、无重复，合计415.78元。连同此前智能柜993.36元，两系统合计1409.14元、去重947笔。叉车报表仍为06:00快照，Job38空参数刷新一次仍待处理；仅只读验收，未执行报表任务。
+
+### 2026-11-13 14:44 叉车12日逾期补跑验收
+
+- 用户执行Job10的12日补跑成功。只读核验60笔账单、118条费用明细、207.89元；候选全覆盖，无重复，逐笔金额与此前试算一致，60笔逾期天数均增加1天。叉车13日及补算后Job38报表刷新仍待处理，已结清复核项保持关闭。
+
+### 2026-11-13 用户关闭智能柜已结清账单复核项
+
+- 用户明确“已结清的不管了”：本次13笔已结清账单不再复核或补算，理论6.67元不再列为待处理项。已记录到原生产Job补跑清单；未修改生产数据，智能柜两日实际补算993.36元的验收结论保留。
+
+### 2026-11-13 14:41 智能柜两日逾期补跑验收
+
+- 用户已执行13日补跑，14:41:11–14:41:13 成功，887笔、497.46元；连同12日合计去重887笔账单、1770条费用、993.36元。两日当前候选全覆盖，无重复和逐笔金额差异。助手仅只读验收，已归档证据；已结清复核项与回购/代偿联动核对保留。
+
+### 2026-11-13 14:39 智能柜12日逾期补跑验收
+
+- 用户已执行 Job 43 的12日补跑；只读核验 14:37:38–14:37:40 执行成功，883 笔费用共495.90元，当前候选全部覆盖，缺失、重复及逐笔金额差异均0。13日尚无费用记录，已结清复核项保留；证据已补入原生产Job补跑清单。
+
+### 2026-11-13 14:19 叉车与智能柜漏跑逾期费金额核查
+
+- 只读试算 12、13 日补跑：叉车 60 笔、415.78 元，智能柜 887 笔、993.36 元；去重共 947 笔、1,409.14 元，其中叉车 7 笔不新增费用。另智能柜已结清 13 笔理论 6.67 元单列复核，未执行补跑或修改生产数据。
+- 结果与证据补充至[生产 Job 补跑清单](业务线/BL000006-物流平台/需求迭代/REQ-9b086f9b-2e40-4ec6-b822-df8acd2ab6ba-物流平台叉车智能柜Nacos和XXLJOB升级方案整理/叉车与智能柜生产Job补跑清单_20261113_1405.md)。
+
+### 2026-11-13 · 叉车和智能柜生产 Job 补跑清单复核（14:05）
+
+只读核对新旧调度库和业务账务：确认此前按启用任务统计的清单遗漏两个子任务——叉车 Job 10、智能柜 Job 43；两者 11 月 12、13 日在新旧中心均无触发，费用明细同样空缺，需各按 executeDate 补两日，共 4 次。代扣批次、叉车对账单逾期费及智能柜核销报表已实际执行，不整体重跑。智能柜另有 13 笔缺口期间已结清账单，默认 Job 会跳过，需单独核对费用；补算后刷新叉车报表并复核回购、代偿触发条件。两天保证金抵扣当前无候选；lease-finance 回调仍异常但已查三类业务对象无新增积压。仅形成清单，未执行补跑或修改生产数据。
+
+[补跑清单与逐笔复核项](业务线/BL000006-物流平台/需求迭代/REQ-9b086f9b-2e40-4ec6-b822-df8acd2ab6ba-物流平台叉车智能柜Nacos和XXLJOB升级方案整理/叉车与智能柜生产Job补跑清单_20261113_1405.md)。
+
+### 2026-11-12 · 研发拆解 ZCode 空转根因：仓库工具未注册（REQ-809c8dd3 追加）
+
+277 两轮研发拆解均空转（workItems 空、summary 为计划文本、审计零工具调用）。定位：`workhub.mcp.repository-read-roots` 未配置 → RepositoryFileService 未启用 → 仓库三工具未注册进 MCP runtime → ZCode 模型看不到工具；提示词却要求用它们检索代码。修复：application.yml 配置 read-roots（env 可覆盖）+ isConfigured 校验 list_repository_files 已注册。详见 REQ-809c8dd3 tasks 执行记录。
+
+### 2026-11-12 · 澄清生成提示词收紧（REQ-e810ed05 后续变更③）
+
+用户问"列出的 10 个待确认项 AI 自己无法回答吗"，先提"AI 给建议答案人工采纳"方案被否；定向改为收紧生成准入：只有综合需求材料、结构化字段、知识库和代码查证后仍无法确定唯一答案（不能是推测）且答案实质影响实现行为的问题才允许提问；风险只列有具体位置依据的现实冲突，假设性风险不列；宁缺毋滥、通常不超过 5 项、可返回空数组。落地为迁移 V20261112_161000 更新 `intake.clarification.analyze` 模板（checksum 幂等，变量白名单不变；期间发现与另一在途迁移 V20261112_160000__agent_platform_guide 版本号撞号，改 161000 避开 Flyway 冲突）。PromptTemplateMigrationConsistencyTest 2/2。生成质量待重启迁移后对真实需求实测；若仍偏多，下一步可查生成模型与温度/推理档位配置，或在 normalize 侧加质量过滤（暂不做）。
+
+### 2026-11-12 · ZCode 通道澄清分析"AI 场景未配置或已停用"排查与准入放开（REQ-809c8dd3-d7d6-4bb0-8c03-44a2c78f4c37）"AI 场景未配置或已停用"排查与准入放开（REQ-809c8dd3-d7d6-4bb0-8c03-44a2c78f4c37）
+
+用户把澄清分析切到先行通-GLM CLI（ZCode）通道后执行报"AI 场景未配置或已停用"。只读核查运行库：9 个 AI 场景 8 个已绑 ZCode 且全部启用，配置无缺失；根因是 `DefaultAiGatewayClient.isConfigured` 对 ZCODE+LOCAL_REPOSITORY_READ 无条件 false，而执行链路（executeCli ZCODE 分支经 workhub MCP 只读工具桥接仓库读取、repositoryHint 注入授权目录）早已实现并有测试覆盖——准入检查与执行能力脱节，用户明确"就是要切换通道用"。修复：isConfigured 改按真实前置条件（access-token 已配置 + MCP 运行时工具清单非空），缺失仍 false 且执行期抛明确报错；仓库读取类场景仍仅限 CLI 通道（API 侧 function-calling 桥接另立需求）。网关 18/18 测试通过。部署前提：本地/运行环境配置 WORKHUB_MCP_ACCESS_TOKEN（application.yml 默认空），重启后实测一次 ZCode 澄清分析。同日完成 REQ-e810ed05 澄清/任务评估运行记录改造（见迭代日志），两者联动：解锁按钮后即可用 ZCode 通道重跑 271/275/277。
+
+### 2026-11-12 · 澄清分析静默卡死排查与运行记录改造（REQ-e810ed05-b9bd-4def-8c23-f94c59754d03）
+
+用户反馈 3 个在澄清需求（271/275/277，2026-11-12 11:57-11:59 开始澄清）长时间无澄清项。排查：`pm_intake_clarification_analysis` 三条 PENDING 且 updated_at==created_at、从未 RUNNING/FAILED、无"生成需求澄清项"流水、线程 dump 中 workhub-async 线程空闲且无线程在分析代码、窗口内无 ERROR——后台任务提交后静默丢失；同类僵尸 PENDING 自 2026-05 累计 20+ 条。"重新分析澄清项"按钮灰系前端 `isClarificationInProgress` 只要 PENDING/RUNNING 即禁用，封死后端 30 分钟 stale 重发通道；研发拆解分析更无 stale 通道。经用户确认规格后实施改造：每轮澄清/任务评估独立插入运行记录（旧行显式置 FAILED"已被新分析取代"），executeAnalysis 加 SLF4J 起止日志、catch Throwable 兜底与 executor 拒绝兜底；响应新增 retryable（PENDING/RUNNING 超 30 分钟或终态为 true）供前端判定；新增澄清历史接口与页签折叠列表；迁移 V20261112_120000 修复存量。两服务单测 25 项通过、主代码编译与前端构建通过；workhub-service 3 个 ops 测试编译错误（在途 MQ 改动，验证期间临时移出并字节级原样恢复）、KnowledgeArchiveWorkflowTest 1 项存量 wiki 路径断言失败（在途 ProjectKnowledgeBaseService 改动所致，未修改）、workhub-controller AgentToolControllerTest 编译错误（在途 agent 域改动），全量回归待其在途改动收敛。服务重启应用迁移、271/275/277 重试澄清端到端走查待部署。规格与验证见需求目录 tasks.md。
+
+### 2026-11-04 · 智能柜与叉车整体升级及测试配置核查（15:47）
+
+用户要求注册之外的整体改造与测试 XXL 配置。刷新全部 38 仓库，所选 SHA 与 11:57 一致。自有浏览器只读核查 lease 空间 30 条配置目录和 common.yaml＋11 应用详情：公共中心 .52:28080、Token 非空、AppName 使用 spring.application.name、port=-1、日志 /mnt/xxljob，但 logretentiondays=30；ol-risk 显式覆盖90，ol-order 单独中心127.0.0.1:28080及Token（与公共一致）；其余9应用无独立xxl覆盖。Token原文仅内存比较，未写报告。补查发现ol-risk源码／远程配置未见公共加载声明，不能直接断言其中心地址／Token已继承。智能柜test存在.53／.51目标差异，叉车9仓库test仍本机8848且无启动鉴权；详细边界见报告。切换XXL任务筛选时ERR_EMPTY_RESPONSE，未完成迁移任务逐组对账。代码入口仍59/59与46/71；配置、制品、调度、业务与回退仍待验收，未执行修改。
+
+[整体复核报告](业务线/BL000006-物流平台/需求迭代/REQ-9b086f9b-2e40-4ec6-b822-df8acd2ab6ba-物流平台叉车智能柜Nacos和XXLJOB升级方案整理/智能柜与叉车整体升级及测试配置核查_20261104_1547.md)。
+
+### 2026-11-04 · 自有浏览器核对设备应注册未注册项（13:45）
+
+用户登录自有浏览器 XXL-JOB 后，本轮两套 .52 控制台均使用 Codex 内置浏览器读取。XXL 点击搜索并核对两页全部 11 个定义，只有 ol-order／ol-risk／ol-saps 各在线 1；叉车 6 个已建分组均无在线地址，intfcommon 未见分组。Nacos 关闭隐藏空服务，lease 7 条中 6 个智能柜服务健康 1/1，lease-payment 为 0/0；其他命名空间仅 auth 有 xxt-authing。按已核实升级范围列出 Nacos 明确 19 项缺口（ol 2、lease 17），XXL 明确 7 项缺口（全 lease）。lease-authing 映射、lease-risk 的 XXL 适用性、lease-scaffold 范围单列待核。此次未触发任务或修改配置。
+
+[明确缺口清单](业务线/BL000006-物流平台/需求迭代/REQ-9b086f9b-2e40-4ec6-b822-df8acd2ab6ba-物流平台叉车智能柜Nacos和XXLJOB升级方案整理/智能柜与叉车应注册未注册清单_20261104_1345.md)。
+
+### 2026-11-04 · 设备新平台注册复核及 .52 环境确认（13:35）
+
+用户明确叉车、智能柜的 Nacos 和 XXL-JOB 都使用 .52，关闭此前 .52/.53 归属待核。用户登录内置浏览器 Nacos 后，关闭隐藏空服务并查询全量 6 个命名空间：lease 7 个健康服务（ol 6、lease-payment 1），auth 另 xxt-authing，其他空间为空。XXL 新标签页未登录，使用 Safari 已有 .52 登录会话刷新两页全部 11 个分组，在线 ol-order／ol-risk／ol-saps／lease-payment 各 1；lease-saps 本轮无在线地址，且 Nacos 未见。lease-opgateway 本轮 Nacos 也未见。只读匿名 API 返回 403 后使用控制台，未进行写操作或触发任务。全量三列矩阵及证据已同步两业务线现状。
+
+[注册复核报告](业务线/BL000006-物流平台/需求迭代/REQ-9b086f9b-2e40-4ec6-b822-df8acd2ab6ba-物流平台叉车智能柜Nacos和XXLJOB升级方案整理/智能柜与叉车新平台注册复核_20261104_1335.md)。
+
+### 2026-11-04 · 智能柜与叉车升级进度复查（11:57）
+
+用户要求重查设备，沿用智能柜／叉车测试环境，排除弃用 ol-payment。38 仓库远程分支刷新全部成功，所有选定 SHA 与 10:55 一致；任务文件 blob 与已验证入口清单一致，智能柜 59/59、叉车 46/71，剩余 25（contract 9、intfcommon 11、marketing 4、crm 1）。本轮 .52 Nacos 的 lease 空间有 9 个健康服务：智能柜 6、叉车 3；新增 ol-partner-gateway／lease-opgateway／lease-payment／lease-saps，lease-contract／lease-intfcommon 本次未见。XXL 仍 5 个业务名称在线（智能柜 3、叉车 2）。.53 关系、映射、部署 SHA 和任务执行仍未核实。已同步两业务线现状和三列全量矩阵；本次未编译、安装、部署或触发任务。
+
+[本轮报告](业务线/BL000006-物流平台/需求迭代/REQ-9b086f9b-2e40-4ec6-b822-df8acd2ab6ba-物流平台叉车智能柜Nacos和XXLJOB升级方案整理/智能柜与叉车升级进度复核_20261104_1157.md)。
+
+### 2026-11-04 · 物流平台升级进度重新核验（11:51）
+
+刷新全部 54 仓库远程分支及 .110 新平台。saps-back 新增升级分支、父依赖 0.0.2 和 sit 新地址／鉴权；WMS 替换占位地址；运营网关修正应用名；public 原升级分支与 v2 源码树相同。6 个原 feature 分支已删除，明确读取当前统一 release，未覆盖工作区。所有已记录业务任务文件 blob 未变化，仍为 214/256、剩余 42；CRM 3 个兼容问题未修复。Nacos 从 17 增至 22 个健康服务；XXL 从 6 增至 9 个在线名称／10 个地址，新增 CRM、江苏、场景名称。SAPS/checker 和场景多部署归属仍待核。WorkHub MCP 不可用，未取得新的进程／日志／部署 SHA。本轮未触发任务、部署或安装依赖。
+
+[本轮报告](业务线/BL000006-物流平台/需求迭代/REQ-9b086f9b-2e40-4ec6-b822-df8acd2ab6ba-物流平台叉车智能柜Nacos和XXLJOB升级方案整理/物流平台升级进度复核_20261104_1151.md)。
+
+### 2026-11-04 · 全量注册清单简化为三列
+
+按用户最新要求，当前全量清单统一为“子系统、新 Nacos、新 XXL-JOB”三列，状态仅用“已注册／未注册／不适用”。在线实例／执行器标已注册；本次未见在线项（含只有分组没有在线地址）标未注册；无需接入及已弃用 ol-payment 标不适用。lease-authing 映射、lease-risk 启动模块和 lease-scaffold 适用性等缺口移至表外说明，避免把未注册误当作必须整改。38 个仓库全量保留，仍使用 10:55～10:57 的 .52 快照，本次未重新查询平台。
+
+### 2026-11-04 · 全量注册清单用语统一
+
+按用户要求，将当前全量清单中无需接入的 Nacos 项统一写“无需注册”，无需执行器／调度的 XXL-JOB 项统一写“无需调度”，依据保留在备注。智能柜／叉车现状及 10:57 复核报告已同步，覆盖 38 个仓库；lease-risk、lease-scaffold 的待核项保留。本次仅调整展示用语，未重新查询运行状态，仍使用 10:55～10:57 的 .52 平台快照。
+
+### 2026-11-04 · 全量子系统注册适用性复核（10:57 快照）
+
+用户要求重查“不适用”口径。本轮重读桌面主方案、lease-public 清单及智能柜／叉车专项方案，刷新全部 38 仓库远程分支；8 仓库有新提交，按固定 SHA 从原库或临时隔离对象库读取，未切换业务工作区。复核 POM 实际依赖（与 dependencyManagement 区分）、任务入口、执行器装配及内部公共组件传递路径。7 前端明确无需独立注册；公共升级构件由宿主注册；15 个后端改为“未见分组；源码无调度接入”；common-order／ol-intf-junxin 按方案仅接口联调。lease-risk 标准 start 存在执行器装配链，start-backend 路径不同，实际部署模块待核。
+
+10:55～10:57 刷新 .52 新平台：Nacos 全部 6 个可见命名空间，业务服务仍为智能柜 5 个、叉车 2 个健康实例；XXL-JOB 全部 11 个分组中，ol-order／ol-risk／ol-saps／lease-payment／lease-saps 各在线 1。lease-contract／lease-crm／lease-finance／lease-marketing 分组无在线，lease-intfcommon／lease-risk 未见分组。与 10:03 相比，lease-payment 和 lease-saps 的 XXL 状态由无在线变为在线；Nacos 本次仍未见二者实例，不假设两侧状态必须相同。
+
+.53 测试登记入口与 .52 的关系仍未核实，WorkHub MCP 本轮不可用，不能把 .52 的“未见”推广到全测试环境。详细矩阵、方案证据和 38 仓库 SHA 见[本轮复核](业务线/BL000006-物流平台/需求迭代/REQ-9b086f9b-2e40-4ec6-b822-df8acd2ab6ba-物流平台叉车智能柜Nacos和XXLJOB升级方案整理/全量子系统注册适用性复核_20261104_1057.md)，当前摘要同步至智能柜／叉车现状。本轮未触发任务或修改运行配置，未安装依赖。
+
+### 2026-11-04 · 从全量子系统标记新平台注册状态（10:03 快照）
+
+用户澄清要从全部子系统逐项标记 Nacos／XXL-JOB 注册状态。本轮通过 Safari 刷新 .52 新平台，核对 Nacos 全部 6 个可见命名空间和 XXL-JOB 两页全部 11 条分组；按已核实项目组全量清单覆盖 ol 16 个、lease-saas 22 个仓库。逐项区分健康实例、无在线地址、未见分组、不适用、弃用和源码不足待确认，已写入[智能柜现状](业务线/BL000005-智能柜/现状.md)与[叉车现状](业务线/BL000008-叉车/现状.md)。
+
+核查时段 2026-11-04 10:00～10:03（北京时间）。Nacos 的 lease 空间仍有 7 个健康服务，但相较 09:55 内容有变化：ol-order、ol-risk、ol-saps、ol-gateway 仍在，新增 ol-opgateway；lease-contract、lease-intfcommon 仍在，lease-saps 本轮未见。auth 空间另有 xxt-authing，不能未经映射确认就算作 lease-authing；public、mall、sit、sit-etc 未见非空服务。页面启用了隐藏空服务，负向状态统一写“未见实例”。
+
+XXL-JOB 本轮仅 ol-order、ol-risk、ol-saps 各有 1 个在线地址；lease-saps 已从 09:55 的在线变为当前分组无在线地址，其余叉车已建分组同样无在线地址。lease-intfcommon、lease-risk 未见同名分组，不从分组列表反推原始 registry 中一定不存在未绑定心跳。lease-saps 状态变化原因未核实，不据此声称升级失败或回退。
+
+本次未触发任务、修改配置、执行部署或安装依赖。原始矩阵暂存 `/private/tmp/workhub-upgrade-progress-20261104/registration-matrix-1003.json`，.52 与前次 WorkHub .53 入口的对应关系仍待核实。
+
+### 2026-11-04 · 新 Nacos 与 XXL-JOB 注册情况补查
+
+记录时间：2026-11-04 09:55（北京时间）。用户追问新平台注册情况，范围仍为智能柜和叉车测试环境，排除弃用的 ol-payment。WorkHub MCP 工具仍不可用；本轮通过 Safari 已登录控制台刷新页面，取得新的运行证据。实际读取入口是 **10.10.116.52**：Nacos `:28848/nacos`（页面标识 2.5.4、standalone），XXL-JOB `:28080/xxl-job-admin/jobgroup`（页面标识 2.5.0）。此前 WorkHub 登记的 .53 入口本轮只到达登录页，未取得其注册数据；不将 .52 和 .53 视为已证实的同一实例或地址映射。
+
+Nacos 核对范围为 `lease` 命名空间（页面描述“设备租赁”，ID `e409079b-9077-4ddf-80fe-8c356f96b16f`）、DEFAULT_GROUP，服务名筛选为空。刷新后页面总数 7、共 1 页，以下服务均为 1 个实例、1 个健康实例。XXL-JOB 已读两页全部 11 条执行器分组，4 个分组各有 1 个在线地址。
+
+| 服务 | 新 Nacos 实例／健康实例 | 新 XXL-JOB 执行器 |
+| --- | --- | --- |
+| ol-order | 1／1 | 在线 1 |
+| ol-risk | 1／1 | 在线 1 |
+| ol-saps | 1／1 | 在线 1 |
+| ol-gateway | 1／1 | 未见对应分组；网关无本地业务 @XxlJob，不据此列为调度缺口 |
+| lease-saps | 1／1 | 在线 1 |
+| lease-contract | 1／1 | 分组已存在，在线地址为“无” |
+| lease-intfcommon | 1／1 | 全部 11 条分组中未见同名分组 |
+
+新 XXL-JOB 的 lease-crm、lease-finance、lease-marketing、lease-payment 分组也均显示在线地址为“无”；lease-risk 未见同名分组。另有已弃用 ol-payment 和示例执行器分组，均无在线地址，不计入本次升级完成数。智能柜其余 ol-intf-risk、ol-marketing、ol-opgateway、ol-partner-gateway 未出现在本次读取的 Nacos 命名空间列表中；不外推到其他命名空间或 .53 实例。
+
+**最新结论：已确认部分应用接入 .52 新平台，Nacos 为智能柜 4 个、叉车 3 个健康服务；XXL-JOB 为智能柜 3 个、叉车 1 个在线执行器。** lease-contract／lease-intfcommon 的 Nacos 注册不能代表 XXL-JOB 接入完成。该运行结果补充了同日早先源码核查时的证据缺口；没有以远端源码未变化推断实际部署未变化。注册健康也不能证明部署包 SHA、实际客户端版本、任务启用、触发／回调或业务执行结果，本轮未核查这些项，也未触发或修改任务。
+
+可复查入口：[Nacos 服务列表](http://10.10.116.52:28848/nacos/#/serviceManagement?dataId=&group=&appName=&namespace=e409079b-9077-4ddf-80fe-8c356f96b16f&pageSize=&pageNo=&namespaceShowName=lease&serviceNameParam=&groupNameParam=)、[XXL-JOB 执行器管理](http://10.10.116.52:28080/xxl-job-admin/jobgroup)。
+
+### 2026-11-04 · 智能柜和叉车升级改造进度复查
+
+沿用用户确认的智能柜 BL000005／ol、叉车 BL000008／lease-saas、测试环境，以及 ol-payment 已弃用并排除升级的范围。本轮没有可用的 WorkHub MCP 工具，不能安全刷新业务线环境映射或读取当前 DB／服务器状态；业务线来源沿用本会话此前核实结果。通过既有 GitLab origin 只读核对 30 个后端／公共／辅助仓库的远程分支，成功读取全部分支清单；lease-scaffold 仍无远程分支。所选提交对象均已存在本地，按远程 SHA 直接读取，没有切换、覆盖或改写业务工作树。
+
+**源码结论：此前跟踪的 25 个应用仓库所选提交均与 11 月 3 日一致，未见新增已推送升级实现。** 升级分支仍为 `release/nacos-2.5.4-xxljob-2.5.0_20261027`；缺少该分支时读取 master 仅用于待改造范围清点。lease-public 升级提交仍为 `86e2721313671b452a85869c8188e71bee2b9dab`。
+
+| 改造点 | 智能柜 | 叉车 |
+| --- | --- | --- |
+| 后端源码范围与依赖 | 排除 ol-payment 后，8／8 个仓库已有依赖改造 | 本轮补入 lease-bpm，范围由 17 修正为 18；7 个父依赖已改、CRM 仅配置部分改造、10 个未见升级分支 |
+| 业务任务入口 | 59／59 个为无参 void；saps 32、order 24、risk 3 | 46／71 个已适配；剩 contract 9、intfcommon 11、marketing 4、crm 1，共 25 个 |
+| 测试配置 | ol-order 的源码地址仍为 .51:8848，与昨日登记目标 .53:28848 不同，待核对发布覆盖 | saps、payment 仍为 127.0.0.1:8848 且未声明启动鉴权；CRM 父依赖与显式 schedule 仍旧 |
+| 构建与部署 | 未重跑构建或联调；既有相同提交的 ol-saps 编译结论保留 | 未重跑构建或联调；既有相同提交的 saps／payment 编译结论保留 |
+| 当前运行状态 | 本轮未核实；11 月 3 日调度快照不能作为今日状态 | 本轮未核实；新平台映射和实际切换仍缺今日证据 |
+
+本轮补正两处前次范围／配置口径：① lease-bpm 的 root POM 引入 Nacos config/discovery，bpm-start 有独立启动类与 bootstrap，不能按纯类库排除；当前 master `56bbad8aeb42` 仍旧，配置仅见 dev／uat／prod，是否参加本次测试发布待确认。② lease-contract 前次记为测试地址的 `.24:8848` 属于 equip-test，叉车源码没有独立 test profile；实际发布使用哪个 profile 尚未核实。这些是核查口径补正，不是今日代码回退或新增改动。
+
+逐仓库完整 SHA、源码状态和验证边界已按现行归档规则写入[智能柜迭代日志](业务线/BL000005-智能柜/迭代日志.md)与[叉车迭代日志](业务线/BL000008-叉车/迭代日志.md)。原始远程引用和脱敏清单在 `/private/tmp/workhub-upgrade-progress-20261104/remote-heads.json`、`inventory.json`。本轮只更新过程与进度记录，未修改业务代码、运行配置、任务状态或安装依赖。
+
+### 2026-11-03 · 智能柜和叉车测试环境升级进度重新核查
+
+范围：用户已确认的 **智能柜 BL000005／ol、叉车 BL000008／lease-saas，测试环境 TEST**。本次通过 WorkHub 重新获取环境上下文并安全刷新两个项目组共 38 个仓库的远程引用；未切换或覆盖业务工作区。数据库运行快照为当日 **17:22～17:27（北京时间）**。参照桌面《消费分期Nacos和XXLJOB升级迁移方案_20261028.md》v1.6 与《lease-public升级改动清单_20261102.md》，目标仍为 Nacos client 2.5.4、官方 XXL-JOB core 2.5.0 及受影响公共构件 0.0.2-SNAPSHOT。
+
+用户随后补充：**ol-payment 已弃用，不需要升级**。据此将该仓库及其 8 个源码任务入口、7 条调度记录移出本次升级范围，不再作为升级缺口。以下范围统计已修正，运行数据仍沿用上述 17:22～17:27 快照，本次范围调整没有重新查询或操作运行环境。原始快照中的 ol-payment 心跳、3 条启用任务及新库遗留配置单列保留，不将用户确认的“已弃用”等同于已经完成运行资源清理。
+
+**结论：智能柜升级范围内的 8 个后端仓库均已有依赖改造，59 个业务任务入口均已适配；配置和任务数据已进入新库，但测试配置、构建及运行验收仍有待核实项，调度尚未切换。叉车仍处于部分仓库改造阶段，旧调度中心仍有实时注册，新的目标平台尚缺受控环境映射，不能认定已完成迁移。** equip-battery-lease-server 不列入这两条业务线的必须升级应用；它对共享接口的影响沿用下节已确认的依赖范围，不混入完成数量。
+
+代码统一读取 `origin/release/nacos-2.5.4-xxljob-2.5.0_20261027`；未找到升级分支的仓库读取 `origin/master`，仅作为待改造基线。实际测试部署分支和运行包 SHA 尚未取得，远程源码状态不等同于已发布。统计有效生产源码的 @XxlJob，排除注释、测试源码及公共 lease-mq 任务；同时计入 public、protected 等可见性的入口。“入口已适配”仅指签名为无参 void，不代表本轮已完成每个任务的参数、失败语义或业务回归验收。
+
+| 改造点 | 智能柜 ol | 叉车 lease-saas |
+| --- | --- | --- |
+| 公共依赖与应用接入 | 范围内 8／8 个后端仓库已有依赖改造。ol-risk、ol-intf-risk 使用 thctay-dependencies 0.0.2；ol-marketing 独立管理 nacos-client 2.5.4，其余已改仓库使用 lease-dependencies 0.0.2 | 17 个相关后端仓库中 7 个已升父依赖；lease-crm 仅配置部分改造，父依赖和显式 schedule 仍旧；其余 9 个未见升级分支 |
+| 业务任务入口 | 范围内 59／59 个无参 void：saps 32、order 24、risk 3；已弃用 payment 的 8 个入口不计入 | 共 71 个，46 个无参 void：saps 27、payment 6、finance 13；contract 9、intfcommon 11、marketing 4、crm 1，共 25 个仍旧 |
+| 测试 Nacos 启动配置 | 8 个升级仓库已声明 config/discovery 鉴权；其中 ol-order 仍指向 10.10.116.51:8848，与 WorkHub 登记目标 10.10.116.53:28848 不同 | finance、gateway、intfrisk、opgateway、risk、crm 已指向 10.10.116.52:28848 并声明鉴权；saps、payment 虽已升依赖和任务，test 仍为 127.0.0.1:8848 且未声明鉴权；其余未升级仓库仍需迁移 |
+| Nacos 配置迁入 | 10.10.116.53 的 nacos_config_254 中已有范围内 8 条应用配置，另有已弃用 ol-payment 的 1 条；仅确认存在，未宣称配置内容、共享配置及在线服务发现全部验收通过 | 当前受控测试库为 10.10.116.142；源码新地址为 10.10.116.52:28848，但 WorkHub 未登记新平台入口／对应新库，无法核验新平台迁入结果 |
+| XXL-JOB 数据准备 | 范围内新 xxl_job_250 已有 40 条任务；与旧库逐条按 id 和 job_group 对齐，handler、Cron、参数差异均为 0，全部停止；另有已弃用 payment 的 7 条不计入升级范围 | 当前旧库共 53 条业务任务；没有已确认的新目标库用于迁移对照 |
+| 执行器注册与切换 | 范围内新中心未见执行器注册，旧中心仍有 order、risk、saps 三个注册键实时心跳；范围内旧任务 11 条启用、29 条停止。payment 的旧心跳和 3 条启用记录单列为弃用后的遗留项 | 旧中心仍有 7 个注册键实时心跳；旧任务 2 条启用、51 条停止。不能用智能柜库中的历史 lease 分组代表本业务线已迁入 |
+| 构建和验收 | ol-saps 同一 SHA 的既有 Java 8 离线编译日志已复核为 BUILD SUCCESS；其余本轮新增核查仓库未做构建／运行验收 | lease-saps、lease-payment 同一 SHA 的既有 Java 8 离线编译日志已复核为 BUILD SUCCESS；其余本轮新增核查仓库未做构建／运行验收 |
+
+仓库数按本次升级范围内的相关后端源码仓库统计，lease-risk 的两个启动模块不重复计仓库；已弃用的 ol-payment、前端、无相关运行入口的辅助仓库和 lease-public 公共工程不加入应用分母。lease-public 升级远程提交为 `86e2721313671b452a85869c8188e71bee2b9dab`，有效 POM 确认 nacos-client 2.5.4、xxl-job-core 2.5.0；lease-mq 的一个公共入口也已适配，单列而不重复计入业务任务。桌面清单的“未推送”已不代表当前状态；本次未核实 Jenkins 制品发布情况。
+
+**逐仓库源码进度与可复核提交**（`release` 指上述统一升级分支，`master` 指无升级分支时的基线）：
+
+| 智能柜仓库 | 来源／提交 | 任务入口已适配／总数 | 当前源码状态 |
+| --- | --- | --- | --- |
+| ol-gateway | release／a587b0e69412 | — | lease 父 0.0.2，测试 Nacos 28848 与鉴权已改 |
+| ol-intf-risk | release／1ea6d72489dd | — | thctay 父 0.0.2，测试 Nacos 28848 与鉴权已改 |
+| ol-marketing | release／12af60a60d87 | — | 独立父工程，显式管理 nacos-client 2.5.4，测试配置已改 |
+| ol-opgateway | release／8e00c52d4f0f | — | 切换 lease 父 0.0.2；bootstrap-test.yml 已改；含公共构件体系和 GatewayUtils 调整，尚未构建验收 |
+| ol-order | release／5c551b746b8d | 24／24 | lease 父 0.0.2；测试鉴权已声明，地址仍为 10.10.116.51:8848，需核对目标与部署覆盖 |
+| ol-partner-gateway | release／0b6bab523a67 | — | lease 父 0.0.2，测试 Nacos 28848 与鉴权已改 |
+| ol-payment（已弃用，排除） | master／d9cd90f61461 | 不计入（原 8 个） | 用户确认不需要升级；旧源码仅保留核查证据，不列为改造缺口 |
+| ol-risk | release／d13680588c28 | 3／3 | thctay 父 0.0.2，测试 Nacos 28848 与鉴权已改 |
+| ol-saps | release／2b2781fd0e46 | 32／32 | lease 父 0.0.2，测试 Nacos 28848 与鉴权已改；同提交既有编译成功 |
+
+| 叉车仓库 | 来源／提交 | 任务入口已适配／总数 | 当前源码状态 |
+| --- | --- | --- | --- |
+| lease-finance | release／c6b82f001d74 | 13／13 | 父 0.0.2，测试新地址与鉴权已改 |
+| lease-gateway | release／2465df5cbcb3 | — | 父 0.0.2，测试新地址与鉴权已改 |
+| lease-intfrisk | release／4865a80ea064 | — | 父 0.0.2，测试新地址与鉴权已改 |
+| lease-opgateway | release／8d01a4fc6b51 | — | 父 0.0.2，测试新地址与鉴权已改 |
+| lease-risk | release／6c6eeaabec83 | — | 父 0.0.2，两个启动模块测试配置已改；清除旧 schedule 显式版本，未发现有效业务 @XxlJob |
+| lease-payment | release／a4674a834638 | 6／6 | 父与任务已改；测试 Nacos 地址和鉴权待补／核实部署注入；同提交既有编译成功 |
+| lease-saps | release／9d37a9a39b27 | 27／27 | 父与任务已改；测试 Nacos 地址和鉴权待补／核实部署注入；同提交既有编译成功 |
+| lease-crm | release／37891f2347ec | 0／1 | 仅升级配置部分；父和 lease-crm-service 的 schedule 显式版本仍为 0.0.1，任务旧签名 |
+| lease-authing | master／5c03c78b98be | — | 未见升级分支，旧父与测试配置 |
+| lease-contract | master／8b7ceaad06b3 | 0／9 | 未见升级分支，旧父、任务与测试配置 |
+| lease-esb | master／32f8c5b107cd | — | 未见升级分支，旧父与测试配置 |
+| lease-gps | master／cc24d7a3453d | — | 未见升级分支，旧父与测试配置 |
+| lease-intfcommon | master／e2e21f468567 | 0／11 | 未见升级分支，旧父、任务与测试配置；多业务启动配置不重复计任务 |
+| lease-intfgps | master／c82ead43ad7a | — | 未见升级分支，thctay 父仍为 0.0.1 |
+| lease-marketing | master／b37cacf9ce9a | 0／4 | 未见升级分支，旧父、显式 schedule 版本与任务；4 个 protected 入口计入统计 |
+| lease-marketing-back | master／23c470ecb595 | — | 未见升级分支，旧父与测试配置 |
+| lease-workflow | master／f2b7932161c2 | — | 未见升级分支，独立依赖管理，测试配置仍旧 |
+
+**受控环境及运行数据证据**：
+
+- 智能柜 WorkHub TEST 明确登记新 Nacos `http://10.10.116.53:28848/nacos`、新 XXL-JOB `http://10.10.116.53:28080/xxl-job-admin`，数据库资源为 `public-test-db-10-10-116-53-3306`。该资源名称虽带 public，本轮返回的实际归属为智能柜，不以名称推断叉车共用。
+- 智能柜旧／新库分别为 nacos_config／nacos_config_254、xxl_job／xxl_job_250。原始快照的四个 ol 调度组为 8 payment、9 saps、10 risk、11 order；旧／新任务数分别为 7／7、19／19、2／2、19／19，共 47／47。旧启用数分别为 3、7、0、4；新启用数全部为 0。排除已弃用 payment 后，本次范围为分组 9／10／11，共 40／40 条，旧启用 11 条、停止 29 条，新任务全部停止。按任务 ID 和分组匹配，缺失、handler 差异、job_cron 到 schedule_conf 差异、参数差异均为 0；没有将这个局部一致性检查称为整库迁移验收。
+- 智能柜新中心原始快照四个分组 address_list 均为空，registry 未见 ol 注册；旧中心四个注册键的心跳距查询时间为 1～20 秒。其中本次范围内为 order、risk、saps 三个，payment 的旧心跳另作弃用后的遗留项。新中心保持任务停止符合切换准备阶段的做法，当前事实是尚未完成注册和调度切换，不能据此判定迁移失败。
+- 智能柜新 Nacos 的 9 条 ol 配置中，8 条属于本次升级范围，1 条为已弃用 ol-payment。该库另有历史 lease 前缀配置和调度分组，多数配置时间为 2026-04-13，且对应分组无地址；不将其作为叉车 .142 源库已向新平台完成迁移的证据。
+- 叉车 WorkHub TEST 当前数据库资源为 `bl000008-test-db-10-10-116-142-3306`，accessEndpoints 为空。现有 xxl_job_info 仍含 job_cron，未见 schedule_type／schedule_conf／misfire_strategy；xxl_job_group.address_list 为 varchar(512)，属于旧调度表结构。未发现另命名的新 Nacos／XXL-JOB schema，但仅凭库名不判断 Nacos 服务端实际版本。
+- 叉车旧任务分布：payment 5（启用 1）、finance 12、saps 28（启用 1）、marketing 3、crm 1、contract 2、intfcommon 2，共 53，启用 2。实时 registry 为 crm、finance、intfcommon、marketing、payment、risk、saps，查询时心跳距当前时间约 4～20 秒。contract 有分组而本轮未见注册，risk 有注册而旧分组列表无同名分组，后续应核对发布清单与执行器映射。
+- 本次范围内源码业务入口数（智能柜 59／叉车 71）与调度库任务记录数（智能柜 40／叉车 53）是不同口径，不相减作为遗漏任务数；任务启用也不代表本轮已验证业务执行成功。原始智能柜全量快照为 67 个入口、47 条任务，其中 payment 的 8 个入口、7 条任务已按用户补充排除。
+
+**仍待收尾的工作**：智能柜核对 ol-order 的测试目标／发布覆盖，补齐范围内应用的构建和运行验收，不再要求升级 ol-payment；其旧执行器、启用任务和新库遗留配置另列弃用资源核对，本次未停用或删除。叉车先完成 lease-crm 的父依赖、旧 schedule 覆盖和任务入口，再覆盖剩余 9 个无升级分支的相关后端，并补齐 saps／payment 的测试接入配置。确认叉车 .52 新平台对应的受控入口与数据库后，再逐项检查配置和调度数据迁移、执行器注册、任务触发／日志／回调、服务发现和配置刷新；按切换前最新启停快照停旧并恢复本次范围内的新调度，原本停止的任务不批量启用，已弃用 ol-payment 不纳入恢复清单。
+
+验证边界：两条业务线 TEST 均未配置启用的 ELK 范围；实际部署 SHA、Nacos 服务端运行版本、发布注入、XXL-JOB token 及全部应用的有效日志留存仍未核实。ol-order 的地址不一致、saps／payment 未声明鉴权都属于源码待核实项，不据此断言运行环境已发生配置故障。三份历史成功编译日志位于 `/private/tmp/workhub-upgrade-recheck-20261103/{ol-saps,lease-saps,lease-payment}-compile.log`，本轮未重新编译，亦未运行环境联调或真实调度。既有 lease-saps 业务单测删除的审查意见保留，不能用 compile 成功代替回归测试。
+
+完整原始源码清点（包括完整 SHA、父依赖、任务签名及脱敏测试配置，保留范围调整前的 ol-payment 证据）保存于 `/private/tmp/workhub-ol-lease-progress-20261103/inventory.json`；计算本次升级进度时须按本节排除 ol-payment。本次只更新过程记录，未修改业务源码或运行配置、安装依赖、写库、部署或触发任务。
+
+### 2026-11-03 · 本轮“设备”范围纠正及换电服务依赖核对
+
+用户明确本轮“设备”指 **智能柜 BL000005／GitLab ol 与叉车 BL000008／GitLab lease-saas**，环境仍为测试。此前助手将其误对应为嘉泰设备租赁 BL000007／th-jiatai-equip，下面的 10 个后端、79 个传统任务入口、70 条旧调度记录等核查事实属于嘉泰设备租赁，不能作为智能柜和叉车的升级进度或改造工作量。相关历史证据保留，但本轮范围以用户此次纠正为准；equip-battery-lease-server 不再仅凭前述错误归属列入本轮必须升级的应用。
+
+用户进一步询问 equip-battery-lease-server 是否依赖智能柜和叉车。本轮核对其全部有效 POM、master/test 的 Feign 客户端及出站调用相关代码，并在智能柜／叉车本地远程分支快照内反查该服务名。只读 git ls-remote 重新确认换电服务 master `8098eb299d464bf1b78dc2fea028282bede0ed45`、test `acbd47e3710054789ff27a0010a539867b94f16c`；叉车共享接口 lease-intfcommon 的 master 为 `e2e21f468567eaae2c6988fe84c417bb992401fc`，均与本次读取的引用一致。
+
+| 依赖维度 | 已确认事实 | 对本轮升级范围的含义 |
+| --- | --- | --- |
+| Maven／公共组件 | 换电服务直接继承 spring-boot-starter-parent 2.2.9.RELEASE，只引用自身 battery 模块和第三方库；有效 POM 未引用 ol 业务构件、lease 业务构件或 lease-public | 升级智能柜／叉车的 lease-public 不会自动改变换电服务的依赖版本，也不构成必须同步升级它的理由 |
+| 智能柜核心应用 | 未发现换电服务对 ol-order、ol-saps、ol-payment 等的直接服务调用；NotifyController:61 提到 ol-order 仅为“处理策略参考”的注释 | 不能把参考实现当作运行依赖 |
+| 叉车核心应用 | 未发现换电服务对 lease-saps、lease-payment、lease-finance、lease-crm 等核心服务的直接调用 | 目前无证据将它作为这些应用的直接依赖方 |
+| 共享文件接口 | 换电服务的 EquipLeaseIntfcommonUploadClient:15 明确调用 Nacos 服务名 equip-lease-intfcommon，接口为 POST /oss/uploadStreamObject | 这是确认存在的运行服务依赖，接口服务迁移时需评估影响 |
+| 文件接口的代码归属与实例 | 叉车仓库 lease-intfcommon 的 resources/equip/bootstrap.yml:5 支持以 equip-lease-intfcommon 部署，且实现上述上传接口；嘉泰设备租赁仓库 equip-intf-common 同样实现该接口并使用该服务名 | 存在共用代码／服务能力关联，但仅凭服务名无法判定换电应用实际使用哪份部署；需结合实例和发布构建记录确认 |
+| 合同平台 | 换电服务 ContractPlatformClient:15 明确调用 ca-contract；读取到的叉车 lease-contract、嘉泰设备 equip-contract-esign-v3 分别使用 lease-contract、equip-lease-contract 服务名 | 合同服务依赖存在，但当前没有证据将 ca-contract 等同于智能柜或叉车的合同实例 |
+
+源码证据路径：
+
+- `/Users/aslight/IDEAWorkspace/th-jiatai-equip/equip-battery-lease-server/pom.xml:20`。
+- `/Users/aslight/IDEAWorkspace/th-jiatai-equip/equip-battery-lease-server/battery-management/src/main/java/com/thchengtay/modules/battery/external/upload/client/EquipLeaseIntfcommonUploadClient.java:15`。
+- `/Users/aslight/IDEAWorkspace/th-jiatai-equip/equip-battery-lease-server/battery-management/src/main/java/com/thchengtay/modules/battery/external/contract/client/ContractPlatformClient.java:15`。
+- `/Users/aslight/IDEAWorkspace/lease-saas/lease-intfcommon/lease-intfcommon-start/src/main/resources/equip/bootstrap.yml:5`。
+- `/Users/aslight/IDEAWorkspace/lease-saas/lease-intfcommon/lease-intfcommon-controller/src/main/java/com/lease/intfcommon/controller/oss/OssController.java:100`。
+- `/Users/aslight/IDEAWorkspace/th-jiatai-equip/equip-intf-common/lease-intfcommon-controller/src/main/java/com/lease/intfcommon/controller/oss/OssController.java:98`。
+
+本轮 WorkHub 上下文接口连续返回 HTTP 502，未能补验当前测试部署映射、远程注入地址或共享运行资源。因此结论为：**未发现换电服务直接依赖智能柜／叉车核心业务应用；已确认依赖 equip-lease-intfcommon 等外部服务，存在共享接口迁移的潜在影响，实际是否由本轮迁移的实例提供仍待核实。** 将其从本轮“必须同步升级应用”中移出，作为共享接口消费者保留影响核对；若最终确认该消费者使用的接口实例或注册中心随本轮迁移，再明确其联调与迁移安排。
+
+### 2026-11-03 · 嘉泰设备租赁测试环境 Nacos／XXL-JOB 升级进度核查
+
+> 范围纠正：本节及其“改造点全貌”核查的是嘉泰设备租赁，源于助手对“设备”的错误映射。用户后续明确本轮范围为智能柜和叉车，本节不代表这两条业务线的升级状态。
+
+核验时间：2026-11-03 15:18（北京时间）。用户确认检查测试环境。WorkHub 核实业务线 BL000007／嘉泰设备租赁、GitLab 项目组 `th-jiatai-equip`，工作区 `/Users/aslight/IDEAWorkspace/th-jiatai-equip`。参照桌面《消费分期Nacos和XXLJOB升级迁移方案_20261028.md》v1.6 与《lease-public升级改动清单_20261102.md》，目标为 Nacos 客户端 2.5.4、官方 XXL-JOB core 2.5.0、受影响 lease 公共构件 0.0.2-SNAPSHOT。
+
+结论：设备测试环境尚未完成升级切换。公共组件已有升级提交并已推送，但设备业务仓库尚未发现命名为 Nacos／XXL-JOB 升级的远程分支；已配置设备测试库仍有旧中心执行器的实时心跳，旧任务仍部分启用；已配置公共新测试库未发现设备配置或执行器分组。
+
+**代码核对口径**：通过 WorkHub 安全刷新该项目组 13 个仓库的远程引用，未切换、重置或覆盖工作区。没有关联需求编号，也没有已确认的测试部署分支／部署 SHA。由于未找到方案指定的 release 升级分支，也未找到包含 nacos／xxl 的其他远程分支，以下直接读取 `origin/master`，仅作为待迁移范围与主线源码现状，不冒充测试环境实际部署版本。
+
+| 仓库 | 核对 origin/master SHA | 有效业务任务入口 | 源码现状 |
+| --- | --- | --- | --- |
+| equip-contract-esign-v3 | 752609c1ca85fb5e761d8ac597a6e03aab436d45 | 9 | 全为旧签名；lease-dependencies 0.0.1-SNAPSHOT |
+| equip-lease-battery | 7b375170ac3508965d0e51c20b23dcd36e08cf94 | 7 | 全为旧签名；lease-dependencies 0.0.1-SNAPSHOT |
+| equip-lease-crm | 065cd780975602c7a5e6cbbd6f4f0d5c7975dbc5 | 1 | 旧签名；父依赖与显式 lease-schedule 均为 0.0.1-SNAPSHOT |
+| equip-lease-finance | 83a9374340ff1f956129bdc54ad569a42c64e936 | 24 | 全为旧签名；父依赖与显式 lease-schedule 均为 0.0.1-SNAPSHOT |
+| equip-lease-payment | 2cd2a886c4341d9345f7f7c2f7972f116bf4bc41 | 9 | 全为旧签名；父依赖与显式 lease-schedule 均为 0.0.1-SNAPSHOT |
+| equip-lease-saps | b16db39b478620519830eada185b036a86eae394 | 29 | 全为旧签名；父依赖与 saps-service 显式 lease-schedule 均为 0.0.1-SNAPSHOT |
+| equip-intf-common | 187089c80e5dabf362851eecf178e29b4f31ec43 | 0 | 继承旧版 lease-dependencies；需核对 Nacos 迁移 |
+| equip-lease-gateway | 1448f209a0fb81175f35e521f10893791b5aef8c | 0 | 继承旧版 lease-dependencies；需核对 Nacos 迁移 |
+| equip-lease-opgateway | 8eab7a8c15d4500e17a7156d1d16863a6a0b6a78 | 0 | 继承旧版 lease-dependencies；需核对 Nacos 迁移 |
+
+上述六个有任务的应用合计 79 个有效入口，排除注释后均为接收 String、返回 ReturnT 的旧签名，尚未按方案改为无参 void。已读九个应用 bootstrap 的测试段仍使用原有 8848 地址，未声明 username/password；实际部署注入未能核实，端口本身不用于判断服务端版本。
+
+同组还有实际向设备旧调度库注册的 `equip-battery-lease-server`，不能漏在执行器清单之外：`origin/master` 为 `8098eb299d464bf1b78dc2fea028282bede0ed45`，11 个旧入口；`origin/test` 为 `acbd47e3710054789ff27a0010a539867b94f16c`，8 个旧入口。master 的 battery-common、battery-management 直接指定 xxl-job-core 2.2.0；不继承 lease-dependencies，不能仅升级 lease-public 就认为该应用随之升级。其实际部署分支仍未确认，不将 master 的 11 与 test 的 8 相加。equip-edi-sdk 无有效任务及 bootstrap；两个前端仓库不计入 Java 执行器改造数量。
+
+**公共组件状态纠正**：根目录 lease-public 升级分支当前为 `86e2721313671b452a85869c8188e71bee2b9dab`，源码确认父版本 0.0.2-SNAPSHOT、管理 nacos-client 2.5.4 和 xxl-job-core 2.5.0。只读 `git ls-remote --heads origin release/nacos-2.5.4-xxljob-2.5.0_20261027` 确认远端已存在相同提交。因此桌面 11 月 2 日清单的“未推送”状态已过期；本次未重新构建，不据此认定 Jenkins 构件及设备应用已发布。
+
+**数据库实时证据**：均通过 WorkHub readonly 查询，不读取配置内容、令牌或账号密码。
+
+- 设备测试资源 `bl000007-test-db-10-10-116-24-3306`：`xxl_job_info` 仍有 job_cron，未发现 schedule_type、schedule_conf、misfire_strategy；`xxl_job_group.address_list` 为 varchar(512)，仍为旧版表结构。
+- 旧库 registry 中 7 个设备执行器键仍有实时心跳，查询时距数据库 NOW() 为 5～17 秒：equip-lease-saps、equip-lease-payment、equip-lease-finance、equip-lease-crm、equip-lease-battery、equip-battery-lease-server、equip-battery-lease-server-2。
+- 旧库已配置设备分组共 70 条任务记录，其中启用 10 条：saps 2、payment 1、finance 6、battery 1；其余 60 条停止。该数量是调度库任务记录数，与源码入口数口径不同；启用不等于本次已验证执行成功。
+- 设备旧 `nacos_config.config_info` 查询到 11 条 equip 前缀配置元数据。
+- 公共测试资源 `public-test-db-10-10-116-53-3306` 已有 `nacos_config_254`、`xxl_job_250`；其中 equip 前缀 Nacos 配置为 0，XXL-JOB 中 equip 前缀执行器分组为 0。仅覆盖已配置的这套公共新库，不据此排除其他未核实的独立新平台。
+
+**核验缺口及后续顺序**：设备测试环境未配置启用的 ELK 范围；受控 service_status 查询 equip-lease-saps 返回 Unit not found，不能据此认定业务进程未运行。实际部署包 SHA、Nacos 服务端版本、发布注入参数和新平台目标映射尚未取得。建议先落实设备各应用升级分支及上述任务／依赖改造，再迁移设备配置与调度数据，完成新中心注册、触发、日志、回调和跨服务发现验收，最后按方案停旧调度并切换，保持原启停状态，避免两套中心同时触发。
+
+本次只做状态核查和过程记录，未安装软件、依赖或脚本，未修改业务代码或运行配置，未启动服务、触发任务、迁库或执行部署。未运行构建测试：当前没有可供验证的设备升级实现，构建旧源码不能证明目标升级完成。
+
+#### 按改造点整理的全貌（同日补充）
+
+用户要求按改造点整理全貌。本节整理范围、处理要求、当前证据和验收条件，未执行升级。运行心跳与任务启停状态沿用上方 15:18 快照；本轮在相同远程提交上补读全部 POM、任务源码、调用方及执行器配置，并只读补查两套测试库的共享配置摘要和分组 ID 占用情况。既有分支／SHA 口径继续适用。
+
+整体范围为设备项目组内 **10 个后端运行应用**：9 个继承 lease-dependencies 的应用，以及独立管理依赖的 equip-battery-lease-server。前端 equip-lease-admin、equip-battery-lease-admin 和类库 equip-edi-sdk 未发现本次需适配的 Nacos／XXL-JOB 客户端入口，不为它们机械升版。WorkHub 列出的跨业务线共享服务按设备调用关系参加联调，其自身升级另按所属业务线安排。
+
+| 改造点 | 具体工作与完成标准 | 当前状态 |
+| --- | --- | --- |
+| A. 公共组件 | lease-dependencies、lease-schedule、lease-mq 升为 0.0.2-SNAPSHOT，管理 Nacos 2.5.4／官方 core 2.5.0；删除旧 BaseJobHandler；公共重投入口适配；lease 执行器默认日志留存 90 天。构建环境准备这三个受影响构件，其他公共构件复用既有版本 | 公共源码已完成并推送 86e2721；桌面记录有本地构建结果，Jenkins 制品可用性未核实 |
+| B. 业务 Maven 接入 | 9 个应用更新 lease-dependencies 父版本；清理受影响模块的旧版本覆盖；独立换电服务在自身 dependencyManagement 中统一 Nacos／core，清理两个模块的 core 2.2.0。最终依赖树和可执行包均应只含目标版本 | 9 个应用父版本仍旧；独立应用仍显式 core 2.2.0 |
+| C. 业务任务入口 | @XxlJob 入口改无参 void，保留 handler 名称；使用原参数的任务通过 XxlJobHelper.getJobParam() 取参；同步适配 IJobHandler 子类、任务日志、原成功／失败及异常语义 | 传统设备 79 个入口均未适配；独立换电服务 master 11 个、test 8 个均为旧入口。若按全部 master 改造，共 90 个，实际发布范围先确认分支 |
+| D. 手工调用与特殊任务 | 已定位 12 个 handler 被 Controller 直接调用（含测试 Controller），另有 3 处测试代码调用；保留显式参数业务入口并同步调用方；3 个失败结果分支不能改成正常成功；2 个 RefreshScope 任务需刷新后重测 | 已列出具体调用方及特殊类，尚未改造／验证 |
+| E. Nacos 客户端配置 | 10 个应用分别核对 config、discovery 地址与 bootstrap 阶段鉴权；保留或按已确认映射调整服务名、namespace、group、Data ID、共享配置；按实际主端口核对客户端 gRPC 端口及映射 | 已读测试源码仍为原地址且无 username/password 声明；部署注入未核实 |
+| F. Nacos 服务端与配置数据 | 先确定设备使用的目标实例、库和命名空间；迁移 11 条设备前缀配置及实际引用的共享配置，核对命名空间、容量、标签和历史数据。新平台按 2.5.4 初始化；迁移后核对配置读取、刷新及服务发现 | 已配置公共新库中设备前缀配置为 0；同 namespace 的 3 条共享配置已存在且与设备旧库摘要不同，不能直接覆盖 |
+| G. XXL-JOB 执行器配置 | 核对新中心地址、非空 accessToken、appname、注册地址／端口、日志路径及 90 天留存，验证注册、触发和回调双向可达；独立换电服务核对自身 SapsXxlJobConfig，不依赖 lease 默认值自动生效 | 旧中心仍有 7 个设备执行器键实时心跳；独立换电服务源码留存默认仍为 30 天 |
+| H. XXL-JOB 数据迁移 | 以设备源库的 70 条任务为核对基线，迁移相关分组、任务、权限和必要 GLUE 数据；job_cron 映射 schedule_conf，采用新版结构，迁入任务先全部停止；不迁旧 registry／运行日志。共用已有库时先处理主键及关联映射 | 公共新库无设备分组，且源分组 ID 有实际冲突；尚未形成适用于设备目标的迁移脚本 |
+| I. 构建与测试验收 | Java 8 构建；确认官方 core、目标 Nacos 与实际公共构件版本；编译生产及测试源码；隔离验证入口、参数、失败反馈、手工调用；测试环境验收服务发现、刷新、重连、触发、日志、回调、超时和业务回归 | 本轮未运行；设备尚无升级实现及对应部署证据 |
+| J. 切换与回退 | 切换前重新保存任务启停快照，停旧触发并等待在途任务和回调完成；发布已适配应用，验证新平台后按快照恢复；回退成套恢复应用包、公共依赖、Nacos 与调度配置 | 未切换；15:18 旧库 10 条启用、60 条停止，实际切换前须重新快照 |
+
+**逐应用覆盖矩阵**（传统设备均需父依赖和 Nacos 客户端配置接入）：
+
+| 应用 | 业务任务入口 | 已确认的额外改造／验证点 |
+| --- | --- | --- |
+| equip-lease-saps | 29 | saps-service/pom.xml 的 lease-schedule 显式 0.0.1；4 个 handler 有 Controller 调用，另有 3 处测试调用；3 个失败反馈任务；1 个 IJobHandler 子类 |
+| equip-lease-finance | 24 | 根 POM 的 lease-schedule 显式 0.0.1；6 个 IJobHandler 子类；MsgRetrySchedule 带 RefreshScope |
+| equip-lease-payment | 9 | 根 POM 的 lease-schedule 显式 0.0.1；7 个 handler 有 Controller 调用；RemitStatusSchedule 带 RefreshScope |
+| equip-contract-esign-v3 | 9 | 1 个 IJobHandler 子类；根 POM 的 lease-mq 为注释；核对实际执行器装配来源和本轮是否部署（旧中心分组存在，但前轮未见其注册心跳） |
+| equip-lease-battery | 7 | 1 个 IJobHandler 子类；billMarkSchedule 被业务接口调用，调用方接收 ReturnT 返回值，需同步适配 |
+| equip-lease-crm | 1 | lease-crm-service/pom.xml 的 lease-schedule 显式 0.0.1；旧中心有注册心跳但分组清单无同名 appname，需核对任务映射 |
+| equip-intf-common | 0 | 更新父依赖、配置与服务发现并联调；无现存业务 @XxlJob 入口需要新增或迁移 |
+| equip-lease-gateway | 0 | 更新父依赖及 Nacos；验收路由发现和下游调用 |
+| equip-lease-opgateway | 0 | 更新父依赖及 Nacos；验收路由发现和下游调用 |
+| equip-battery-lease-server | master 11／test 8 | 独立 Spring Boot 父工程；battery-common、battery-management 的 core 2.2.0；自身 Nacos 版本管理、XxlJobLogger 和 SapsXxlJobConfig；同时核对 server 与 server-2 两个运行名称 |
+
+九个传统应用中，有效 POM 解析未发现直接引入 lease-mq。桌面 lease-public 清单把 equip-contract-esign-v3 与 equip-lease-payment 列为直接依赖，但两处实际位于 XML 注释内。应以有效 POM、依赖树和最终包为准：先核实是否存在传递 MQ 依赖；确实带入公共 messageSenderRetrySchedule 才纳入该宿主验收，不为凑齐公共组件范围而新增 MQ 依赖，也不将公共 handler 重复计入上述 79 个业务入口。
+
+**任务代码容易漏改的具体点**：
+
+- 9 个直接继承 IJobHandler 的类：合同 ProviderCallbackRecordRetryConsumer；电池 ApplicationContinueSchedule；金融 ReFactoringGenerateBillSchedule、StatisticMonthOverdueRateSchedule、StatisticSchedule、ApplicationAuditRetryJob、MessageNoticeRetryJob、SyncCustomerMerchantInfoJob；清结算 StatementContractGenerateSchedule。按新版契约实现无参 void execute()，保留各自 @XxlJob 名称及原业务异常处理。
+- 12 个存在 Controller 直接调用的 handler：电池 billMarkSchedule；支付 batchStartAction、payCheckSchedule、payPushCheck、channelQuerySchedule、payResultNotifySchedule、remitNotifySchedule、remitStatusSchedule；清结算 loanOrderStatusNotifySchedule、funderLoanSettleNotifySchedule、funderBillReportSchedule、reportOrderMonthSchedule。显式参数入口不能改成依赖调度上下文；尤其 BillInfoApiController:54 仍将执行结果赋给 ReturnT，签名和调用方要一并处理；FunderBillReportManageController:80 是实际报表刷新接口。
+- 3 处既有测试调用：StatementNoticeScheduleTest 对 statementNoticeSchedule、loanOrderStatusNotifySchedule 的调用，以及 RefundStatementGenerateScheduleTest 对 refundStatementGenerateSchedule 的调用。须适配测试调用方式，不以删除原业务测试代替兼容处理。
+- 3 个清结算任务有明确失败结果：reFactoringStatementGenerateJob 缺失 chargeType 时 ReturnT.FAIL；funderBillReportSchedule 清理报表失败时 ReturnT.FAIL；StatementContractGenerateSchedule 参数解析异常时返回 FAIL_CODE 和异常文字。调度入口需映射成 XxlJobHelper.handleFail 或保留相应抛异常语义，不能简单替换为 return;。兼有手工入口的任务需保证手工行为也符合原契约。
+- 刷新作用域任务为金融 MsgRetrySchedule（msgRetrySchedule）与支付 RemitStatusSchedule（remitStatusSchedule）。迁移后需验证配置刷新前后均能调度。
+- 独立换电服务使用 SapsXxlJobConfig，已有 accessToken 绑定和 enabled 判断，留存默认值为 30；应核对远程有效值或按目标将默认值调整为 90。它不继承 lease-schedule，升级 lease-public 不会自动修改该配置类。
+
+**环境迁移前置项：当前证据不支持直接复用桌面全库脚本**。
+
+1. 设备旧库在受控目标 `bl000007-test-db-10-10-116-24-3306`；已配置公共新库在 `public-test-db-10-10-116-53-3306`。桌面 INSERT ... SELECT 为同一 MySQL 实例的跨 schema 全表复制，不能直接作为这两个目标之间的设备选择性迁移脚本。
+2. 两侧存在相同 namespace ID `e409079b-9077-4ddf-80fe-8c356f96b16f`；COMMON_GROUP 下 common.yaml、redis.yaml、rabbitmq.yaml 三项 Data ID 相同，但返回的 md5 摘要全部不同。源 namespace 还有非 equip 前缀的其他业务配置；只统计 11 条 equip 配置不足以覆盖共享配置，也不能整 namespace 覆盖公共新库。若采用该公共实例，应先确定设备独立命名空间及配置映射；若使用独立设备新实例／新库，则另行核实其受控目标。
+3. 设备旧分组 ID 5／6／7／10／11 分别为 equip-lease-saps／equip-lease-payment／equip-lease-finance／equip-lease-battery／equip-lease-contract；公共新库相同 ID 已分别属于 lease-marketing／lease-crm／lease-contract／ol-risk／ol-order。采用独立空库才能按方案直接保留这些 ID；若共用公共调度库，必须另行设计分组与任务 ID 映射，连同 job_group、child_jobid、用户分组权限和 GLUE 关联校验，不能只改库名执行全表 INSERT。源组 ID 12 本轮查询未见目标同 ID；任务 ID 是否冲突尚未逐项核对。
+4. 设备 CRM、equip-battery-lease-server-2 有注册心跳，却未在旧分组清单中看到同名 appname；合同则有组但未见注册心跳。发布清单应将实际运行实例、执行器 appname、分组和 handler 对齐，决定哪些随本轮部署，不按注册键数或任务数直接推算服务数量。
+
+建议实施顺序为：**确认发布分支与目标平台隔离方式 → 应用依赖／任务改造与配置／迁移脚本准备 → Java 8 构建和隔离验证 → 新平台联调验收 → 停旧、切换、按快照恢复 → 留观及回退验证**。依赖接入与任务接口必须成套构建发布；共用目标平台的命名空间和 ID 冲突应在准备迁移数据前解决。当前不宜用单个完成百分比表示进度，按上表分别追踪源码、构建、数据准备、部署与验收。
+
+本轮仅补充过程记录及只读证据，源码清单保存于 `/private/tmp/workhub-equip-upgrade-overview-20261103/source-inventory.json`；所有业务源码、运行参数和数据库数据均未修改。
+
+### 2026-11-03 · 物流平台七个仓库的 Nacos／XXL-JOB 升级状态核查
+
+按用户继续检查的范围，核对物流平台 BL000006／GitLab xxt-plateform 下的 thctay-saps、thctay-account、thctay-eas、thctay-payment、saps-back、saps-account-checker、thctay-saps-core-common。WorkHub 已确认归属并安全刷新项目组远程引用；读取 `/Users/aslight/IDEAWorkspace/xxt-plateform/{仓库}`，未切换、覆盖或清理工作区。沿用桌面统一方案 v1.6 的公共依赖、任务入口及 Nacos 鉴权规则；这次为源码状态检查，未关联需求编号或假定生产已部署。
+
+本组实际升级分支名是 `feature/nacos-2.5.4-xxljob-2.5.0_20261102`，与前面消费分期／租赁服务的 release 分支不同。下表六个 feature 分支均与各自 origin/master 完全相同，merge-base 为本身，三点 diff 为空、无新增提交。因此当前没有可评审的升级实现，不判为已经适配正确。
+
+| 仓库 | 远程 feature 分支及 master 相同 SHA | 当前任务／依赖状态 |
+| --- | --- | --- |
+| thctay-saps | 4f4a228aba8190c99ca78d4e55e9d66f1e80d244 | 59 个有效 @XxlJob 入口全为旧签名；父 thctay-dependencies 0.0.1-SNAPSHOT |
+| thctay-account | 54d001b2527df6058de8485de927651a1b39edb7 | 7 个有效入口全为旧签名；父 thctay-dependencies 0.0.1-SNAPSHOT；HotAccountJobHandler 留有 BaseJobHandler import |
+| thctay-eas | bf81ca73cd968bceceb9c32d461e25198ebc13e3 | 16 个有效入口全为旧签名；父 0.0.1-SNAPSHOT，thctay-schedule 仍显式 0.0.1-SNAPSHOT |
+| thctay-payment | ee34164c6651ec2e0d9832c4d4e388647e6d549b | 21 个有效入口全为旧签名；父 0.0.1-SNAPSHOT，mq、schedule 仍显式 0.0.1-SNAPSHOT |
+| saps-account-checker | 5f976e9a937f52d5727898a33eda8741230d60af | 4 个有效入口全为旧签名；父为 thctay-saps 0.0.1-SNAPSHOT，需要随其实际父依赖同步核对 |
+| thctay-saps-core-common | 75736cfc7d4dbb0f65bb49629c195cef2f591ba9 | 公共类库，版本 1.0-SNAPSHOT；只直接依赖 thctay-exception，无启动入口及 XXL-JOB 任务，无需机械升为新公共父版本 |
+
+saps-back 未找到上述 feature 或 release 升级分支。其 origin/master 为 `aa1f91664d8b16d0858fce087961a254f76fa764`；另外存在 `import_261103`（`2f10150c0079b80288e48f0203738b2a7b84845e`），内容是月度服务费导出，不当作升级分支。为判断待迁移范围而补读 master：没有有效 @XxlJob 入口，父 thctay-dependencies 仍为 0.0.1-SNAPSHOT，使用 Nacos config/discovery，需迁移 Nacos，但不需要新增或改造不存在的 XXL-JOB 业务入口。master 的状态不冒充升级分支实现。
+
+五个含任务的应用合计 107 个旧入口（59＋7＋16＋21＋4），均仍接收 String、返回 ReturnT；需按方案改为无参 void、保留 handler 名称，按需读取 XxlJobHelper 参数并保留手工调用及成功／失败反馈。上表显式旧 schedule／mq 版本需在宿主升父时同步清理；account 未使用的 BaseJobHandler import 也需随新版公共基类删除而清理。
+
+六个运行应用（含 saps-back）的已读 bootstrap 均仍使用原地址／8848，未声明 Nacos 启动鉴权，仓库非 Markdown 内容未检索到 Nacos 凭据注入键。这里仅报告源码现状；端口 8848 本身不能用于判断服务端版本，实际发布注入、服务端迁移、XXL-JOB 地址／令牌仍需按目标环境核实。未读取物流生产 Nacos，未进行应用启动或调度。
+
+公共类库 thctay-saps-core-common 不直接引用 Nacos／XXL-JOB；已补查本机缓存 thctay-exception → thctay-common 的 POM，也未见这两类运行依赖。按方案“未受影响公共构件复用旧版本”，可以保留其旧构件；不能把未修改该库与五个应用仍保留旧任务入口混为同类缺口。
+
+本次未执行升级编译：六个升级分支没有源码变化，saps-back 缺升级分支，构建现有旧版本不能证明目标升级完成。
+
+### 2026-11-03 · 三个服务按 Nacos／XXL-JOB 方案复核
+
+范围：智能柜 BL000005／ol、叉车 BL000008／lease-saas；工作区及 remote 再经 WorkHub 和本地 Git 核实，安全刷新远程引用。审查分支仍为 `release/nacos-2.5.4-xxljob-2.5.0_20261027`，采用与 master 的三点 diff；未关联需求编号。本次为源码与 Java 8 离线构建复核，未启动服务或触发真实任务。
+
+| 仓库 | 最新审查 SHA | origin/master 及 merge-base | 相对上次变化 |
+| --- | --- | --- | --- |
+| ol-saps | 2b2781fd0e46cfb575011efdad2089024d6a8355 | 1452001667b4f0568f3f5b077f9282704f81935c | 只新增 bootstrap.yml 的 dev、test 地址及鉴权配置；任务源码与上次一致 |
+| lease-saps | 9d37a9a39b27980a8a3725600f384bb3747dea7c | 51add5ccfb04cd717a481d6079ef064b13d08c5d | 无变化 |
+| lease-payment | a4674a834638c56639564a959e1a563285b8b83d | b77618ab722f02d5da8c2035417a191c1f1a7fa9 | 无变化 |
+
+结论：三个服务的依赖接入和业务任务入口改法符合桌面统一方案与 lease-public 清单的源码要求，未发现已确认的升级源码缺陷；不能因此认定三个服务的所有环境均完成迁移。
+
+- 实际依赖树均确认 `nacos-client:2.5.4`、官方 `xxl-job-core:2.5.0`、`lease-mq:0.0.2-SNAPSHOT`、`lease-schedule:0.0.2-SNAPSHOT`。本地 core JAR SHA-256 为 `66d05bcea7254d102b77e476cc79f431bc4992ccf016ce74eef900794330833f`，与桌面方案记录一致。
+- 有效业务 handler 共 65 项（32／27／6）；相对 master 无新增、删除或重名，均为无参 void。参数读取、显式参数手工调用、成功／失败反馈沿用上次逐方法审查结果；本次确认任务文件无后续变化，并重新核对所有入口。未发现有效代码引用旧 BaseJobHandler 或 XxlJobLogger。
+- ol-saps 的 dev、test：配置中心和服务发现均改为 28848 端口，且在 bootstrap 阶段提供非空 username/password；保留原 namespace、group 和共享配置声明。证据为审查提交 `lease-saps-start/src/main/resources/bootstrap.yml:39、46、82、89`。本次早期进度文字误称 test、sit，已更正为 dev、test。
+- ol-saps 的 sit、prod，以及 lease-saps、lease-payment 的各环境仍沿用原 Nacos 地址，bootstrap 未声明鉴权。若这些环境纳入本次开启鉴权的新 Nacos 迁移，应按方案补齐或核实发布阶段提供的启动配置。原地址未变不单独证明运行中的服务端版本未升级；本次未核查发布参数。
+- XXL-JOB 新中心地址、非空 accessToken、日志留存及注册／回调需结合对应环境的远程配置验证；本次未读取智能柜／叉车目标环境的 Nacos，未将待核验项认定为已经发生的配置故障。
+
+本次三个服务均完成 Java 8 离线 compile：lease-payment 直接编译全部 9 个模块；两个 saps 使用临时聚合构建，将已有 `lease-saas/lease-public` 的 master `5b032cfe76bc06776f33281e2df10efcb02efde4` 中 `lease-permission:0.0.1-SNAPSHOT` 源码纳入同一构建，未改业务源码或依赖版本、未安装构件或下载依赖。两个 saps 的 9 个应用模块也均通过。因此上次“两个 saps 尚未完成编译”的验证限制已补齐；普通独立构建环境仍需预先准备相同公共构件。
+
+验证源码及日志位于 `/private/tmp/workhub-upgrade-recheck-20261103/`：三个 `{仓库}-compile.log` 均为 BUILD SUCCESS；依赖核查日志为 `ol-saps-resolved-dependencies.log`、`lease-saps-resolved-dependencies.log`、`lease-payment-dependencies.log`。临时聚合 POM 默认 dependency 插件离线解析失败后，显式选择本机已缓存的 3.1.2 完成依赖核查，未安装插件或修改仓库配置。三个 diff --check 均通过；未运行环境联调及真实调度。
+
 ### 2026-11-02 · ol-saps、lease-saps、lease-payment 升级分支审查
 
 用户随后明确要求按桌面 Nacos／XXL-JOB 升级方案判断正确性。补充结论：三个服务的依赖管理升级及 65 个业务任务入口适配符合方案的源码改造规则；但不能认定完整接入已完成。三个审查提交的 bootstrap.yml 均与 master 相同，仍使用原有 Nacos 地址，config/discovery 均未提供 username/password，仓库非 Markdown 内容也未检索到 Nacos 凭据注入配置。方案要求凭据在 bootstrap 阶段可用，须由对应环境的发布配置补齐并验证；原地址未变本身不证明服务端仍是旧版本。XXL-JOB 新中心地址、非空 accessToken 及日志留存等实际远程配置本次未读取，属于待核验，不据源码没有 token 就断言运行环境缺失。完整迁移还需构建及目标环境验收，前述测试删除和本地实体删除不作为“任务适配改法错误”的依据。
@@ -2306,12 +2698,2261 @@
 ```
 
 
+
+### WorkHub 临时分析 · 生成需求澄清项 · 需求 269
+
+<!-- workhub-analysis:6b846c45f3b5252beb0b951a45025c88fedcc7709ccc176045754e636269f4f8 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：38
+- 记录时间：2026-11-03T09:46:46.987541
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611020006/历史版本/fce84ec9-c1dc-4819-8564-86efe151e810/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "确认“已结清”的判定口径",
+  "description" : "请确认“已结清账单”应以用户实际还款状态为“已结算”、账单结算状态为“已结算”，还是未还总金额为 0 判定。",
+  "evidence" : "需求材料仅使用“已结清”表述；代码同时存在 customerSettlementStatus、settlementStatus、unpaidAmount，且 BillStatusEnum 中没有“已结清”状态。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "QUESTION",
+  "title" : "确认功能适用的项目范围",
+  "description" : "请确认支付方式列、筛选项和导出字段仅适用于申城医美诚泰保理项目，还是适用于【用户账单】页面中的全部项目。",
+  "evidence" : "需求名称和项目信息指向申城项目；代码中的【用户账单】页面和查询接口为公共入口，申城项目代码为 XXT-PRJ-SC-A，产品为 PRD-SC-A001、PRD-SC-A002。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 2,
+  "itemType" : "QUESTION",
+  "title" : "确认“最后一次还款行为”的排序依据",
+  "description" : "出现多次还款时，请确认按结算时间、到账时间还是操作时间确定最后一次还款行为。",
+  "evidence" : "需求只规定按“最后一次还款行为”判定；RepaymentPlanPayDetailEntity 同时保存 settlementTime、accountTime、operateTime，现有支付详情查询未明确排序。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 3,
+  "itemType" : "QUESTION",
+  "title" : "确认冲正或撤销记录是否参与判定",
+  "description" : "请确认已冲正、已撤销、已删除或已取消的支付明细是否应排除，只按最终有效的结清记录判定支付方式。",
+  "evidence" : "支付明细模型存在 isReverse，并继承删除、取消标记；现有支付详情接口仅按 billNo 查询，需求材料未说明异常记录的处理规则。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 4,
+  "itemType" : "QUESTION",
+  "title" : "确认历史账单的回溯范围",
+  "description" : "请确认功能上线前已经结清的账单是否也必须按相同规则补齐并展示支付方式。",
+  "evidence" : "需求未限定生效日期；代码中的 repayment_plan.paymentMode 已标记为 Deprecated，需求所述判定依据更接近 repayment_plan_pay_detail，材料未提供历史数据补齐要求。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 5,
+  "itemType" : "QUESTION",
+  "title" : "确认已结清但缺少有效支付明细时的展示值",
+  "description" : "请确认已结清账单查不到有效支付明细时，应展示为空、展示“未知”，还是允许回退使用账单表原有支付方式。",
+  "evidence" : "需求仅明确非已结清账单为空，没有规定已结清但支付明细缺失的处理方式；代码中同时存在已废弃的账单支付方式字段和支付明细支付方式字段。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "历史账单支付方式可能无法完整回溯",
+  "description" : "如果历史支付明细存在缺失、无支付方式或冲正状态不完整，历史已结清账单可能显示为空或分类错误，进而导致线上、线下筛选及导出对账结果漏数；需确认是否接受该风险。",
+  "evidence" : "代码能证明账单汇总字段与支付明细字段并存，且汇总字段已标记 Deprecated；仓库和需求材料均未提供生产历史数据完整性核验结果，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### WorkHub 临时分析 · 调整研发任务 · 需求 265
+
+<!-- workhub-analysis:23bd72b60df280e109037778fdb2378530102663da669d0fc383e4baba121782 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：104
+- 记录时间：2026-11-03T09:52:16.256425
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202610260004/历史版本/4c55bf73-9ded-4476-a9e3-07c2b22a46db/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "新消费分期",
+  "projectId" : 46,
+  "projectName" : "申城-医美-诚泰保理",
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202610260004/历史版本/4c55bf73-9ded-4476-a9e3-07c2b22a46db/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "申城资管平台新增按产品维度的放款金额校验：PRD-SC-A001付息产品和PRD-SC-A002贴息产品的放款申请接口打款金额（transMoney）必须等于客户申请贷款本金（applyAmt）；不相等时拒绝放款申请，并返回“打款金额不符合要求”。",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "xujieni" ],
+  "workItems" : [ {
+    "title" : "产品维度增加放款金额校验",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "scs-capital", "scs-admin" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "xujieni",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null
+  } ],
+  "totalEstimatedEffort" : "8h",
+  "developmentEstimatedEffort" : "4h",
+  "testingEstimatedEffort" : "4h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-03T09:52:15.946211",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null
+}
+```
+
+
+
+### WorkHub 临时分析 · 调整研发任务 · 需求 258
+
+<!-- workhub-analysis:8d3b028f086b2ce29fbc0ad2481c1c723318e803e0b800dd0600f0f49d7f3b32 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：105
+- 记录时间：2026-11-03T09:54:07.364490
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610230002/历史版本/a3378e76-4554-4e25-82f4-13bdae24bbd4/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "保费分期",
+  "projectId" : 21,
+  "projectName" : "聚保融保费分期项目",
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/保费分期/聚保融保费分期项目/2026/202610230002/历史版本/a3378e76-4554-4e25-82f4-13bdae24bbd4/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "挂靠公司线下签约模式订单向中化保理申请融资进件时，在进件申请接口 contractlist 中新增推送《授权委托暨业务合作声明书》附件；附件通过文件上传接口获取 fileKey，并按 fileType=400（其他附件）推送。该附件非必传，仅线下签约模式订单推送，线上签约模式订单无需推送。同时，线下签约模式下《电子签名授权委托书（企业）》和《应收账款转让通知书（企业）》非必传，线上签约模式仍需传输。",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "hanmeng" ],
+  "workItems" : [ {
+    "title" : "中化线上化需求-声明书传输",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "scf-intf-zhonghua" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "8h",
+    "ownerUserName" : "hanmeng",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null
+  } ],
+  "totalEstimatedEffort" : "16h",
+  "developmentEstimatedEffort" : "8h",
+  "testingEstimatedEffort" : "8h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-03T09:54:07.020938",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null
+}
+```
+
+
+
+### WorkHub 临时分析 · 生成研发评估 · 需求 269
+
+<!-- workhub-analysis:134d0fa0f61cb0a210300c7c56ba3baa5d18a0de06e28fbf7c6274217778f93f -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：108
+- 记录时间：2026-11-05T11:07:30.437374
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611020006/历史版本/4fddc489-17cc-4e58-9ad6-e4dac11b7bdc/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "新消费分期",
+  "projectId" : 46,
+  "projectName" : "申城-医美-诚泰保理",
+  "repositoryUrl" : "scs (11 repositories)",
+  "requirementRawPath" : "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611020006/历史版本/4fddc489-17cc-4e58-9ad6-e4dac11b7bdc/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "评估草稿：改造 scs-saps 与 scs-admin，共拆分 2 个研发任务，预估 20h。现有支付方式枚举、查询字段和前端字典可复用，但账单表 paymentMode 已废弃，需以支付明细表的最后一次有效结清行为统一支撑列表、筛选、汇总及导出。本次未修改代码、未创建工作项。",
+  "requirementChangePoints" : [ "【用户账单】列表新增“支付方式”列，仅已结清账单展示，其他状态为空。", "支付方式按账单最后一次有效结清行为判定：线上扣款清分显示“线上”，线下还款、退费、代偿、回购等显示“线下”。", "【用户账单】查询条件新增“支付方式”，选项为线上、线下，并保证列表、总数和金额汇总采用一致口径。", "【用户账单】-【导出明细】新增“支付方式”字段，字段值及筛选结果与页面一致。" ],
+  "impactedModules" : [ "scs-admin：用户账单列表、查询条件及导出入口", "scs-saps：用户账单查询接口、支付方式判定、分页计数与金额汇总", "scs-saps：用户账单异步导出数据及 Excel 模板" ],
+  "risks" : [ "“已结清”可能对应 customerSettlementStatus、settlementStatus 或 unpaidAmount=0，不同口径会直接改变展示和筛选结果。", "repayment_plan.payment_mode 已标记废弃，现有列表和筛选仍读取该字段；若未统一改为支付明细口径，会造成页面、总数、汇总和导出不一致。", "支付明细同时存在 settlementTime、accountTime、operateTime、冲正及取消标记；最后一次有效行为的排序和排除规则尚未确认。", "【用户账单】为公共页面和公共接口；若不增加申城项目范围控制，改动可能影响其他项目。", "历史账单可能缺少完整支付明细；若要求全量回溯，可能需要数据核验或补数，当前仓库没有生产数据完整性证据。", "按最后一次支付明细进行分页筛选和最高 50 万行异步导出可能增加 SQL 开销；仓库未提供 repayment_plan_pay_detail 原表索引 DDL，需要在实施时核验索引和执行计划。" ],
+  "questions" : [ "“已结清”的技术判定应采用 customerSettlementStatus=SETTLED、settlementStatus=SETTLED，还是 unpaidAmount=0？", "功能只对申城项目 XXT-PRJ-SC-A（产品 PRD-SC-A001、PRD-SC-A002）生效，还是公共【用户账单】中的所有项目都生效？", "“最后一次还款行为”按 settlementTime、accountTime 还是 operateTime 排序；时间相同时用哪个字段作为最终顺序？", "冲正、撤销、已取消或逻辑删除的支付明细是否全部排除；冲正后是否回退到上一条有效支付明细？", "需求是否要求回溯全部历史账单，还是仅对上线后结清的账单生效？", "已结清但找不到有效支付明细时，支付方式应保持空白，还是展示异常标识并进入数据修复？" ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ {
+    "title" : "scs-saps 增加用户账单支付方式判定筛选及导出能力",
+    "description" : "复用现有 PaymentModeEnum、RepaymentPlanQueryDTO.paymentMode 和 RepaymentPlanVo.paymentMode/paymentModeCn，不再依赖已废弃的 repayment_plan.payment_mode；从 repayment_plan_pay_detail 选取最后一次有效结清行为，并统一应用于列表、筛选、计数、金额汇总和异步导出。当前判断不需要新增定时任务；是否需要补数或索引 DDL 取决于历史范围及数据库核验结果。",
+    "requirementChangePoint" : "支付方式判定、线上/线下筛选及导出字段",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "用户账单查询接口", "用户账单分页计数与金额汇总", "支付明细查询规则", "用户账单异步导出", "Excel 导出模板及回归测试" ],
+    "changePoints" : [ "1. 明确并实现“已结清”和“最后一次有效支付明细”规则，统一过滤逻辑删除、取消及冲正记录，并按确认后的时间字段和稳定次序选取唯一支付方式。", "2. 调整用户账单查询 SQL，以 repayment_plan_pay_detail.payment_mode 返回支付方式；非已结清账单强制返回空值，并按确认结果限制申城项目或公共项目范围。", "3. 将 paymentMode 筛选条件同步应用于分页列表、queryListCount 及 BillFeeDetailMapper 金额汇总查询，避免列表、总数和合计数据口径不一致。", "4. 保持现有查询与导出接口契约，复用 10=线上、20=线下枚举；补充空支付明细、非法枚举值等防御性处理。", "5. 在异步导出数据中生成 paymentModeCn，并更新 customer_bill_user.xlsx 的“支付方式”表头和占位符；同步扩展模板回归测试。", "6. 验证线上扣款、线下还款、退费、代偿、回购、非结清、多次还款、冲正/撤销及明细缺失场景；核对页面结果、总数、汇总和导出一致性，并检查大数据量查询执行计划。" ],
+    "systemTags" : [ "scs-saps" ],
+    "evidenceRefs" : [ "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611020006/历史版本/4fddc489-17cc-4e58-9ad6-e4dac11b7bdc/附件/487-申城资管平台—用户账单增加“支付方式”字段20261102.pdf", "scs-saps/saps-model/src/main/java/com/amp/saps/model/entity/RepaymentPlanEntity.java:53-59", "scs-saps/saps-model/src/main/java/com/amp/saps/model/entity/RepaymentPlanPayDetailEntity.java:57-103", "scs-saps/saps-model/src/main/java/com/amp/saps/model/enums/PaymentModeEnum.java:10-39", "scs-saps/saps-model/src/main/java/com/amp/saps/model/dto/management/repaymentplan/RepaymentPlanQueryDTO.java:65-73", "scs-saps/saps-model/src/main/java/com/amp/saps/model/vo/RepaymentPlanVo.java:228-250", "scs-saps/saps-dao/src/main/resources/mapper/RepaymentPlanMapper.xml:47-48", "scs-saps/saps-dao/src/main/resources/mapper/RepaymentPlanMapper.xml:713-724", "scs-saps/saps-dao/src/main/resources/mapper/RepaymentPlanMapper.xml:865-870", "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/manage/bill/RepaymentPlanManageController.java:148-195", "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/manage/bill/RepaymentPlanManageController.java:287-342", "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/manage/bill/RepaymentPlanPayDetailController.java:48-94", "scs-saps/saps-common/src/main/java/com/amp/saps/common/constants/ScCtFactoringConstants.java:15-28", "scs-saps/saps-controller/src/main/resources/excel/customer_bill_user.xlsx", "scs-saps/saps-controller/src/test/java/com/amp/saps/controller/manage/bill/RepaymentPlanExportTemplateTest.java:32-82" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "用户账单查询与导出",
+    "relatedFiles" : [ "scs-saps/saps-model/src/main/java/com/amp/saps/model/dto/management/repaymentplan/RepaymentPlanQueryDTO.java", "scs-saps/saps-model/src/main/java/com/amp/saps/model/vo/RepaymentPlanVo.java", "scs-saps/saps-model/src/main/java/com/amp/saps/model/entity/RepaymentPlanEntity.java", "scs-saps/saps-model/src/main/java/com/amp/saps/model/entity/RepaymentPlanPayDetailEntity.java", "scs-saps/saps-dao/src/main/resources/mapper/RepaymentPlanMapper.xml", "scs-saps/saps-dao/src/main/resources/mapper/BillFeeDetailMapper.xml", "scs-saps/saps-service/src/main/java/com/amp/saps/service/impl/RepaymentPlanServiceImpl.java", "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/manage/bill/RepaymentPlanManageController.java", "scs-saps/saps-controller/src/main/resources/excel/customer_bill_user.xlsx", "scs-saps/saps-controller/src/test/java/com/amp/saps/controller/manage/bill/RepaymentPlanExportTemplateTest.java" ],
+    "estimatedEffort" : "16h",
+    "ownerUserName" : null,
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "实施前需确认已结清口径、项目范围、最后行为排序、异常明细处理及历史回溯范围。",
+    "risk" : "核心代码位置明确，但六项业务口径尚未确认；若要求历史补数或新增索引，工时需另行评估。"
+  }, {
+    "title" : "scs-admin 增加用户账单支付方式展示与筛选能力",
+    "description" : "在现有【用户账单】公共页面启用已预留的支付方式筛选和列表列，复用 userbills_payMode 字典及现有查询、导出权限，不新增页面或权限点。",
+    "requirementChangePoint" : "用户账单列表展示支付方式并支持线上、线下筛选",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "用户账单查询表单", "用户账单数据列表", "导出条件传递", "页面验收" ],
+    "changePoints" : [ "1. 启用【用户账单】查询表单中已预留的“支付方式”下拉框，复用 userbills_payMode 字典的线上、线下选项。", "2. 在账单列表增加“支付方式”列，绑定 paymentMode 字段；后端返回空值时保持空白，不自行推断状态。", "3. 确认查询、重置、分页和批量查询场景正确传递或清理 paymentMode 条件。", "4. 复用现有 userBills:export 权限和 downloadUser 接口，将当前 paymentMode 筛选条件原样传入异步导出，不新增菜单或权限配置。", "5. 联调验证非结清为空、线上/线下显示与筛选、无结果提示以及导出记录跳转。" ],
+    "systemTags" : [ "scs-admin" ],
+    "evidenceRefs" : [ "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611020006/历史版本/4fddc489-17cc-4e58-9ad6-e4dac11b7bdc/附件/487-申城资管平台—用户账单增加“支付方式”字段20261102.pdf", "scs-admin/src/views/userBills/index.vue:88-97", "scs-admin/src/views/userBills/index.vue:351-360", "scs-admin/src/views/userBills/index.vue:482-483", "scs-admin/src/views/userBills/index.vue:561-588", "scs-admin/src/api/api_list.js:136-144" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "用户账单页面",
+    "relatedFiles" : [ "scs-admin/src/views/userBills/index.vue", "scs-admin/src/api/userBills/index.js", "scs-admin/src/api/api_list.js" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : null,
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖 scs-saps 确认并输出统一的 paymentMode 字段语义；页面适用范围需与后端保持一致。",
+    "risk" : "页面本身已有预留代码，改造较小；主要风险来自公共页面适用范围及后端业务口径未确认。"
+  } ],
+  "totalEstimatedEffort" : "20h",
+  "developmentEstimatedEffort" : "20h",
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-05T11:07:30.376690",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null
+}
+```
+
+
+
+### WorkHub 临时分析 · 生成研发评估 · 需求 270
+
+<!-- workhub-analysis:dab8d3fe956be056653c2400f96995816740bce14ed253c34f810f60acf07f36 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：107
+- 记录时间：2026-11-05T11:09:20.011131
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/历史版本/0da047d3-430c-4dcd-afb0-c06910f4d372/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "保费分期",
+  "projectId" : 21,
+  "projectName" : "聚保融保费分期项目",
+  "repositoryUrl" : "scf (13 repositories)",
+  "requirementRawPath" : "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/历史版本/0da047d3-430c-4dcd-afb0-c06910f4d372/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "评估草稿：需求可复用现有保费补缴、线下入金识别、备付金账户和交行代付链路，预计涉及 scf-order、scf-saps、scf-gateway、scf-intf-common、insurance_admin，合计约 54h。未发现 scf-intf-zhonghua 承载聚保融补缴接口的代码证据，故不纳入改造范围。",
+  "requirementChangePoints" : [ "备付金余额明细查询响应新增“订单号”：充值、对账单扣款返回空；首笔款扣款、首笔款退款及保费补缴返回客户订单号。", "新增聚保融保费补缴申请接口，接收渠道申请单号、客户订单号、补缴金额（分）、原因、打款保司摘要、补费方式和申请文件 fileKey。", "补缴申请必须先校验客户订单状态，再按补费方式处理；订单非放款成功时拒绝，备付金不足时拒绝并记录明确原因。", "支持“备付金补费”和“另行付款”两种入账方式：前者即时扣减渠道备付金，后者按补费业务单号和等额金额识别或人工确认入账。", "补缴款入账后自动调用交行银企直联向原订单保险公司账户打款，维护入账、打款状态、打款时间和摘要，且不得修改原订单金额、合同、账单及融资数据。", "新增保费补缴结果查询和异步结果通知，返回申请单号、补费业务单号、入账状态、打款状态、打款时间及摘要，并具备幂等和失败补偿能力。", "保费补缴记录增加审核结果、拒绝原因、补费方式和聚保融申请单号；自营存量及新增记录默认审核通过、补费方式为另行付款。", "后台保费补缴页面及导出增加审核结果、补费方式字段，并增加对应下拉检索项。", "文件上传能力增加“保费补缴申请文件”类型，并在申请接口中校验 fileKey 的存在性及文件类型。" ],
+  "impactedModules" : [ "scf-order", "scf-saps", "scf-gateway", "scf-intf-common", "insurance_admin" ],
+  "risks" : [ "备付金扣减、补缴记录创建和入账回调跨系统执行，若缺少业务单号唯一约束、账户行锁或补偿机制，可能发生重复扣款、重复入账或账实不一致。", "现有保费补缴打款通过 CompletableFuture 异步触发，缺少可靠消息或明确的持久化调度证据；进程重启和调用超时可能导致已入账但未向保司打款。", "现有 application_premium_supplement 表没有渠道申请单号、审核结果、拒绝原因和补费方式，新增字段需兼容并回填自营存量记录。", "现有备付金交易枚举仅覆盖充值、对账单扣款、首笔款扣款和首笔款退款，补缴交易类型及客户订单号映射需同步所有查询、导出和对账使用方。", "结果通知地址、应答协议和补偿策略未在材料中给出；若仅依赖网关同步通知，可能出现打款成功但聚保融长期未获知结果。", "“放款成功”若严格限定 ApplicationStatus.LOAN_SUCCESS，订单进入 INSURANCE_NORMAL 等后续状态后将不能补费，需在开发前确认业务状态口径。", "文件类型编码及文件规格未明确，无法直接确定 oss.support.file-types 的配置值和验收数据。" ],
+  "questions" : [ "审核拒绝后重新申请时，聚保融是否会复用原“申请单号”？若复用，接口幂等规则应允许拒绝记录生成新补费业务单；若不复用，则应强制申请单号全局唯一。", "“客户订单状态=放款成功”是仅允许 ApplicationStatus.LOAN_SUCCESS，还是也允许已放款后的 INSURANCE_NORMAL 等状态？", "请明确结果通知地址配置键、请求签名方式、成功应答格式、超时重试次数和最终失败后的人工补偿入口。", "“保费补缴申请文件”的 serviceType 编码、允许的文件后缀、大小及数量限制是什么？", "向保司打款失败、超时或退票时，是持续自动重试、转人工处理，还是需要向聚保融通知失败结果？当前需求返回字段只有已打款/未打款。" ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ {
+    "title" : "scf-order 新增聚保融保费补缴申请与结果查询能力",
+    "description" : "扩展现有保费补缴业务单，承接聚保融申请、审核结果落库和主动结果查询；复用原订单渠道、运营商、保险公司和收款账户信息，但不更新原订单金额、合同、账单或融资数据。",
+    "requirementChangePoint" : "新增聚保融保费补缴申请、审核和结果查询接口。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "application_premium_supplement", "聚保融保费补缴申请接口", "聚保融保费补缴结果查询接口", "保费补缴查询及导出模型" ],
+    "changePoints" : [ "1. 追加 DDL/DML：增加渠道申请单号、审核结果、拒绝原因、补费方式、申请来源等字段及必要唯一索引；将自营存量记录回填为审核通过、另行付款。", "2. 新增聚保融申请和查询契约，完成金额分转元、枚举、必填项、fileKey、渠道归属及客户订单存在性校验。", "3. 按规定顺序校验订单状态和补费方式；无论通过或拒绝均生成可追溯记录并返回补费业务单号、审核结果及拒绝原因。", "4. 根据客户订单补全渠道、申请时间、运营商、保险公司和打款摘要；聚保融传入摘要优先，未传时保持为空。", "5. 以渠道机构与申请单号建立幂等边界，防止重复请求生成多笔有效补缴单，同时落实审核拒绝后重新申请规则。", "6. 增加结果查询权限隔离，只允许调用机构查询自身补缴记录，并返回入账、打款状态及打款信息。", "7. 增加接口、状态校验、金额转换、重复申请及“不修改原订单”回归测试。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/po/PremiumSupplement.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/enums/ApplicationStatus.java", "scf-order/dbscript/DDL/V11__202510_scf_selfoperation_20251016.ddl.sql", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/AmpIntfCommonClient.java" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-order",
+    "relatedFiles" : [ "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/po/PremiumSupplement.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementDTO.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementPage.java", "scf-order/scf-order-dao/src/main/resources/com/thchengtay/order/mapper/application/PremiumSupplementMapper.xml", "scf-order/dbscript/DDL/V11__202510_scf_selfoperation_20251016.ddl.sql" ],
+    "estimatedEffort" : "16h",
+    "ownerUserName" : null,
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖“scf-intf-common 增加保费补缴申请文件上传类型”明确文件类型配置。",
+    "risk" : "拒绝后重新申请的申请单号规则和可补费订单状态范围尚未确认，可能影响唯一索引与审核逻辑。"
+  }, {
+    "title" : "scf-saps 扩展保费补缴双方式入账与回调规则",
+    "description" : "为补缴业务提供备付金即时扣款和另行付款识别入账能力，入账成功后可靠通知 scf-order 继续向保司打款。",
+    "requirementChangePoint" : "支持备付金补费、另行付款两种入账方式及入账状态更新。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "备付金扣款接口", "account", "account_balance_record", "customer_order", "pend_transaction", "保费补缴入账回调" ],
+    "changePoints" : [ "1. 新增保费补缴备付金扣款服务契约，以补费业务单号作为幂等键，并校验渠道账户归属、启用状态和可用余额。", "2. 在同一事务内锁定备付金账户、扣减余额并写入补缴交易流水；余额不足时不扣款，返回可映射为“备付金余额不足”的业务结果。", "3. 为另行付款复用现有 PREMIUM 线下订单及挂账匹配逻辑，严格按补费业务单号、渠道和等额金额匹配，避免仅按金额误匹配。", "4. 兼容系统识别入账和人工手动入账，两条路径均统一推进补缴入账状态，且重复清分不重复结算。", "5. 入账事务提交后调用 scf-order 的 positing/completed 能力；失败时落持久化补偿记录并由稳定调度重试。", "6. 覆盖并发扣款、余额不足、重复请求、重复银行流水、人工与自动入账竞争及回调失败补偿测试。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountService.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountBalanceRecordService.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendAutoClearBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendClearingBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/strategy/payment/result/PremiumPaymentResultProcesser.java", "scf-saps/saps-api/src/main/java/com/amp/saps/api/service/OrderApiService.java" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-saps",
+    "relatedFiles" : [ "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountService.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountBalanceRecordService.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendAutoClearBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendClearingBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/strategy/payment/result/PremiumPaymentResultProcesser.java", "scf-saps/saps-api/src/main/java/com/amp/saps/api/service/OrderApiService.java" ],
+    "estimatedEffort" : "16h",
+    "ownerUserName" : "hanmeng",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖 scf-order 先生成补费业务单并提供幂等入账回调接口。",
+    "risk" : "资金扣减与跨系统回调无法形成单库事务，必须通过业务幂等和持久化补偿保证最终一致。"
+  }, {
+    "title" : "scf-order/scf-gateway 串联保费补缴打款保司与结果通知能力",
+    "description" : "补缴款入账后复用现有交行代付链路向原订单保险公司打款，并在成功后通过统一网关主动通知聚保融。",
+    "requirementChangePoint" : "补缴入账后自动向保司打款并异步通知聚保融结果。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "交行单笔代付", "保费补缴打款状态回调", "聚保融结果通知", "api_notify", "org_external_access.notify_url" ],
+    "changePoints" : [ "1. 入账成功后幂等触发现有 generateToUnderwriterPaymentSlip，按原订单保司收款账户、补缴金额和渠道摘要生成独立代付单。", "2. 以补费业务单号控制打款幂等，持久化代付请求号、未打款/已打款状态、完成时间和摘要，禁止写回原订单金额科目。", "3. 处理同步异常、异步成功、失败、超时和退票状态；用持久化任务替代仅依赖进程内异步执行，并提供人工重试边界。", "4. 新增补缴结果通知业务类型及聚保融通知地址配置，通知载荷与主动查询返回字段保持一致。", "5. 复用 api_notify 或新增等价通知记录，记录通知中、成功、失败和重试次数；聚保融重复接收时以补费业务单号幂等。", "6. 验证入账成功仅打款一次、回调重复不重复通知、通知失败补偿及打款失败/退票处置。" ],
+    "systemTags" : [ "scf-order", "scf-gateway" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/GatewayFeignClient.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/loan/impl/ApiNotifyServiceImpl.java", "scf-gateway/src/main/java/com/amp/gateway/controller/NotifyPartnerController.java", "scf-gateway/src/main/java/com/amp/gateway/enums/NotifyBusinessType.java" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "scf-order/scf-gateway",
+    "relatedFiles" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/GatewayFeignClient.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/loan/ApiNotify.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/loan/impl/ApiNotifyServiceImpl.java", "scf-gateway/src/main/java/com/amp/gateway/controller/NotifyPartnerController.java", "scf-gateway/src/main/java/com/amp/gateway/enums/NotifyBusinessType.java" ],
+    "estimatedEffort" : "10h",
+    "ownerUserName" : null,
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖补缴申请记录和两种入账方式完成；联调前需取得聚保融通知协议及地址配置。",
+    "risk" : "通知协议、重试规则和打款失败/退票终态未明确，当前可靠性方案只能按现有网关及 api_notify 能力估算。"
+  }, {
+    "title" : "scf-saps 补充备付金明细订单号与补缴交易类型",
+    "description" : "扩展既有备付金余额明细接口，按交易类型返回客户订单号，并将保费补缴纳入明细查询。",
+    "requirementChangePoint" : "备付金余额明细接口新增订单号返回字段及保费补缴交易类型。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "POST /api/account/balance/record/query", "AccountTransactionTypeEnum", "account_balance_record.order_no" ],
+    "changePoints" : [ "1. 扩展 AccountTransactionTypeEnum 和接口字段说明，增加保费补缴交易类型。", "2. 响应模型增加 orderNo，并在查询组装中读取 account_balance_record.order_no。", "3. 充值、对账单扣款返回空订单号；首笔款扣款、首笔款退款和保费补缴写入并返回客户订单号。", "4. 保持 sourceOrderNo 现有语义：补缴场景返回补费业务单号，其他交易类型保持原关联业务单号。", "5. 同步管理端查询/导出模型中受交易类型枚举影响的展示，并验证历史数据空值兼容。", "6. 增加五类交易明细映射、分页过滤和金额单位转换测试。" ],
+    "systemTags" : [ "scf-saps" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-saps/saps-controller/src/main/java/com/amp/saps/controller/APIs/AccountApiController.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountApiService.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/APIs/AccountBalanceRecordQueryApiResponse.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/AccountBalanceRecordEntity.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/enums/AccountTransactionTypeEnum.java" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-saps",
+    "relatedFiles" : [ "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountApiService.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/APIs/AccountBalanceRecordQueryApiRequest.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/APIs/AccountBalanceRecordQueryApiResponse.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/AccountBalanceRecordEntity.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/enums/AccountTransactionTypeEnum.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountBalanceRecordService.java" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "hanmeng",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "保费补缴交易流水由“双方式入账与回调规则”任务写入。",
+    "risk" : "首笔款退款现有流水是否均已保存客户订单号需做数据抽样；历史记录可能只能返回空值。"
+  }, {
+    "title" : "insurance_admin 增加保费补缴审核结果与补费方式检索展示",
+    "description" : "在现有运营后台保费补缴页面和导出中展示审核结果、补费方式，并提供对应筛选项。",
+    "requirementChangePoint" : "后台保费补缴记录增加审核结果、补费方式表头及检索项。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "保费补缴列表页", "保费补缴查询参数", "保费补缴导出模板", "审核结果与补费方式字典" ],
+    "changePoints" : [ "1. 在检索区增加审核结果和补费方式下拉框，枚举分别为通过/拒绝、备付金补费/另行付款。", "2. 在表格增加审核结果、补费方式列，并兼容存量记录默认值。", "3. 后端分页查询增加 auditResult、paymentMethod 条件并同步 Mapper SQL。", "4. 更新 operator、channel、funder 三套保费补缴导出模板及填充模型，确保筛选条件与列表一致。", "5. 复核现有页面、导出和下载权限；本需求无新增操作按钮时不扩展写权限。", "6. 验证聚保融通过/拒绝记录、自营默认记录、组合筛选和导出字段。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "insurance_admin/src/views/order/premiumBackPayment/index.vue", "insurance_admin/src/api/api_list.js", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementPage.java", "scf-order/scf-order-dao/src/main/resources/com/thchengtay/order/mapper/application/PremiumSupplementMapper.xml", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_operator.xlsx" ],
+    "confidence" : "HIGH",
+    "moduleName" : "insurance_admin",
+    "relatedFiles" : [ "insurance_admin/src/views/order/premiumBackPayment/index.vue", "insurance_admin/src/api/api_list.js", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementPage.java", "scf-order/scf-order-dao/src/main/resources/com/thchengtay/order/mapper/application/PremiumSupplementMapper.xml", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_operator.xlsx", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_channel.xlsx", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_funder.xlsx" ],
+    "estimatedEffort" : "6h",
+    "ownerUserName" : "cairui",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖 scf-order 完成审核结果、补费方式字段及查询条件。",
+    "risk" : "三套导出模板均需同步，遗漏任一角色模板会导致页面有字段而导出缺列。"
+  }, {
+    "title" : "scf-intf-common 增加保费补缴申请文件上传类型",
+    "description" : "为聚保融通过既有文件上传接口取得补缴申请文件 fileKey 提供类型白名单，并支持 scf-order 回查文件信息。",
+    "requirementChangePoint" : "文件类型新增“保费补缴申请文件”。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "POST /api/file/fileUpload", "oss.support.file-types", "文件详情查询接口" ],
+    "changePoints" : [ "1. 在各目标环境 oss.support.file-types 中新增保费补缴申请文件 serviceType 映射。", "2. 明确并配置允许的后缀、大小和数量规则，保持上传返回 fileKey 的既有契约。", "3. 在 scf-order 申请处理时通过文件详情接口校验 fileKey 存在、归属和文件类型，并解析后台下载所需 URL。", "4. 验证未知类型拒绝、合法文件上传、伪造/失效 fileKey 拒绝及后台下载。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/oss/OutwardController.java", "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/config/FileTypeProperties.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/AmpIntfCommonClient.java", "scf_channel_admin/src/views/order/components/PremiumSupplement.vue" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "scf-intf-common",
+    "relatedFiles" : [ "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/oss/OutwardController.java", "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/config/FileTypeProperties.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/AmpIntfCommonClient.java" ],
+    "estimatedEffort" : "2h",
+    "ownerUserName" : null,
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "需产品或接口方先明确 serviceType 编码和文件规格。",
+    "risk" : "类型白名单位于外部配置中心，仓库内无当前环境配置值，发布时可能漏配某一环境。"
+  } ],
+  "totalEstimatedEffort" : "54h",
+  "developmentEstimatedEffort" : "54h",
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-05T11:09:19.945294",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null
+}
+```
+
+
+
+### WorkHub 临时分析 · 调整研发任务 · 需求 269
+
+<!-- workhub-analysis:b09168cbe1e4d79740c7c34b857a1cc8a7f6af5442a910340878098eb708d377 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：108
+- 记录时间：2026-11-06T13:55:13.612653
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611020006/历史版本/4fddc489-17cc-4e58-9ad6-e4dac11b7bdc/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "新消费分期",
+  "projectId" : 46,
+  "projectName" : "申城-医美-诚泰保理",
+  "repositoryUrl" : "scs (11 repositories)",
+  "requirementRawPath" : "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611020006/历史版本/4fddc489-17cc-4e58-9ad6-e4dac11b7bdc/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "评估草稿：改造 scs-saps 与 scs-admin，共拆分 2 个研发任务，预估 20h。现有支付方式枚举、查询字段和前端字典可复用，但账单表 paymentMode 已废弃，需以支付明细表的最后一次有效结清行为统一支撑列表、筛选、汇总及导出。本次未修改代码、未创建工作项。",
+  "requirementChangePoints" : [ "【用户账单】列表新增“支付方式”列，仅已结清账单展示，其他状态为空。", "支付方式按账单最后一次有效结清行为判定：线上扣款清分显示“线上”，线下还款、退费、代偿、回购等显示“线下”。", "【用户账单】查询条件新增“支付方式”，选项为线上、线下，并保证列表、总数和金额汇总采用一致口径。", "【用户账单】-【导出明细】新增“支付方式”字段，字段值及筛选结果与页面一致。", "用户账单列表展示支付方式并支持线上、线下筛选" ],
+  "impactedModules" : [ "scs-admin：用户账单列表、查询条件及导出入口", "scs-saps：用户账单查询接口、支付方式判定、分页计数与金额汇总", "scs-saps：用户账单异步导出数据及 Excel 模板" ],
+  "risks" : [ "“已结清”可能对应 customerSettlementStatus、settlementStatus 或 unpaidAmount=0，不同口径会直接改变展示和筛选结果。", "repayment_plan.payment_mode 已标记废弃，现有列表和筛选仍读取该字段；若未统一改为支付明细口径，会造成页面、总数、汇总和导出不一致。", "支付明细同时存在 settlementTime、accountTime、operateTime、冲正及取消标记；最后一次有效行为的排序和排除规则尚未确认。", "【用户账单】为公共页面和公共接口；若不增加申城项目范围控制，改动可能影响其他项目。", "历史账单可能缺少完整支付明细；若要求全量回溯，可能需要数据核验或补数，当前仓库没有生产数据完整性证据。", "按最后一次支付明细进行分页筛选和最高 50 万行异步导出可能增加 SQL 开销；仓库未提供 repayment_plan_pay_detail 原表索引 DDL，需要在实施时核验索引和执行计划。" ],
+  "questions" : [ "“已结清”的技术判定应采用 customerSettlementStatus=SETTLED、settlementStatus=SETTLED，还是 unpaidAmount=0？", "功能只对申城项目 XXT-PRJ-SC-A（产品 PRD-SC-A001、PRD-SC-A002）生效，还是公共【用户账单】中的所有项目都生效？", "“最后一次还款行为”按 settlementTime、accountTime 还是 operateTime 排序；时间相同时用哪个字段作为最终顺序？", "冲正、撤销、已取消或逻辑删除的支付明细是否全部排除；冲正后是否回退到上一条有效支付明细？", "需求是否要求回溯全部历史账单，还是仅对上线后结清的账单生效？", "已结清但找不到有效支付明细时，支付方式应保持空白，还是展示异常标识并进入数据修复？" ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ {
+    "title" : "scs-saps 增加用户账单支付方式判定筛选及导出能力",
+    "description" : "在现有【用户账单】公共页面启用已预留的支付方式筛选和列表列，复用 userbills_payMode 字典及现有查询、导出权限，不新增页面或权限点。",
+    "requirementChangePoint" : "用户账单列表展示支付方式并支持线上、线下筛选",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "用户账单查询表单", "用户账单数据列表", "导出条件传递", "页面验收" ],
+    "changePoints" : [ "1. 启用【用户账单】查询表单中已预留的“支付方式”下拉框，复用 userbills_payMode 字典的线上、线下选项。", "2. 在账单列表增加“支付方式”列，绑定 paymentMode 字段；后端返回空值时保持空白，不自行推断状态。", "3. 确认查询、重置、分页和批量查询场景正确传递或清理 paymentMode 条件。", "4. 复用现有 userBills:export 权限和 downloadUser 接口，将当前 paymentMode 筛选条件原样传入异步导出，不新增菜单或权限配置。", "5. 联调验证非结清为空、线上/线下显示与筛选、无结果提示以及导出记录跳转。" ],
+    "systemTags" : [ "scs-admin" ],
+    "evidenceRefs" : [ "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611020006/历史版本/4fddc489-17cc-4e58-9ad6-e4dac11b7bdc/附件/487-申城资管平台—用户账单增加“支付方式”字段20261102.pdf", "scs-admin/src/views/userBills/index.vue:88-97", "scs-admin/src/views/userBills/index.vue:351-360", "scs-admin/src/views/userBills/index.vue:482-483", "scs-admin/src/views/userBills/index.vue:561-588", "scs-admin/src/api/api_list.js:136-144" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "用户账单页面",
+    "relatedFiles" : [ "scs-admin/src/views/userBills/index.vue", "scs-admin/src/api/userBills/index.js", "scs-admin/src/api/api_list.js" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : null,
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖 scs-saps 确认并输出统一的 paymentMode 字段语义；页面适用范围需与后端保持一致。",
+    "risk" : "页面本身已有预留代码，改造较小；主要风险来自公共页面适用范围及后端业务口径未确认。"
+  } ],
+  "totalEstimatedEffort" : "8h",
+  "developmentEstimatedEffort" : "4h",
+  "testingEstimatedEffort" : "4h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-05T11:07:30.376690",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null
+}
+```
+
+
+
+### WorkHub 临时分析 · 调整研发任务 · 需求 269
+
+<!-- workhub-analysis:59b4788a443d0dbfd211a2018c84cf5f3de822239ec013e826868b073d35afee -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：108
+- 记录时间：2026-11-10T13:21:55.161660
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611020006/历史版本/4fddc489-17cc-4e58-9ad6-e4dac11b7bdc/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "新消费分期",
+  "projectId" : 46,
+  "projectName" : "申城-医美-诚泰保理",
+  "repositoryUrl" : "scs (11 repositories)",
+  "requirementRawPath" : "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611020006/历史版本/4fddc489-17cc-4e58-9ad6-e4dac11b7bdc/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "评估草稿：改造 scs-saps 与 scs-admin，共拆分 2 个研发任务，预估 20h。现有支付方式枚举、查询字段和前端字典可复用，但账单表 paymentMode 已废弃，需以支付明细表的最后一次有效结清行为统一支撑列表、筛选、汇总及导出。本次未修改代码、未创建工作项。",
+  "requirementChangePoints" : [ "【用户账单】列表新增“支付方式”列，仅已结清账单展示，其他状态为空。", "支付方式按账单最后一次有效结清行为判定：线上扣款清分显示“线上”，线下还款、退费、代偿、回购等显示“线下”。", "【用户账单】查询条件新增“支付方式”，选项为线上、线下，并保证列表、总数和金额汇总采用一致口径。", "【用户账单】-【导出明细】新增“支付方式”字段，字段值及筛选结果与页面一致。", "用户账单列表展示支付方式并支持线上、线下筛选" ],
+  "impactedModules" : [ "scs-admin：用户账单列表、查询条件及导出入口", "scs-saps：用户账单查询接口、支付方式判定、分页计数与金额汇总", "scs-saps：用户账单异步导出数据及 Excel 模板" ],
+  "risks" : [ "“已结清”可能对应 customerSettlementStatus、settlementStatus 或 unpaidAmount=0，不同口径会直接改变展示和筛选结果。", "repayment_plan.payment_mode 已标记废弃，现有列表和筛选仍读取该字段；若未统一改为支付明细口径，会造成页面、总数、汇总和导出不一致。", "支付明细同时存在 settlementTime、accountTime、operateTime、冲正及取消标记；最后一次有效行为的排序和排除规则尚未确认。", "【用户账单】为公共页面和公共接口；若不增加申城项目范围控制，改动可能影响其他项目。", "历史账单可能缺少完整支付明细；若要求全量回溯，可能需要数据核验或补数，当前仓库没有生产数据完整性证据。", "按最后一次支付明细进行分页筛选和最高 50 万行异步导出可能增加 SQL 开销；仓库未提供 repayment_plan_pay_detail 原表索引 DDL，需要在实施时核验索引和执行计划。" ],
+  "questions" : [ "“已结清”的技术判定应采用 customerSettlementStatus=SETTLED、settlementStatus=SETTLED，还是 unpaidAmount=0？", "功能只对申城项目 XXT-PRJ-SC-A（产品 PRD-SC-A001、PRD-SC-A002）生效，还是公共【用户账单】中的所有项目都生效？", "“最后一次还款行为”按 settlementTime、accountTime 还是 operateTime 排序；时间相同时用哪个字段作为最终顺序？", "冲正、撤销、已取消或逻辑删除的支付明细是否全部排除；冲正后是否回退到上一条有效支付明细？", "需求是否要求回溯全部历史账单，还是仅对上线后结清的账单生效？", "已结清但找不到有效支付明细时，支付方式应保持空白，还是展示异常标识并进入数据修复？" ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ {
+    "title" : "scs-saps 增加用户账单支付方式判定筛选及导出能力",
+    "description" : "在现有【用户账单】公共页面启用已预留的支付方式筛选和列表列，复用 userbills_payMode 字典及现有查询、导出权限，不新增页面或权限点。",
+    "requirementChangePoint" : "用户账单列表展示支付方式并支持线上、线下筛选",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "用户账单查询表单", "用户账单数据列表", "导出条件传递", "页面验收" ],
+    "changePoints" : [ "1. 启用【用户账单】查询表单中已预留的“支付方式”下拉框，复用 userbills_payMode 字典的线上、线下选项。", "2. 在账单列表增加“支付方式”列，绑定 paymentMode 字段；后端返回空值时保持空白，不自行推断状态。", "3. 确认查询、重置、分页和批量查询场景正确传递或清理 paymentMode 条件。", "4. 复用现有 userBills:export 权限和 downloadUser 接口，将当前 paymentMode 筛选条件原样传入异步导出，不新增菜单或权限配置。", "5. 联调验证非结清为空、线上/线下显示与筛选、无结果提示以及导出记录跳转。" ],
+    "systemTags" : [ "scs-admin", "scs-saps" ],
+    "evidenceRefs" : [ "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611020006/历史版本/4fddc489-17cc-4e58-9ad6-e4dac11b7bdc/附件/487-申城资管平台—用户账单增加“支付方式”字段20261102.pdf", "scs-admin/src/views/userBills/index.vue:88-97", "scs-admin/src/views/userBills/index.vue:351-360", "scs-admin/src/views/userBills/index.vue:482-483", "scs-admin/src/views/userBills/index.vue:561-588", "scs-admin/src/api/api_list.js:136-144" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "用户账单页面",
+    "relatedFiles" : [ "scs-admin/src/views/userBills/index.vue", "scs-admin/src/api/userBills/index.js", "scs-admin/src/api/api_list.js" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖 scs-saps 确认并输出统一的 paymentMode 字段语义；页面适用范围需与后端保持一致。",
+    "risk" : "页面本身已有预留代码，改造较小；主要风险来自公共页面适用范围及后端业务口径未确认。"
+  } ],
+  "totalEstimatedEffort" : "8h",
+  "developmentEstimatedEffort" : "4h",
+  "testingEstimatedEffort" : "4h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-05T11:07:30.376690",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null
+}
+```
+
+
+
+### WorkHub 临时分析 · 调整研发任务 · 需求 270
+
+<!-- workhub-analysis:770cfe7935f756813ae3ebb4a79045de433c88080a7e9e4f3bc333a63073252b -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：107
+- 记录时间：2026-11-10T13:23:57.717509
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/历史版本/0da047d3-430c-4dcd-afb0-c06910f4d372/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "保费分期",
+  "projectId" : 21,
+  "projectName" : "聚保融保费分期项目",
+  "repositoryUrl" : "scf (13 repositories)",
+  "requirementRawPath" : "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/历史版本/0da047d3-430c-4dcd-afb0-c06910f4d372/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "评估草稿：需求可复用现有保费补缴、线下入金识别、备付金账户和交行代付链路，预计涉及 scf-order、scf-saps、scf-gateway、scf-intf-common、insurance_admin，合计约 54h。未发现 scf-intf-zhonghua 承载聚保融补缴接口的代码证据，故不纳入改造范围。",
+  "requirementChangePoints" : [ "备付金余额明细查询响应新增“订单号”：充值、对账单扣款返回空；首笔款扣款、首笔款退款及保费补缴返回客户订单号。", "新增聚保融保费补缴申请接口，接收渠道申请单号、客户订单号、补缴金额（分）、原因、打款保司摘要、补费方式和申请文件 fileKey。", "补缴申请必须先校验客户订单状态，再按补费方式处理；订单非放款成功时拒绝，备付金不足时拒绝并记录明确原因。", "支持“备付金补费”和“另行付款”两种入账方式：前者即时扣减渠道备付金，后者按补费业务单号和等额金额识别或人工确认入账。", "补缴款入账后自动调用交行银企直联向原订单保险公司账户打款，维护入账、打款状态、打款时间和摘要，且不得修改原订单金额、合同、账单及融资数据。", "新增保费补缴结果查询和异步结果通知，返回申请单号、补费业务单号、入账状态、打款状态、打款时间及摘要，并具备幂等和失败补偿能力。", "保费补缴记录增加审核结果、拒绝原因、补费方式和聚保融申请单号；自营存量及新增记录默认审核通过、补费方式为另行付款。", "后台保费补缴页面及导出增加审核结果、补费方式字段，并增加对应下拉检索项。", "文件上传能力增加“保费补缴申请文件”类型，并在申请接口中校验 fileKey 的存在性及文件类型。", "新增聚保融保费补缴申请、审核和结果查询接口。", "支持备付金补费、另行付款两种入账方式及入账状态更新。", "补缴入账后自动向保司打款并异步通知聚保融结果。", "备付金余额明细接口新增订单号返回字段及保费补缴交易类型。", "后台保费补缴记录增加审核结果、补费方式表头及检索项。", "文件类型新增“保费补缴申请文件”。" ],
+  "impactedModules" : [ "scf-order", "scf-saps", "scf-gateway", "scf-intf-common", "insurance_admin" ],
+  "risks" : [ "备付金扣减、补缴记录创建和入账回调跨系统执行，若缺少业务单号唯一约束、账户行锁或补偿机制，可能发生重复扣款、重复入账或账实不一致。", "现有保费补缴打款通过 CompletableFuture 异步触发，缺少可靠消息或明确的持久化调度证据；进程重启和调用超时可能导致已入账但未向保司打款。", "现有 application_premium_supplement 表没有渠道申请单号、审核结果、拒绝原因和补费方式，新增字段需兼容并回填自营存量记录。", "现有备付金交易枚举仅覆盖充值、对账单扣款、首笔款扣款和首笔款退款，补缴交易类型及客户订单号映射需同步所有查询、导出和对账使用方。", "结果通知地址、应答协议和补偿策略未在材料中给出；若仅依赖网关同步通知，可能出现打款成功但聚保融长期未获知结果。", "“放款成功”若严格限定 ApplicationStatus.LOAN_SUCCESS，订单进入 INSURANCE_NORMAL 等后续状态后将不能补费，需在开发前确认业务状态口径。", "文件类型编码及文件规格未明确，无法直接确定 oss.support.file-types 的配置值和验收数据。" ],
+  "questions" : [ "审核拒绝后重新申请时，聚保融是否会复用原“申请单号”？若复用，接口幂等规则应允许拒绝记录生成新补费业务单；若不复用，则应强制申请单号全局唯一。", "“客户订单状态=放款成功”是仅允许 ApplicationStatus.LOAN_SUCCESS，还是也允许已放款后的 INSURANCE_NORMAL 等状态？", "请明确结果通知地址配置键、请求签名方式、成功应答格式、超时重试次数和最终失败后的人工补偿入口。", "“保费补缴申请文件”的 serviceType 编码、允许的文件后缀、大小及数量限制是什么？", "向保司打款失败、超时或退票时，是持续自动重试、转人工处理，还是需要向聚保融通知失败结果？当前需求返回字段只有已打款/未打款。" ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ {
+    "title" : "scf-order 新增聚保融保费补缴申请与结果查询能力",
+    "description" : "扩展现有保费补缴业务单，承接聚保融申请、审核结果落库和主动结果查询；复用原订单渠道、运营商、保险公司和收款账户信息，但不更新原订单金额、合同、账单或融资数据。",
+    "requirementChangePoint" : "新增聚保融保费补缴申请、审核和结果查询接口。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "application_premium_supplement", "聚保融保费补缴申请接口", "聚保融保费补缴结果查询接口", "保费补缴查询及导出模型" ],
+    "changePoints" : [ "1. 追加 DDL/DML：增加渠道申请单号、审核结果、拒绝原因、补费方式、申请来源等字段及必要唯一索引；将自营存量记录回填为审核通过、另行付款。", "2. 新增聚保融申请和查询契约，完成金额分转元、枚举、必填项、fileKey、渠道归属及客户订单存在性校验。", "3. 按规定顺序校验订单状态和补费方式；无论通过或拒绝均生成可追溯记录并返回补费业务单号、审核结果及拒绝原因。", "4. 根据客户订单补全渠道、申请时间、运营商、保险公司和打款摘要；聚保融传入摘要优先，未传时保持为空。", "5. 以渠道机构与申请单号建立幂等边界，防止重复请求生成多笔有效补缴单，同时落实审核拒绝后重新申请规则。", "6. 增加结果查询权限隔离，只允许调用机构查询自身补缴记录，并返回入账、打款状态及打款信息。", "7. 增加接口、状态校验、金额转换、重复申请及“不修改原订单”回归测试。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/po/PremiumSupplement.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/enums/ApplicationStatus.java", "scf-order/dbscript/DDL/V11__202510_scf_selfoperation_20251016.ddl.sql", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/AmpIntfCommonClient.java" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-order",
+    "relatedFiles" : [ "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/po/PremiumSupplement.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementDTO.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementPage.java", "scf-order/scf-order-dao/src/main/resources/com/thchengtay/order/mapper/application/PremiumSupplementMapper.xml", "scf-order/dbscript/DDL/V11__202510_scf_selfoperation_20251016.ddl.sql" ],
+    "estimatedEffort" : "16h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖“scf-intf-common 增加保费补缴申请文件上传类型”明确文件类型配置。",
+    "risk" : "拒绝后重新申请的申请单号规则和可补费订单状态范围尚未确认，可能影响唯一索引与审核逻辑。"
+  }, {
+    "title" : "scf-saps 扩展保费补缴双方式入账与回调规则",
+    "description" : "为补缴业务提供备付金即时扣款和另行付款识别入账能力，入账成功后可靠通知 scf-order 继续向保司打款。",
+    "requirementChangePoint" : "支持备付金补费、另行付款两种入账方式及入账状态更新。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "备付金扣款接口", "account", "account_balance_record", "customer_order", "pend_transaction", "保费补缴入账回调" ],
+    "changePoints" : [ "1. 新增保费补缴备付金扣款服务契约，以补费业务单号作为幂等键，并校验渠道账户归属、启用状态和可用余额。", "2. 在同一事务内锁定备付金账户、扣减余额并写入补缴交易流水；余额不足时不扣款，返回可映射为“备付金余额不足”的业务结果。", "3. 为另行付款复用现有 PREMIUM 线下订单及挂账匹配逻辑，严格按补费业务单号、渠道和等额金额匹配，避免仅按金额误匹配。", "4. 兼容系统识别入账和人工手动入账，两条路径均统一推进补缴入账状态，且重复清分不重复结算。", "5. 入账事务提交后调用 scf-order 的 positing/completed 能力；失败时落持久化补偿记录并由稳定调度重试。", "6. 覆盖并发扣款、余额不足、重复请求、重复银行流水、人工与自动入账竞争及回调失败补偿测试。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountService.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountBalanceRecordService.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendAutoClearBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendClearingBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/strategy/payment/result/PremiumPaymentResultProcesser.java", "scf-saps/saps-api/src/main/java/com/amp/saps/api/service/OrderApiService.java" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-saps",
+    "relatedFiles" : [ "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountService.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountBalanceRecordService.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendAutoClearBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendClearingBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/strategy/payment/result/PremiumPaymentResultProcesser.java", "scf-saps/saps-api/src/main/java/com/amp/saps/api/service/OrderApiService.java" ],
+    "estimatedEffort" : "16h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖 scf-order 先生成补费业务单并提供幂等入账回调接口。",
+    "risk" : "资金扣减与跨系统回调无法形成单库事务，必须通过业务幂等和持久化补偿保证最终一致。"
+  }, {
+    "title" : "scf-order/scf-gateway 串联保费补缴打款保司与结果通知能力",
+    "description" : "补缴款入账后复用现有交行代付链路向原订单保险公司打款，并在成功后通过统一网关主动通知聚保融。",
+    "requirementChangePoint" : "补缴入账后自动向保司打款并异步通知聚保融结果。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "交行单笔代付", "保费补缴打款状态回调", "聚保融结果通知", "api_notify", "org_external_access.notify_url" ],
+    "changePoints" : [ "1. 入账成功后幂等触发现有 generateToUnderwriterPaymentSlip，按原订单保司收款账户、补缴金额和渠道摘要生成独立代付单。", "2. 以补费业务单号控制打款幂等，持久化代付请求号、未打款/已打款状态、完成时间和摘要，禁止写回原订单金额科目。", "3. 处理同步异常、异步成功、失败、超时和退票状态；用持久化任务替代仅依赖进程内异步执行，并提供人工重试边界。", "4. 新增补缴结果通知业务类型及聚保融通知地址配置，通知载荷与主动查询返回字段保持一致。", "5. 复用 api_notify 或新增等价通知记录，记录通知中、成功、失败和重试次数；聚保融重复接收时以补费业务单号幂等。", "6. 验证入账成功仅打款一次、回调重复不重复通知、通知失败补偿及打款失败/退票处置。" ],
+    "systemTags" : [ "scf-order", "scf-gateway" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/GatewayFeignClient.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/loan/impl/ApiNotifyServiceImpl.java", "scf-gateway/src/main/java/com/amp/gateway/controller/NotifyPartnerController.java", "scf-gateway/src/main/java/com/amp/gateway/enums/NotifyBusinessType.java" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "scf-order/scf-gateway",
+    "relatedFiles" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/GatewayFeignClient.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/loan/ApiNotify.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/loan/impl/ApiNotifyServiceImpl.java", "scf-gateway/src/main/java/com/amp/gateway/controller/NotifyPartnerController.java", "scf-gateway/src/main/java/com/amp/gateway/enums/NotifyBusinessType.java" ],
+    "estimatedEffort" : "10h",
+    "ownerUserName" : "yanggang",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖补缴申请记录和两种入账方式完成；联调前需取得聚保融通知协议及地址配置。",
+    "risk" : "通知协议、重试规则和打款失败/退票终态未明确，当前可靠性方案只能按现有网关及 api_notify 能力估算。"
+  }, {
+    "title" : "scf-saps 补充备付金明细订单号与补缴交易类型",
+    "description" : "扩展既有备付金余额明细接口，按交易类型返回客户订单号，并将保费补缴纳入明细查询。",
+    "requirementChangePoint" : "备付金余额明细接口新增订单号返回字段及保费补缴交易类型。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "POST /api/account/balance/record/query", "AccountTransactionTypeEnum", "account_balance_record.order_no" ],
+    "changePoints" : [ "1. 扩展 AccountTransactionTypeEnum 和接口字段说明，增加保费补缴交易类型。", "2. 响应模型增加 orderNo，并在查询组装中读取 account_balance_record.order_no。", "3. 充值、对账单扣款返回空订单号；首笔款扣款、首笔款退款和保费补缴写入并返回客户订单号。", "4. 保持 sourceOrderNo 现有语义：补缴场景返回补费业务单号，其他交易类型保持原关联业务单号。", "5. 同步管理端查询/导出模型中受交易类型枚举影响的展示，并验证历史数据空值兼容。", "6. 增加五类交易明细映射、分页过滤和金额单位转换测试。" ],
+    "systemTags" : [ "scf-saps" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-saps/saps-controller/src/main/java/com/amp/saps/controller/APIs/AccountApiController.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountApiService.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/APIs/AccountBalanceRecordQueryApiResponse.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/AccountBalanceRecordEntity.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/enums/AccountTransactionTypeEnum.java" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-saps",
+    "relatedFiles" : [ "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountApiService.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/APIs/AccountBalanceRecordQueryApiRequest.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/APIs/AccountBalanceRecordQueryApiResponse.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/AccountBalanceRecordEntity.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/enums/AccountTransactionTypeEnum.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountBalanceRecordService.java" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "保费补缴交易流水由“双方式入账与回调规则”任务写入。",
+    "risk" : "首笔款退款现有流水是否均已保存客户订单号需做数据抽样；历史记录可能只能返回空值。"
+  }, {
+    "title" : "insurance_admin 增加保费补缴审核结果与补费方式检索展示",
+    "description" : "在现有运营后台保费补缴页面和导出中展示审核结果、补费方式，并提供对应筛选项。",
+    "requirementChangePoint" : "后台保费补缴记录增加审核结果、补费方式表头及检索项。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "保费补缴列表页", "保费补缴查询参数", "保费补缴导出模板", "审核结果与补费方式字典" ],
+    "changePoints" : [ "1. 在检索区增加审核结果和补费方式下拉框，枚举分别为通过/拒绝、备付金补费/另行付款。", "2. 在表格增加审核结果、补费方式列，并兼容存量记录默认值。", "3. 后端分页查询增加 auditResult、paymentMethod 条件并同步 Mapper SQL。", "4. 更新 operator、channel、funder 三套保费补缴导出模板及填充模型，确保筛选条件与列表一致。", "5. 复核现有页面、导出和下载权限；本需求无新增操作按钮时不扩展写权限。", "6. 验证聚保融通过/拒绝记录、自营默认记录、组合筛选和导出字段。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "insurance_admin/src/views/order/premiumBackPayment/index.vue", "insurance_admin/src/api/api_list.js", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementPage.java", "scf-order/scf-order-dao/src/main/resources/com/thchengtay/order/mapper/application/PremiumSupplementMapper.xml", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_operator.xlsx" ],
+    "confidence" : "HIGH",
+    "moduleName" : "insurance_admin",
+    "relatedFiles" : [ "insurance_admin/src/views/order/premiumBackPayment/index.vue", "insurance_admin/src/api/api_list.js", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementPage.java", "scf-order/scf-order-dao/src/main/resources/com/thchengtay/order/mapper/application/PremiumSupplementMapper.xml", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_operator.xlsx", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_channel.xlsx", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_funder.xlsx" ],
+    "estimatedEffort" : "6h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖 scf-order 完成审核结果、补费方式字段及查询条件。",
+    "risk" : "三套导出模板均需同步，遗漏任一角色模板会导致页面有字段而导出缺列。"
+  }, {
+    "title" : "scf-intf-common 增加保费补缴申请文件上传类型",
+    "description" : "为聚保融通过既有文件上传接口取得补缴申请文件 fileKey 提供类型白名单，并支持 scf-order 回查文件信息。",
+    "requirementChangePoint" : "文件类型新增“保费补缴申请文件”。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "POST /api/file/fileUpload", "oss.support.file-types", "文件详情查询接口" ],
+    "changePoints" : [ "1. 在各目标环境 oss.support.file-types 中新增保费补缴申请文件 serviceType 映射。", "2. 明确并配置允许的后缀、大小和数量规则，保持上传返回 fileKey 的既有契约。", "3. 在 scf-order 申请处理时通过文件详情接口校验 fileKey 存在、归属和文件类型，并解析后台下载所需 URL。", "4. 验证未知类型拒绝、合法文件上传、伪造/失效 fileKey 拒绝及后台下载。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/oss/OutwardController.java", "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/config/FileTypeProperties.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/AmpIntfCommonClient.java", "scf_channel_admin/src/views/order/components/PremiumSupplement.vue" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "scf-intf-common",
+    "relatedFiles" : [ "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/oss/OutwardController.java", "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/config/FileTypeProperties.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/AmpIntfCommonClient.java" ],
+    "estimatedEffort" : "2h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "需产品或接口方先明确 serviceType 编码和文件规格。",
+    "risk" : "类型白名单位于外部配置中心，仓库内无当前环境配置值，发布时可能漏配某一环境。"
+  } ],
+  "totalEstimatedEffort" : "54h",
+  "developmentEstimatedEffort" : "54h",
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-05T11:09:19.945294",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null
+}
+```
+
+
+
+### WorkHub 临时分析 · 调整研发任务 · 需求 270
+
+<!-- workhub-analysis:379cad4430f98c9ab96e402b306e22fedc590b808ca0fc5f4630ff8257f1994a -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：107
+- 记录时间：2026-11-10T13:24:16.448226
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/历史版本/0da047d3-430c-4dcd-afb0-c06910f4d372/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "保费分期",
+  "projectId" : 21,
+  "projectName" : "聚保融保费分期项目",
+  "repositoryUrl" : "scf (13 repositories)",
+  "requirementRawPath" : "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/历史版本/0da047d3-430c-4dcd-afb0-c06910f4d372/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "评估草稿：需求可复用现有保费补缴、线下入金识别、备付金账户和交行代付链路，预计涉及 scf-order、scf-saps、scf-gateway、scf-intf-common、insurance_admin，合计约 54h。未发现 scf-intf-zhonghua 承载聚保融补缴接口的代码证据，故不纳入改造范围。",
+  "requirementChangePoints" : [ "备付金余额明细查询响应新增“订单号”：充值、对账单扣款返回空；首笔款扣款、首笔款退款及保费补缴返回客户订单号。", "新增聚保融保费补缴申请接口，接收渠道申请单号、客户订单号、补缴金额（分）、原因、打款保司摘要、补费方式和申请文件 fileKey。", "补缴申请必须先校验客户订单状态，再按补费方式处理；订单非放款成功时拒绝，备付金不足时拒绝并记录明确原因。", "支持“备付金补费”和“另行付款”两种入账方式：前者即时扣减渠道备付金，后者按补费业务单号和等额金额识别或人工确认入账。", "补缴款入账后自动调用交行银企直联向原订单保险公司账户打款，维护入账、打款状态、打款时间和摘要，且不得修改原订单金额、合同、账单及融资数据。", "新增保费补缴结果查询和异步结果通知，返回申请单号、补费业务单号、入账状态、打款状态、打款时间及摘要，并具备幂等和失败补偿能力。", "保费补缴记录增加审核结果、拒绝原因、补费方式和聚保融申请单号；自营存量及新增记录默认审核通过、补费方式为另行付款。", "后台保费补缴页面及导出增加审核结果、补费方式字段，并增加对应下拉检索项。", "文件上传能力增加“保费补缴申请文件”类型，并在申请接口中校验 fileKey 的存在性及文件类型。", "新增聚保融保费补缴申请、审核和结果查询接口。", "支持备付金补费、另行付款两种入账方式及入账状态更新。", "补缴入账后自动向保司打款并异步通知聚保融结果。", "备付金余额明细接口新增订单号返回字段及保费补缴交易类型。", "后台保费补缴记录增加审核结果、补费方式表头及检索项。", "文件类型新增“保费补缴申请文件”。" ],
+  "impactedModules" : [ "scf-order", "scf-saps", "scf-gateway", "scf-intf-common", "insurance_admin" ],
+  "risks" : [ "备付金扣减、补缴记录创建和入账回调跨系统执行，若缺少业务单号唯一约束、账户行锁或补偿机制，可能发生重复扣款、重复入账或账实不一致。", "现有保费补缴打款通过 CompletableFuture 异步触发，缺少可靠消息或明确的持久化调度证据；进程重启和调用超时可能导致已入账但未向保司打款。", "现有 application_premium_supplement 表没有渠道申请单号、审核结果、拒绝原因和补费方式，新增字段需兼容并回填自营存量记录。", "现有备付金交易枚举仅覆盖充值、对账单扣款、首笔款扣款和首笔款退款，补缴交易类型及客户订单号映射需同步所有查询、导出和对账使用方。", "结果通知地址、应答协议和补偿策略未在材料中给出；若仅依赖网关同步通知，可能出现打款成功但聚保融长期未获知结果。", "“放款成功”若严格限定 ApplicationStatus.LOAN_SUCCESS，订单进入 INSURANCE_NORMAL 等后续状态后将不能补费，需在开发前确认业务状态口径。", "文件类型编码及文件规格未明确，无法直接确定 oss.support.file-types 的配置值和验收数据。" ],
+  "questions" : [ "审核拒绝后重新申请时，聚保融是否会复用原“申请单号”？若复用，接口幂等规则应允许拒绝记录生成新补费业务单；若不复用，则应强制申请单号全局唯一。", "“客户订单状态=放款成功”是仅允许 ApplicationStatus.LOAN_SUCCESS，还是也允许已放款后的 INSURANCE_NORMAL 等状态？", "请明确结果通知地址配置键、请求签名方式、成功应答格式、超时重试次数和最终失败后的人工补偿入口。", "“保费补缴申请文件”的 serviceType 编码、允许的文件后缀、大小及数量限制是什么？", "向保司打款失败、超时或退票时，是持续自动重试、转人工处理，还是需要向聚保融通知失败结果？当前需求返回字段只有已打款/未打款。" ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ {
+    "title" : "scf-order 新增聚保融保费补缴申请与结果查询能力",
+    "description" : "扩展现有保费补缴业务单，承接聚保融申请、审核结果落库和主动结果查询；复用原订单渠道、运营商、保险公司和收款账户信息，但不更新原订单金额、合同、账单或融资数据。",
+    "requirementChangePoint" : "新增聚保融保费补缴申请、审核和结果查询接口。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "application_premium_supplement", "聚保融保费补缴申请接口", "聚保融保费补缴结果查询接口", "保费补缴查询及导出模型" ],
+    "changePoints" : [ "1. 追加 DDL/DML：增加渠道申请单号、审核结果、拒绝原因、补费方式、申请来源等字段及必要唯一索引；将自营存量记录回填为审核通过、另行付款。", "2. 新增聚保融申请和查询契约，完成金额分转元、枚举、必填项、fileKey、渠道归属及客户订单存在性校验。", "3. 按规定顺序校验订单状态和补费方式；无论通过或拒绝均生成可追溯记录并返回补费业务单号、审核结果及拒绝原因。", "4. 根据客户订单补全渠道、申请时间、运营商、保险公司和打款摘要；聚保融传入摘要优先，未传时保持为空。", "5. 以渠道机构与申请单号建立幂等边界，防止重复请求生成多笔有效补缴单，同时落实审核拒绝后重新申请规则。", "6. 增加结果查询权限隔离，只允许调用机构查询自身补缴记录，并返回入账、打款状态及打款信息。", "7. 增加接口、状态校验、金额转换、重复申请及“不修改原订单”回归测试。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/po/PremiumSupplement.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/enums/ApplicationStatus.java", "scf-order/dbscript/DDL/V11__202510_scf_selfoperation_20251016.ddl.sql", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/AmpIntfCommonClient.java" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-order",
+    "relatedFiles" : [ "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/po/PremiumSupplement.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementDTO.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementPage.java", "scf-order/scf-order-dao/src/main/resources/com/thchengtay/order/mapper/application/PremiumSupplementMapper.xml", "scf-order/dbscript/DDL/V11__202510_scf_selfoperation_20251016.ddl.sql" ],
+    "estimatedEffort" : "16h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖“scf-intf-common 增加保费补缴申请文件上传类型”明确文件类型配置。",
+    "risk" : "拒绝后重新申请的申请单号规则和可补费订单状态范围尚未确认，可能影响唯一索引与审核逻辑。"
+  }, {
+    "title" : "scf-saps 扩展保费补缴双方式入账与回调规则",
+    "description" : "为补缴业务提供备付金即时扣款和另行付款识别入账能力，入账成功后可靠通知 scf-order 继续向保司打款。",
+    "requirementChangePoint" : "支持备付金补费、另行付款两种入账方式及入账状态更新。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "备付金扣款接口", "account", "account_balance_record", "customer_order", "pend_transaction", "保费补缴入账回调" ],
+    "changePoints" : [ "1. 新增保费补缴备付金扣款服务契约，以补费业务单号作为幂等键，并校验渠道账户归属、启用状态和可用余额。", "2. 在同一事务内锁定备付金账户、扣减余额并写入补缴交易流水；余额不足时不扣款，返回可映射为“备付金余额不足”的业务结果。", "3. 为另行付款复用现有 PREMIUM 线下订单及挂账匹配逻辑，严格按补费业务单号、渠道和等额金额匹配，避免仅按金额误匹配。", "4. 兼容系统识别入账和人工手动入账，两条路径均统一推进补缴入账状态，且重复清分不重复结算。", "5. 入账事务提交后调用 scf-order 的 positing/completed 能力；失败时落持久化补偿记录并由稳定调度重试。", "6. 覆盖并发扣款、余额不足、重复请求、重复银行流水、人工与自动入账竞争及回调失败补偿测试。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountService.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountBalanceRecordService.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendAutoClearBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendClearingBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/strategy/payment/result/PremiumPaymentResultProcesser.java", "scf-saps/saps-api/src/main/java/com/amp/saps/api/service/OrderApiService.java" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-saps",
+    "relatedFiles" : [ "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountService.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountBalanceRecordService.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendAutoClearBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendClearingBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/strategy/payment/result/PremiumPaymentResultProcesser.java", "scf-saps/saps-api/src/main/java/com/amp/saps/api/service/OrderApiService.java" ],
+    "estimatedEffort" : "16h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖 scf-order 先生成补费业务单并提供幂等入账回调接口。",
+    "risk" : "资金扣减与跨系统回调无法形成单库事务，必须通过业务幂等和持久化补偿保证最终一致。"
+  }, {
+    "title" : "scf-order/scf-gateway 串联保费补缴打款保司与结果通知能力",
+    "description" : "补缴款入账后复用现有交行代付链路向原订单保险公司打款，并在成功后通过统一网关主动通知聚保融。",
+    "requirementChangePoint" : "补缴入账后自动向保司打款并异步通知聚保融结果。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "交行单笔代付", "保费补缴打款状态回调", "聚保融结果通知", "api_notify", "org_external_access.notify_url" ],
+    "changePoints" : [ "1. 入账成功后幂等触发现有 generateToUnderwriterPaymentSlip，按原订单保司收款账户、补缴金额和渠道摘要生成独立代付单。", "2. 以补费业务单号控制打款幂等，持久化代付请求号、未打款/已打款状态、完成时间和摘要，禁止写回原订单金额科目。", "3. 处理同步异常、异步成功、失败、超时和退票状态；用持久化任务替代仅依赖进程内异步执行，并提供人工重试边界。", "4. 新增补缴结果通知业务类型及聚保融通知地址配置，通知载荷与主动查询返回字段保持一致。", "5. 复用 api_notify 或新增等价通知记录，记录通知中、成功、失败和重试次数；聚保融重复接收时以补费业务单号幂等。", "6. 验证入账成功仅打款一次、回调重复不重复通知、通知失败补偿及打款失败/退票处置。" ],
+    "systemTags" : [ "scf-order", "scf-gateway" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/GatewayFeignClient.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/loan/impl/ApiNotifyServiceImpl.java", "scf-gateway/src/main/java/com/amp/gateway/controller/NotifyPartnerController.java", "scf-gateway/src/main/java/com/amp/gateway/enums/NotifyBusinessType.java" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "scf-order/scf-gateway",
+    "relatedFiles" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/GatewayFeignClient.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/loan/ApiNotify.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/loan/impl/ApiNotifyServiceImpl.java", "scf-gateway/src/main/java/com/amp/gateway/controller/NotifyPartnerController.java", "scf-gateway/src/main/java/com/amp/gateway/enums/NotifyBusinessType.java" ],
+    "estimatedEffort" : "10h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖补缴申请记录和两种入账方式完成；联调前需取得聚保融通知协议及地址配置。",
+    "risk" : "通知协议、重试规则和打款失败/退票终态未明确，当前可靠性方案只能按现有网关及 api_notify 能力估算。"
+  }, {
+    "title" : "scf-saps 补充备付金明细订单号与补缴交易类型",
+    "description" : "扩展既有备付金余额明细接口，按交易类型返回客户订单号，并将保费补缴纳入明细查询。",
+    "requirementChangePoint" : "备付金余额明细接口新增订单号返回字段及保费补缴交易类型。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "POST /api/account/balance/record/query", "AccountTransactionTypeEnum", "account_balance_record.order_no" ],
+    "changePoints" : [ "1. 扩展 AccountTransactionTypeEnum 和接口字段说明，增加保费补缴交易类型。", "2. 响应模型增加 orderNo，并在查询组装中读取 account_balance_record.order_no。", "3. 充值、对账单扣款返回空订单号；首笔款扣款、首笔款退款和保费补缴写入并返回客户订单号。", "4. 保持 sourceOrderNo 现有语义：补缴场景返回补费业务单号，其他交易类型保持原关联业务单号。", "5. 同步管理端查询/导出模型中受交易类型枚举影响的展示，并验证历史数据空值兼容。", "6. 增加五类交易明细映射、分页过滤和金额单位转换测试。" ],
+    "systemTags" : [ "scf-saps" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-saps/saps-controller/src/main/java/com/amp/saps/controller/APIs/AccountApiController.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountApiService.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/APIs/AccountBalanceRecordQueryApiResponse.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/AccountBalanceRecordEntity.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/enums/AccountTransactionTypeEnum.java" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-saps",
+    "relatedFiles" : [ "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountApiService.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/APIs/AccountBalanceRecordQueryApiRequest.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/APIs/AccountBalanceRecordQueryApiResponse.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/AccountBalanceRecordEntity.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/enums/AccountTransactionTypeEnum.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountBalanceRecordService.java" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "保费补缴交易流水由“双方式入账与回调规则”任务写入。",
+    "risk" : "首笔款退款现有流水是否均已保存客户订单号需做数据抽样；历史记录可能只能返回空值。"
+  }, {
+    "title" : "insurance_admin 增加保费补缴审核结果与补费方式检索展示",
+    "description" : "在现有运营后台保费补缴页面和导出中展示审核结果、补费方式，并提供对应筛选项。",
+    "requirementChangePoint" : "后台保费补缴记录增加审核结果、补费方式表头及检索项。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "保费补缴列表页", "保费补缴查询参数", "保费补缴导出模板", "审核结果与补费方式字典" ],
+    "changePoints" : [ "1. 在检索区增加审核结果和补费方式下拉框，枚举分别为通过/拒绝、备付金补费/另行付款。", "2. 在表格增加审核结果、补费方式列，并兼容存量记录默认值。", "3. 后端分页查询增加 auditResult、paymentMethod 条件并同步 Mapper SQL。", "4. 更新 operator、channel、funder 三套保费补缴导出模板及填充模型，确保筛选条件与列表一致。", "5. 复核现有页面、导出和下载权限；本需求无新增操作按钮时不扩展写权限。", "6. 验证聚保融通过/拒绝记录、自营默认记录、组合筛选和导出字段。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "insurance_admin/src/views/order/premiumBackPayment/index.vue", "insurance_admin/src/api/api_list.js", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementPage.java", "scf-order/scf-order-dao/src/main/resources/com/thchengtay/order/mapper/application/PremiumSupplementMapper.xml", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_operator.xlsx" ],
+    "confidence" : "HIGH",
+    "moduleName" : "insurance_admin",
+    "relatedFiles" : [ "insurance_admin/src/views/order/premiumBackPayment/index.vue", "insurance_admin/src/api/api_list.js", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementPage.java", "scf-order/scf-order-dao/src/main/resources/com/thchengtay/order/mapper/application/PremiumSupplementMapper.xml", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_operator.xlsx", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_channel.xlsx", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_funder.xlsx" ],
+    "estimatedEffort" : "6h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖 scf-order 完成审核结果、补费方式字段及查询条件。",
+    "risk" : "三套导出模板均需同步，遗漏任一角色模板会导致页面有字段而导出缺列。"
+  }, {
+    "title" : "scf-intf-common 增加保费补缴申请文件上传类型",
+    "description" : "为聚保融通过既有文件上传接口取得补缴申请文件 fileKey 提供类型白名单，并支持 scf-order 回查文件信息。",
+    "requirementChangePoint" : "文件类型新增“保费补缴申请文件”。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "POST /api/file/fileUpload", "oss.support.file-types", "文件详情查询接口" ],
+    "changePoints" : [ "1. 在各目标环境 oss.support.file-types 中新增保费补缴申请文件 serviceType 映射。", "2. 明确并配置允许的后缀、大小和数量规则，保持上传返回 fileKey 的既有契约。", "3. 在 scf-order 申请处理时通过文件详情接口校验 fileKey 存在、归属和文件类型，并解析后台下载所需 URL。", "4. 验证未知类型拒绝、合法文件上传、伪造/失效 fileKey 拒绝及后台下载。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/oss/OutwardController.java", "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/config/FileTypeProperties.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/AmpIntfCommonClient.java", "scf_channel_admin/src/views/order/components/PremiumSupplement.vue" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "scf-intf-common",
+    "relatedFiles" : [ "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/oss/OutwardController.java", "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/config/FileTypeProperties.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/AmpIntfCommonClient.java" ],
+    "estimatedEffort" : "2h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "需产品或接口方先明确 serviceType 编码和文件规格。",
+    "risk" : "类型白名单位于外部配置中心，仓库内无当前环境配置值，发布时可能漏配某一环境。"
+  } ],
+  "totalEstimatedEffort" : "54h",
+  "developmentEstimatedEffort" : "54h",
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-05T11:09:19.945294",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null
+}
+```
+
+
+
+### WorkHub 临时分析 · 调整研发任务 · 需求 272
+
+<!-- workhub-analysis:7854fb4062484a4774d97c5c8384b850d7271e247bdb9e29c389338a96cc70f4 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：109
+- 记录时间：2026-11-10T16:06:02.641752
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202611030001/历史版本/498a542e-6916-4418-ae5e-c3bb9b2b0b59/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "嘉泰租赁资产保理",
+  "projectId" : 42,
+  "projectName" : "中恒信合乘用车保理项目",
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202611030001/历史版本/498a542e-6916-4418-ae5e-c3bb9b2b0b59/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "租赁资产保理服务现行规则为客户当期应还款项连续逾期达到70个自然日时触发回购。根据最新业务合同，2026年11月1日至11月30日期间达到该条件的逾期资产暂不触发收购；自2026年12月1日起恢复执行，并纳入11月期间已达到70个自然日、应收购待收购的资产。存在债务人已向原债权人清偿、车辆担保权利灭失或债权权利瑕疵的资产，不计入承接标的资产且不予收购。",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "shihao" ],
+  "workItems" : [ {
+    "title" : "回购暂时取消，直到12-01",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "assets-saps" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "shihao",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null
+  } ],
+  "totalEstimatedEffort" : "8h",
+  "developmentEstimatedEffort" : "4h",
+  "testingEstimatedEffort" : "4h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-10T16:06:01.633271",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null
+}
+```
+
+
+
+### WorkHub 临时分析 · 生成需求澄清项 · 需求 277
+
+<!-- workhub-analysis:45cd6ff9d7c93450b10926c2f1dd18bf192de734955d450e88f60f46c4ff7877 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：44
+- 记录时间：2026-11-12T15:44:33.468061
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/b823051e-2655-4980-9d6d-08b84caf8b87/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "罚息与提前结清手续费是否需要补充“未还”字段",
+  "description" : "需求描述要求返回各科目“应还、已还、未还”三个数值，但附件字段清单中罚息、提前结清手续费仅有“应还、已还”两列，未列“未还”。请确认这两个科目是否需要增加“未还罚息”“未还提前结清手续费”，还是以字段清单为准不提供。",
+  "evidence" : "需求描述：“返回账单各科目（本金、服务费-资金方/合作方/技术服务方/业务指定方、资产管理费、罚息、提前结清手续费）的应还、已还、未还实时数值”；附件《申城资管平台—【还款计划查询】接口增加科目字段20261106.pdf》字段清单中罚息、提前结清手续费仅列“应还、已还”，两处不一致。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "QUESTION",
+  "title" : "通汇账单明细数据的同步方式与频率",
+  "description" : "需求核心是“同步通汇的账单明细数据”，但方案仅描述在【还款计划查询】接口新增字段。请确认通汇→申城的数据获取方式（通汇推送接口、申城定时拉取、或数据已在本地库）、同步频率及增量/全量口径。",
+  "evidence" : "需求描述：“同步通汇的账单明细数据（每期各科目的应收和最终实收）”；附件方案仅涉及接口加字段，未提供通汇侧接口文档或同步机制说明，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 2,
+  "itemType" : "QUESTION",
+  "title" : "同步范围是否包含历史存量账单",
+  "description" : "请确认本次同步的账单范围：仅上线后的新增账单，还是包含历史存量账单；若含历史账单，各科目应收/实收的历史数据由通汇提供还是申城侧回补。",
+  "evidence" : "需求描述“每期各科目的应收和最终实收”未限定账单时间范围；需求材料未说明存量数据处理方式，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 3,
+  "itemType" : "QUESTION",
+  "title" : "四类服务费与账单科目的映射关系",
+  "description" : "请确认现有账单/科目体系是否已按“资金方、合作方、技术服务方、业务指定方”四类分别记录服务费的应收与实收；若通汇侧为单一或不同粒度的服务费科目，请提供四类服务费与通汇科目的映射或拆分规则。",
+  "evidence" : "结构化识别字段“新增字段清单”要求分别返回四类服务费的应还/已还/未还数值；材料未提供科目映射或拆分规则，且本次未能通过只读工具确认代码中的科目模型，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 4,
+  "itemType" : "QUESTION",
+  "title" : "“未还”数值的计算口径",
+  "description" : "请确认“未还”取“应还−已还”的实时计算值，还是账单中单独记录的字段；两者在存在部分冲抵、精度舍入时结果可能不同。",
+  "evidence" : "附件方案仅要求返回“应还、已还、未还数值”，未定义“未还”的计算规则，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 5,
+  "itemType" : "QUESTION",
+  "title" : "罚息“实时”数值的取值时点",
+  "description" : "罚息通常按日计提。请确认查询返回的罚息是通汇同步至申城的最新计提值，还是查询时点按规则实时计算；若两者存在计息尾差，请明确以哪侧数值为准。",
+  "evidence" : "附件方案：“合作方调用该查询接口查询时对应账单实时各科目应还、已还、未还数值返回结果”；罚息计提与取数口径材料未说明，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 6,
+  "itemType" : "QUESTION",
+  "title" : "还款金额在各科目间的冲抵/分摊顺序",
+  "description" : "一笔还款可能同时覆盖多个科目，各科目的“已还”数值取决于冲抵顺序。请提供冲抵/分摊规则（如先罚息、再费用、后本金的顺序），并明确分摊结果由通汇侧计算后同步，还是申城侧按规则计算。",
+  "evidence" : "附件方案要求按科目返回“已还”数值，但材料未说明分摊/冲抵规则及其归属方，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 7,
+  "itemType" : "QUESTION",
+  "title" : "未出账/未到期期次的返回规则",
+  "description" : "请确认当某期账单尚未生成或未到还款日时，该期在【还款计划查询】结果中如何返回：返回全部为0的记录、返回应还值（已还为0）、还是不返回该期。",
+  "evidence" : "附件方案：“根据具体订单产品规则，部分科目没有数值的则传0”，仅覆盖科目级取0场景，未覆盖整期未出账场景，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 8,
+  "itemType" : "QUESTION",
+  "title" : "新增字段的报文字段名与释义",
+  "description" : "附件PDF字段表的“释义”列全部为空。请提供新增字段的接口英文字段名（报文key）、释义及示例值；或确认由研发按接口现有命名规范拟定后回发业务/合作方确认。",
+  "evidence" : "附件《申城资管平台—【还款计划查询】接口增加科目字段20261106.pdf》字段表“释义”列为空，材料未提供接口报文字段定义，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 9,
+  "itemType" : "QUESTION",
+  "title" : "新增字段的生效范围（全部调用方或仅申城业务）",
+  "description" : "【还款计划查询】为存量合作方在用接口。请确认新增字段是对所有调用该接口的合作方统一返回，还是仅申城医美业务/指定合作方返回，其他调用方报文保持不变。",
+  "evidence" : "附件方案：“上述新增字段根据合作方调用该查询接口查询时…返回结果”，未区分调用方范围；证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "通汇侧外部依赖风险",
+  "description" : "各科目应收/实收数据来源为通汇，若通汇侧无现成接口或数据粒度不满足（如未按四类服务方拆分服务费），需通汇侧配合改造，跨系统排期与联调存在外部依赖，可能影响整体交付节奏。",
+  "evidence" : "需求描述：“同步通汇的账单明细数据”；材料未附通汇侧接口文档或数据结构，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "账单科目粒度改造与存量数据回补风险",
+  "description" : "若现有账单/还款模型未按四类服务方分别记录应收与实收，实际改造将不限于接口加字段，还需扩展数据模型并核对/回补存量数据，范围与风险显著上升，需业务知悉并接受可能的范围调整。",
+  "evidence" : "附件方案表述为“拟在现有【还款计划查询】接口中新增字段”；现有模型是否已支持四类服务费科目未能通过代码确认（本次仅依据需求材料），证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 2,
+  "itemType" : "RISK",
+  "title" : "需求描述与字段清单不一致的返工风险",
+  "description" : "需求描述要求全部科目返回“应还、已还、未还”，而字段清单中罚息、提前结清手续费缺少“未还”，若业务与研发各自按不同版本理解，存在联调或验收阶段返工风险。",
+  "evidence" : "需求描述与附件PDF字段清单对比：罚息、提前结清手续费仅列“应还、已还”两列。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 3,
+  "itemType" : "RISK",
+  "title" : "存量合作方报文兼容风险",
+  "description" : "在存量【还款计划查询】接口上新增一批必填字段会改变返回报文结构，存量调用方若对报文做严格校验或全量解析，可能出现兼容问题，需在上线前确认影响面并通知合作方。",
+  "evidence" : "附件方案：“拟在现有【还款计划查询】接口中新增字段”且全部“必填”；存量调用方范围及解析方式材料未说明，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 4,
+  "itemType" : "RISK",
+  "title" : "实时数值与对账口径偏差风险",
+  "description" : "接口承诺返回“实时”数值，若数据依赖通汇同步，则查询结果与通汇侧时点值可能存在同步延迟或计息尾差；需求中“最终实收”与“实时数值”两种表述并存，合作方对账时可能产生差异，需接受明确的对账口径。",
+  "evidence" : "需求描述：“每期各科目的应收和最终实收”与附件方案“实时各科目应还、已还、未还数值”并存；同步时效与对账规则材料未说明，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### WorkHub 临时分析 · 回复需求澄清项 · 需求 277
+
+<!-- workhub-analysis:6d21b976abbf12824a7b8e964afc9a3253f88baf6c8d7a405eab8619691049c3 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：44
+- 记录时间：2026-11-12T16:01:54.306461
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/b823051e-2655-4980-9d6d-08b84caf8b87/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "罚息与提前结清手续费是否需要补充“未还”字段",
+  "description" : "需求描述要求返回各科目“应还、已还、未还”三个数值，但附件字段清单中罚息、提前结清手续费仅有“应还、已还”两列，未列“未还”。请确认这两个科目是否需要增加“未还罚息”“未还提前结清手续费”，还是以字段清单为准不提供。",
+  "evidence" : "需求描述：“返回账单各科目（本金、服务费-资金方/合作方/技术服务方/业务指定方、资产管理费、罚息、提前结清手续费）的应还、已还、未还实时数值”；附件《申城资管平台—【还款计划查询】接口增加科目字段20261106.pdf》字段清单中罚息、提前结清手续费仅列“应还、已还”，两处不一致。",
+  "status" : "RESPONDED",
+  "responseText" : "不需要",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-12T16:01:51.424092"
+}, {
+  "index" : 1,
+  "itemType" : "QUESTION",
+  "title" : "通汇账单明细数据的同步方式与频率",
+  "description" : "需求核心是“同步通汇的账单明细数据”，但方案仅描述在【还款计划查询】接口新增字段。请确认通汇→申城的数据获取方式（通汇推送接口、申城定时拉取、或数据已在本地库）、同步频率及增量/全量口径。",
+  "evidence" : "需求描述：“同步通汇的账单明细数据（每期各科目的应收和最终实收）”；附件方案仅涉及接口加字段，未提供通汇侧接口文档或同步机制说明，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 2,
+  "itemType" : "QUESTION",
+  "title" : "同步范围是否包含历史存量账单",
+  "description" : "请确认本次同步的账单范围：仅上线后的新增账单，还是包含历史存量账单；若含历史账单，各科目应收/实收的历史数据由通汇提供还是申城侧回补。",
+  "evidence" : "需求描述“每期各科目的应收和最终实收”未限定账单时间范围；需求材料未说明存量数据处理方式，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 3,
+  "itemType" : "QUESTION",
+  "title" : "四类服务费与账单科目的映射关系",
+  "description" : "请确认现有账单/科目体系是否已按“资金方、合作方、技术服务方、业务指定方”四类分别记录服务费的应收与实收；若通汇侧为单一或不同粒度的服务费科目，请提供四类服务费与通汇科目的映射或拆分规则。",
+  "evidence" : "结构化识别字段“新增字段清单”要求分别返回四类服务费的应还/已还/未还数值；材料未提供科目映射或拆分规则，且本次未能通过只读工具确认代码中的科目模型，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 4,
+  "itemType" : "QUESTION",
+  "title" : "“未还”数值的计算口径",
+  "description" : "请确认“未还”取“应还−已还”的实时计算值，还是账单中单独记录的字段；两者在存在部分冲抵、精度舍入时结果可能不同。",
+  "evidence" : "附件方案仅要求返回“应还、已还、未还数值”，未定义“未还”的计算规则，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 5,
+  "itemType" : "QUESTION",
+  "title" : "罚息“实时”数值的取值时点",
+  "description" : "罚息通常按日计提。请确认查询返回的罚息是通汇同步至申城的最新计提值，还是查询时点按规则实时计算；若两者存在计息尾差，请明确以哪侧数值为准。",
+  "evidence" : "附件方案：“合作方调用该查询接口查询时对应账单实时各科目应还、已还、未还数值返回结果”；罚息计提与取数口径材料未说明，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 6,
+  "itemType" : "QUESTION",
+  "title" : "还款金额在各科目间的冲抵/分摊顺序",
+  "description" : "一笔还款可能同时覆盖多个科目，各科目的“已还”数值取决于冲抵顺序。请提供冲抵/分摊规则（如先罚息、再费用、后本金的顺序），并明确分摊结果由通汇侧计算后同步，还是申城侧按规则计算。",
+  "evidence" : "附件方案要求按科目返回“已还”数值，但材料未说明分摊/冲抵规则及其归属方，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 7,
+  "itemType" : "QUESTION",
+  "title" : "未出账/未到期期次的返回规则",
+  "description" : "请确认当某期账单尚未生成或未到还款日时，该期在【还款计划查询】结果中如何返回：返回全部为0的记录、返回应还值（已还为0）、还是不返回该期。",
+  "evidence" : "附件方案：“根据具体订单产品规则，部分科目没有数值的则传0”，仅覆盖科目级取0场景，未覆盖整期未出账场景，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 8,
+  "itemType" : "QUESTION",
+  "title" : "新增字段的报文字段名与释义",
+  "description" : "附件PDF字段表的“释义”列全部为空。请提供新增字段的接口英文字段名（报文key）、释义及示例值；或确认由研发按接口现有命名规范拟定后回发业务/合作方确认。",
+  "evidence" : "附件《申城资管平台—【还款计划查询】接口增加科目字段20261106.pdf》字段表“释义”列为空，材料未提供接口报文字段定义，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 9,
+  "itemType" : "QUESTION",
+  "title" : "新增字段的生效范围（全部调用方或仅申城业务）",
+  "description" : "【还款计划查询】为存量合作方在用接口。请确认新增字段是对所有调用该接口的合作方统一返回，还是仅申城医美业务/指定合作方返回，其他调用方报文保持不变。",
+  "evidence" : "附件方案：“上述新增字段根据合作方调用该查询接口查询时…返回结果”，未区分调用方范围；证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "通汇侧外部依赖风险",
+  "description" : "各科目应收/实收数据来源为通汇，若通汇侧无现成接口或数据粒度不满足（如未按四类服务方拆分服务费），需通汇侧配合改造，跨系统排期与联调存在外部依赖，可能影响整体交付节奏。",
+  "evidence" : "需求描述：“同步通汇的账单明细数据”；材料未附通汇侧接口文档或数据结构，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "账单科目粒度改造与存量数据回补风险",
+  "description" : "若现有账单/还款模型未按四类服务方分别记录应收与实收，实际改造将不限于接口加字段，还需扩展数据模型并核对/回补存量数据，范围与风险显著上升，需业务知悉并接受可能的范围调整。",
+  "evidence" : "附件方案表述为“拟在现有【还款计划查询】接口中新增字段”；现有模型是否已支持四类服务费科目未能通过代码确认（本次仅依据需求材料），证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 2,
+  "itemType" : "RISK",
+  "title" : "需求描述与字段清单不一致的返工风险",
+  "description" : "需求描述要求全部科目返回“应还、已还、未还”，而字段清单中罚息、提前结清手续费缺少“未还”，若业务与研发各自按不同版本理解，存在联调或验收阶段返工风险。",
+  "evidence" : "需求描述与附件PDF字段清单对比：罚息、提前结清手续费仅列“应还、已还”两列。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 3,
+  "itemType" : "RISK",
+  "title" : "存量合作方报文兼容风险",
+  "description" : "在存量【还款计划查询】接口上新增一批必填字段会改变返回报文结构，存量调用方若对报文做严格校验或全量解析，可能出现兼容问题，需在上线前确认影响面并通知合作方。",
+  "evidence" : "附件方案：“拟在现有【还款计划查询】接口中新增字段”且全部“必填”；存量调用方范围及解析方式材料未说明，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 4,
+  "itemType" : "RISK",
+  "title" : "实时数值与对账口径偏差风险",
+  "description" : "接口承诺返回“实时”数值，若数据依赖通汇同步，则查询结果与通汇侧时点值可能存在同步延迟或计息尾差；需求中“最终实收”与“实时数值”两种表述并存，合作方对账时可能产生差异，需接受明确的对账口径。",
+  "evidence" : "需求描述：“每期各科目的应收和最终实收”与附件方案“实时各科目应还、已还、未还数值”并存；同步时效与对账规则材料未说明，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### WorkHub 临时分析 · 回复需求澄清项 · 需求 277
+
+<!-- workhub-analysis:f6bf097a420733cc7ac8dda56ee4aaccf0455d4122b737757836264a57e9329b -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：44
+- 记录时间：2026-11-12T16:02:47.560666
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/b823051e-2655-4980-9d6d-08b84caf8b87/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "罚息与提前结清手续费是否需要补充“未还”字段",
+  "description" : "需求描述要求返回各科目“应还、已还、未还”三个数值，但附件字段清单中罚息、提前结清手续费仅有“应还、已还”两列，未列“未还”。请确认这两个科目是否需要增加“未还罚息”“未还提前结清手续费”，还是以字段清单为准不提供。",
+  "evidence" : "需求描述：“返回账单各科目（本金、服务费-资金方/合作方/技术服务方/业务指定方、资产管理费、罚息、提前结清手续费）的应还、已还、未还实时数值”；附件《申城资管平台—【还款计划查询】接口增加科目字段20261106.pdf》字段清单中罚息、提前结清手续费仅列“应还、已还”，两处不一致。",
+  "status" : "RESPONDED",
+  "responseText" : "不需要",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-12T16:01:51.424092"
+}, {
+  "index" : 1,
+  "itemType" : "QUESTION",
+  "title" : "通汇账单明细数据的同步方式与频率",
+  "description" : "需求核心是“同步通汇的账单明细数据”，但方案仅描述在【还款计划查询】接口新增字段。请确认通汇→申城的数据获取方式（通汇推送接口、申城定时拉取、或数据已在本地库）、同步频率及增量/全量口径。",
+  "evidence" : "需求描述：“同步通汇的账单明细数据（每期各科目的应收和最终实收）”；附件方案仅涉及接口加字段，未提供通汇侧接口文档或同步机制说明，证据不足。",
+  "status" : "RESPONDED",
+  "responseText" : "无需",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-12T16:02:47.435957"
+}, {
+  "index" : 2,
+  "itemType" : "QUESTION",
+  "title" : "同步范围是否包含历史存量账单",
+  "description" : "请确认本次同步的账单范围：仅上线后的新增账单，还是包含历史存量账单；若含历史账单，各科目应收/实收的历史数据由通汇提供还是申城侧回补。",
+  "evidence" : "需求描述“每期各科目的应收和最终实收”未限定账单时间范围；需求材料未说明存量数据处理方式，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 3,
+  "itemType" : "QUESTION",
+  "title" : "四类服务费与账单科目的映射关系",
+  "description" : "请确认现有账单/科目体系是否已按“资金方、合作方、技术服务方、业务指定方”四类分别记录服务费的应收与实收；若通汇侧为单一或不同粒度的服务费科目，请提供四类服务费与通汇科目的映射或拆分规则。",
+  "evidence" : "结构化识别字段“新增字段清单”要求分别返回四类服务费的应还/已还/未还数值；材料未提供科目映射或拆分规则，且本次未能通过只读工具确认代码中的科目模型，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 4,
+  "itemType" : "QUESTION",
+  "title" : "“未还”数值的计算口径",
+  "description" : "请确认“未还”取“应还−已还”的实时计算值，还是账单中单独记录的字段；两者在存在部分冲抵、精度舍入时结果可能不同。",
+  "evidence" : "附件方案仅要求返回“应还、已还、未还数值”，未定义“未还”的计算规则，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 5,
+  "itemType" : "QUESTION",
+  "title" : "罚息“实时”数值的取值时点",
+  "description" : "罚息通常按日计提。请确认查询返回的罚息是通汇同步至申城的最新计提值，还是查询时点按规则实时计算；若两者存在计息尾差，请明确以哪侧数值为准。",
+  "evidence" : "附件方案：“合作方调用该查询接口查询时对应账单实时各科目应还、已还、未还数值返回结果”；罚息计提与取数口径材料未说明，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 6,
+  "itemType" : "QUESTION",
+  "title" : "还款金额在各科目间的冲抵/分摊顺序",
+  "description" : "一笔还款可能同时覆盖多个科目，各科目的“已还”数值取决于冲抵顺序。请提供冲抵/分摊规则（如先罚息、再费用、后本金的顺序），并明确分摊结果由通汇侧计算后同步，还是申城侧按规则计算。",
+  "evidence" : "附件方案要求按科目返回“已还”数值，但材料未说明分摊/冲抵规则及其归属方，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 7,
+  "itemType" : "QUESTION",
+  "title" : "未出账/未到期期次的返回规则",
+  "description" : "请确认当某期账单尚未生成或未到还款日时，该期在【还款计划查询】结果中如何返回：返回全部为0的记录、返回应还值（已还为0）、还是不返回该期。",
+  "evidence" : "附件方案：“根据具体订单产品规则，部分科目没有数值的则传0”，仅覆盖科目级取0场景，未覆盖整期未出账场景，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 8,
+  "itemType" : "QUESTION",
+  "title" : "新增字段的报文字段名与释义",
+  "description" : "附件PDF字段表的“释义”列全部为空。请提供新增字段的接口英文字段名（报文key）、释义及示例值；或确认由研发按接口现有命名规范拟定后回发业务/合作方确认。",
+  "evidence" : "附件《申城资管平台—【还款计划查询】接口增加科目字段20261106.pdf》字段表“释义”列为空，材料未提供接口报文字段定义，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 9,
+  "itemType" : "QUESTION",
+  "title" : "新增字段的生效范围（全部调用方或仅申城业务）",
+  "description" : "【还款计划查询】为存量合作方在用接口。请确认新增字段是对所有调用该接口的合作方统一返回，还是仅申城医美业务/指定合作方返回，其他调用方报文保持不变。",
+  "evidence" : "附件方案：“上述新增字段根据合作方调用该查询接口查询时…返回结果”，未区分调用方范围；证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "通汇侧外部依赖风险",
+  "description" : "各科目应收/实收数据来源为通汇，若通汇侧无现成接口或数据粒度不满足（如未按四类服务方拆分服务费），需通汇侧配合改造，跨系统排期与联调存在外部依赖，可能影响整体交付节奏。",
+  "evidence" : "需求描述：“同步通汇的账单明细数据”；材料未附通汇侧接口文档或数据结构，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "账单科目粒度改造与存量数据回补风险",
+  "description" : "若现有账单/还款模型未按四类服务方分别记录应收与实收，实际改造将不限于接口加字段，还需扩展数据模型并核对/回补存量数据，范围与风险显著上升，需业务知悉并接受可能的范围调整。",
+  "evidence" : "附件方案表述为“拟在现有【还款计划查询】接口中新增字段”；现有模型是否已支持四类服务费科目未能通过代码确认（本次仅依据需求材料），证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 2,
+  "itemType" : "RISK",
+  "title" : "需求描述与字段清单不一致的返工风险",
+  "description" : "需求描述要求全部科目返回“应还、已还、未还”，而字段清单中罚息、提前结清手续费缺少“未还”，若业务与研发各自按不同版本理解，存在联调或验收阶段返工风险。",
+  "evidence" : "需求描述与附件PDF字段清单对比：罚息、提前结清手续费仅列“应还、已还”两列。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 3,
+  "itemType" : "RISK",
+  "title" : "存量合作方报文兼容风险",
+  "description" : "在存量【还款计划查询】接口上新增一批必填字段会改变返回报文结构，存量调用方若对报文做严格校验或全量解析，可能出现兼容问题，需在上线前确认影响面并通知合作方。",
+  "evidence" : "附件方案：“拟在现有【还款计划查询】接口中新增字段”且全部“必填”；存量调用方范围及解析方式材料未说明，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 4,
+  "itemType" : "RISK",
+  "title" : "实时数值与对账口径偏差风险",
+  "description" : "接口承诺返回“实时”数值，若数据依赖通汇同步，则查询结果与通汇侧时点值可能存在同步延迟或计息尾差；需求中“最终实收”与“实时数值”两种表述并存，合作方对账时可能产生差异，需接受明确的对账口径。",
+  "evidence" : "需求描述：“每期各科目的应收和最终实收”与附件方案“实时各科目应还、已还、未还数值”并存；同步时效与对账规则材料未说明，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### WorkHub 临时分析 · 回复需求澄清项 · 需求 277
+
+<!-- workhub-analysis:fe2437fb01c0616162c6d5b54d14580ad88f644e4f5f6eb97eb3f615ab7f2785 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：44
+- 记录时间：2026-11-12T16:03:04.503727
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/b823051e-2655-4980-9d6d-08b84caf8b87/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "罚息与提前结清手续费是否需要补充“未还”字段",
+  "description" : "需求描述要求返回各科目“应还、已还、未还”三个数值，但附件字段清单中罚息、提前结清手续费仅有“应还、已还”两列，未列“未还”。请确认这两个科目是否需要增加“未还罚息”“未还提前结清手续费”，还是以字段清单为准不提供。",
+  "evidence" : "需求描述：“返回账单各科目（本金、服务费-资金方/合作方/技术服务方/业务指定方、资产管理费、罚息、提前结清手续费）的应还、已还、未还实时数值”；附件《申城资管平台—【还款计划查询】接口增加科目字段20261106.pdf》字段清单中罚息、提前结清手续费仅列“应还、已还”，两处不一致。",
+  "status" : "RESPONDED",
+  "responseText" : "不需要",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-12T16:01:51.424092"
+}, {
+  "index" : 1,
+  "itemType" : "QUESTION",
+  "title" : "通汇账单明细数据的同步方式与频率",
+  "description" : "需求核心是“同步通汇的账单明细数据”，但方案仅描述在【还款计划查询】接口新增字段。请确认通汇→申城的数据获取方式（通汇推送接口、申城定时拉取、或数据已在本地库）、同步频率及增量/全量口径。",
+  "evidence" : "需求描述：“同步通汇的账单明细数据（每期各科目的应收和最终实收）”；附件方案仅涉及接口加字段，未提供通汇侧接口文档或同步机制说明，证据不足。",
+  "status" : "RESPONDED",
+  "responseText" : "无需",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-12T16:02:47.435957"
+}, {
+  "index" : 2,
+  "itemType" : "QUESTION",
+  "title" : "同步范围是否包含历史存量账单",
+  "description" : "请确认本次同步的账单范围：仅上线后的新增账单，还是包含历史存量账单；若含历史账单，各科目应收/实收的历史数据由通汇提供还是申城侧回补。",
+  "evidence" : "需求描述“每期各科目的应收和最终实收”未限定账单时间范围；需求材料未说明存量数据处理方式，证据不足。",
+  "status" : "RESPONDED",
+  "responseText" : "包含",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-12T16:03:04.375551"
+}, {
+  "index" : 3,
+  "itemType" : "QUESTION",
+  "title" : "四类服务费与账单科目的映射关系",
+  "description" : "请确认现有账单/科目体系是否已按“资金方、合作方、技术服务方、业务指定方”四类分别记录服务费的应收与实收；若通汇侧为单一或不同粒度的服务费科目，请提供四类服务费与通汇科目的映射或拆分规则。",
+  "evidence" : "结构化识别字段“新增字段清单”要求分别返回四类服务费的应还/已还/未还数值；材料未提供科目映射或拆分规则，且本次未能通过只读工具确认代码中的科目模型，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 4,
+  "itemType" : "QUESTION",
+  "title" : "“未还”数值的计算口径",
+  "description" : "请确认“未还”取“应还−已还”的实时计算值，还是账单中单独记录的字段；两者在存在部分冲抵、精度舍入时结果可能不同。",
+  "evidence" : "附件方案仅要求返回“应还、已还、未还数值”，未定义“未还”的计算规则，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 5,
+  "itemType" : "QUESTION",
+  "title" : "罚息“实时”数值的取值时点",
+  "description" : "罚息通常按日计提。请确认查询返回的罚息是通汇同步至申城的最新计提值，还是查询时点按规则实时计算；若两者存在计息尾差，请明确以哪侧数值为准。",
+  "evidence" : "附件方案：“合作方调用该查询接口查询时对应账单实时各科目应还、已还、未还数值返回结果”；罚息计提与取数口径材料未说明，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 6,
+  "itemType" : "QUESTION",
+  "title" : "还款金额在各科目间的冲抵/分摊顺序",
+  "description" : "一笔还款可能同时覆盖多个科目，各科目的“已还”数值取决于冲抵顺序。请提供冲抵/分摊规则（如先罚息、再费用、后本金的顺序），并明确分摊结果由通汇侧计算后同步，还是申城侧按规则计算。",
+  "evidence" : "附件方案要求按科目返回“已还”数值，但材料未说明分摊/冲抵规则及其归属方，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 7,
+  "itemType" : "QUESTION",
+  "title" : "未出账/未到期期次的返回规则",
+  "description" : "请确认当某期账单尚未生成或未到还款日时，该期在【还款计划查询】结果中如何返回：返回全部为0的记录、返回应还值（已还为0）、还是不返回该期。",
+  "evidence" : "附件方案：“根据具体订单产品规则，部分科目没有数值的则传0”，仅覆盖科目级取0场景，未覆盖整期未出账场景，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 8,
+  "itemType" : "QUESTION",
+  "title" : "新增字段的报文字段名与释义",
+  "description" : "附件PDF字段表的“释义”列全部为空。请提供新增字段的接口英文字段名（报文key）、释义及示例值；或确认由研发按接口现有命名规范拟定后回发业务/合作方确认。",
+  "evidence" : "附件《申城资管平台—【还款计划查询】接口增加科目字段20261106.pdf》字段表“释义”列为空，材料未提供接口报文字段定义，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 9,
+  "itemType" : "QUESTION",
+  "title" : "新增字段的生效范围（全部调用方或仅申城业务）",
+  "description" : "【还款计划查询】为存量合作方在用接口。请确认新增字段是对所有调用该接口的合作方统一返回，还是仅申城医美业务/指定合作方返回，其他调用方报文保持不变。",
+  "evidence" : "附件方案：“上述新增字段根据合作方调用该查询接口查询时…返回结果”，未区分调用方范围；证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "通汇侧外部依赖风险",
+  "description" : "各科目应收/实收数据来源为通汇，若通汇侧无现成接口或数据粒度不满足（如未按四类服务方拆分服务费），需通汇侧配合改造，跨系统排期与联调存在外部依赖，可能影响整体交付节奏。",
+  "evidence" : "需求描述：“同步通汇的账单明细数据”；材料未附通汇侧接口文档或数据结构，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "账单科目粒度改造与存量数据回补风险",
+  "description" : "若现有账单/还款模型未按四类服务方分别记录应收与实收，实际改造将不限于接口加字段，还需扩展数据模型并核对/回补存量数据，范围与风险显著上升，需业务知悉并接受可能的范围调整。",
+  "evidence" : "附件方案表述为“拟在现有【还款计划查询】接口中新增字段”；现有模型是否已支持四类服务费科目未能通过代码确认（本次仅依据需求材料），证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 2,
+  "itemType" : "RISK",
+  "title" : "需求描述与字段清单不一致的返工风险",
+  "description" : "需求描述要求全部科目返回“应还、已还、未还”，而字段清单中罚息、提前结清手续费缺少“未还”，若业务与研发各自按不同版本理解，存在联调或验收阶段返工风险。",
+  "evidence" : "需求描述与附件PDF字段清单对比：罚息、提前结清手续费仅列“应还、已还”两列。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 3,
+  "itemType" : "RISK",
+  "title" : "存量合作方报文兼容风险",
+  "description" : "在存量【还款计划查询】接口上新增一批必填字段会改变返回报文结构，存量调用方若对报文做严格校验或全量解析，可能出现兼容问题，需在上线前确认影响面并通知合作方。",
+  "evidence" : "附件方案：“拟在现有【还款计划查询】接口中新增字段”且全部“必填”；存量调用方范围及解析方式材料未说明，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 4,
+  "itemType" : "RISK",
+  "title" : "实时数值与对账口径偏差风险",
+  "description" : "接口承诺返回“实时”数值，若数据依赖通汇同步，则查询结果与通汇侧时点值可能存在同步延迟或计息尾差；需求中“最终实收”与“实时数值”两种表述并存，合作方对账时可能产生差异，需接受明确的对账口径。",
+  "evidence" : "需求描述：“每期各科目的应收和最终实收”与附件方案“实时各科目应还、已还、未还数值”并存；同步时效与对账规则材料未说明，证据不足。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### WorkHub 临时分析 · 生成需求澄清项 · 需求 277
+
+<!-- workhub-analysis:9e0c1d83ccd7ee770af444bc3262f689f2a19785390f687b1a71dd389b82f6ea -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：45
+- 记录时间：2026-11-12T16:45:44.256712
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/09d49d21-0ef2-47bf-86ea-85b44b9b03a0/source.md>)
+
+```json
+[ ]
+```
+
+
+
+### WorkHub 临时分析 · 生成研发评估 · 需求 277
+
+<!-- workhub-analysis:feb04488ac598912448bb28469342ff8f1fc1392ca0cdd46fe500b301124141b -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：110
+- 记录时间：2026-11-12T16:54:21.259004
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/9fd6380d-19fd-4767-bcd5-63258a279ff3/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "新消费分期",
+  "projectId" : 46,
+  "projectName" : "申城-医美-诚泰保理",
+  "repositoryUrl" : "scs (11 repositories)",
+  "requirementRawPath" : "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/9fd6380d-19fd-4767-bcd5-63258a279ff3/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "我先查阅需求材料已提供的内容，接下来需要在业务线代码中定位【还款计划查询】接口及相关科目（本金/服务费/资产管理费/罚息/提前结清手续费）的现有实现。先并行搜索关键代码。",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghongjun", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ ],
+  "totalEstimatedEffort" : null,
+  "developmentEstimatedEffort" : null,
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-12T16:54:21.170574",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null
+}
+```
+
+
+
+### WorkHub 临时分析 · 生成研发评估 · 需求 277
+
+<!-- workhub-analysis:bc9977eabc75823ad642401d7887b07d656e106ef5da9fe8bd0f5a23def381be -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：111
+- 记录时间：2026-11-12T18:08:23.553994
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/23b8bfcc-cce6-4a21-9c3e-c01d6eeb3ae1/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "新消费分期",
+  "projectId" : 46,
+  "projectName" : "申城-医美-诚泰保理",
+  "repositoryUrl" : "scs (11 repositories)",
+  "requirementRawPath" : "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/23b8bfcc-cce6-4a21-9c3e-c01d6eeb3ae1/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "我先查看需求材料已提供的信息，再通过只读工具检索业务线代码，确认【还款计划查询】接口的现有实现。先并行搜索几个关键仓库。",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghongjun", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ ],
+  "totalEstimatedEffort" : null,
+  "developmentEstimatedEffort" : null,
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-12T18:08:23.429055",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null
+}
+```
+
+
+
+### WorkHub 临时分析 · 生成研发评估 · 需求 277
+
+<!-- workhub-analysis:ef722321c02af3270312dc59867c9bbbe1da51f903f7ad57acfdfc71f215063e -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：112
+- 记录时间：2026-11-12T18:45:47.533159
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/e7e90c40-9c54-4c36-860c-fcef0f585841/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "新消费分期",
+  "projectId" : 46,
+  "projectName" : "申城-医美-诚泰保理",
+  "repositoryUrl" : "scs (11 repositories)",
+  "requirementRawPath" : "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/e7e90c40-9c54-4c36-860c-fcef0f585841/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "我先查看需求材料中提到的【还款计划查询】接口在代码中的位置，确认现有系统和可复用逻辑。",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghongjun", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ ],
+  "totalEstimatedEffort" : null,
+  "developmentEstimatedEffort" : null,
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-12T18:45:47.452021",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null
+}
+```
+
+
+
+### WorkHub 临时分析 · 生成研发评估 · 需求 277
+
+<!-- workhub-analysis:abbf3e1772c672b4337897f50d72c0c0546ee90efbc0162aa13f5cd51c5efb68 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：113
+- 记录时间：2026-11-12T18:50:56.690797
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/64b8d679-d468-4d24-99d8-3e9a64c0afbe/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "新消费分期",
+  "projectId" : 46,
+  "projectName" : "申城-医美-诚泰保理",
+  "repositoryUrl" : "scs (11 repositories)",
+  "requirementRawPath" : "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/64b8d679-d468-4d24-99d8-3e9a64c0afbe/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "原答复为未完成的评估过程记录：计划按“先分析需求材料，再查代码确认现有系统，最后输出评估草稿”的工作流执行。第一步已完成，提炼出需求核心：在申城资管平台现有【还款计划查询】接口中新增 21 个科目字段（本金、四类服务费、资产管理费、罚息、提前结清手续费的应还/已还/未还实时数值），供合作方查询通汇账单明细数据。第二步（查代码确认现有系统）仅开始搜索【还款计划查询】接口的位置，之后内容中断（出现异常文本“olanışıória后续标记不变”），代码确认与最终评估草稿均未完成。",
+  "requirementChangePoints" : [ "在申城资管平台现有【还款计划查询】接口中新增 21 个科目字段（本金、四类服务费、资产管理费、罚息、提前结清手续费的应还/已还/未还实时数值），供合作方查询通汇账单明细数据。" ],
+  "impactedModules" : [ "还款计划查询接口（申城资管平台）——代码位置确认未完成" ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghongjun", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ ],
+  "totalEstimatedEffort" : null,
+  "developmentEstimatedEffort" : null,
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-12T18:50:56.635978",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null
+}
+```
+
+
+
+### WorkHub 临时分析 · 生成研发评估 · 需求 277
+
+<!-- workhub-analysis:41fee43641506f8999716cf8302fe46a15f32fe61a35bf4cf3920f821b2fc017 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：117
+- 记录时间：2026-11-13T11:41:50.530029
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/256656d8-ffad-4529-a858-6bf4414691ad/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "新消费分期",
+  "projectId" : 46,
+  "projectName" : "申城-医美-诚泰保理",
+  "repositoryUrl" : "scs (11 repositories)",
+  "requirementRawPath" : "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/256656d8-ffad-4529-a858-6bf4414691ad/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "我先梳理需求材料，再按约束检索代码，最后输出评估 JSON。\n\n需求要点（来自 source.md 与附件 PDF 摘要）：\n- 在现有【还款计划查询】接口新增字段，返回账单各科目（本金、四类服务费、资产管理费、罚息、提前结清手续费）的应还/已还/未还实时值，无数值科目传 0。\n- 调用方是合作方（申城侧通过通汇同步账单明细）。\n\n下面开始代码检索，先定位【还款计划查询】接口。",
+  "requirementChangePoints" : [ "在现有【还款计划查询】接口新增字段，返回账单各科目（本金、四类服务费、资产管理费、罚息、提前结清手续费）的应还/已还/未还实时值，无数值科目传 0", "调用方是合作方（申城侧通过通汇同步账单明细）" ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghongjun", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ ],
+  "totalEstimatedEffort" : null,
+  "developmentEstimatedEffort" : null,
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-13T11:41:50.402783",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null
+}
+```
+
+
+
+### WorkHub 临时分析 · 调整研发任务 · 需求 278
+
+<!-- workhub-analysis:54abb72377009a2c6d94632f0e82ad9812893649c11f8bba7ade1370b69bd6d9 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：118
+- 记录时间：2026-11-13T13:37:55.685571
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/消费分期/即科医美通汇诚泰保理/2026/202611130002/历史版本/8416516b-cbec-465f-9415-15894ecec0ed/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "消费分期",
+  "projectId" : 4,
+  "projectName" : "即科医美通汇诚泰保理",
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/消费分期/即科医美通汇诚泰保理/2026/202611130002/历史版本/8416516b-cbec-465f-9415-15894ecec0ed/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "针对目前极石商贸商品分期保理项目（项目编号：JT_XXT-PRJ-ZMY-A，涉及两个产品：JT_XXT-PRJ-ZMY-A001、JT_XXT-PRJ-ZMY-A002），易宝支付渠道，扣款成功后，全部清分给嘉泰保理：正常还款、提前还款当期、提前结清：原清分给担保方的金额，全部清分给嘉泰保理。",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "cairui" ],
+  "workItems" : [ {
+    "title" : "线上扣款全部清分给嘉泰",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "amp-payment" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "2h",
+    "ownerUserName" : "cairui",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null
+  } ],
+  "totalEstimatedEffort" : "4h",
+  "developmentEstimatedEffort" : "2h",
+  "testingEstimatedEffort" : "2h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-13T13:37:55.343399",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null
+}
+```
+
+
+
+### 临时分析 · 生成研发评估 · 需求 277
+
+<!-- analysis-record:49964c5939abf703cf59bb755ec223502148ba8a315e1e2af3ac2559a4dd315c -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：121
+- 记录时间：2026-11-14T21:40:36.206880
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/4112d861-a2f6-4960-8fc5-bd6d74cdc3aa/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "新消费分期",
+  "projectId" : 46,
+  "projectName" : "申城-医美-诚泰保理",
+  "repositoryUrl" : "scs (11 repositories)",
+  "requirementRawPath" : "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/4112d861-a2f6-4960-8fc5-bd6d74cdc3aa/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "评估草稿：仅改造 scs-saps，在现有【还款计划查询】接口（/api/repayment/plan/query，RepayPlanApiController→RepaymentPlanServiceImpl.queryRepaymentPlanListApi→RepaymentPlanApiVo）响应中新增每期科目级应还/已还/未还字段（本金、资金方/合作方/技术服务方/业务指定方服务费、资产管理费、罚息、提前结清手续费，共22个必填字段，无金额科目传0），数据源复用 bill_fee_detail 的 total_amount/paid_amount/unpaid_amount 与管理端成熟的科目汇总口径（含红冲、costAmount、申城医美产品特殊逻辑）。共拆分 2 个研发任务（接口字段开发 8h、文档联调与存量调用方回归 4h）。金额单位与精度、罚息科目口径两处需与申城/通汇对齐；本次未修改代码、未创建工作项。",
+  "requirementChangePoints" : [ "【还款计划查询】接口（/api/repayment/plan/query）响应新增每期科目级实时数值字段：应还/已还/未还本金、应还/已还/未还服务费（资金方、合作方、技术服务方、业务指定方）、应还/已还/未还资产管理费。", "同接口新增罚息、提前结清手续费的应还/已还实时数值字段（PDF字段清单未列未还，需求描述文字含未还，口径待确认）。", "所有新增字段必填，按订单产品规则无金额科目一律传0（如本项目技术服务费费率为0）。", "数值为合作方查询时点账单实时值，需覆盖正常还款、部分还款、提前结清、代偿/回购、退费等结算场景后的科目状态。", "满足通汇同步账单明细数据（每期各科目应收与最终实收）的数据获取需要，不新增同步任务，仅扩展现有查询接口。" ],
+  "impactedModules" : [ "scs-saps/saps-controller/APIs/RepayPlanApiController（/api/repayment/plan/query）", "scs-saps/saps-model/vo/APIS/RepaymentPlanApiVo", "scs-saps/saps-service/RepaymentPlanServiceImpl#queryRepaymentPlanListApi", "scs-saps bill_fee_detail 科目金额数据口径", "scs-saps/saps-model/enums/BillSubjectNoEnum 科目映射", "合作方接口文档与申城/通汇联调" ],
+  "risks" : [ "RepaymentPlanApiVo 现有金额字段为 Integer，而 bill_fee_detail 为 BigDecimal：新增字段的类型、金额单位（元/分）与小数位必须与申城/通汇文档对齐，否则对账口径错误。", "申城代偿/回购线上还款不落 repayment_plan_pay_subject_detail（管理端回退到 statement_charge_resource 展示），科目'已还'依赖 bill_fee_detail.paid_amount 的更新链路，该场景数值需专项验证。", "该接口被 FunderBillSyncScheduleBizServiceImpl 定时同步及 scs-payment(SapsApi)、scs-capital/scs-order(SapsClient) 内部客户端消费，新增字段需保证 JSON 兼容、不破坏存量反序列化与定时任务。", "管理端账单列表存在申城医美产品特殊口径（isThPrdZmycA002、AssetManagementFeeAmount、资方服务费 costAmount 占用、红冲 reverse 明细），接口字段若不复用同一口径会出现接口与页面数值不一致。", "罚息/提前结清手续费是否输出'未还'在 PDF 与需求描述间不一致，字段清单未定稿前存在返工风险。" ],
+  "questions" : [ "罚息与提前结清手续费是否需要返回'未还'字段？PDF 字段清单仅列应还/已还两项，需求描述文字为'应还、已还、未还'，两处不一致，直接影响字段清单与验收。", "'罚息'口径是否仅指对客罚息（P0007）？系统还存在对资罚息（P0009，代偿场景计收），是否需要一并返回。", "新增字段的英文命名、金额单位（元/分）与精度需与申城/通汇接口文档对齐定稿（现有 VO 金额为 Integer，科目数据为 BigDecimal）。" ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghongjun", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ {
+    "title" : "scs-saps 还款计划查询接口新增账单各科目应还已还未还字段",
+    "description" : "在现有【还款计划查询】接口 /api/repayment/plan/query 的响应对象 RepaymentPlanApiVo 中新增22个科目级必填字段：应还/已还/未还×（本金、资金方服务费、合作方服务费、技术服务方服务费、业务指定方服务费、资产管理费）+ 罚息应还/已还 + 提前结清手续费应还/已还；在 RepaymentPlanServiceImpl.queryRepaymentPlanListApi 中按账单号批量查询 bill_fee_detail，按 BillSubjectNoEnum 科目映射（P0001本金、P0003资金方、P0004技术服务、P0005合作方、P0006提前结清手续费、P0007罚息、P0008业务指定方、P0012资产管理费）汇总 total_amount/paid_amount/unpaid_amount 实时填充，无金额科目置0；红冲、costAmount 及申城医美产品特殊口径与管理端 queryList 保持一致；补齐各还款场景单测。",
+    "requirementChangePoint" : "【还款计划查询】接口响应新增每期科目级实时数值字段：应还/已还/未还本金、四类服务费、资产管理费，及罚息、提前结清手续费应还/已还；无金额科目传0，覆盖各结算场景。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "scs-saps/saps-model/src/main/java/com/amp/saps/model/vo/APIS/RepaymentPlanApiVo.java", "scs-saps/saps-service/src/main/java/com/amp/saps/service/impl/RepaymentPlanServiceImpl.java", "scs-saps/saps-service/src/main/java/com/amp/saps/service/RepaymentPlanService.java", "scs-saps/saps-model/src/main/java/com/amp/saps/model/enums/BillSubjectNoEnum.java" ],
+    "changePoints" : [ "saps-model/vo/APIS/RepaymentPlanApiVo.java：新增22个科目字段（BigDecimal，命名与单位以定稿文档为准），保留存量字段不动。", "saps-service/RepaymentPlanServiceImpl#queryRepaymentPlanListApi（约1932行）：在现有还款计划返回组装处，按 billNos 批量查询 bill_fee_detail（is_delete=0、is_cancel=0）。", "按 BillSubjectNoEnum 科目映射（P0001/P0003/P0004/P0005/P0006/P0007/P0008/P0012）分组汇总 total_amount/paid_amount/unpaid_amount 填充 VO，缺失科目统一补0。", "科目口径对齐管理端 queryList/AssetManagementFeeAmount：红冲 reverse 明细、资方服务费 costAmount 占用、申城医美产品 isThPrdZmycA002 特殊处理保持一致。", "单测/自测：正常还款、部分还款、提前结清、代偿/回购（科目已还走 bill_fee_detail 更新链路）、退费场景数值正确性与0值兜底。" ],
+    "systemTags" : [ "scs-saps" ],
+    "evidenceRefs" : [ "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/APIs/RepayPlanApiController.java:43（/api/repayment/plan/query 接口入口，orgCode 鉴权）", "scs-saps/saps-service/src/main/java/com/amp/saps/service/impl/RepaymentPlanServiceImpl.java:1932（queryRepaymentPlanListApi 现有实现，经 mapper.queryRepaymentPlanList 查询）", "scs-saps/saps-model/src/main/java/com/amp/saps/model/vo/APIS/RepaymentPlanApiVo.java（现有响应VO仅有总应还/已还/未还，无科目字段）", "scs-saps/saps-model/src/main/java/com/amp/saps/model/enums/BillSubjectNoEnum.java（P0001本金/P0003资方/P0004平台即技术服务费/P0005合作方/P0006提前结清/P0007罚息/P0008业务指定方/P0012资产管理费）", "scs-saps/saps-model/src/main/java/com/amp/saps/model/entity/BillFeeDetailEntity.java（bill_fee_detail 含 subjectNo/totalAmount/paidAmount/unpaidAmount/redAmount/reverse）", "scs-saps/saps-service/src/main/java/com/amp/saps/service/impl/RepaymentPlanServiceImpl.java:1069（管理端 queryList 科目汇总可复用口径）及 2774（AssetManagementFeeAmount）", "scs-saps/saps-model/src/main/java/com/amp/saps/model/vo/RepaymentPlanVo.java（管理端已具备全部科目级应还/已还/未还字段，字段命名可参照）", "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/manage/bill/RepaymentPlanPaySubjectDetailController.java（申城代偿/回购回退 statement_charge_resource 展示逻辑，验证科目已还口径）", "附件：申城资管平台—【还款计划查询】接口增加科目字段20261106.pdf（22个新增字段清单）", "scs-saps/docs/raw/feature/am_fee_recon_202608260001/deal/260830_申城医美_智融诚泰再保理需求整理.md（科目与主体口径：技术服务费0、资产管理费月结不入客户应还）" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "还款计划查询接口",
+    "relatedFiles" : [ "scs-saps/saps-model/src/main/java/com/amp/saps/model/vo/APIS/RepaymentPlanApiVo.java", "scs-saps/saps-service/src/main/java/com/amp/saps/service/impl/RepaymentPlanServiceImpl.java", "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/APIs/RepayPlanApiController.java", "scs-saps/saps-model/src/main/java/com/amp/saps/model/entity/BillFeeDetailEntity.java", "scs-saps/saps-model/src/main/java/com/amp/saps/model/enums/BillSubjectNoEnum.java" ],
+    "estimatedEffort" : "8h",
+    "ownerUserName" : "shihao",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : "金额单位/精度与罚息科目口径未定稿即开发，可能返工；代偿/回购场景科目已还数值需专项验证；需回归存量内部调用方。"
+  }, {
+    "title" : "scs-saps 还款计划查询接口科目字段文档定稿与联调回归",
+    "description" : "更新合作方《还款计划查询》接口文档，明确22个新增字段的英文名、必填、金额单位与精度、无金额科目传0规则；在测试环境与申城/通汇联调，验证每期各科目应还/已还/未还实时数值与账单实际结算一致；回归存量调用方（FunderBillSyncSchedule 定时同步、scs-payment SapsApi、scs-capital/scs-order SapsClient）确认新增字段不影响反序列化与既有流程。",
+    "requirementChangePoint" : "满足通汇同步账单明细数据（每期各科目应收与最终实收）的获取；新增字段必填、无数值科目传0；数值覆盖各结算场景。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "合作方接口文档（还款计划查询）", "scs-saps/saps-business/src/main/java/com/amp/saps/business/impl/FunderBillSyncScheduleBizServiceImpl.java", "scs-payment/scs-payment-api/src/main/java/com/scs/payment/api/service/SapsApi.java", "scs-capital/scs-capital-api/src/main/java/com/scs/capital/api/SapsClient.java", "scs-order/scs-order-api/src/main/java/com/thchengtay/order/api/SapsClient.java" ],
+    "changePoints" : [ "接口文档：新增字段清单（字段名/释义/必填/单位/精度/零值规则）定稿并同步申城/通汇。", "测试环境联调：按申请单号查询验证每期科目实时数值，覆盖正常、部分还款、提前结清、代偿/回购、退费场景及0值科目（如技术服务费）。", "存量调用方回归：FunderBillSyncScheduleBizServiceImpl 定时同步（/saps/api/repayment/plan/query 自调用）及 scs-payment/scs-capital/scs-order 客户端反序列化兼容性验证。" ],
+    "systemTags" : [ "scs-saps" ],
+    "evidenceRefs" : [ "scs-saps/saps-business/src/main/java/com/amp/saps/business/impl/FunderBillSyncScheduleBizServiceImpl.java:71（存量自调用 /saps/api/repayment/plan/query 消费 RepaymentPlanApiVo）", "scs-payment/scs-payment-api/src/main/java/com/scs/payment/api/service/SapsApi.java:28（内部消费方）", "scs-capital/scs-capital-api/src/main/java/com/scs/capital/api/SapsClient.java:34、scs-order/scs-order-api/src/main/java/com/thchengtay/order/api/SapsClient.java:32（内部消费方）", "附件：申城资管平台—【还款计划查询】接口增加科目字段20261106.pdf（联调验收字段依据）" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "接口联调与文档",
+    "relatedFiles" : [ "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/APIs/RepayPlanApiController.java", "scs-saps/saps-business/src/main/java/com/amp/saps/business/impl/FunderBillSyncScheduleBizServiceImpl.java", "scs-payment/scs-payment-api/src/main/java/com/scs/payment/api/service/SapsApi.java", "scs-capital/scs-capital-api/src/main/java/com/scs/capital/api/SapsClient.java", "scs-order/scs-order-api/src/main/java/com/thchengtay/order/api/SapsClient.java" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : null,
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "scs-saps 还款计划查询接口新增账单各科目应还已还未还字段",
+    "risk" : "联调依赖申城/通汇配合与外部环境；罚息/提前结清手续费是否输出未还未定稿会影响文档与验收用例。"
+  } ],
+  "totalEstimatedEffort" : "12h",
+  "developmentEstimatedEffort" : "12h",
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-14T21:40:35.984556",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null
+}
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 277
+
+<!-- analysis-record:d1a189a5882215ae7274cf1dec4a7d9728a99a3684d673d70aaaf2afc23330ae -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：121
+- 记录时间：2026-11-14T22:50:30.272163
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/4112d861-a2f6-4960-8fc5-bd6d74cdc3aa/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "新消费分期",
+  "projectId" : 46,
+  "projectName" : "申城-医美-诚泰保理",
+  "repositoryUrl" : "scs (11 repositories)",
+  "requirementRawPath" : "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/4112d861-a2f6-4960-8fc5-bd6d74cdc3aa/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "评估草稿：仅改造 scs-saps，在现有【还款计划查询】接口（/api/repayment/plan/query，RepayPlanApiController→RepaymentPlanServiceImpl.queryRepaymentPlanListApi→RepaymentPlanApiVo）响应中新增每期科目级应还/已还/未还字段（本金、资金方/合作方/技术服务方/业务指定方服务费、资产管理费、罚息、提前结清手续费，共22个必填字段，无金额科目传0），数据源复用 bill_fee_detail 的 total_amount/paid_amount/unpaid_amount 与管理端成熟的科目汇总口径（含红冲、costAmount、申城医美产品特殊逻辑）。共拆分 2 个研发任务（接口字段开发 8h、文档联调与存量调用方回归 4h）。金额单位与精度、罚息科目口径两处需与申城/通汇对齐；本次未修改代码、未创建工作项。",
+  "requirementChangePoints" : [ "【还款计划查询】接口（/api/repayment/plan/query）响应新增每期科目级实时数值字段：应还/已还/未还本金、应还/已还/未还服务费（资金方、合作方、技术服务方、业务指定方）、应还/已还/未还资产管理费。", "同接口新增罚息、提前结清手续费的应还/已还实时数值字段（PDF字段清单未列未还，需求描述文字含未还，口径待确认）。", "所有新增字段必填，按订单产品规则无金额科目一律传0（如本项目技术服务费费率为0）。", "数值为合作方查询时点账单实时值，需覆盖正常还款、部分还款、提前结清、代偿/回购、退费等结算场景后的科目状态。", "满足通汇同步账单明细数据（每期各科目应收与最终实收）的数据获取需要，不新增同步任务，仅扩展现有查询接口。", "【还款计划查询】接口响应新增每期科目级实时数值字段：应还/已还/未还本金、四类服务费、资产管理费，及罚息、提前结清手续费应还/已还；无金额科目传0，覆盖各结算场景。", "满足通汇同步账单明细数据（每期各科目应收与最终实收）的获取；新增字段必填、无数值科目传0；数值覆盖各结算场景。" ],
+  "impactedModules" : [ "scs-saps/saps-controller/APIs/RepayPlanApiController（/api/repayment/plan/query）", "scs-saps/saps-model/vo/APIS/RepaymentPlanApiVo", "scs-saps/saps-service/RepaymentPlanServiceImpl#queryRepaymentPlanListApi", "scs-saps bill_fee_detail 科目金额数据口径", "scs-saps/saps-model/enums/BillSubjectNoEnum 科目映射", "合作方接口文档与申城/通汇联调" ],
+  "risks" : [ "RepaymentPlanApiVo 现有金额字段为 Integer，而 bill_fee_detail 为 BigDecimal：新增字段的类型、金额单位（元/分）与小数位必须与申城/通汇文档对齐，否则对账口径错误。", "申城代偿/回购线上还款不落 repayment_plan_pay_subject_detail（管理端回退到 statement_charge_resource 展示），科目'已还'依赖 bill_fee_detail.paid_amount 的更新链路，该场景数值需专项验证。", "该接口被 FunderBillSyncScheduleBizServiceImpl 定时同步及 scs-payment(SapsApi)、scs-capital/scs-order(SapsClient) 内部客户端消费，新增字段需保证 JSON 兼容、不破坏存量反序列化与定时任务。", "管理端账单列表存在申城医美产品特殊口径（isThPrdZmycA002、AssetManagementFeeAmount、资方服务费 costAmount 占用、红冲 reverse 明细），接口字段若不复用同一口径会出现接口与页面数值不一致。", "罚息/提前结清手续费是否输出'未还'在 PDF 与需求描述间不一致，字段清单未定稿前存在返工风险。" ],
+  "questions" : [ "罚息与提前结清手续费是否需要返回'未还'字段？PDF 字段清单仅列应还/已还两项，需求描述文字为'应还、已还、未还'，两处不一致，直接影响字段清单与验收。", "'罚息'口径是否仅指对客罚息（P0007）？系统还存在对资罚息（P0009，代偿场景计收），是否需要一并返回。", "新增字段的英文命名、金额单位（元/分）与精度需与申城/通汇接口文档对齐定稿（现有 VO 金额为 Integer，科目数据为 BigDecimal）。" ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghongjun", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ {
+    "title" : "scs-saps 还款计划查询接口新增账单各科目应还已还未还字段",
+    "description" : "在现有【还款计划查询】接口 /api/repayment/plan/query 的响应对象 RepaymentPlanApiVo 中新增22个科目级必填字段：应还/已还/未还×（本金、资金方服务费、合作方服务费、技术服务方服务费、业务指定方服务费、资产管理费）+ 罚息应还/已还 + 提前结清手续费应还/已还；在 RepaymentPlanServiceImpl.queryRepaymentPlanListApi 中按账单号批量查询 bill_fee_detail，按 BillSubjectNoEnum 科目映射（P0001本金、P0003资金方、P0004技术服务、P0005合作方、P0006提前结清手续费、P0007罚息、P0008业务指定方、P0012资产管理费）汇总 total_amount/paid_amount/unpaid_amount 实时填充，无金额科目置0；红冲、costAmount 及申城医美产品特殊口径与管理端 queryList 保持一致；补齐各还款场景单测。",
+    "requirementChangePoint" : "【还款计划查询】接口响应新增每期科目级实时数值字段：应还/已还/未还本金、四类服务费、资产管理费，及罚息、提前结清手续费应还/已还；无金额科目传0，覆盖各结算场景。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "scs-saps/saps-model/src/main/java/com/amp/saps/model/vo/APIS/RepaymentPlanApiVo.java", "scs-saps/saps-service/src/main/java/com/amp/saps/service/impl/RepaymentPlanServiceImpl.java", "scs-saps/saps-service/src/main/java/com/amp/saps/service/RepaymentPlanService.java", "scs-saps/saps-model/src/main/java/com/amp/saps/model/enums/BillSubjectNoEnum.java" ],
+    "changePoints" : [ "saps-model/vo/APIS/RepaymentPlanApiVo.java：新增22个科目字段（BigDecimal，命名与单位以定稿文档为准），保留存量字段不动。", "saps-service/RepaymentPlanServiceImpl#queryRepaymentPlanListApi（约1932行）：在现有还款计划返回组装处，按 billNos 批量查询 bill_fee_detail（is_delete=0、is_cancel=0）。", "按 BillSubjectNoEnum 科目映射（P0001/P0003/P0004/P0005/P0006/P0007/P0008/P0012）分组汇总 total_amount/paid_amount/unpaid_amount 填充 VO，缺失科目统一补0。", "科目口径对齐管理端 queryList/AssetManagementFeeAmount：红冲 reverse 明细、资方服务费 costAmount 占用、申城医美产品 isThPrdZmycA002 特殊处理保持一致。", "单测/自测：正常还款、部分还款、提前结清、代偿/回购（科目已还走 bill_fee_detail 更新链路）、退费场景数值正确性与0值兜底。" ],
+    "systemTags" : [ "scs-saps" ],
+    "evidenceRefs" : [ "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/APIs/RepayPlanApiController.java:43（/api/repayment/plan/query 接口入口，orgCode 鉴权）", "scs-saps/saps-service/src/main/java/com/amp/saps/service/impl/RepaymentPlanServiceImpl.java:1932（queryRepaymentPlanListApi 现有实现，经 mapper.queryRepaymentPlanList 查询）", "scs-saps/saps-model/src/main/java/com/amp/saps/model/vo/APIS/RepaymentPlanApiVo.java（现有响应VO仅有总应还/已还/未还，无科目字段）", "scs-saps/saps-model/src/main/java/com/amp/saps/model/enums/BillSubjectNoEnum.java（P0001本金/P0003资方/P0004平台即技术服务费/P0005合作方/P0006提前结清/P0007罚息/P0008业务指定方/P0012资产管理费）", "scs-saps/saps-model/src/main/java/com/amp/saps/model/entity/BillFeeDetailEntity.java（bill_fee_detail 含 subjectNo/totalAmount/paidAmount/unpaidAmount/redAmount/reverse）", "scs-saps/saps-service/src/main/java/com/amp/saps/service/impl/RepaymentPlanServiceImpl.java:1069（管理端 queryList 科目汇总可复用口径）及 2774（AssetManagementFeeAmount）", "scs-saps/saps-model/src/main/java/com/amp/saps/model/vo/RepaymentPlanVo.java（管理端已具备全部科目级应还/已还/未还字段，字段命名可参照）", "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/manage/bill/RepaymentPlanPaySubjectDetailController.java（申城代偿/回购回退 statement_charge_resource 展示逻辑，验证科目已还口径）", "附件：申城资管平台—【还款计划查询】接口增加科目字段20261106.pdf（22个新增字段清单）", "scs-saps/docs/raw/feature/am_fee_recon_202608260001/deal/260830_申城医美_智融诚泰再保理需求整理.md（科目与主体口径：技术服务费0、资产管理费月结不入客户应还）" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "还款计划查询接口",
+    "relatedFiles" : [ "scs-saps/saps-model/src/main/java/com/amp/saps/model/vo/APIS/RepaymentPlanApiVo.java", "scs-saps/saps-service/src/main/java/com/amp/saps/service/impl/RepaymentPlanServiceImpl.java", "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/APIs/RepayPlanApiController.java", "scs-saps/saps-model/src/main/java/com/amp/saps/model/entity/BillFeeDetailEntity.java", "scs-saps/saps-model/src/main/java/com/amp/saps/model/enums/BillSubjectNoEnum.java" ],
+    "estimatedEffort" : "8h",
+    "ownerUserName" : "shihao",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : "金额单位/精度与罚息科目口径未定稿即开发，可能返工；代偿/回购场景科目已还数值需专项验证；需回归存量内部调用方。"
+  }, {
+    "title" : "scs-saps 还款计划查询接口科目字段文档定稿与联调回归",
+    "description" : "更新合作方《还款计划查询》接口文档，明确22个新增字段的英文名、必填、金额单位与精度、无金额科目传0规则；在测试环境与申城/通汇联调，验证每期各科目应还/已还/未还实时数值与账单实际结算一致；回归存量调用方（FunderBillSyncSchedule 定时同步、scs-payment SapsApi、scs-capital/scs-order SapsClient）确认新增字段不影响反序列化与既有流程。",
+    "requirementChangePoint" : "满足通汇同步账单明细数据（每期各科目应收与最终实收）的获取；新增字段必填、无数值科目传0；数值覆盖各结算场景。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "合作方接口文档（还款计划查询）", "scs-saps/saps-business/src/main/java/com/amp/saps/business/impl/FunderBillSyncScheduleBizServiceImpl.java", "scs-payment/scs-payment-api/src/main/java/com/scs/payment/api/service/SapsApi.java", "scs-capital/scs-capital-api/src/main/java/com/scs/capital/api/SapsClient.java", "scs-order/scs-order-api/src/main/java/com/thchengtay/order/api/SapsClient.java" ],
+    "changePoints" : [ "接口文档：新增字段清单（字段名/释义/必填/单位/精度/零值规则）定稿并同步申城/通汇。", "测试环境联调：按申请单号查询验证每期科目实时数值，覆盖正常、部分还款、提前结清、代偿/回购、退费场景及0值科目（如技术服务费）。", "存量调用方回归：FunderBillSyncScheduleBizServiceImpl 定时同步（/saps/api/repayment/plan/query 自调用）及 scs-payment/scs-capital/scs-order 客户端反序列化兼容性验证。" ],
+    "systemTags" : [ "scs-saps" ],
+    "evidenceRefs" : [ "scs-saps/saps-business/src/main/java/com/amp/saps/business/impl/FunderBillSyncScheduleBizServiceImpl.java:71（存量自调用 /saps/api/repayment/plan/query 消费 RepaymentPlanApiVo）", "scs-payment/scs-payment-api/src/main/java/com/scs/payment/api/service/SapsApi.java:28（内部消费方）", "scs-capital/scs-capital-api/src/main/java/com/scs/capital/api/SapsClient.java:34、scs-order/scs-order-api/src/main/java/com/thchengtay/order/api/SapsClient.java:32（内部消费方）", "附件：申城资管平台—【还款计划查询】接口增加科目字段20261106.pdf（联调验收字段依据）" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "接口联调与文档",
+    "relatedFiles" : [ "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/APIs/RepayPlanApiController.java", "scs-saps/saps-business/src/main/java/com/amp/saps/business/impl/FunderBillSyncScheduleBizServiceImpl.java", "scs-payment/scs-payment-api/src/main/java/com/scs/payment/api/service/SapsApi.java", "scs-capital/scs-capital-api/src/main/java/com/scs/capital/api/SapsClient.java", "scs-order/scs-order-api/src/main/java/com/thchengtay/order/api/SapsClient.java" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "shihao",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "scs-saps 还款计划查询接口新增账单各科目应还已还未还字段",
+    "risk" : "联调依赖申城/通汇配合与外部环境；罚息/提前结清手续费是否输出未还未定稿会影响文档与验收用例。"
+  } ],
+  "totalEstimatedEffort" : "12h",
+  "developmentEstimatedEffort" : "12h",
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-14T21:40:35.984556",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null
+}
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 277
+
+<!-- analysis-record:de90929fb46518e80b59069ad54069aed87ddaf8ad3b1681402e77c129ee9c50 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：121
+- 记录时间：2026-11-14T22:50:45.630257
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/4112d861-a2f6-4960-8fc5-bd6d74cdc3aa/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "新消费分期",
+  "projectId" : 46,
+  "projectName" : "申城-医美-诚泰保理",
+  "repositoryUrl" : "scs (11 repositories)",
+  "requirementRawPath" : "requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611050003/历史版本/4112d861-a2f6-4960-8fc5-bd6d74cdc3aa/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "评估草稿：仅改造 scs-saps，在现有【还款计划查询】接口（/api/repayment/plan/query，RepayPlanApiController→RepaymentPlanServiceImpl.queryRepaymentPlanListApi→RepaymentPlanApiVo）响应中新增每期科目级应还/已还/未还字段（本金、资金方/合作方/技术服务方/业务指定方服务费、资产管理费、罚息、提前结清手续费，共22个必填字段，无金额科目传0），数据源复用 bill_fee_detail 的 total_amount/paid_amount/unpaid_amount 与管理端成熟的科目汇总口径（含红冲、costAmount、申城医美产品特殊逻辑）。共拆分 2 个研发任务（接口字段开发 8h、文档联调与存量调用方回归 4h）。金额单位与精度、罚息科目口径两处需与申城/通汇对齐；本次未修改代码、未创建工作项。",
+  "requirementChangePoints" : [ "【还款计划查询】接口（/api/repayment/plan/query）响应新增每期科目级实时数值字段：应还/已还/未还本金、应还/已还/未还服务费（资金方、合作方、技术服务方、业务指定方）、应还/已还/未还资产管理费。", "同接口新增罚息、提前结清手续费的应还/已还实时数值字段（PDF字段清单未列未还，需求描述文字含未还，口径待确认）。", "所有新增字段必填，按订单产品规则无金额科目一律传0（如本项目技术服务费费率为0）。", "数值为合作方查询时点账单实时值，需覆盖正常还款、部分还款、提前结清、代偿/回购、退费等结算场景后的科目状态。", "满足通汇同步账单明细数据（每期各科目应收与最终实收）的数据获取需要，不新增同步任务，仅扩展现有查询接口。", "【还款计划查询】接口响应新增每期科目级实时数值字段：应还/已还/未还本金、四类服务费、资产管理费，及罚息、提前结清手续费应还/已还；无金额科目传0，覆盖各结算场景。", "满足通汇同步账单明细数据（每期各科目应收与最终实收）的获取；新增字段必填、无数值科目传0；数值覆盖各结算场景。" ],
+  "impactedModules" : [ "scs-saps/saps-controller/APIs/RepayPlanApiController（/api/repayment/plan/query）", "scs-saps/saps-model/vo/APIS/RepaymentPlanApiVo", "scs-saps/saps-service/RepaymentPlanServiceImpl#queryRepaymentPlanListApi", "scs-saps bill_fee_detail 科目金额数据口径", "scs-saps/saps-model/enums/BillSubjectNoEnum 科目映射", "合作方接口文档与申城/通汇联调" ],
+  "risks" : [ "RepaymentPlanApiVo 现有金额字段为 Integer，而 bill_fee_detail 为 BigDecimal：新增字段的类型、金额单位（元/分）与小数位必须与申城/通汇文档对齐，否则对账口径错误。", "申城代偿/回购线上还款不落 repayment_plan_pay_subject_detail（管理端回退到 statement_charge_resource 展示），科目'已还'依赖 bill_fee_detail.paid_amount 的更新链路，该场景数值需专项验证。", "该接口被 FunderBillSyncScheduleBizServiceImpl 定时同步及 scs-payment(SapsApi)、scs-capital/scs-order(SapsClient) 内部客户端消费，新增字段需保证 JSON 兼容、不破坏存量反序列化与定时任务。", "管理端账单列表存在申城医美产品特殊口径（isThPrdZmycA002、AssetManagementFeeAmount、资方服务费 costAmount 占用、红冲 reverse 明细），接口字段若不复用同一口径会出现接口与页面数值不一致。", "罚息/提前结清手续费是否输出'未还'在 PDF 与需求描述间不一致，字段清单未定稿前存在返工风险。" ],
+  "questions" : [ "罚息与提前结清手续费是否需要返回'未还'字段？PDF 字段清单仅列应还/已还两项，需求描述文字为'应还、已还、未还'，两处不一致，直接影响字段清单与验收。", "'罚息'口径是否仅指对客罚息（P0007）？系统还存在对资罚息（P0009，代偿场景计收），是否需要一并返回。", "新增字段的英文命名、金额单位（元/分）与精度需与申城/通汇接口文档对齐定稿（现有 VO 金额为 Integer，科目数据为 BigDecimal）。" ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghongjun", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ {
+    "title" : "scs-saps 还款计划查询接口新增账单各科目应还已还未还字段",
+    "description" : "在现有【还款计划查询】接口 /api/repayment/plan/query 的响应对象 RepaymentPlanApiVo 中新增22个科目级必填字段：应还/已还/未还×（本金、资金方服务费、合作方服务费、技术服务方服务费、业务指定方服务费、资产管理费）+ 罚息应还/已还 + 提前结清手续费应还/已还；在 RepaymentPlanServiceImpl.queryRepaymentPlanListApi 中按账单号批量查询 bill_fee_detail，按 BillSubjectNoEnum 科目映射（P0001本金、P0003资金方、P0004技术服务、P0005合作方、P0006提前结清手续费、P0007罚息、P0008业务指定方、P0012资产管理费）汇总 total_amount/paid_amount/unpaid_amount 实时填充，无金额科目置0；红冲、costAmount 及申城医美产品特殊口径与管理端 queryList 保持一致；补齐各还款场景单测。",
+    "requirementChangePoint" : "【还款计划查询】接口响应新增每期科目级实时数值字段：应还/已还/未还本金、四类服务费、资产管理费，及罚息、提前结清手续费应还/已还；无金额科目传0，覆盖各结算场景。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "scs-saps/saps-model/src/main/java/com/amp/saps/model/vo/APIS/RepaymentPlanApiVo.java", "scs-saps/saps-service/src/main/java/com/amp/saps/service/impl/RepaymentPlanServiceImpl.java", "scs-saps/saps-service/src/main/java/com/amp/saps/service/RepaymentPlanService.java", "scs-saps/saps-model/src/main/java/com/amp/saps/model/enums/BillSubjectNoEnum.java" ],
+    "changePoints" : [ "saps-model/vo/APIS/RepaymentPlanApiVo.java：新增22个科目字段（BigDecimal，命名与单位以定稿文档为准），保留存量字段不动。", "saps-service/RepaymentPlanServiceImpl#queryRepaymentPlanListApi（约1932行）：在现有还款计划返回组装处，按 billNos 批量查询 bill_fee_detail（is_delete=0、is_cancel=0）。", "按 BillSubjectNoEnum 科目映射（P0001/P0003/P0004/P0005/P0006/P0007/P0008/P0012）分组汇总 total_amount/paid_amount/unpaid_amount 填充 VO，缺失科目统一补0。", "科目口径对齐管理端 queryList/AssetManagementFeeAmount：红冲 reverse 明细、资方服务费 costAmount 占用、申城医美产品 isThPrdZmycA002 特殊处理保持一致。", "单测/自测：正常还款、部分还款、提前结清、代偿/回购（科目已还走 bill_fee_detail 更新链路）、退费场景数值正确性与0值兜底。" ],
+    "systemTags" : [ "scs-saps" ],
+    "evidenceRefs" : [ "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/APIs/RepayPlanApiController.java:43（/api/repayment/plan/query 接口入口，orgCode 鉴权）", "scs-saps/saps-service/src/main/java/com/amp/saps/service/impl/RepaymentPlanServiceImpl.java:1932（queryRepaymentPlanListApi 现有实现，经 mapper.queryRepaymentPlanList 查询）", "scs-saps/saps-model/src/main/java/com/amp/saps/model/vo/APIS/RepaymentPlanApiVo.java（现有响应VO仅有总应还/已还/未还，无科目字段）", "scs-saps/saps-model/src/main/java/com/amp/saps/model/enums/BillSubjectNoEnum.java（P0001本金/P0003资方/P0004平台即技术服务费/P0005合作方/P0006提前结清/P0007罚息/P0008业务指定方/P0012资产管理费）", "scs-saps/saps-model/src/main/java/com/amp/saps/model/entity/BillFeeDetailEntity.java（bill_fee_detail 含 subjectNo/totalAmount/paidAmount/unpaidAmount/redAmount/reverse）", "scs-saps/saps-service/src/main/java/com/amp/saps/service/impl/RepaymentPlanServiceImpl.java:1069（管理端 queryList 科目汇总可复用口径）及 2774（AssetManagementFeeAmount）", "scs-saps/saps-model/src/main/java/com/amp/saps/model/vo/RepaymentPlanVo.java（管理端已具备全部科目级应还/已还/未还字段，字段命名可参照）", "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/manage/bill/RepaymentPlanPaySubjectDetailController.java（申城代偿/回购回退 statement_charge_resource 展示逻辑，验证科目已还口径）", "附件：申城资管平台—【还款计划查询】接口增加科目字段20261106.pdf（22个新增字段清单）", "scs-saps/docs/raw/feature/am_fee_recon_202608260001/deal/260830_申城医美_智融诚泰再保理需求整理.md（科目与主体口径：技术服务费0、资产管理费月结不入客户应还）" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "还款计划查询接口",
+    "relatedFiles" : [ "scs-saps/saps-model/src/main/java/com/amp/saps/model/vo/APIS/RepaymentPlanApiVo.java", "scs-saps/saps-service/src/main/java/com/amp/saps/service/impl/RepaymentPlanServiceImpl.java", "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/APIs/RepayPlanApiController.java", "scs-saps/saps-model/src/main/java/com/amp/saps/model/entity/BillFeeDetailEntity.java", "scs-saps/saps-model/src/main/java/com/amp/saps/model/enums/BillSubjectNoEnum.java" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "shihao",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : "金额单位/精度与罚息科目口径未定稿即开发，可能返工；代偿/回购场景科目已还数值需专项验证；需回归存量内部调用方。"
+  }, {
+    "title" : "scs-saps 还款计划查询接口科目字段文档定稿与联调回归",
+    "description" : "更新合作方《还款计划查询》接口文档，明确22个新增字段的英文名、必填、金额单位与精度、无金额科目传0规则；在测试环境与申城/通汇联调，验证每期各科目应还/已还/未还实时数值与账单实际结算一致；回归存量调用方（FunderBillSyncSchedule 定时同步、scs-payment SapsApi、scs-capital/scs-order SapsClient）确认新增字段不影响反序列化与既有流程。",
+    "requirementChangePoint" : "满足通汇同步账单明细数据（每期各科目应收与最终实收）的获取；新增字段必填、无数值科目传0；数值覆盖各结算场景。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "合作方接口文档（还款计划查询）", "scs-saps/saps-business/src/main/java/com/amp/saps/business/impl/FunderBillSyncScheduleBizServiceImpl.java", "scs-payment/scs-payment-api/src/main/java/com/scs/payment/api/service/SapsApi.java", "scs-capital/scs-capital-api/src/main/java/com/scs/capital/api/SapsClient.java", "scs-order/scs-order-api/src/main/java/com/thchengtay/order/api/SapsClient.java" ],
+    "changePoints" : [ "接口文档：新增字段清单（字段名/释义/必填/单位/精度/零值规则）定稿并同步申城/通汇。", "测试环境联调：按申请单号查询验证每期科目实时数值，覆盖正常、部分还款、提前结清、代偿/回购、退费场景及0值科目（如技术服务费）。", "存量调用方回归：FunderBillSyncScheduleBizServiceImpl 定时同步（/saps/api/repayment/plan/query 自调用）及 scs-payment/scs-capital/scs-order 客户端反序列化兼容性验证。" ],
+    "systemTags" : [ "scs-saps" ],
+    "evidenceRefs" : [ "scs-saps/saps-business/src/main/java/com/amp/saps/business/impl/FunderBillSyncScheduleBizServiceImpl.java:71（存量自调用 /saps/api/repayment/plan/query 消费 RepaymentPlanApiVo）", "scs-payment/scs-payment-api/src/main/java/com/scs/payment/api/service/SapsApi.java:28（内部消费方）", "scs-capital/scs-capital-api/src/main/java/com/scs/capital/api/SapsClient.java:34、scs-order/scs-order-api/src/main/java/com/thchengtay/order/api/SapsClient.java:32（内部消费方）", "附件：申城资管平台—【还款计划查询】接口增加科目字段20261106.pdf（联调验收字段依据）" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "接口联调与文档",
+    "relatedFiles" : [ "scs-saps/saps-controller/src/main/java/com/amp/saps/controller/APIs/RepayPlanApiController.java", "scs-saps/saps-business/src/main/java/com/amp/saps/business/impl/FunderBillSyncScheduleBizServiceImpl.java", "scs-payment/scs-payment-api/src/main/java/com/scs/payment/api/service/SapsApi.java", "scs-capital/scs-capital-api/src/main/java/com/scs/capital/api/SapsClient.java", "scs-order/scs-order-api/src/main/java/com/thchengtay/order/api/SapsClient.java" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "shihao",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "scs-saps 还款计划查询接口新增账单各科目应还已还未还字段",
+    "risk" : "联调依赖申城/通汇配合与外部环境；罚息/提前结清手续费是否输出未还未定稿会影响文档与验收用例。"
+  } ],
+  "totalEstimatedEffort" : "12h",
+  "developmentEstimatedEffort" : "8h",
+  "testingEstimatedEffort" : "4h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-14T21:40:35.984556",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null
+}
+```
+
+
 ## 2026-10-30 物流平台叉车智能柜中间件升级方案整理
 
 - 根据用户两份消费分期参考文件，核对 WorkHub 业务线映射与三个 GitLab 组的远程 master，整理[三条业务线升级方案](requirements/业务线/BL000006-物流平台/REQ-9b086f9b-2e40-4ec6-b822-df8acd2ab6ba-物流平台叉车智能柜Nacos和XXLJOB升级方案整理/README.md)，需求编码 REQ-9b086f9b-2e40-4ec6-b822-df8acd2ab6ba。
 - 源码入口数：物流 256（共享合同/业财 21 单列）、叉车 71、智能柜 67，另两套公共 MQ 各 1；不等于线上启用任务数。
 - 特别处理 lease MQ 参数、手工任务返回值、独立 BOM、中间父 POM 与共享注册域；当前 thctay public 远程升级源码日志默认 90 天，已注明与参考清单 60 天的差异。
 - 本轮只整理文档和静态证据，未安装依赖、修改业务源码/配置、构建、触发任务或部署；实际环境和发布计划见各方案待落实项。
+
+## 2026-11-03 需求管理菜单拆分与需求看板
+
+- 一级菜单"需求管理"下拆出"需求清单"（原需求管理页，路由 /demands/list，旧地址 /demands 与 /intake 重定向保留）与"需求看板"（/demands/board）。
+- 后端新增 GET /api/intake-records/board（IntakeController.board，权限 intake:record:view，参数 includeClosed 默认 false 排除已完成/终止关闭），IntakeService.board 按研发负责人聚合：任务数取最新研发拆解草稿 workItems 数量，工时沿用 IntakeProcessInfoSupport.estimates 口径（人工覆盖优先），开始时间优先实际开发开始日期回退计划开发日期，截止时间优先预计完成日期回退预估上线日期；负责人昵称经 UserMapper.findActiveUsers 映射，无负责人需求归入"未指定负责人"列。
+- 前端新增 views/intake/IntakeBoardView.vue（按人分列的看板，支持关键词过滤与含终态开关，逾期截止日红色高亮），类型与接口封装在 types/work-item.ts、api/intake.ts。
+- 验证：mvn 编译通过；workhub-service Intake*/DevelopmentAnalysis* 测试 456 例全通过（含新增 IntakeServiceBoardTest 3 例）；workhub-controller 测试通过；workhub-web npm run build（vue-tsc + vite）通过。
+
+## 2026-11-03 需求看板增加任务负责人维度
+
+- 看板接口 GET /api/intake-records/board 新增可选参数 groupBy：demandOwner（默认，按需求研发负责人，该人对整条需求负责）或 taskOwner（按需求内任务项负责人聚合，同一需求按任务拆分到多列，任务数/预估工时展示该人名下数值并附需求合计）。
+- 口径：任务项工时按各任务 estimatedEffort 归一化求和（如 1d 记 8h）；无主任务归入"未指定负责人"列；整条需求尚无任何指派任务时以需求研发负责人兜底，避免评估未完成的需求从看板消失。
+- 前端看板工具栏新增"按需求负责人 / 按任务负责人"切换（el-radio-group），卡片在两维度数值不一致时显示 x/共N 项、y/共Z 提示行。
+- 验证：IntakeServiceBoardTest 扩到 6 例（任务维度聚合、无主任务归列、非法维度拒绝、需求维度回归）全部通过；Intake*/DevelopmentAnalysis* 回归 134 例 0 失败；workhub-web npm run build 通过。
+
+## 2026-11-03 需求看板任务维度取消兜底
+
+- 按用户要求移除任务负责人维度的需求负责人兜底：有任务项的需求严格按任务项负责人归列，未指派任务归入"未指定负责人"列；没有任务项（无草稿或任务项为空）的需求不进入任务维度看板。需求负责人维度行为不变。
+- IntakeServiceBoardTest 扩到 7 例（新增"无任务项需求在任务维度不出现、在需求维度正常出现"用例），全部通过；workhub-controller 编译通过。
+- 提醒：本地 IDEA 启动的后端进程（10:23）早于任务维度代码编译，需重启后端后切换维度才生效。
+
+## 2026-11-03 人员身份统一收敛到账号管理（sys_user）
+
+- 背景：「团队」(pm_developer_resource) 与「账号管理」(sys_user) 两套人员数据漂移，录入表单负责人为自由文本、任务评估保存会把任意名字 upsert 进团队表，导致同一人出现两个身份（石浩/shihao、尹军/yinjun），需求负责人看板裂成两列。
+- 代码：UserMapper.findActiveUsers 改查 sys_user（status=ACTIVE 且未删除），全系统人员候选唯一来源；删除任务评估时自动登记人员（upsertActiveUser）；任务负责人、需求录入负责人、工作项指派、团队名单新增/修改均校验必须是活跃账号，否则报"请先在账号管理中创建"；业务线成员展示名改为 JOIN sys_user（flyway V10 删除 member_display_name 冗余列）；DeveloperResourceService.listOptions 同步切 sys_user，前端 /system/developer-options 自动变为账号候选。
+- 前端：需求录入的"研发负责人"从自由文本改为活跃账号下拉（去掉硬编码默认"石浩"），任务评估两处负责人下拉去掉 allow-create，选项统一显示"昵称（账号）"。
+- 数据（test 库 10.10.116.53:3308）：补建 6 个账号 caobin(曹彬)/wangwenlong(王文龙)/jiangmin(江敏)/yufanghua/yanggang(杨刚)/dujunchen(杜俊辰)，初始密码 Workhub@2026 且 must_change_password=1，角色 DEV；需求负责人 石浩50+王文龙1、工作项 石浩/尹军/王文龙/徐杰妮、待办 杨刚/杜俊辰、任务项草稿 吕刘浩/尹军/张华君/徐杰妮/曹彬/江敏/王文龙/石浩 全部改写为账号名并留历史；团队表删除中文名键行、补齐 caofeng/zhanghuajun，15 行全部对齐账号。
+- 历史保留：8 条已完成需求负责人为多人合并文本（如"蔡锐、尹军、 韩猛、张华君"）或历史人名（耿庆阳、林成名/林成铭），属档案数据不改写；"WorkHub 管理员"为系统待办虚拟处理人，保留。
+- 待办：prod 库（aslight.cn:30364）存在同类问题（石浩 25 条等），代码部署后需在 prod 重复数据清洗；本地后端需重启生效（flyway 会执行 V10）。
+
+## 2026-11-03 需求看板默认任务维度 + 卡片跳转需求清单
+
+- 看板默认维度改为"按任务负责人"（页面默认值，接口默认仍为 demandOwner）。
+- 卡片需求名称改为可点击，跳转 /demands/list?intakeId=xx；需求清单监听路由 query 自动打开对应需求详情，打开后清除 query 避免重复触发。前端构建通过。
+
+## 2026-11-03 业务线文档统一归档到 docs/业务线
+
+- 按用户要求建立 `docs/业务线/{业务线编码}-{业务线名称}/` 统一归档：`现状.md`、`迭代日志.md`、`需求迭代/`（过往历史需求）；覆盖全部 12 条业务线（编码与名称取自 WorkHub 业务线配置），无资料的业务线（账单管理、嘉泰设备租赁、服务费分期保理、工作台）仅建骨架；共享支付系统（xxt-pay、intf-paychannel 等公共系统，无业务线编码）按同样结构归入 `docs/业务线/共享支付系统/`。
+- 迁移：`docs/system/业务线/{编码}-{名称}/系统设计.md` 改名迁为各业务线 `现状.md`（BL000004 的迭代日志随迁）；`docs/requirements/{业务线}/需求迭代/` 的研发评估与 `docs/requirements/业务线/{编码}-{名称}/` 的 SDD、验证证据全部迁入对应 `需求迭代/`；`docs/requirements/index.md`（已确认自动评估索引）迁为 `docs/业务线/index.md`。迁移清单 121 项见 `docs/migrations/2026-11-03.json`。
+- 仅修正现行指引与迁移文件中指向旧路径的链接（根/requirements/system AGENTS、docs/README.md、company/projects/保费分期 三份、各迁移文件内部互链）；`历史版本/`、原始快照与历史日志原文不改写。
+- 代码同步适配研发评估自动归档路径：`ProjectKnowledgeBaseService.buildWikiRequirementPath` 改为 `docs/业务线/{业务线编码}-{业务线名称}/需求迭代/...`（无编码或编码与名称相同时退回名称），已确认评估索引改写 `docs/业务线/index.md`；`McpResourceService` 的 `requirementWikiPathPattern` 与 `wikiPublishRule`、`McpRuntimeService.businessLineWikiRoot` 同步更新；`RepositoryDocumentPaths.migrateRelativePath` 的知识库历史 wiki 前缀改映射到 `业务线/`。
+- 验证：workhub-service 定向测试 6 类 47 项通过（KnowledgeArchiveIntegrationTest 12、DevelopmentPlanFolderServiceTest 新增编码前缀目录用例、McpRuntimeServiceTest、RepositoryDocumentPathsTest、DevelopmentAnalysisServiceTest、CodexCliDevelopmentAnalysisGeneratorTest）；应用未重启，运行生效待部署后验证；本轮未提交。
+
+## 2026-11-03 WorkHub 平台文档并入 BL000012-工作台，删除 docs/requirements
+
+- 按用户要求，WorkHub 平台即业务线 `BL000012-工作台`，平台文档并入业务线目录：`docs/requirements/workhub-server/` 的 9 个平台需求 SDD 迁入 `docs/业务线/BL000012-工作台/需求迭代/`；`docs/system/系统设计.md`、`docs/system/迭代日志.md` 迁为 `BL000012-工作台/现状.md`、`迭代日志.md`（替换原骨架桩）；`docs/requirements/AGENTS.md` 迁为 `docs/业务线/AGENTS.md`（需求归档指引，内容改写为业务线统一目录规则）；`docs/requirements/` 目录删除。迁移清单增至 148 项（`docs/migrations/2026-11-03.json`）。
+- 链接与指引同步：根 AGENTS.md 项目边界改为"各业务线现状、迭代日志与需求产出统一在 docs/业务线/（WorkHub 平台即 BL000012-工作台）"；docs/system/AGENTS.md 文档归属、docs/README.md、docs/company/AGENTS.md、docs/requirement-sources/AGENTS.md、平台现状第 9/10 节的归档路径与互链全部更新；迁移的 REQ 文档内部自引用链接一并修正，`历史版本/` 快照与 REQ-898b9c28 proposal 中的历史决策原文不改写。
+- MCP `wikiPublishRule` 同步改为统一发布到 `docs/业务线/{业务线编码}-{业务线名称}/需求迭代`；研发评估落盘代码无需再改（BL000012 需求经 intake 流程自动落 `BL000012-工作台/需求迭代/`）。
+- 验证：workhub-service 定向测试通过（见下方测试记录）；现行指引与迁移文件的本地链接存在性校验通过；本轮未提交，应用未重启。
+
+## 2026-11-03 MCP 新增 get_intake_attachment 数据库附件空中读取
+
+- 背景：用户确认原始需求原件以数据库为权威存储（intake_record.rawContent + attachment.fileContent），要求 AI 具备直接读库取附件内容的能力，全程内存"空中读取"、不落本地缓存；docs/requirement-sources 快照档案的去留（评估溯源用途）保留给用户后续单独决策。
+- 实现：AttachmentTextExtractionService 新增公开 `extractTextInMemory`（单附件内存提取：图片不提取文本并返回说明、超过 8000 字符截断标记、类型不支持/无正文返回说明）；McpRuntimeService 注入 AttachmentService 与提取服务（新增 7 参主构造，旧 3/4/5 参构造保留兼容、缺省时跳过注册），注册 MCP 工具 `get_intake_attachment`（attachmentId 必填、intakeId 可选做需求归属校验）；处理器复用 loadAsResource 的"数据库优先、历史路径回退、SHA-256 完整性校验"取字节，全部在内存中完成，无本地文件写入。`get_intake_detail` 原本已支持空中读取 rawContent 与 structuredData（含附件摘要）。
+- 验证：McpRuntimeServiceTest 新增 3 例（文本提取、附件不属于当前需求拒绝、图片返回说明），McpRuntimeServiceTest 19 项、AttachmentTextExtractionServiceTest 4 项、McpResourceServiceTest 13 项全部通过；应用未重启，工具待部署后生效。
+
+
+## 2026-11-04｜共享支付系统更名为支付中台
+
+- 按用户要求将"共享支付系统"更名为"支付中台"：归档目录 `docs/业务线/共享支付系统/` 整体迁为 `docs/业务线/支付中台/`；归档指引、README 索引与 BL000005-智能柜 现状等现行文档中的名称和路径同步更新。需求迭代现行报告正文保留原称与核验时点，仅修正其中指向旧目录的链接；`历史版本/` 快照、历史日志与既存报告原文按原字节保留。
+- 迁移明细见 [2026-11-04 支付中台更名](migrations/2026-11-04.json)。本轮仅文档更名，未提交，应用未重启。
+
+## 2026-11-04 删除 requirement-sources、company、migrations 目录
+
+- 用户在确认"需求原件以数据库为权威存储、AI 经 MCP 空中读取"（get_intake_detail / get_intake_attachment）后决定删除三个资料目录：`docs/requirement-sources`（182 个文件：原始需求材料副本、逐轮不可变快照与来源绑定）、`docs/company`（公司业务知识与项目资料）、`docs/migrations`（迁移清单，含未提交的 2026-11-03.json、2026-11-04.json）。
+- 不可恢复的未跟踪内容已确认一并删除：3 份来源绑定（258-105-development、265-104-development、269-38-clarification）、3 个新审批编号的材料副本（202610230002、202610260004、202611020006，其原件在 `attachment` 表仍有权威版本）、2 份迁移清单；已跟踪的 264 个文件可按 git 历史找回。
+- 指引同步：根 AGENTS 项目边界与文档归属改为"需求原件以数据库为权威存储，AI 经 MCP 空中读取，仓库不做原始材料文件归档"；README 移除公司资料/原始材料/迁移清单入口与原始材料章节；业务线归档指引与 BL000012 现状/迭代日志的迁移清单死链改为按 git 历史定位。历史正文（研发评估的"来源版本"链接、迭代日志历史条目）按原时点保留、不改写。
+- 已知影响，待单独立需求处理：① 归档管道未改，下次开发分析/澄清分析会在 `docs/requirement-sources` 重建目录并继续写快照——评估输入快照与哈希清单入库的溯源改造需另行立项；② 知识检索与 `sourceLink` 校验逻辑不变，对历史需求重评时来源快照已删除，会按既有校验报"来源版本文件不存在"；③ 支付中台更名与业务线目录重组的迁移映射记录随清单删除，可按 git 历史定位。
+- 本轮仅删除目录与指引同步，未改应用代码，未提交。
 
 ## 2026-11-04｜REQ-bf94e06e｜自主迭代一期规格核查与 v2 草案
 
@@ -2469,3 +5110,166 @@
 ## 2026-11-04｜明确任务完成环境
 
 已接入明确目标、任务/运行规格冻结、幂等及旧任务缺目标阻止；前端验证TEST单目标和TEST/PROD双目标，改变授权范围不会自动增加生产目标。98项本地测试通过、1项真实ZCode未配置跳过；前端test构建通过。未访问真实环境，临时资源已清理。发布执行和最终验收与目标的实际联通继续，Jenkins暂缓。
+
+
+## 2026-11-10｜物理删除两个资料整理助手（运维操作）
+
+用户要求物理删除数字员工"资料整理助手（ZCode）"（`cdc282d8-0bf0-4707-8cac-cf5d8356585f`）与"资料整理助手（Codex）"（`87fc31b5-1543-4b70-907f-3b2c6796ea46`）。经只读核查：两助手仅报告类数据（6 任务、10 运行、117 事件、7 产物，全部终态，无周期任务），无观测/问题/候选/构建/发布/验证等自治数据。在 `10.10.116.32:3306/workhub` 单事务删除 definition/task/run/event/artifact 并先写入 2 条 `pm_agent_audit`（action=DELETE，记录名称与删除行数）保留审计痕迹；删除后目标定义/任务/运行/事件均为 0，其余两个数字员工（保费分期监测巡检助手、WorkHub 代码迭代助手）不受影响。直接 SQL 操作，无代码与迁移变更。
+
+
+## 2026-11-10｜保费分期巡检助手数据链路修复（运维操作）
+
+用户要求解决巡检助手三项监测的数据可达问题，直接 SQL/MCP 资源操作（均留痕）：
+
+1. **MCP 数据库目标纠偏**：新增目标 `bl000012-prod-db-10-10-116-32-3306`（BL000012/PROD，库 workhub，root 凭据按 McpCryptoService 方案 AES-GCM 加密，master-key 与实例现有密文核验一致）；停用旧目标 `bl000012-prod-db-aslight-cn-30364`（指向旧库，预警停在 2026-10-15）。新目标经 MCP 实测可读到当日最新预警（23:30:14）。
+2. **助手职责改写**：`保费分期监测巡检助手`（26067ea5）职责更新为职责驱动架构口径（经平台 MCP run_readonly_query 巡检 ops_system_alert_event / ops_monitor_config / ops_account_reconcile_run+result，业务监测实况走 db-prod 的 scf_self_xxl/xxl_job），version 5→6，审计 UPDATE。
+3. **创建周期巡检任务** `bl000001-prod-monitor-patrol`：CRON 每 30 分钟、数据范围=增量分析、产物 REPORT、范围 BL000001/PROD；`schedule_enabled=0` 暂停（避免旧版运行实例以旧工具架构空跑），审计 CREATE。
+4. **待用户操作**：部署新版后端并配置 `workhub.mcp.access-token`；开启 `WORKHUB_ACCOUNTING_SCHEDULE_ENABLED=true` 使账务核对每日 06:30 落库（当前 reconcile_run 0 条即因该开关默认 false）；部署后在页面启用上述任务的周期。
+
+
+## 2026-11-10｜新版后端本机部署与巡检任务启用（运维操作，接上节）
+
+用户要求代办部署。运行方式核实：WorkHub 后端为本机 IDEA 调试进程（workhub-server 各模块 target/classes 启动），前端为 workhub-web vite dev 热更新（无需部署）；23:08 启动的进程已应用 V20261110_130000 迁移并载入当前代码，MCP Token 原已配置。
+
+- 重启进程（停 67445，起 98218）：沿用原 classpath 与 `WORKHUB_MCP_ACCESS_TOKEN`，新增 `WORKHUB_ACCOUNTING_SCHEDULE_ENABLED=true`（账务核对每日 06:30 落库）。Flyway 校验 71 个迁移、schema 已是 20261110.130000；启动 3.6s 完成。
+- 验证：`/api/mcp/runtime` 存活（无 Token 401）；MCP 会话经新目标读到 23:38:07 最新预警。
+- 启用巡检任务 `bl000001-prod-monitor-patrol`（审计 SCHEDULE）：schedule_enabled=1，next_run_at=2026-11-10 16:00 UTC（00:00 CST 首轮）。
+- 注意：98218 为命令行 nohup 进程（logs/server-console.log），用户下次在 IDEA 点运行即可回到调试方式（记得在运行配置加 WORKHUB_ACCOUNTING_SCHEDULE_ENABLED）。
+
+
+## 2026-11-11｜巡检任务六次触发终成功（接 2026-11-10 部署节）
+
+- 第4/5次失败定位（依赖新加的错误明细补丁）：ZCodeCliClient 协议流 4MB 总量护栏被巡检的密集 MCP 查询回显撑破；上限提至 64MB（相关测试 86 项通过），随重启生效。
+- 第6次运行（46906001）COMPLETED：263.6 秒、1 步、REPORT 产物。ZCode 经平台 MCP 巡检三域，正确执行增量窗口（首轮建基线）与"无数据≠健康"纪律。
+- 报告要点（细节见 pm_agent_artifact）：①307 条系统预警（293 慢 SQL 两类模式 + 14 条 SYSTEM_ERROR：放款状态同步失败/代扣失败/卡签约失败）；②【最重要发现】BL000001 预警采集自 11-09 17:36 起"ELK返回日志超出采集区间"持续 ERROR，30 小时零预警系采集故障（其他业务线同期正常佐证）；③业务监测 db-prod 堡垒机认证失败，XXL 调度无法验证（数据缺口）；④账务监测未配置规则（ops_account_rule_config 0 行）且 daily_enabled=false，无差异≠健康。
+- 遗留（用户决策/操作）：堡垒机认证修复；BL000001 预警采集修复与补采；账务规则配置；巡检任务周期当前保持停用（用户此前仅要求执行一次，如需恢复每 30 分钟巡检可在页面启用）。
+- 服务现为 nohup 进程 36235（logs/server-console.log）；IDEA 运行配置需补 WORKHUB_ACCOUNTING_SCHEDULE_ENABLED 与 MCP Token 环境变量。
+
+
+## 2026-11-12｜清除巡检助手的两条旧测试任务（运维操作，用户确认）
+
+用户确认按连带清除方案删除 11-05 旧工具架构的两条测试任务（6335cc88…、79741273…）：事务内先写 3 条审计（2 TASK DELETE + 1 CASE DELETE），随后清除问题记录 85784e53（含 1 方案、1 信号、case_run 关联）、2 条巡检观测、2 条运行及其事件/产物，最后删除任务。验证：助手下仅剩巡检任务 bl000001-prod-monitor-patrol（7 次运行保留），观测/问题清零。
+
+
+## 2026-11-12｜平台数据指南上线与监测通知切换（REQ-0d4c0b49 + REQ-172f8541）
+
+- 平台数据指南：迁移 V20261112_160000（120000 版本号与并行会话撞车后改名；期间清理 target 残留副本解决 Flyway 重复版本启动失败）——模板 v4 增加 platformGuide 段，sys_config `agent.runtime/dataGuide` 种子目录；巡检助手职责与任务文案净化为纯业务语义。净化后一次性巡检（449.9s）成功：AI 纯靠指南导航取数出报告，增量窗口精确接续上轮完成时间。
+- 监测通知切换：删除 XXL 失败/MQ 失败/ELK 采集故障三处站内信（扫描与状态落库保留供巡检读取）；新增 AgentRunNotifier（COMPLETED 且含 P0/P1 时通知任务范围业务线成员，dedupe 按运行 ID）；相关测试 37 项全绿。
+- 部署：服务重启（PID 36362），巡检任务恢复每 30 分钟周期（17:00 首轮，此后含 P0/P1 的轮次自动发 AGENT_PATROL 站内信）。
+- 期间并行会话在途改动两度阻塞编译（ZCode 签名、intake 澄清域），均等待其稳定后通过；CodexCliPromptConsistencyTest 失败属其在途工作。
+
+
+## 2026-11-12｜巡检通知链路端到端打通（接 REQ-172f8541）
+
+通知未触发的排查链：格式缺 P0/P1 标记（补规范）→ 静默失败（加 NOTIFIED/NOTIFY_FAILED 审计）→ 心跳调度线程被异常静默杀死致运行失联（coordinator 心跳加 Throwable 兜底）→ 审计定位真因：巡检结束时连接池被 CLI 密集查询瞬时占满（CannotGetJdbcConnection），AgentRunNotifier 加 3 次退避重试。最终验证（run 3d996fdc，258 秒 COMPLETED）：报告含【P1】→ NOTIFIED 审计 1 收件人 → admin 收到 AGENT_PATROL 站内信——巡检→分级→通知全链路打通。
+
+
+## 2026-11-13｜批量配置全业务线巡检助手（运维操作）
+
+用户要求为其余业务线配置巡检。更新平台数据指南（多业务线目标映射：db-prod 覆盖多数线、BL000003 用 jiatai-amp-db-prod、BL000004/011 用 amp-db-prod、XXL 库名从 ops_monitor_config.xxl_job_database_name 自读），随后批量创建 12 个"XX监测巡检助手（ZCode）"（BL000002~BL000013，含工作台自身与太平洋保险）及每小时增量巡检任务（cron 错峰 :02/:06/:10…:46，避开 :00；职责/验收标准与保费分期同模板，纯业务语义）。全部审计留痕。首 run 按各错峰时间自动触发；通知发业务线成员（无成员回退 admin）。
+
+## 2026-11-13｜保费分期中化反馈"已还款未收到对账单"排查（含生产复核结论）
+
+以下首段为早期未接通生产时的候选分析，不代表最终结论。
+
+业务线 BL000001、生产环境；代码口径 scf 组：scf-saps origin/master `febbb07f`（2026-10-21）、scf-intf-zhonghua origin/master `21ce0ff9`。中化反馈 512 个车辆账单编号（22 位 = FA+yyMMddHHmmss+4流水+2期数+2序号，账单创建时间跨 2026-03~10、月中集中，推测为运营商车辆子账单号历史格式）。链路梳理：还款结算写 `receivable_accounts_resource`（bill_date=还款日+1）→ XXL-Job 按 `bill_date=executeDate` 精确拉取生成 `receivable_accounts` 对账单 → 中化资方触发 `sys_api_request`（biz_type=2）→ StmtNotifyHandler 组装明细推 scf-intf-zhonghua → statement_notify_record → 中化。候选根因：①任务按日精确匹配漏生成（资源行 generate_bill_flag=0 滞留）；②通知组装明细抛异常（未匹配运营商账单/车架号）卡 INIT 静默失败——重试计数不涨、永不告警；③重试 5 次耗尽（应已有企业微信告警）；④还款结算未落资源行。本会话无 MCP 只读通道，已产出分批只读 SQL（docs/业务线/BL000001-保费分期/20261113-中化反馈已还款未收到对账单核查.sql），待用户受控渠道执行后定位。
+
+### 2026-11-13 14:16（北京时间）生产复核
+
+- 范围：WorkHub `list_mcp_targets` 当前确认 BL000001／PROD／scf；通过 `db-prod/readonly` 核查 `scf_self_saps` 与 `scf_self_intfcapital`，通过 `search_business_logs` 读取生产日志。未指定研发需求。两个仓库远端 `master` 已用 `ls-remote` 核实，分别为 `febbb07fd05453cc5bf21c20294dc00a5cf1adb5` 与 `21ce0ff9787e823d8a8ab964c9a6388daa06d93f`；相关本地源文件与该提交一致。未取得运行制品 SHA。
+- 附件 `Sheet1!A2:A513` 共 512 个唯一车辆账单号，生产全部命中，对应 283 个运营商主账单和 283 个资方账单，全部关联代偿对账单 `ARA2611110400040001`（主键 688，2026-11-11 04:00:04 生成，金额 731,414.48 元）。分 7 批逐项比对成功报文，511 个存在，唯一缺失为 `FA26081516350100010301`（附件 A171）；所有相关资源均已生成对账单。
+- 补偿日志：2026-11-13 10:00:01.117，`apiRequestRetryJobHandler` 开始处理 1 条记录；10:00:02.295，接口接收 `S0261113100001`／上述对账单；10:00:04.431，中化返回 `capitalRetCode=000000`、`capitalRetMsg=成功`。`statement_notify_record.id=158` 状态 `1002`，完整 `statement_details` 数量为 511。`sys_api_request.id=3237`／`SR0261111040001_05` 于 10:00:05 更新为 `status=4`（成功）。接口成功回执不等同已核验中化内部账务页面。
+- 单车遗漏原因：目标运营商车辆账单 `repayment_plan_sub.id=43578` 当前 `refund_insurance_status=30`（退保），最后更新时间 2026-11-11 17:30:01。对应资方账单 `FBA2608171720010003`／主键 26574 已结清 1,240.06 元；资源主键 15843、15844 分别为本金 1,211.15 元及资方服务费 28.91 元，均已挂入该代偿对账单。`StmtNotifyHandler.java:187-191` 的代偿分支按当前运营商车辆账单 `refund_insurance_status=NORMAL(10)` 过滤，补偿重组明细时排除了这辆车，形成金额仍在对账单、车辆明细缺失。此前看到的运营商未还 1,862.96 元不能用来否认资方账单已结清。
+- 整批此前异常的已确认日志：2026-11-12 14:30 至 19:00 多次 `SR0261111040001:sendRequest error`，异常为 `Data too long for column 'request_params' at row 1`，发生在 SAPS 更新通知记录处。当前该列为 `longtext`，成功请求长度 76,441 字符。日志证明历史报文落库超长异常；本轮未取得下游首次失败的完整原因及字段扩容操作记录，不能据此声称恢复动作由本轮完成。
+- 处理建议（未实施）：代偿通知明细应与已生成对账单的实际资方资源、车辆和期次一致，不能因后续退保状态变化丢失历史应通知车辆。需同时核对金额与车辆集合，保留真正未参与代偿车辆的排除规则。当前通知已成功，普通补偿任务和发送处理器均会跳过成功记录；即便强制按原逻辑重组也仍会漏车。应先确认中化对成功对账单的更正／补明细规则，再定向修正这一张，不能直接重复发送整批或修改真实退保状态绕过筛选。
+- 核查边界：长请求日志有字段截断，车辆缺失结论来自数据库完整报文的逐项匹配与 `JSON_LENGTH`，不是从截断日志推断。服务器原始文件补充查询因远端 Python／SSH 文件读取失败未取得，ELK 已提供上述日志。早期 SQL 草稿存在字段、引号和账单关联假设问题，本轮未执行该文件，不作为生产执行依据。
+- 留痕：[核查证据](业务线/BL000001-保费分期/证据/20261113-中化对账单补偿复核/核查证据.json)、[512 笔逐项核对](业务线/BL000001-保费分期/证据/20261113-中化对账单补偿复核/512笔逐项核对.json)。本轮仅只读诊断和本地证据归档，未安装软件、修改业务代码／生产配置／数据或触发补偿、支付和重推。
+
+
+### 2026-11-13 14:49（北京时间）再次补偿核验
+
+用户反馈已重新补偿。本轮经同一生产只读通道确认：对账单 ARA2611110400040001 新增通知记录 id=159，流水 S0261113140001，2026-11-13 14:46:38 中化返回 000000／成功，状态1002；SAPS 通知 id=3237、流水 SR0261111040001_06 同时更新为状态4。成功报文共512条、512个唯一车辆账单，与原附件逐项对比无遗漏、无额外记录、无重复，FA26081516350100010301 恰好出现1次。总金额仍为731,414.48元。ELK成功回执时间为14:46:38.254，与数据库一致。已确认本次接口推送完整且成功；未核查中化内部账务页面，也未据此宣称永久代码修复已部署。本轮未修改生产或触发重推。证据：[再次补偿核验](业务线/BL000001-保费分期/证据/20261113-中化对账单补偿复核/1446再次补偿核验.json)。
+
+
+## 2026-11-14｜前端下线"巡检问题"面板（运维操作，用户确认）
+
+旧工具架构遗留的「巡检问题」面板（AgentCasesPanel 及其缺陷关联/关闭凭据子面板）从数字员工页删除：AI 不再登记问题，面板永远为空。后端 pm_autonomy_case 数据与自治服务保留（历史记录可查），仅前端下线。构建通过。
+
+
+## 2026-11-14｜物理删除 8 个已停用的巡检数字员工（运维操作，用户确认）
+
+用户经页面停用并要求物理删除的助手：嘉泰消费分期/嘉泰租赁资产保理/嘉泰设备租赁/太平洋保险/工作台/服务费分期保理/物流平台/账单管理（各含 1 个巡检任务，4 个有历史运行共 82 轮，无过程数据）。事务内先写 AGENT/TASK DELETE 审计（含删除行数），随后清除运行/事件/产物、任务、助手。保留启用中的 6 个：保费分期、消费分期、智能柜、叉车、新消费分期巡检 + WorkHub 代码迭代助手。
+
+
+## 2026-11-14｜修复 ZCode CLI 0.17 仓库工具不可见导致研发评估空拆解（研发修复，已验证）
+
+现象：`intake.development.analyze` 连续多日返回"AI 未产出任务拆解"；库中 intake 277 的 5 份历史 DRAFT 实际 workItems 全为空（此前无守卫被当成功保存）。协议探针实证双重根因：① ZCode.app 11-12 18:26 升级到 0.17.1 后，`session/create` 的 `mcpServers` 参数只登记不连接，必须显式 `mcp/list {mode:"connect"}` 才会把 workhub_task MCP 工具暴露给模型（对照实验：调前模型自述无该工具，调后 connected toolCount=29 并真实调用 `mcp__workhub_task__list_repository_files` 返回 scs 仓库目录）；② `toolAllowlist` 用裸名，会话内实际暴露名为 `mcp__workhub_task__<name>`，裸名全量过滤。修复：`ZCodeTaskConversation` 订阅后新增 MCP_CONNECT 阶段（连接失败快速失败且不下发提示词）、工具名统一幂等补前缀；纠偏续跑与 analyze 提示词同步标注真实工具名。验证：`ZCodeTaskConversationTest` 17/17、真机 `ZCodeCliLocalProtocolTest` 5/5（真 CLI + 夹具，模型请求工具面断言通过）；全量 1149 测试中仅 3 处失败均为前几轮未提交 intake/提示词重构与 ops ELK 既有问题，与本轮无关。待用户重启应用后重跑 202611050003 评估闭环确认。
+
+
+## 2026-11-14｜研发任务评估移除风险/待确认项，统一由需求澄清阶段产出（产品对齐，用户确认）
+
+用户决策：评估阶段不再输出 risks/questions（与需求澄清职责重叠），业务+技术待确认/风险统一在澄清阶段产出（澄清场景本就是 LOCAL_REPOSITORY_READ，提示词已按"系统架构师查需求+知识库+代码"设计，MCP 修复后可真实查证）。实施：① 生成器 OUTPUT_SCHEMA/RawDevelopmentAnalysis 去掉两字段，草稿构建置空（model 字段保留兼容存量 draft_json）；② 新增迁移 V20261114_210000 更新 analyze 提示词（删 risks/questions 指引，代码调查新发现写入 summary），TestPromptTemplates 登记；③ 前端删除评估 tab/评估弹窗/轮次弹窗三处"风险与待确认"区块（澄清与 SQL 草稿区块保留）；④ 同步修正 CodexCliPromptConsistencyTest 的澄清 fixture 至 V20261112_161000 收紧版（前几轮遗留红，已修绿）。回归：全量 1152 测试，本轮相关全绿；剩 KnowledgeArchiveWorkflowTest（路径期望）与 BusinessLogSearchServiceTest（ELK）两处红为前几轮未提交遗留，与本轮零关联。待决策：生产库 clarification 模板已被手工改为"系统架构师"版，与迁移文件（"研发需求澄清助手"版）漂移，需确认手改版后固化为新迁移。
+
+### 2026-11-14 补充｜澄清提示词以手改版为准固化（用户确认）
+
+用户确认以页面手改版（"系统架构师"版，prompt_version=7）为准。字节精确校验 SHA256=f84d195c…4cc 与线上 checksum 一致后，固化为迁移 V20261114_213000__freeze_clarification_prompt.sql（本库 checksum 相同自动跳过，新环境按此初始化），并登记 TestPromptTemplates、同步 CodexCliPromptConsistencyTest fixture。漂移消除，相关测试全绿。
+
+
+## 2026-11-14｜REQ-4d361388 巡检问题结构化动工（进行中）
+
+已完成：pm_agent_issue 表迁移（V20261114_200000）、工单实体/Mapper/摄取服务（去重聚合+复发重开+未复现计数）、工单查询 API、CLI 结果 schema 扩展 problems 字段（含五要素 analysis 结构）、运行完成钩子自动摄取、5 个巡检任务口径更新（要求输出结构化 problems，P0/P1 新问题深查五要素）。73 项相关测试通过。待做：修复管线（clone→分支→修复→MR）、工单审核与两段式发版 API、前端三 Tab 与工单中心。
+
+
+## 2026-11-14｜REQ-4d361388 全链路完成（工单闭环）
+
+后端（编译通过，73 项相关测试绿）：
+- 工单域：pm_agent_issue 表（V20261114_200000）、AgentIssueService（摄取/去重聚合/复发重开/未复现计数）、查询 API。
+- 修复管线：AgentFixService——勾选工单→核验 GitLab 绑定→状态推 FIXING→组装五要素修复任务（CHANGE_SET 期望产物、独立职责/验收）走既有运行管线→站内信。
+- 审核与发版：AgentIssueReviewService——PENDING_REVIEW 审核（APPROVE→TESTING 记录部署状态；REJECT→REJECTED）；TESTING 人工确认（PASS→FIXED；FAIL→REJECTED）。Controller 暴露 /fix /{id}/review /{id}/deploy。
+- CLI 结果 schema 扩展 problems 数组（含 analysis 五要素结构）；运行完成钩子自动摄取；5 个巡检任务口径更新。
+
+前端（构建通过）：运行详情三 Tab 问题面板（域分组/级别/五要素/勾选/复制摘要/去修复二次确认）；工单中心新路由 /agent-issues（筛选列表+审核+TEST→PROD 操作）。
+
+待部署重启生效；修复任务的独立 clone/推送/MR 接线在 AgentFixService 中预留（fix_json 结构就绪），Jenkins TEST/PROD 触发复用既有链路待接线——这两处需要 GitLab 策略与 Jenkins 绑定的真实环境联调。
+
+
+## 2026-11-14｜新增“任务同步禅道”独立按钮：研发任务推送/更新/取消禅道（研发功能，用户确认规格）
+
+规格（用户确认）：评估 tab“评估完成”左侧新增独立按钮，全评估阶段可用；重复同步时已映射任务更新、新任务新建、拆解中已删除的禅道任务取消（canceled）。实施：① ZentaoClient 新增 createDevTask（POST executions/{id}/tasks，type=dev）/updateDevTask/cancelDevTask（PUT tasks/{id}）与 resolveTaskMapping（需求关联禅道地址优先，回退业务线映射），复用既有 token 认证；② DevelopmentAnalysisService.syncZentaoTasks 逐项 best-effort（单项失败不中断），回写工作项 zentaoTaskId/Url、草稿 zentaoSyncedTaskIds 快照（支持删除检测）与 SYNCED/PARTIAL/FAILED 状态，记历史；③ 手工保存草稿（updateDraft 按标题合并）与调整负责人（updateOwners）均保留禅道映射，withSystemTags 透传；④ 新端点 POST /intake/{id}/development-analysis/zentao-sync（intake:ai:operate）；⑤ 前端“任务同步禅道”按钮（先保存草稿再同步）、工作项表新增禅道任务链接列、API 封装。Model 层工作项加 zentaoTaskId/Url（兼容构造器保旧调用点），草稿加 zentaoSyncedTaskIds（存量 JSON 兼容 null）。验证：ZentaoClientTaskTest 6/6（HTTP 桩：创建/更新/取消/失败分支/映射回退）、全量 1158 测试仅剩两处与本轮无关既有红、vue-tsc 0 错误。注意：负责人直接作为禅道 assignedTo 透传，非禅道账号时该项失败并在汇总明细提示；重新分析生成的新轮次不带旧映射（语义：新任务集）。
+
+
+## 2026-11-15｜叉车巡检派发失败修复（运维操作）
+
+WARN "Agent scheduled task was not enqueued. taskId=12bd560d, errorType=IllegalArgumentException" 根因：叉车（BL000008）业务线 supported_environments 仅 TEST,SIT，不含 PROD——批量配置时助手范围设了 PROD，validateScopes 每次拒绝。修复：助手配置与任务规格范围改 TEST（审计留痕），next_run_at 拉到当前触发即时执行。其余 4 个巡检助手范围与环境匹配确认无误（保费分期/智能柜/消费分期/新消费分期均 PROD）。
+
+
+## 2026-11-15｜删除 WorkHub 代码迭代助手及其数据（运维操作，用户确认）
+
+用户要求删除"WorkHub 代码迭代助手（Codex·测试）"（0c54333f）及其全部数据。事务内先写 AGENT DELETE 审计，随后清除：构建测试调用/记录、代码操作/工作区、候选变更集、巡检观测、运行事件/产物、运行、任务、助手本体。剩余 5 个巡检助手及 128 轮历史运行不受影响。
+
+## 2026-11-15｜REQ-4d361388 链路两个缺陷修复：问题摄取接线 + 派发并发计数（研发修复，已验证，待重启与运维 SQL）
+
+用户反馈"运行产出结果与产物还是一整个、没有分类、无法选中修复"。排查结论：前后端功能代码 11-14 已完成并部署（前端 dist 06:55 / 后端 06:59），CLI 也已按新口径输出结构化 problems（叉车 11-15 06:52 完成运行的 CLI_RESULT 事件里有 3 条带五要素的问题），但两个缺陷导致全链路不通：
+
+1. 摄取接线错误（主因）：`AgentRunStore.finishSavedNative` 只把结果 JSON 的 summary 落入 result_text，problems 留在 CLI_RESULT 事件里；而 `AgentIssueService.ingest` 把 result_text 整体当 JSON 解析 problems → 永远解析失败，pm_agent_issue 0 条，面板永远空。修复：ingest 在 result_text 无 problems 时回退读取最近 CLI_RESULT 事件的 result.problems（多轮重规划取最后一条含 problems 的）。
+2. 派发死锁（次因，巡检停摆 28 小时）：11-14 晚服务重启期间 3 个巡检 Agent 的在途运行经 recoverExpired 恢复为 WAITING_RESOURCE 且保留 owner_token + 未决 CLI 句柄（租约已过期）；`countOwnedRuns` 只按 owner_token 非空计数，单 Agent 并发=1 被永久占满 → 三个 Agent 自 11-14 23:15 起 25 轮巡检全部卡 QUEUED。修复：countOwnedRuns 增加 `lease_until > now` 条件，只统计存活租约；失联残留不再占用新轮次额度。
+
+顺带把 AgentIssueMapper.list 的 `ORDER BY FIELD(severity,...)` 换成 CASE（H2 可测，MySQL 语义不变）。测试：新增 AgentIssueServiceTest（CLI_RESULT 事件摄取/summary 落库/复发聚合/坏行跳过/嵌入 JSON 兼容，H2 + 真实迁移）；AgentWorkbenchServiceTest 新增"过期恢复不阻塞同 Agent 新轮次"用例，6 处旧口径断言更新（恢复后残留不再计数），67 项全绿；全量 1168 项仅剩 KnowledgeArchiveWorkflowTest 与 BusinessLogSearchServiceTest 两处前几轮遗留红（与本轮零关联），controller 模块 67 项全绿。
+
+待办：①用户重启 IntelliJ 运行的服务生效；②执行运维 SQL（docs/业务线/BL000012-工作台/20261115-巡检派发死锁解卡.sql：终结 3 条 WAITING_RESOURCE 为 FAILED、每任务仅保留最新 1 条 QUEUED 其余 22 条取消，含审计与事件留痕）；③首轮巡检完成后问题面板/工单中心出数。历史 2 条已完成运行（11-14 22:38/22:52 的 b5a831a8、2abffa5f）如需回填工单需另行触发。
+
+### 2026-11-15 补充｜解卡 SQL 已由本会话直接执行（用户委托）
+
+经应用自身数据源配置 + 本机 mysql 客户端直连 workhub 库执行（脚本见 docs/业务线/BL000012-工作台/20261115-巡检派发死锁解卡.sql，含第 4 节补充收尾）：①3 条 11-14 晚的 WAITING_RESOURCE 终结为 FAILED；②22 条积压 QUEUED 取消，每任务保留最新 1 条；③发现用户 08:38-08:41 曾短暂重启又停止，产生 3 条孤儿 RUNNING（37fb8b5b/a6605da3/d1f11f4a）与 1 条恢复出的 WAITING_RESOURCE（c35b6629，新消费分期），执行器 JVM 已死、CLI 结果无人接收，一并按失败关闭。全部写审计与事件。复核：owner_token 残留=0、QUEUED 每任务=1。未杀任何进程（无法区分巡检 CLI 子进程与本会话进程，孤儿 CLI 自行退出即可）。待用户启动服务后验证：3 个 Agent 应在数秒内认领保留轮次，完成后问题面板/工单中心出数。
+
+### 2026-11-15 补充｜「结果与产物」内嵌子 Tab 改版 + 全链路出数验证
+
+前端：运行详情「结果与产物」Tab 改为内层子 Tab——[结果报告] [系统预警（n）] [业务监测（n）] [账务监测（n）]，AgentRunIssuesPanel 去掉自带 tabs 壳只输出三个域 tab-pane（勾选/复制摘要/去修复工具条保留在子 Tab 内容下方）；vue-tsc 0 错误、dist 重建（10:20）。验证：服务重启后巡检恢复（01:00 起多轮 COMPLETED），摄取修复生效——pm_agent_issue 已入库 40 条（系统预警 20/业务监测 10/账务监测 10，P1 共 13 条），问题面板与工单中心出数可勾选。02:00/02:10 两轮失败为 ZCode 模型请求瞬时拒绝（-32605 workspace/generateText），下轮自动重试。
+
+### 2026-11-15 补充｜摄取瞬时事务失败加退避重试（用户反馈"报告有、Tab 没有"）
+
+用户反馈部分问题只在结果报告、不在域 Tab。排查：设计上报告为本轮散文全文、域 Tab 为跨轮聚合工单，本不一一对应；但确实存在真缺陷——02:32/03:04/03:42 三轮摄取失败（DataAccessResourceFailure/TransactionSystemException，与 11-12 通知失败同源：巡检结束瞬间 CLI 密集查询占满连接池），整轮回滚未入库。修复：AgentExecutionCoordinator 摄取调用点加 3 次退避重试（2s*attempt，照 AgentRunNotifier 模式）；agent 全量测试绿。漏摄的 3 轮无需手工回填：问题均为持续状态，下一轮巡检复现时聚合更新（次数/级别刷新）。待用户下次重启生效。
+
+### 2026-11-15 补充｜数字员工弹框统一支持点击空白关闭（用户确认）
+
+AgentWorkbenchView 两处 el-dialog（任务列表、任务与运行）原显式 `:close-on-click-modal="false"` 已移除，回归 Element Plus 默认（true）；三个 el-drawer（Agent 配置、分派任务、调整周期）默认本就为 true。vue-tsc 0 错误、dist 已重建。弹框关闭不销毁内容，未发送的补充指令等输入保留。
