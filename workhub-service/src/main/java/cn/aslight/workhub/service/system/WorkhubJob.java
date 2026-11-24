@@ -19,6 +19,11 @@ public interface WorkhubJob {
     /** 默认调度值：CRON 为 cron 表达式，FIXED_DELAY 为毫秒数（字符串形式）。 */
     String defaultScheduleValue();
 
+    /** 首次种子回写时是否启用；页面在 sys_job_config 上的启停始终优先。 */
+    default boolean defaultEnabled() {
+        return true;
+    }
+
     /** 手动触发入参说明；无参数任务返回 null。 */
     default String paramDescription() {
         return null;

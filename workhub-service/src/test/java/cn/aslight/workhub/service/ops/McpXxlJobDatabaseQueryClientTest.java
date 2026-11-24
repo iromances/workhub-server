@@ -57,8 +57,18 @@ class McpXxlJobDatabaseQueryClientTest {
         }
         try (var ignored = mockConstruction(DatabaseDiagnosticService.class,(service,context) ->
                 when(service.runReadonlyQueries(anyString(),anyString(),anyList())).thenReturn(List.of(reply(List.of()),Map.of("truncatedByBytes",true,"rows",List.of()))))) {
-            assertThrows(IllegalArgumentException.class,() -> client.runVerifiedBatch("BL000012","TEST",List.of("SELECT 1","SELECT 2")));
+            var failure = assertThrows(IllegalArgumentException.class,() -> client.runVerifiedBatch("BL000012","TEST",List.of("SELECT 1","SELECT 2")));
+            assertTrue(failure.getMessage().contains("第 2 条查询"));
+            assertTrue(failure.getMessage().contains("按字节截断"));
+            assertFalse(failure.getMessage().contains("SELECT"));
         }
+    }
+
+    @Test void receiptErrorsIdentifyTheActualCause() {
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> McpXxlJobDatabaseQueryClient.rows(null)).getMessage().contains("回执缺失"));
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> McpXxlJobDatabaseQueryClient.rows(Map.of("rows", List.of()))).getMessage().contains("truncatedByBytes"));
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> McpXxlJobDatabaseQueryClient.rows(Map.of("truncatedByBytes", false))).getMessage().contains("rows"));
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> McpXxlJobDatabaseQueryClient.rows(reply(List.of("bad row")))).getMessage().contains("行结构错误"));
     }
     private static Map<String,Object> reply(List<?> rows) { return Map.of("truncatedByBytes",false,"rows",rows); }
     private McpCatalogResponse catalog(String host,String environment,String profile) {

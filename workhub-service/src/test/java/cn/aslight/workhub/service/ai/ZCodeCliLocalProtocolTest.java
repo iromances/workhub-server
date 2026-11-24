@@ -31,6 +31,7 @@ class ZCodeCliLocalProtocolTest {
     private volatile boolean attack;
     private volatile boolean hang;
     private volatile boolean formatCorrection;
+    private volatile boolean nativeAgent;
 
     @BeforeEach void setup() throws Exception {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 10);
@@ -41,10 +42,25 @@ class ZCodeCliLocalProtocolTest {
                 assertEquals("glm-4.6", request.path("model").asText());
                 var actualNames = new TreeSet<String>(); request.path("tools").forEach(tool -> actualNames.add(tool.path("function").path("name").asText()));
                 boolean formatting = formatCorrection && requests.size() == 3;
-                assertEquals(toolsEnabled && !formatting ? Set.of("mcp__workhub_task__monitor_read") : Set.of(), actualNames);
+                if (nativeAgent) {
+                    assertTrue(actualNames.containsAll(Set.of("Bash", "Write", "mcp__workhub_task__monitor_read")), actualNames::toString);
+                } else {
+                    assertEquals(toolsEnabled && !formatting ? Set.of("mcp__workhub_task__monitor_read") : Set.of(), actualNames);
+                }
                 if (hang) { try { Thread.sleep(10000); } catch (InterruptedException ex) { Thread.currentThread().interrupt(); } return; }
                 Object delta; String reason;
-                if ((toolsEnabled || attack) && requests.size() == 1) {
+                if (nativeAgent && requests.size() <= 3) {
+                    String name = switch (requests.size()) { case 1 -> "Write"; case 2 -> "Bash"; default -> "mcp__workhub_task__monitor_read"; };
+                    var arguments = switch (requests.size()) {
+                        case 1 -> Map.of("file_path", directory.resolve("native-write.txt").toString(), "content", "native-cli-ok");
+                        case 2 -> Map.of("command", "cat '" + directory.resolve("native-write.txt") + "'", "description", "Read fixture file");
+                        default -> Map.of();
+                    };
+                    if (requests.size() == 3) assertTrue(request.path("messages").toString().contains("native-cli-ok"));
+                    delta = Map.of("role", "assistant", "tool_calls", List.of(Map.of("index", 0, "id", "call-native-" + requests.size(), "type", "function",
+                            "function", Map.of("name", name, "arguments", json.writeValueAsString(arguments)))));
+                    reason = "tool_calls";
+                } else if ((toolsEnabled || attack) && requests.size() == 1) {
                     String name = attack ? "Bash" : "mcp__workhub_task__monitor_read";
                     String arguments = attack ? json.writeValueAsString(Map.of("command", "touch " + directory.resolve("forbidden-write"))) : "{}";
                     delta = Map.of("role", "assistant", "tool_calls", List.of(Map.of("index", 0, "id", "call-fixture", "type", "function", "function", Map.of("name", name, "arguments", arguments))));
@@ -56,7 +72,7 @@ class ZCodeCliLocalProtocolTest {
                             : "{\"type\":\"RESULT\",\"summary\":\"本地完整工具任务通过\"}"); reason = "stop";
                 }
                 if (!request.path("stream").asBoolean()) {
-                    assertTrue(formatting, "只有无工具格式校正使用普通文本生成请求");
+                    assertTrue(formatting || nativeAgent, "受限会话只有无工具格式校正使用普通文本生成请求");
                     byte[] body = json.writeValueAsBytes(Map.of("id", "fixture-format", "object", "chat.completion",
                             "model", "glm-4.6", "created", 1, "choices", List.of(Map.of("index", 0, "message", delta, "finish_reason", reason))));
                     exchange.getResponseHeaders().set("Content-Type", "application/json");
@@ -114,6 +130,12 @@ class ZCodeCliLocalProtocolTest {
     @Test void actualZcodeUsesOnlyTaskMcpAndObservesItsResultBeforeCompleting() throws Exception {
         assertActualMcpTask();
     }
+    @Test void actualAgentWritesFileRunsShellAndCallsMcp() throws Exception {
+        nativeAgent = true; assertActualMcpTask();
+        assertEquals("native-cli-ok", Files.readString(directory.resolve("native-write.txt")));
+        assertTrue(events.stream().anyMatch(value -> value.contains("Bash")));
+        assertTrue(events.stream().anyMatch(value -> value.contains("Write")));
+    }
     @Test void actualZcodeCorrectsFormatWithNoToolsAndDoesNotReplayMcp() throws Exception {
         formatCorrection = true; assertActualMcpTask();
         assertTrue(events.stream().anyMatch(value -> value.contains("校正")));
@@ -121,7 +143,15 @@ class ZCodeCliLocalProtocolTest {
     private void assertActualMcpTask() throws Exception {
         toolsEnabled = true; client.preflight(provider);
         Path run = Files.createDirectory(directory.resolve("run")), output = run.resolve("result.json");
-        var launch = client.prepare(provider, provider.getDefaultModel(), "disabled", run, output, "使用唯一工具读取本地样本后完成任务。", List.of("mcp__workhub_task__monitor_read"), base() + "/mcp", "task-fixture-token", formatCorrection ? "{\"type\":\"object\"}" : null);
+        var launch = nativeAgent
+                ? client.prepareAgent(provider, provider.getDefaultModel(), "disabled", run, output, "写入并读取本地样本，调用 WorkHub 工具后完成任务。", base() + "/mcp", "task-fixture-token", "{\"type\":\"object\"}")
+                : client.prepare(provider, provider.getDefaultModel(), "disabled", run, output, "使用唯一工具读取本地样本后完成任务。", List.of("mcp__workhub_task__monitor_read"), base() + "/mcp", "task-fixture-token", formatCorrection ? "{\"type\":\"object\"}" : null);
+        if (nativeAgent) {
+            // 实测不加载操作者的真实账户、插件或 MCP；生产入口本身保留原生 HOME。
+            Path home = Files.createDirectory(run.resolve("fixture-home"));
+            launch.builder().environment().put("HOME", home.toString());
+            launch.builder().environment().put("ZCODE_DATA_BASE_DIR", home.toString());
+        }
         Process process = launch.builder().redirectError(run.resolve("stderr.log").toFile()).start(); var failure = new AtomicReference<Throwable>();
         var descendants = new LinkedHashMap<Long, ProcessHandle>();
         try {
@@ -143,7 +173,11 @@ class ZCodeCliLocalProtocolTest {
             if (failure.get() != null) throw new AssertionError("Protocol failed", failure.get());
             if (handlerFailure.get() != null) throw new AssertionError("Fixture failed: " + events, handlerFailure.get());
             assertFalse(process.isAlive(), () -> "CLI did not finish: " + events); reader.join(1000); assertFalse(reader.isAlive()); assertEquals(0, process.exitValue());
-            assertNull(handlerFailure.get()); assertEquals(1, mcpCalls.get()); assertEquals(formatCorrection ? 3 : 2, requests.size());
+            assertNull(handlerFailure.get()); assertEquals(1, mcpCalls.get());
+            if (nativeAgent) {
+                assertTrue(requests.size() >= 4);
+                assertEquals(3, events.stream().filter(value -> value.startsWith("ZCode 正在调用 ")).count());
+            } else assertEquals(formatCorrection ? 3 : 2, requests.size());
             assertEquals("RESULT", json.readTree(Files.readString(output)).path("type").asText());
         } finally { assertTrue(ZCodeCliClient.stopTree(process, descendants)); }
     }

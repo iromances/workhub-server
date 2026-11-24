@@ -342,6 +342,9 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
             String outputSchema = structured && !Boolean.FALSE.equals(useCase.getJsonSchemaEnabled())
                     ? resolveSchema(request.outputSchema(), firstText(request.schemaClasspathOverride(), useCase.getSchemaClasspath()))
                     : null;
+            if (definition.code().startsWith("intake.") && definition.capability() == AiUseCaseDefinitions.Capability.LOCAL_REPOSITORY_READ) {
+                prompt += "\n面向用户的说明采用 ELI5：用简单中文解释需求要解决什么、为什么需要这些改动、影响是什么以及如何验收；术语首次出现时解释。保留全部任务、验收标准和证据，不用删减内容凑长度，不编造未核实的结论。";
+            }
             String output;
             if ("CLI".equals(normalize(provider.getChannelType()))) {
                 output = executeCli(request, definition, provider, useCase, prompt, outputSchema);
@@ -375,7 +378,7 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
                     "AI 网关执行失败: " + summarizeException(ex),
                     providerCode,
                     model,
-                    elapsedMillis(startedAt)
+                    elapsedMillis(startedAt), ex
             );
         }
     }
@@ -393,6 +396,18 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
             // ZCode 结构化输出模式会阻断 MCP 工具调用（实测带 schema 会话模型无法真正调用工具，只能产出
             // 占位/空结果）。仓库读取场景不把 schema 传进 CLI 结构化输出，让模型自由完成工具调查；终稿仍
             // 强制为 JSON 对象，模型交文本时按 schema 做一次无工具格式校正。
+            if (repository && request.resultRecovery() != null) {
+                String model = firstCliValue(request.modelOverride(), firstCliValue(useCase.getModel(), provider.getDefaultModel()));
+                String reasoning = firstCliValue(request.reasoningLevelOverride(), firstCliValue(useCase.getReasoningLevel(), provider.getDefaultReasoningLevel()));
+                String fingerprint = AiAnalysisFingerprint.create(request, provider.getId(), model, reasoning, prompt, outputSchema);
+                var recovery = request.resultRecovery().open(fingerprint);
+                String output = zcodeCliClient.executeRecoverableAnalysis(provider, model, reasoning,
+                        buildZcodePrompt(prompt, outputSchema, true, request),
+                        positive(request.timeoutSecondsOverride(), positive(useCase.getTimeoutSeconds(), provider.getCallTimeoutSeconds())),
+                        request.imagePaths(), outputSchema, repositoryMcpUrl(), mcpAccessToken(), repositoryToolNames(), recovery);
+                request.resultRecovery().complete().run();
+                return output;
+            }
             if (repository) {
                 return zcodeCliClient.executeStructuredWithoutCliSchema(provider,
                         firstCliValue(request.modelOverride(), firstCliValue(useCase.getModel(), provider.getDefaultModel())),

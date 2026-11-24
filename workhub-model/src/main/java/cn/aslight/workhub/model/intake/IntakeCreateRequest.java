@@ -19,6 +19,9 @@ public class IntakeCreateRequest {
      */
     private String developmentStandard;
 
+    /** 录入时选择的 AI 开发执行数字员工 ID，可选。 */
+    private String aiAgentId;
+
     private String sourceChannel;
 
     private LocalDateTime receivedAt;
@@ -41,6 +44,14 @@ public class IntakeCreateRequest {
     public void setDevelopmentOwnerUserName(String developmentOwnerUserName) {
         this.developmentOwnerUserName = developmentOwnerUserName;
     }
+    public String getAiAgentId() {
+        return aiAgentId;
+    }
+
+    public void setAiAgentId(String aiAgentId) {
+        this.aiAgentId = aiAgentId;
+    }
+
 
     public String getDevelopmentStandard() {
         return developmentStandard;

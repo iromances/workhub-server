@@ -5,6 +5,18 @@ import java.time.LocalDateTime;
 /** REQ-b4d7e6f2：Function Call 执行审计（func_call_sql_audit_log）。 */
 public class FuncCallAuditEntity {
 
+    private Long monitorRunId;
+    private String ruleFamily;
+    private String parametersJson;
+    private String templateHash;
+    public Long getMonitorRunId() { return monitorRunId; }
+    public void setMonitorRunId(Long value) { monitorRunId = value; }
+    public String getRuleFamily() { return ruleFamily; }
+    public void setRuleFamily(String value) { ruleFamily = value; }
+    public String getParametersJson() { return parametersJson; }
+    public void setParametersJson(String value) { parametersJson = value; }
+    public String getTemplateHash() { return templateHash; }
+    public void setTemplateHash(String value) { templateHash = value; }
     private Long id;
     private String sqlCode;
     private String scenarioCode;

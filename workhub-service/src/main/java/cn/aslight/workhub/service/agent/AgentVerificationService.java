@@ -283,7 +283,7 @@ public class AgentVerificationService {
         var context = runs.context(run); var current = json.readValue(agent.configurationJson(), AgentConfiguration.class);
         var standards = gate.snapshot(plan).verificationPlan();
         if (standards != null) for (var check : standards.checks()) {
-            if (!current.scopes().contains(check.scope()) || !context.configuration().scopes().contains(check.scope())
+            if (!current.allowsScope(check.scope()) || !context.configuration().allowsScope(check.scope())
                     || !context.specification().scopes().contains(check.scope())) throw new AccessDeniedException("复查范围超出当前 Agent 或原任务授权");
             if (permissions(check.toolCode()).stream().noneMatch(actor::has)) throw new AccessDeniedException("缺少该复查监测来源的查看权限");
         }

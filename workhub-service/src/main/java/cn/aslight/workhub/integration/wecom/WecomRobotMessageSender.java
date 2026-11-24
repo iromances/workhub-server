@@ -54,15 +54,31 @@ public class WecomRobotMessageSender {
     }
 
     public WecomRobotSendResult send(String content) {
+        return sendTo(sysConfigService.requireSecretValue(CONFIG_GROUP, CONFIG_KEY), content);
+    }
+
+    /** 向指定机器人地址发送（任务级预警 webhook，REQ-2020a468）；地址由调用方解密后传入，不经系统配置。 */
+    public WecomRobotSendResult sendTo(String webhookUrl, String content) {
         String message = requireContent(content);
-        String webhook = sysConfigService.requireSecretValue(CONFIG_GROUP, CONFIG_KEY);
+        String webhook = requireWebhook(webhookUrl);
         long startedAt = System.nanoTime();
-        WecomRobotSendResult result = deliver(message, webhook.trim());
+        WecomRobotSendResult result = deliver(message, webhook);
         log.info("WeCom robot message send finished. sent={}, errcode={}, contentBytes={}, durationMs={}",
                 result.sent(), result.errcode(), message.getBytes(StandardCharsets.UTF_8).length,
                 Duration.ofNanos(System.nanoTime() - startedAt).toMillis());
         audit(message, result, Duration.ofNanos(System.nanoTime() - startedAt).toMillis());
         return result;
+    }
+
+    private String requireWebhook(String webhookUrl) {
+        if (webhookUrl == null || webhookUrl.isBlank()) {
+            throw new IllegalArgumentException("机器人 webhook 地址不能为空");
+        }
+        String trimmed = webhookUrl.trim();
+        if (!trimmed.startsWith("https://") && !trimmed.startsWith("http://")) {
+            throw new IllegalArgumentException("机器人 webhook 地址必须是 http(s) URL");
+        }
+        return trimmed;
     }
 
     private WecomRobotSendResult deliver(String message, String webhook) {

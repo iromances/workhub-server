@@ -1,9 +1,7 @@
 package cn.aslight.workhub.service.agent;
 
 import cn.aslight.workhub.model.ai.AiProviderConfigEntity;
-import cn.aslight.workhub.service.ai.AiCliType;
 import cn.aslight.workhub.service.ai.CliTaskConversation;
-import cn.aslight.workhub.service.ai.ZCodeCliClient;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
@@ -16,12 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-/** 原生规划 + 任务专属 MCP。禁用其他数据入口，不复用旧分析通道的无沙箱参数。 */
+/** 数字员工使用原生 CLI 完整能力，并追加 WorkHub MCP。 */
 @Component
 public class CodexAgentCliProtocol implements AgentCliProtocol {
-    static final List<String> DISABLED_FEATURES = List.of("shell_tool", "unified_exec", "shell_snapshot", "browser_use",
-            "browser_use_external", "computer_use", "apps", "plugins", "remote_plugin", "hooks", "memories",
-            "multi_agent", "multi_agent_v2", "view_image", "workspace_dependencies", "skill_search", "skill_mcp_dependency_install");
     private final ObjectMapper json;
     public CodexAgentCliProtocol(ObjectMapper json) { this.json = json; }
 
@@ -37,24 +32,17 @@ public class CodexAgentCliProtocol implements AgentCliProtocol {
     public void preflight(AiProviderConfigEntity provider) throws IOException, InterruptedException {
         String executable = executable(provider.getCliCommand());
         String help = inspect(List.of(executable, "exec", "--help"));
-        for (String required : List.of("--ignore-user-config", "--ignore-rules", "--strict-config", "--output-schema", "--json")) {
-            if (!help.contains(required)) throw new IllegalArgumentException("当前 Codex CLI 不支持任务隔离参数 " + required + "；未自动升级");
-        }
-        String features = inspect(List.of(executable, "features", "list"));
-        for (String required : DISABLED_FEATURES) {
-            if (!features.lines().anyMatch(line -> line.startsWith(required + " "))) throw new IllegalArgumentException("当前 CLI 无法核实工具隔离能力: " + required);
-        }
-        for (String required : List.of("skip_host_skill_discovery", "code_mode_host")) {
-            if (!features.lines().anyMatch(line -> line.startsWith(required + " "))) throw new IllegalArgumentException("当前 CLI 缺少任务 MCP 运行能力: " + required);
+        for (String required : List.of("--sandbox", "--output-schema", "--output-last-message", "--json", "--ephemeral")) {
+            if (!help.contains(required)) throw new IllegalArgumentException("当前 Codex CLI 不支持任务运行参数 " + required + "；未自动升级");
         }
     }
 
     public List<String> command(AiProviderConfigEntity provider, String model, Path directory, Path schema, Path output, String mcpUrl) {
-        var args = new ArrayList<>(List.of(executable(provider.getCliCommand()), "exec", "--ignore-user-config", "--ignore-rules",
-                "--strict-config", "--ephemeral", "--skip-git-repo-check", "--sandbox", "read-only", "--json", "--color", "never",
+        var args = new ArrayList<>(List.of(executable(provider.getCliCommand()), "exec",
+                "--ephemeral", "--skip-git-repo-check", "--sandbox", "danger-full-access", "--json", "--color", "never",
                 "-C", directory.toString(), "--model", model, "--output-schema", schema.toString(), "--output-last-message", output.toString()));
         config(args, "approval_policy", "never");
-        config(args, "web_search", "disabled");
+        config(args, "web_search", "live");
         if (mcpUrl != null) {
             // 平台标准 MCP 入口；AI 依据职责描述自行选择 WorkHub 能力，授权由 MCP 侧策略与审计约束。
             config(args, "mcp_servers.workhub_task.url", mcpUrl);
@@ -62,11 +50,6 @@ public class CodexAgentCliProtocol implements AgentCliProtocol {
             config(args, "mcp_servers.workhub_task.default_tools_approval_mode", "approve");
             args.addAll(List.of("-c", "mcp_servers.workhub_task.required=true", "-c", "mcp_servers.workhub_task.tool_timeout_sec=300"));
         }
-        args.addAll(List.of("-c", "project_doc_max_bytes=0", "-c", "skills.bundled.enabled=false", "-c", "skills.include_instructions=false",
-                "-c", "features.skip_host_skill_discovery=true"));
-        // 当前 CLI 通过 Code Mode 宿主调度 MCP；其他宿主工具仍由下列独立开关禁用。
-        args.addAll(List.of("--enable", "code_mode_host"));
-        for (String feature : DISABLED_FEATURES) args.addAll(List.of("--disable", feature));
         if (provider.getDefaultReasoningLevel() != null && !provider.getDefaultReasoningLevel().isBlank()) {
             config(args, "model_reasoning_effort", provider.getDefaultReasoningLevel());
         }
@@ -82,6 +65,7 @@ public class CodexAgentCliProtocol implements AgentCliProtocol {
         restrictEnvironment(builder.environment());
         if (token != null) builder.environment().put("WORKHUB_AGENT_RUN_TOKEN", token);
         return new cn.aslight.workhub.service.ai.CliTaskLaunch(builder, new CliTaskConversation() {
+            public boolean unlimitedResultMessages() { return true; }
             public void start(java.io.OutputStream input) throws IOException {
                 try (input) { input.write(prompt.getBytes(StandardCharsets.UTF_8)); }
             }
@@ -95,7 +79,7 @@ public class CodexAgentCliProtocol implements AgentCliProtocol {
     static void restrictEnvironment(Map<String, String> environment) {
         // 只继承 CLI 认证/系统证书及现有沙箱约束；不把 WorkHub DB、Jenkins、Git 凭据传给模型进程。
         environment.keySet().removeIf(key -> !List.of("PATH", "HOME", "USER", "LANG", "LC_ALL", "TMPDIR", "CODEX_HOME",
-                "SSL_CERT_FILE", "SSL_CERT_DIR", "NODE_EXTRA_CA_CERTS").contains(key) && !key.startsWith("CODEX_SANDBOX"));
+                "SSL_CERT_FILE", "SSL_CERT_DIR", "NODE_EXTRA_CA_CERTS", "SSH_AUTH_SOCK").contains(key) && !key.startsWith("CODEX_SANDBOX"));
     }
 
     private void config(List<String> args, String key, String value) { args.addAll(List.of("-c", key + "=" + json.writeValueAsString(value))); }

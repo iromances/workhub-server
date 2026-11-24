@@ -48,6 +48,8 @@ public class ProjectKnowledgeBaseService {
     public static final String CONFIG_KEY_VAULT_PATH = "vaultPath";
     public static final String CONFIG_KEY_SDD_PROCESS_PATH = "sddProcessPath";
     public static final String DEFAULT_SDD_PROCESS_PATH = "schema/研发/SDD/流程.md";
+    /** 仓库 docs 内的 SDD 流程规范路径，优先于知识库配置读取。 */
+    public static final String REPOSITORY_SDD_PROCESS_PATH = "研发规范/SDD/流程.md";
 
     private static final Logger log = LoggerFactory.getLogger(ProjectKnowledgeBaseService.class);
     private static final int MAX_SCAN_FILES = 800;
@@ -106,15 +108,41 @@ public class ProjectKnowledgeBaseService {
     }
 
     /**
-     * 定向读取知识库中的 SDD 流程规范全文，供 SDD 模式设计评估使用。
+     * 定向读取 SDD 流程规范全文，供 SDD 模式设计评估使用。优先读取 WorkHub
+     * 仓库 {@code docs/研发规范/SDD/流程.md}；仓库目录不可用或文件不存在时，回落到
+     * 知识库 {@code vaultPath + sddProcessPath} 配置（历史兼容）。
      *
      * @return 规范文本（超长按读取上限截断）
-     * @throws IllegalStateException 知识库根目录未配置或规范文件不存在
+     * @throws IllegalStateException 仓库与知识库均未提供可读取的规范文件
      */
     public String readSddProcessSpec() {
+        Path repositorySpec = resolveRepositorySddSpec();
+        if (repositorySpec != null) {
+            return readSpecFile(repositorySpec);
+        }
+        return readVaultSddSpec();
+    }
+
+    /** 解析仓库 docs 内的 SDD 流程规范；仓库目录不可用或文件不存在时返回 {@code null}，由调用方回落知识库配置。 */
+    private Path resolveRepositorySddSpec() {
+        try {
+            Path documents = RepositoryDocumentPaths.resolve(sysConfigService);
+            Path specPath = documents.resolve(REPOSITORY_SDD_PROCESS_PATH).normalize();
+            if (specPath.startsWith(documents) && Files.isRegularFile(specPath)) {
+                return specPath;
+            }
+        } catch (IllegalStateException ex) {
+            log.warn("仓库 SDD 流程规范不可用，回落知识库配置：{}", ex.getMessage());
+        }
+        return null;
+    }
+
+    /** 按知识库配置解析并读取 SDD 流程规范，保留历史路径与防越界约束。 */
+    private String readVaultSddSpec() {
         String configuredPath = trimToNull(sysConfigService.findPlainValue(CONFIG_GROUP, CONFIG_KEY_VAULT_PATH));
         if (configuredPath == null) {
-            throw new IllegalStateException("SDD 模式需要先在系统配置中维护知识库根目录（knowledge.project.vaultPath）");
+            throw new IllegalStateException("未找到 SDD 流程规范：仓库 docs/" + REPOSITORY_SDD_PROCESS_PATH
+                    + " 不存在，且未配置知识库根目录（knowledge.project.vaultPath）");
         }
         Path vaultRoot = Path.of(configuredPath).toAbsolutePath().normalize();
         String relative = trimToNull(sysConfigService.findPlainValue(CONFIG_GROUP, CONFIG_KEY_SDD_PROCESS_PATH));
@@ -122,6 +150,10 @@ public class ProjectKnowledgeBaseService {
         if (!specPath.startsWith(vaultRoot) || !Files.isRegularFile(specPath)) {
             throw new IllegalStateException("知识库中未找到 SDD 流程规范文件：" + specPath);
         }
+        return readSpecFile(specPath);
+    }
+
+    private String readSpecFile(Path specPath) {
         try {
             String content = Files.readString(specPath);
             return content.length() <= MAX_READ_CHARS ? content : content.substring(0, MAX_READ_CHARS);
@@ -255,8 +287,8 @@ public class ProjectKnowledgeBaseService {
                 .getBytes(StandardCharsets.UTF_8));
         String marker = "<!-- workhub-confirmed:" + fingerprint + " -->";
         try {
-            KnowledgeArchiveFiles.locked(location.vaultRoot(), () -> {
-                Path target = KnowledgeArchiveFiles.checked(location.vaultRoot(), location.wikiPath());
+            KnowledgeArchiveFiles.locked(location.wikiRoot(), () -> {
+                Path target = KnowledgeArchiveFiles.checked(location.wikiRoot(), location.wikiPath());
                 // 同一确认结果重新归档保留首次记录时间，不生成伪修订。
                 if (Files.exists(target) && Files.readString(target).contains(marker)) {
                     indexConfirmedReport(location);
@@ -269,7 +301,7 @@ public class ProjectKnowledgeBaseService {
                         + "\n- 来源版本：" + sourceLink(location.vaultRoot(), draft.requirementRawPath())
                         + "\n- 临时分析：[项目过程记录](<" + location.vaultRoot().resolve("notes.md") + "#公司项目>)\n\n## 评估摘要\n\n" + firstNonBlank(draft.summary(), "无")
                         + "\n\n## 经确认的评估数据\n\n" + fenced(json, "json") + "\n";
-                KnowledgeArchiveFiles.versionedWrite(location.vaultRoot(), target, markdown.getBytes(StandardCharsets.UTF_8));
+                KnowledgeArchiveFiles.versionedWrite(location.wikiRoot(), target, markdown.getBytes(StandardCharsets.UTF_8));
                 indexConfirmedReport(location);
                 return null;
             });
@@ -291,8 +323,7 @@ public class ProjectKnowledgeBaseService {
     }
 
     private void indexConfirmedReport(RequirementKnowledgeLocation location) throws IOException {
-        Path index = KnowledgeArchiveFiles.checked(location.vaultRoot(),
-                location.vaultRoot().resolve(RepositoryDocumentPaths.BUSINESS_LINES).resolve("index.md"));
+        Path index = KnowledgeArchiveFiles.checked(location.wikiRoot(), location.wikiRoot().resolve("index.md"));
         String previous = Files.exists(index) ? Files.readString(index) : "# 公司项目研发需求\n";
         String link = "[" + location.wikiRelativePath().replace('\\', '/') + "](<" + location.wikiPath() + ">)";
         if (!previous.contains(location.wikiPath().toString())) {
@@ -301,7 +332,7 @@ public class ProjectKnowledgeBaseService {
             int start = previous.indexOf(heading) + heading.length();
             int end = previous.indexOf("\n## ", start);
             if (end < 0) { end = previous.length(); }
-            KnowledgeArchiveFiles.atomicWrite(location.vaultRoot(), index,
+            KnowledgeArchiveFiles.atomicWrite(location.wikiRoot(), index,
                     (previous.substring(0, end) + "\n- " + link + "\n" + previous.substring(end)).getBytes(StandardCharsets.UTF_8));
         }
     }
@@ -329,11 +360,14 @@ public class ProjectKnowledgeBaseService {
                                                                            ProjectDetailResponse project, Long intakeId) {
         Path vaultRoot = RepositoryDocumentPaths.resolve(sysConfigService);
         Path rawPath = buildRawRequirementPath(vaultRoot, structuredData, project, intakeId);
-        Path wikiPath = buildWikiRequirementPath(vaultRoot, structuredData, project, intakeId);
+        Path wikiRoot = RepositoryDocumentPaths.wikiArchiveRoot(sysConfigService, vaultRoot, businessLineCode(project));
+        Path wikiPath = buildWikiRequirementPath(wikiRoot, structuredData, project, intakeId);
         String rawRelativePath = vaultRoot.relativize(rawPath).toString();
-        String wikiRelativePath = vaultRoot.relativize(wikiPath).toString();
+        // wiki 相对路径以仓库根为基准，兼容 docs/业务线 与 agents-playbook 两个归档根
+        String wikiRelativePath = vaultRoot.getParent().relativize(wikiPath).toString();
         return new RequirementKnowledgeLocation(
                 vaultRoot,
+                wikiRoot,
                 rawPath,
                 wikiPath,
                 rawRelativePath,
@@ -353,20 +387,26 @@ public class ProjectKnowledgeBaseService {
                 .normalize();
     }
 
-    private Path buildWikiRequirementPath(Path vaultRoot, IntakeStructuredData structuredData, ProjectDetailResponse project, Long intakeId) {
-        return vaultRoot
-                .resolve(RepositoryDocumentPaths.BUSINESS_LINES)
-                .resolve(businessLineDirSegment(project))
-                .resolve("需求迭代")
-                .resolve(projectNameSegment(project))
-                .resolve(resolveRequirementYear(structuredData))
+    private Path buildWikiRequirementPath(Path wikiRoot, IntakeStructuredData structuredData, ProjectDetailResponse project, Long intakeId) {
+        Path requirementDir = wikiRoot.resolve(businessLineDirSegment(project));
+        if (RepositoryDocumentPaths.WORKHUB_BUSINESS_LINE_CODE.equals(businessLineCode(project))) {
+            // WorkHub 平台自身保留既有结构：需求迭代/{项目名称}/{年份}/{审批编号}-{需求名称}
+            requirementDir = requirementDir
+                    .resolve("需求迭代")
+                    .resolve(projectNameSegment(project))
+                    .resolve(resolveRequirementYear(structuredData));
+        } else {
+            // 其余业务线归档 agents-playbook：需求/{审批编号}-{需求名称}
+            requirementDir = requirementDir.resolve("需求");
+        }
+        return requirementDir
                 .resolve(requirementCodeSegment(structuredData, intakeId) + "-" + requirementTitleSegment(structuredData))
                 .resolve("研发评估.md")
                 .normalize();
     }
 
     /**
-     * SDD 模式确认后，将 AI 草稿中的三件套内容发布为需求迭代目录下的 proposal/design/tasks Markdown。
+     * SDD 模式确认后，将 AI 草稿中的三件套内容发布为需求归档目录下的 proposal/design/tasks Markdown。
      * 逐份独立写入：某一份内容为空时跳过该份，已存在同指纹文件时不重复写。
      */
     public void publishSddDocuments(IntakeRecordEntity intake,
@@ -382,11 +422,11 @@ public class ProjectKnowledgeBaseService {
         RequirementKnowledgeLocation location = resolveRequirementIterationLocation(structuredData, project, intake.getId());
         Path folder = location.wikiPath().getParent();
         IntakeSddDocuments documents = draft.sddDocuments();
-        writeSddDocument(location.vaultRoot(), folder, "proposal.md", "Proposal", documents.sddProposal(),
+        writeSddDocument(location.wikiRoot(), folder, "proposal.md", "Proposal", documents.sddProposal(),
                 intake, analysisId, confirmedBy, confirmedAt);
-        writeSddDocument(location.vaultRoot(), folder, "design.md", "Design", documents.sddDesign(),
+        writeSddDocument(location.wikiRoot(), folder, "design.md", "Design", documents.sddDesign(),
                 intake, analysisId, confirmedBy, confirmedAt);
-        writeSddDocument(location.vaultRoot(), folder, "tasks.md", "Tasks", documents.sddTasks(),
+        writeSddDocument(location.wikiRoot(), folder, "tasks.md", "Tasks", documents.sddTasks(),
                 intake, analysisId, confirmedBy, confirmedAt);
     }
 
@@ -424,6 +464,10 @@ public class ProjectKnowledgeBaseService {
     private String businessLineSegment(ProjectDetailResponse project) {
         String businessLine = safePathSegment(firstNonBlank(project == null ? null : project.businessLine(), "未归类业务线"));
         return businessLine;
+    }
+
+    private String businessLineCode(ProjectDetailResponse project) {
+        return project == null ? null : trimToNull(project.businessLineCode());
     }
 
     /** 业务线归档目录统一为 {业务线编码}-{业务线名称}；无编码或编码与名称相同时退回名称。 */
@@ -823,6 +867,7 @@ public class ProjectKnowledgeBaseService {
     }
 
     public record RequirementKnowledgeLocation(Path vaultRoot,
+                                               Path wikiRoot,
                                                Path rawPath,
                                                Path wikiPath,
                                                String rawRelativePath,

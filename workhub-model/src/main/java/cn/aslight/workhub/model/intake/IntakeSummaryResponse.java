@@ -47,6 +47,7 @@ public record IntakeSummaryResponse(Long id,
                                     List<String> involvedSystems,
                                     String enrichmentStatus,
                                     String status,
+                                    String aiAgentId,
                                     Long convertedWorkItemId,
                                     Long activeTodoCount) {
 
@@ -133,6 +134,7 @@ public record IntakeSummaryResponse(Long id,
                 involvedSystems,
                 enrichmentStatus,
                 status,
+                null,
                 convertedWorkItemId,
                 0L
         );
@@ -217,6 +219,7 @@ public record IntakeSummaryResponse(Long id,
                 involvedSystems,
                 enrichmentStatus,
                 status,
+                null,
                 convertedWorkItemId,
                 0L
         );

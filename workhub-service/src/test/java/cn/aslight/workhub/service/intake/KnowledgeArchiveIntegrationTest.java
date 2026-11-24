@@ -39,6 +39,8 @@ class KnowledgeArchiveIntegrationTest {
                 ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH)).thenReturn(vault.toString());
         when(config.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP,
                 RepositoryDocumentPaths.CONFIG_KEY_REPOSITORY_PATH)).thenReturn(repository.toString());
+        when(config.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP,
+                RepositoryDocumentPaths.CONFIG_KEY_PLAYBOOK_PATH)).thenReturn(repository.resolve("agents-playbook").toString());
         PlatformTransactionManager transactions = mock(PlatformTransactionManager.class);
         when(transactions.getTransaction(any())).thenAnswer(ignored -> new SimpleTransactionStatus());
         return new ProjectKnowledgeBaseService(config, mock(RequirementMaterialExportService.class), json, transactions);
@@ -125,7 +127,7 @@ class KnowledgeArchiveIntegrationTest {
                 draft(source, "第一轮结论"), "reviewer", "2026-10-18T12:01:00");
         assertEquals(first, Files.readString(location.wikiPath()));
         assertFalse(Files.exists(location.wikiFolderPath().resolve("历史版本")));
-        String index = Files.readString(documents().resolve("业务线/index.md"));
+        String index = Files.readString(repository.resolve("agents-playbook/docs/业务线/index.md"));
         assertEquals(1, index.split(java.util.regex.Pattern.quote("(<" + location.wikiPath() + ">)"), -1).length - 1);
         service.publishConfirmedAnalysis(intake("原始需求"), input(), project(), 2L,
                 draft(source, "修订结论"), "reviewer", "2026-10-18T12:02:00");
@@ -228,7 +230,7 @@ class KnowledgeArchiveIntegrationTest {
         var report = service.publishConfirmedAnalysis(intake("材料"), input(), project(), 9L,
                 draft(source.rawRelativePath(), "确认结论"), "reviewer", "2026-10-30T12:00:00");
         assertTrue(report.rawPath().startsWith(repository.resolve("docs/requirement-sources")));
-        assertTrue(report.wikiPath().startsWith(repository.resolve("docs/业务线")));
+        assertTrue(report.wikiPath().startsWith(repository.resolve("agents-playbook/docs/业务线")));
         assertTrue(Files.readString(documents().resolve("notes.md")).contains("过程记录"));
         assertNull(report.wikiObsidianUrl());
         assertEquals("知识库仅保留手工知识笔记", Files.readString(vault.resolve("notes.md")));

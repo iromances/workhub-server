@@ -44,15 +44,27 @@ public class McpXxlJobDatabaseQueryClient implements XxlJobDatabaseQueryClient {
         var results = service.runReadonlyQueries(target.key(), profile, List.copyOf(sqls));
         Instant finishedAt = Instant.now();
         if (results == null || results.size() != sqls.size()) throw new IllegalArgumentException("数据库查询回执缺少批次结果");
-        return new VerifiedBatch(targetHash, startedAt, finishedAt, results.stream().map(McpXxlJobDatabaseQueryClient::rows).toList());
+        var rows = new java.util.ArrayList<List<Map<String, Object>>>();
+        for (int i = 0; i < results.size(); i++) {
+            try { rows.add(rows(results.get(i))); }
+            catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException("数据库批次第 " + (i + 1) + " 条查询：" + ex.getMessage(), ex);
+            }
+        }
+        return new VerifiedBatch(targetHash, startedAt, finishedAt, List.copyOf(rows));
     }
 
     /** 批量接口直接返回结果集；与单条接口的 result 包装不同，缺失不能退化为空集合。 */
     @SuppressWarnings("unchecked")
     static List<Map<String, Object>> rows(Map<String, Object> result) {
-        if (result == null || !Boolean.FALSE.equals(result.get("truncatedByBytes")) || !(result.get("rows") instanceof List<?> rows)
-                || rows.stream().anyMatch(row -> !(row instanceof Map<?, ?> cells) || cells.keySet().stream().anyMatch(key -> !(key instanceof String))))
-            throw new IllegalArgumentException("数据库查询回执缺失、格式不完整或已截断");
+        if (result == null) throw new IllegalArgumentException("数据库查询回执缺失");
+        if (!(result.get("truncatedByBytes") instanceof Boolean truncated))
+            throw new IllegalArgumentException("数据库查询回执 truncatedByBytes 标记缺失或类型错误");
+        if (truncated) throw new IllegalArgumentException("数据库查询回执已按字节截断，不能作为完整结果");
+        if (!(result.get("rows") instanceof List<?> rows))
+            throw new IllegalArgumentException("数据库查询回执 rows 缺失或类型错误");
+        if (rows.stream().anyMatch(row -> !(row instanceof Map<?, ?> cells) || cells.keySet().stream().anyMatch(key -> !(key instanceof String))))
+            throw new IllegalArgumentException("数据库查询回执行结构错误，必须为字符串列名的对象");
         return (List<Map<String, Object>>) rows;
     }
 

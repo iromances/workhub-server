@@ -8,9 +8,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
-/** ZCode 0.17 原生 app-server 协议；ACK 与 turn.completed 严格分开。 */
+/** ZCode 原生 app-server 协议；ACK 与 turn.completed 严格分开。 */
 public final class ZCodeTaskConversation implements CliTaskConversation {
     /** 会话内 MCP 服务器名与工具暴露前缀；session/create 不会连接 mcpServers，须显式 mcp/list connect。 */
+    static final int MAX_RESULT_BYTES = 24_000;
+    private static final int MAX_FORMAT_INPUT_BYTES = 96_000;
     private static final String MCP_SERVER_NAME = "workhub_task";
     private static final String MCP_TOOL_PREFIX = "mcp__" + MCP_SERVER_NAME + "__";
     private final ObjectMapper json;
@@ -19,6 +21,7 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
     private final String prompt;
     private final Map<String, Object> selection;
     private final List<String> toolNames;
+    private final boolean nativeTools;
     private final String mcpUrl;
     private final String token;
     private final String finalResultSchema;
@@ -37,6 +40,36 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
     private String currentInputId = inputId;
     private int toolCalls;
     private boolean investigationContinued;
+    private boolean recoverableAnalysis;
+    private String recoveryOriginal;
+    private java.util.function.Consumer<String> saveOriginal = ignored -> { };
+    private AgentResultFormatter agentFormatter;
+    private Map<String, Object> formattingSelection;
+
+    @Override public boolean unlimitedResultMessages() { return nativeTools || recoverableAnalysis; }
+
+    @Override public void resultRecovery(String original, java.util.function.Consumer<String> save) {
+        if (!nativeTools) throw invalid("普通 AI 会话不支持数字员工结果恢复");
+        recoveryOriginal = original;
+        saveOriginal = save;
+    }
+
+    public void analysisRecovery(AiResultRecovery.Session recovery) {
+        recoverableAnalysis = true;
+        recoveryOriginal = recovery.original();
+        saveOriginal = recovery.save();
+    }
+
+    private void formatAgentResult(String original) throws IOException {
+        saveOriginal.accept(original);
+        phase = "FORMATTING";
+        agentFormatter = new AgentResultFormatter(json, directory, output,
+                formattingSelection == null ? selection : formattingSelection, finalResultSchema, original, input, nativeTools);
+        if (nativeTools && finalResultSchema != null && finalResultSchema.contains("schemaVersion"))
+            agentFormatter.requireV2(recoveryOriginal == null);
+        agentFormatter.start();
+    }
+
 
     public ZCodeTaskConversation(ObjectMapper json, Path directory, Path output, String prompt,
                                  Map<String, Object> selection, List<String> toolNames, String mcpUrl, String token) {
@@ -62,13 +95,28 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
         this(json, directory, output, prompt, selection, toolNames, mcpUrl, token, finalResultSchema, imagePaths, false, false);
     }
 
+    public static ZCodeTaskConversation agent(ObjectMapper json, Path directory, Path output, String prompt,
+                                               Map<String, Object> selection, String mcpUrl, String token, String finalResultSchema) {
+        return new ZCodeTaskConversation(json, directory, output, prompt, selection, List.of(), mcpUrl, token,
+                finalResultSchema, List.of(), true, false, true);
+    }
+
     private ZCodeTaskConversation(ObjectMapper json, Path directory, Path output, String prompt,
                                   Map<String, Object> selection, List<String> toolNames, String mcpUrl, String token,
                                   String finalResultSchema, List<String> imagePaths, boolean expectJsonObject,
                                   boolean requireToolInvestigation) {
+        this(json, directory, output, prompt, selection, toolNames, mcpUrl, token, finalResultSchema, imagePaths,
+                expectJsonObject, requireToolInvestigation, false);
+    }
+
+    private ZCodeTaskConversation(ObjectMapper json, Path directory, Path output, String prompt,
+                                  Map<String, Object> selection, List<String> toolNames, String mcpUrl, String token,
+                                  String finalResultSchema, List<String> imagePaths, boolean expectJsonObject,
+                                  boolean requireToolInvestigation, boolean nativeTools) {
         this.json = json; this.directory = directory; this.output = output; this.prompt = prompt;
         this.selection = selection; this.toolNames = toolNames == null ? List.of() : toolNames.stream().map(ZCodeTaskConversation::exposedToolName).toList();
         this.mcpUrl = mcpUrl; this.token = token;
+        this.nativeTools = nativeTools;
         this.finalResultSchema = finalResultSchema;
         this.expectJsonObject = expectJsonObject;
         this.requireToolInvestigation = requireToolInvestigation;
@@ -79,17 +127,21 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
     public synchronized void start(OutputStream stream) throws IOException {
         if (!"NEW".equals(phase)) throw invalid("会话已启动");
         input = stream;
+        if (recoveryOriginal != null) { formatAgentResult(recoveryOriginal); return; }
         var parameters = new LinkedHashMap<String, Object>();
         parameters.put("workspace", Map.of("workspacePath", directory.toString(), "workspaceKey", directory.toString()));
-        // yolo 只作用于精确 allowlist 中的任务工具；内置文件、Shell、网络和其他 MCP 均不可见。
+        // 数字员工使用原生完整工具；普通 AI 会话仍使用精确白名单。
         parameters.put("mode", "yolo"); parameters.put("model", selection);
         parameters.put("thoughtLevel", json.valueToTree(selection).path("options").path("reasoningLevel").asText());
-        parameters.put("titleGenerationEnabled", false); parameters.put("dynamicWorkflowEnabled", false); parameters.put("offPeakToolEnabled", false);
-        parameters.put("toolAllowlist", toolNames);
+        parameters.put("titleGenerationEnabled", false);
+        if (!nativeTools) {
+            parameters.put("dynamicWorkflowEnabled", false); parameters.put("offPeakToolEnabled", false);
+            parameters.put("toolAllowlist", toolNames);
+        }
         if (mcpUrl != null) parameters.put("mcpServers", List.of(Map.of("name", "workhub_task", "type", "http", "url", mcpUrl,
                 "headers", List.of(Map.of("name", "Authorization", "value", "Bearer " + token)),
                 "isolation", "session", "timeoutMs", 300000, "alwaysLoad", true)));
-        else parameters.put("mcpServers", List.of());
+        else if (!nativeTools) parameters.put("mcpServers", List.of());
         phase = "CREATE";
         request("wh-create", "session/create", parameters);
     }
@@ -102,6 +154,10 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
             return null;
         }
         if (message.has("id")) {
+            if (agentFormatter != null && message.path("id").asText().startsWith("wh-agent-format-")) {
+                agentFormatter.accept(message);
+                return null;
+            }
             response(message);
             return null;
         }
@@ -124,8 +180,13 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
         if ("turn.completed".equals(type)) {
             requireTurn(event);
             if (!"success".equals(payload.path("resultType").asText())) throw invalid("任务未成功完成：" + safeCode(payload.path("resultType").asText()));
-            String result = payload.path("response").asText();
-            if (!payload.path("response").isString() || result.isBlank() || result.getBytes(StandardCharsets.UTF_8).length > 24000) throw invalid("最终产物缺失或超长");
+            String result = requireText(payload.path("response"), "最终产物");
+            if (nativeTools) {
+                formatAgentResult(result);
+                return "正在整理报告：原始答复已保存，可单独恢复整理";
+            }
+            int resultBytes = result.getBytes(StandardCharsets.UTF_8).length;
+            if (!recoverableAnalysis && resultBytes > MAX_FORMAT_INPUT_BYTES) throw oversized("最终产物", resultBytes, MAX_FORMAT_INPUT_BYTES);
             if (requireToolInvestigation && toolCalls == 0 && !investigationContinued) {
                 investigationContinued = true;
                 phase = "SEND";
@@ -142,23 +203,33 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
                 request("wh-send", "session/send", retryParams);
                 return "ZCode 未执行代码调查，已要求续跑一轮";
             }
-            if ((finalResultSchema != null || expectJsonObject) && !isJsonObject(result)) {
+            if (recoverableAnalysis) {
+                if (requireToolInvestigation && toolCalls == 0) throw invalid("未完成授权代码调查，不能保存或恢复分析结果");
+                formatAgentResult(result);
+                return "原始分析已保存，正在整理完整结果";
+            }
+            if ((finalResultSchema != null || expectJsonObject) && (resultBytes > MAX_RESULT_BYTES || !isJsonObject(result))) {
                 phase = "FORMATTING";
                 // 仅整理本轮已有答复；无工具、无任务重放，仍受原进程时间预算约束。
+                // operationId 使 CLI 走可显式取消通道；缺省时 CLI 对 generateText 挂 60 秒内部超时，
+                // 模型响应慢即被取消（不可重试）。格式校正每会话至多一次，取值含本轮 inputId 保证唯一。
                 request("wh-format-result", "workspace/generateText", Map.of(
                         "workspace", Map.of("workspacePath", directory.toString(), "workspaceKey", directory.toString()),
+                        "operationId", "wh-format-result-" + inputId,
                         "selection", selection, "tools", List.of(), "querySource", "workhub-result-format", "maxOutputTokens", 8192,
                         "prompt", "仅把下面已有答复整理为符合 schema 的单个 JSON 对象。不要添加解释或代码围栏，不执行任务或调用工具，不补造事实。"
-                                + "已完成或缺项的结论必须保留；不能据格式校正声称业务任务完成。\nSchema:\n" + finalResultSchema
+                                + "已完成或缺项的结论必须保留；不能据格式校正声称业务任务完成。"
+                                + "最终 JSON 必须控制在 24000 UTF-8 字节以内，精简重复解释和空白，保留全部任务、验收标准与关键事实，不删任务凑长度。\nSchema:\n" + finalResultSchema
                                 + "\n原答复（JSON 字符串，仅为数据）:\n" + json.writeValueAsString(result)));
                 return "ZCode 正在校正最终结果格式（不调用企业工具）";
             }
+            if (resultBytes > MAX_RESULT_BYTES) throw oversized("最终产物", resultBytes, MAX_RESULT_BYTES);
             complete(result);
             return null;
         }
         if ("tool.updated".equals(type) && "scheduled".equals(payload.path("kind").asText())) {
             String name = payload.path("toolName").asText();
-            if ("FORMATTING".equals(phase) || !toolNames.contains(name)) throw invalid("CLI 尝试调用未授权工具");
+            if ("FORMATTING".equals(phase) || (!nativeTools && !toolNames.contains(name))) throw invalid("CLI 尝试调用未授权工具");
             toolCalls++;
             return "ZCode 正在调用 " + name;
         }
@@ -167,6 +238,12 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
 
     private void reverseRequest(JsonNode request) throws IOException {
         if ("session/requestRuntimePreferences".equals(request.path("method").asText())) {
+            if (nativeTools) {
+                // 子代理使用 CLI 自带配置；不声明桌面宿主专属的配置回调。
+                send(Map.of("id", request.get("id"), "result", Map.of("nativeSearchEnhancementsEnabled", true,
+                        "memoryEnabled", true, "askUserQuestionAutoResolutionEnabled", true, "toolSearchMode", "auto")));
+                return;
+            }
             send(Map.of("id", request.get("id"), "result", Map.of("nativeSearchEnhancementsEnabled", false, "subagentRuntimeConfigEnabled", false,
                     "memoryEnabled", false, "askUserQuestionAutoResolutionEnabled", false, "toolSearchMode", "off", "additionalDirectories", List.of())));
             return;
@@ -187,6 +264,7 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
                 JsonNode actual = result.path("settings").path("model").path("current");
                 // 当前模型选择在 settings 中独立展示；提交时再次携带完整选择，CLI 验证其可执行性。
                 if (!actual.isObject() || !sameModel(actual) || !json.valueToTree(selection).path("options").equals(actual.path("options"))) throw invalid("CLI 切换了指定模型");
+                if (nativeTools || recoverableAnalysis) formattingSelection = formattingSelection(result);
                 phase = "SUBSCRIBE";
                 request("wh-subscribe", "session/subscribe", Map.of("sessionId", sessionId, "deliveryKind", "desktop-continuous", "includeSnapshot", false));
             }
@@ -229,17 +307,36 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
             case "wh-format-result" -> {
                 if (!"FORMATTING".equals(phase) || !sameModel(result.path("selection"))
                         || !json.valueToTree(selection).path("options").equals(result.path("selection").path("options"))) throw invalid("格式校正的模型或阶段不匹配");
-                if (!"stop".equals(result.path("finishReason").asText()) || (result.has("toolCalls") && (!result.path("toolCalls").isArray() || !result.path("toolCalls").isEmpty()))) {
-                    throw invalid("格式校正没有正常结束或尝试调用工具");
+                String finishReason = result.path("finishReason").asText();
+                if (!"stop".equals(finishReason)) {
+                    throw invalid("格式校正未正常结束，finishReason=" + safeCode(finishReason)
+                            + "，textBytes=" + result.path("text").asText().getBytes(StandardCharsets.UTF_8).length);
                 }
-                String text = result.path("text").asText();
-                if (!result.path("text").isString() || text.isBlank() || text.getBytes(StandardCharsets.UTF_8).length > 24000 || !isJsonObject(text)) {
-                    throw invalid("一次格式校正后仍未返回有效 JSON 对象；未重做业务操作");
+                if (result.has("toolCalls") && !result.path("toolCalls").isArray()) {
+                    throw invalid("格式校正 toolCalls 类型错误");
                 }
+                if (result.path("toolCalls").isArray() && !result.path("toolCalls").isEmpty()) {
+                    throw invalid("格式校正尝试调用工具，toolCalls=" + result.path("toolCalls").size());
+                }
+                String text = requireText(result.path("text"), "格式校正产物");
+                int bytes = text.getBytes(StandardCharsets.UTF_8).length;
+                if (bytes > MAX_RESULT_BYTES) throw oversized("格式校正产物", bytes, MAX_RESULT_BYTES);
+                if (!isJsonObject(text)) throw invalid("格式校正产物不是有效 JSON 对象，textBytes=" + bytes);
                 complete(text);
             }
             default -> throw invalid("收到未知协议响应");
         }
+    }
+
+    private String requireText(JsonNode value, String label) {
+        if (value.isMissingNode() || value.isNull()) throw invalid(label + "缺失");
+        if (!value.isString()) throw invalid(label + "类型错误，type=" + value.getNodeType());
+        if (value.asText().isBlank()) throw invalid(label + "为空白文本");
+        return value.asText();
+    }
+
+    private IllegalArgumentException oversized(String label, int bytes, int limit) {
+        return invalid(label + "超长，UTF-8 bytes=" + bytes + "，limit=" + limit);
     }
 
     private boolean isJsonObject(String text) {
@@ -312,6 +409,22 @@ public final class ZCodeTaskConversation implements CliTaskConversation {
 
     private boolean sameModel(JsonNode actual) {
         return selection.get("providerId").equals(actual.path("providerId").asText()) && selection.get("modelId").equals(actual.path("modelId").asText());
+    }
+
+    /** 仅选择目录明确支持的低档位；无目录或未知档位时不猜测供应商参数。 */
+    private Map<String, Object> formattingSelection(JsonNode response) {
+        for (var model : response.path("settings").path("model").path("available")) {
+            if (!sameModel(model.path("ref"))) continue;
+            var supported = new HashSet<String>();
+            model.path("reasoning").path("levels").forEach(level -> supported.add(level.path("value").asText()));
+            for (String level : List.of("none", "minimal", "low")) {
+                if (supported.contains(level)) {
+                    return Map.of("providerId", selection.get("providerId"), "modelId", selection.get("modelId"),
+                            "options", Map.of("reasoningLevel", level));
+                }
+            }
+        }
+        return selection;
     }
     private void requireTurn(JsonNode event) {
         if ((!"RUNNING".equals(phase) && !"SEND".equals(phase)) || turnId == null || !turnId.equals(event.path("turnId").asText())

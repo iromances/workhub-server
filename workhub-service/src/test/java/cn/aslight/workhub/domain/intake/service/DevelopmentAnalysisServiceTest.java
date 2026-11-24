@@ -71,7 +71,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 new ObjectMapper()
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(39L);
@@ -144,7 +144,7 @@ class DevelopmentAnalysisServiceTest {
                 "2026-04-24T10:00:00",
                 "Codex CLI"
         );
-        when(analysisGenerator.generate(any(), any(), eq(project), eq(repositoryBundle), any(), any(), eq("知识库参考"))).thenReturn(draft);
+        when(analysisGenerator.generate(any(), any(), eq(project), eq(repositoryBundle), any(), any(), eq("知识库参考"), any())).thenReturn(draft);
 
         DevelopmentAnalysisEntity entity = new DevelopmentAnalysisEntity();
         entity.setId(1L);
@@ -197,7 +197,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 new ObjectMapper()
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(40L);
@@ -221,6 +221,11 @@ class DevelopmentAnalysisServiceTest {
         verify(intakeHistoryMapper).insert(historyCaptor.capture());
         assertEquals("任务评估失败", historyCaptor.getValue().getActionSummary());
         assertTrue(historyCaptor.getValue().getDetailText().contains("GitLab 业务线未配置"));
+        assertTrue(entity.getErrorStack().contains("IllegalArgumentException"));
+        assertTrue(entity.getErrorStack().contains("GitLab 业务线未配置"));
+        verify(developmentAnalysisMapper, org.mockito.Mockito.times(2)).updateExecutionState(entity);
+        when(developmentAnalysisMapper.findLatestByIntakeId(40L)).thenReturn(entity);
+        assertEquals(entity.getErrorStack(), service.detail(40L).errorStack());
     }
 
     @Test
@@ -254,7 +259,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 objectMapper
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         DevelopmentAnalysisDraft draft = new DevelopmentAnalysisDraft(
                 "DRAFT",
@@ -357,7 +362,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 objectMapper
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         DevelopmentAnalysisDraft draft = new DevelopmentAnalysisDraft(
                 "DRAFT",
@@ -513,7 +518,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 objectMapper
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(40L);
@@ -618,7 +623,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 objectMapper
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(41L);
@@ -725,7 +730,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 objectMapper
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(42L);
@@ -839,7 +844,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 objectMapper
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(84L);
@@ -937,7 +942,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 objectMapper
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(41L);
@@ -1073,7 +1078,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 objectMapper
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(43L);
@@ -1160,7 +1165,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 objectMapper
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(84L);
@@ -1268,7 +1273,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 objectMapper
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(44L);
@@ -1323,7 +1328,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 objectMapper
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(45L);
@@ -1378,7 +1383,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 objectMapper
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(46L);
@@ -1461,7 +1466,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 new ObjectMapper()
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(41L);
@@ -1521,7 +1526,7 @@ class DevelopmentAnalysisServiceTest {
                 workItemService,
                 command -> { },
                 new ObjectMapper()
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(41L);

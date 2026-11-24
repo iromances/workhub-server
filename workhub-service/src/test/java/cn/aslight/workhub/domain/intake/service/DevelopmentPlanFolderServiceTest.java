@@ -45,6 +45,8 @@ class DevelopmentPlanFolderServiceTest {
                 .thenReturn(vault.toString());
         Path repository = RepositoryDocumentPathsTest.repository(tempDir.resolve("workhub-server"));
         when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
+        when(sysConfigService.findPlainValue("knowledge.project", RepositoryDocumentPaths.CONFIG_KEY_PLAYBOOK_PATH))
+                .thenReturn(repository.resolve("agents-playbook").toString());
 
         RecordingPathOpener opener = new RecordingPathOpener();
         ProjectKnowledgeBaseService knowledgeBaseService = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
@@ -59,16 +61,14 @@ class DevelopmentPlanFolderServiceTest {
 
         IntakeRequirementFolderResponse response = service.open(101L);
 
-        Path expectedFolder = repository.resolve("docs/业务线")
+        Path expectedFolder = repository.resolve("agents-playbook/docs/业务线")
                 .resolve("账单管理")
-                .resolve("需求迭代")
-                .resolve("趣学呗")
-                .resolve("2026")
+                .resolve("需求")
                 .resolve("202604220007-趣学呗平台账户展示切换");
         assertTrue(Files.isDirectory(expectedFolder));
         assertEquals(expectedFolder, opener.openedPath);
         assertEquals(101L, response.intakeId());
-        assertEquals(repository.resolve("docs").toString(), response.basePath());
+        assertEquals(repository.resolve("agents-playbook/docs/业务线").toString(), response.basePath());
         assertEquals("202604220007-趣学呗平台账户展示切换", response.folderName());
         assertEquals(expectedFolder.toString(), response.folderPath());
         assertTrue(response.opened());
@@ -95,6 +95,8 @@ class DevelopmentPlanFolderServiceTest {
                 .thenReturn(vault.toString());
         Path repository = RepositoryDocumentPathsTest.repository(tempDir.resolve("workhub-server-coded"));
         when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
+        when(sysConfigService.findPlainValue("knowledge.project", RepositoryDocumentPaths.CONFIG_KEY_PLAYBOOK_PATH))
+                .thenReturn(repository.resolve("agents-playbook").toString());
 
         RecordingPathOpener opener = new RecordingPathOpener();
         ProjectKnowledgeBaseService knowledgeBaseService = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
@@ -109,14 +111,58 @@ class DevelopmentPlanFolderServiceTest {
 
         service.open(102L);
 
-        Path expectedFolder = repository.resolve("docs/业务线")
+        Path expectedFolder = repository.resolve("agents-playbook/docs/业务线")
                 .resolve("BL000002-账单管理")
+                .resolve("需求")
+                .resolve("202604220007-趣学呗平台账户展示切换");
+        assertTrue(Files.isDirectory(expectedFolder));
+        assertEquals(expectedFolder, opener.openedPath);
+    }
+
+    @Test
+    void open_shouldKeepWorkhubPlatformRequirementUnderDocsBusinessLines() throws Exception {
+        Path vault = tempDir.resolve("project-knowledge-workhub");
+        ObjectMapper objectMapper = new ObjectMapper();
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(103L);
+        intake.setStructuredDataJson(objectMapper.writeValueAsString(structuredData()));
+
+        ProjectDetailResponse workhub = new ProjectDetailResponse(
+                3L, "WH", "趣学呗", "平台", "BL000012", "工作台",
+                "owner", "ACTIVE", "WorkHub 平台自身需求", LocalDateTime.now(), LocalDateTime.now());
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        when(intakeMapper.findById(103L)).thenReturn(intake);
+        ProjectMapper projectMapper = mock(ProjectMapper.class);
+        when(projectMapper.findFirstDetailByBusinessLine("账单管理")).thenReturn(workhub);
+
+        SysConfigService sysConfigService = mock(SysConfigService.class);
+        when(sysConfigService.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH))
+                .thenReturn(vault.toString());
+        Path repository = RepositoryDocumentPathsTest.repository(tempDir.resolve("workhub-server-workhub"));
+        when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
+
+        RecordingPathOpener opener = new RecordingPathOpener();
+        ProjectKnowledgeBaseService knowledgeBaseService = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
+                new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
+        DevelopmentPlanFolderService service = new DevelopmentPlanFolderService(
+                intakeMapper,
+                projectMapper,
+                knowledgeBaseService,
+                objectMapper,
+                opener
+        );
+
+        IntakeRequirementFolderResponse response = service.open(103L);
+
+        Path expectedFolder = repository.resolve("docs/业务线")
+                .resolve("BL000012-工作台")
                 .resolve("需求迭代")
                 .resolve("趣学呗")
                 .resolve("2026")
                 .resolve("202604220007-趣学呗平台账户展示切换");
         assertTrue(Files.isDirectory(expectedFolder));
         assertEquals(expectedFolder, opener.openedPath);
+        assertEquals(repository.resolve("docs/业务线").toString(), response.basePath());
     }
 
     private IntakeStructuredData structuredData() {

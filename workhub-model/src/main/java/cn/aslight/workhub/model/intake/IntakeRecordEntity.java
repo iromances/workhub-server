@@ -44,6 +44,8 @@ public class IntakeRecordEntity {
      * 研发规范：SDD 或 STANDARD，NULL 视为常规模式。
      */
     private String developmentStandard;
+    /** 录入时选择的 AI 开发执行数字员工 ID；空则用系统配置 intake.aiDevelopment.agentId。 */
+    private String aiAgentId;
     /**
      * 结构化需求 JSON。
      */
@@ -329,6 +331,14 @@ public class IntakeRecordEntity {
 
     public void setDevelopmentOwnerUserName(String developmentOwnerUserName) {
         this.developmentOwnerUserName = developmentOwnerUserName;
+    }
+
+    public String getAiAgentId() {
+        return aiAgentId;
+    }
+
+    public void setAiAgentId(String aiAgentId) {
+        this.aiAgentId = aiAgentId;
     }
 
     public String getDevelopmentStandard() {

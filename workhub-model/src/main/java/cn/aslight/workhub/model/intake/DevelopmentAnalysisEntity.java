@@ -15,6 +15,11 @@ public class DevelopmentAnalysisEntity {
     private String repositoryUrl;
     private String analysisStatus;
     private String analysisMessage;
+    private String errorStack;
+
+    public String getErrorStack() { return errorStack; }
+
+    public void setErrorStack(String errorStack) { this.errorStack = errorStack; }
     private LocalDateTime startedAt;
     private LocalDateTime finishedAt;
     private String draftJson;

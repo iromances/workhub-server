@@ -11,7 +11,6 @@ import cn.aslight.workhub.model.ops.SystemAlertSubsystemEntity;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemIndexPatternEntity;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemResponse;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemSaveRequest;
-import cn.aslight.workhub.model.ops.SystemAlertSubsystemSummaryResponse;
 import cn.aslight.workhub.service.system.SystemAuditService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -138,15 +137,6 @@ public class SystemAlertService {
                 normalizedMessageKeyword,
                 startTime,
                 endTime);
-        List<SystemAlertSubsystemSummaryResponse> summaries = systemAlertMapper.summarizeEvents(
-                normalizedBusinessLineCode,
-                normalizedEnvironmentCode,
-                normalizedServiceName,
-                normalizedLevel,
-                normalizedEventCategoryValue,
-                normalizedMessageKeyword,
-                startTime,
-                endTime);
         List<SystemAlertEventResponse> events = systemAlertMapper.findEvents(
                 normalizedBusinessLineCode,
                 normalizedEnvironmentCode,
@@ -158,7 +148,7 @@ public class SystemAlertService {
                 endTime,
                 normalizedPageSize,
                 offset);
-        return new SystemAlertDashboardResponse(totalCount, normalizedPage, normalizedPageSize, subsystems, summaries, events);
+        return new SystemAlertDashboardResponse(totalCount, normalizedPage, normalizedPageSize, subsystems, events);
     }
 
     @Transactional

@@ -73,7 +73,7 @@ class AgentDeploymentDispatcherTest {
         when(configs.requireSecretValue("jenkins", "token")).thenReturn("fixture-secret");
         policies = new AgentJenkinsPolicy(configs, json); configure("https://jenkins.example.invalid/", "TEST_DEPLOY", scope);
         var task = new AgentTaskSpecification("修复测试问题", "", "实际测试与人工审核", List.of("DEPLOYMENT"), List.of(scope, new AgentScope("BL000012", "PROD")), List.of(scope, new AgentScope("BL000012", "PROD")));
-        var config = new AgentConfiguration("Agent", "repair", 1L, "fixture", task.scopes(), 50, 600, 1);
+        var config = new AgentConfiguration("Agent","OPS", "repair", 1L, "fixture", task.scopes(), 50, 600, 1);
         var context = new AgentToolContext("run", "task", "agent", "owner", null, config, task);
         agents.insertRun(new AgentRunEntity("run", "task", "agent", "manual", "owner", json.writeValueAsString(config), json.writeValueAsString(task), "{}",
                 "WAITING_INPUT", 1, 0, false, null, null, null, null, null, 0, now(), now()));

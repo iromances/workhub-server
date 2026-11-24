@@ -14,7 +14,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 
-/** 只处理平台固定项目的分支核验及草稿 MR；不合并、删除、修改保护规则或触发流水线。 */
+/** 固定项目的分支核验及 MR；自动合并仅允许平台生成的测试分支，不修改生产分支。 */
 @Component
 public class AgentGitLabClient {
     private static final int MAX_BYTES = 1024 * 1024;
@@ -35,6 +35,20 @@ public class AgentGitLabClient {
         if (!value.path("archived").isBoolean() || value.path("archived").asBoolean()) throw new Conflict("GitLab 项目已归档或状态不可确认");
         String branch = value.path("default_branch").asText(); AgentCodePolicy.branch(branch);
         return new Project(branch);
+    }
+
+    /** 从既有实例只读解析准确项目路径，供原生 CLI 研发分支交付核验。 */
+    public Target resolve(URI baseUri, String projectPath, String accessToken) {
+        var checked = new Target(baseUri, 1, projectPath, accessToken);
+        var value = request(checked.baseUri().resolve("api/v4/projects/" + encode(projectPath)), accessToken, null, false).value();
+        var target = new Target(baseUri, value.path("id").asLong(-1), projectPath, accessToken);
+        if (!projectPath.equals(value.path("path_with_namespace").asText())
+                || !target.repositoryUri().toString().equals(value.path("http_url_to_repo").asText())
+                || !target.webUri().toString().equals(value.path("web_url").asText())
+                || !value.path("archived").isBoolean() || value.path("archived").asBoolean()) {
+            throw new Conflict("GitLab 项目身份与需求交付目标不符");
+        }
+        return target;
     }
 
     public Branch branch(Target target, String branch) {
@@ -104,9 +118,63 @@ public class AgentGitLabClient {
                 value.path("draft").asBoolean() || value.path("work_in_progress").asBoolean(), value.path("description").asText());
     }
 
+    /** 创建独立测试分支；目标只能是平台生成的 UUID 命名空间。 */
+    public void createTestBranch(Target target, String destination, String baseSha) {
+        requireTestBranch(destination);
+        requireUnprotected(target, destination);
+        if (branch(target, destination) != null) throw new Conflict("测试分支已存在，未覆盖");
+        request(target, "/repository/branches", json.writeValueAsString(Map.of(
+                "branch", destination, "ref", AgentCodeGit.sha(baseSha))), false);
+    }
+
+    /** 只将研发分支合入既有测试分支；保留来源分支，冲突/不确定结果均停止。 */
+    public void mergeIntoTestBranch(Target target, String source, String destination, String sourceSha) {
+        requireTestBranch(destination);
+        AgentCodePolicy.branch(source);
+        requireUnprotected(target, destination);
+        var targetBranch = branch(target, destination);
+        if (targetBranch == null || targetBranch.protectedBranch() || targetBranch.defaultBranch())
+            throw new Conflict("测试目标不存在或受保护，未合并");
+        var current = branch(target, source);
+        if (current == null || !current.sha().equals(sourceSha)) throw new Conflict("研发分支在准备期间发生变化，请重新准备");
+        // compare 的直线比较以目标为起点；无来源提交表示已合入，避免重复 MR。
+        var compare = request(target, "/repository/compare?from=" + encode(destination)
+                + "&to=" + encode(sourceSha) + "&straight=false", null, false).value();
+        if (compare.path("compare_timeout").asBoolean() || !compare.path("commits").isArray())
+            throw new Conflict("测试分支比较不完整，未合并");
+        if (compare.path("commits").isEmpty()) return;
+        var opened = find(target, source, destination).stream().filter(mr -> "opened".equals(mr.state())).toList();
+        if (opened.size() > 1) throw new Conflict("存在多个测试合并请求，请人工核对");
+        MergeRequest mr;
+        if (opened.isEmpty()) {
+            mr = mergeRequest(target, request(target, "/merge_requests", json.writeValueAsString(Map.of(
+                    "source_branch", source, "target_branch", destination, "title", "测试合并：" + source,
+                    "remove_source_branch", false, "squash", false)), false).value(), source, destination);
+        } else mr = opened.getFirst();
+        if (mr.draft()) throw new Conflict("测试合并请求仍为草稿，请人工核对");
+        var merged = request(target.apiUri("/merge_requests/" + mr.iid() + "/merge"), target.accessToken(),
+                json.writeValueAsString(Map.of("sha", sourceSha, "should_remove_source_branch", false,
+                        "squash", false, "merge_when_pipeline_succeeds", false)), false, "PUT", 200).value();
+        if (!"merged".equals(mergeRequest(target, merged, source, destination).state()))
+            throw new Conflict("测试合并尚未完成，未触发发布");
+    }
+
+    public static void requireTestBranch(String branch) {
+        if (branch == null || !branch.matches("test/workhub-[a-f0-9]{32}"))
+            throw new IllegalArgumentException("合并目标只允许本平台创建的测试分支，禁止修改 master 或生产分支");
+    }
+
     private Response request(Target target, String suffix, String body, boolean missingAllowed) {
-        var builder = HttpRequest.newBuilder(target.apiUri(suffix)).timeout(timeout).header("PRIVATE-TOKEN", target.accessToken()).header("Accept", "application/json");
-        if (body == null) builder.GET(); else builder.header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body));
+        return request(target.apiUri(suffix), target.accessToken(), body, missingAllowed);
+    }
+
+    private Response request(URI uri, String token, String body, boolean missingAllowed) {
+        return request(uri, token, body, missingAllowed, body == null ? "GET" : "POST", body == null ? 200 : 201);
+    }
+
+    private Response request(URI uri, String token, String body, boolean missingAllowed, String method, int success) {
+        var builder = HttpRequest.newBuilder(uri).timeout(timeout).header("PRIVATE-TOKEN", token).header("Accept", "application/json");
+        if (body == null) builder.GET(); else builder.header("Content-Type", "application/json").method(method, HttpRequest.BodyPublishers.ofString(body));
         var pending = http.sendAsync(builder.build(), HttpResponse.BodyHandlers.ofInputStream());
         HttpResponse<InputStream> response;
         try { response = pending.get(timeout.toMillis(), TimeUnit.MILLISECONDS); }
@@ -120,9 +188,9 @@ public class AgentGitLabClient {
             catch (ExecutionException | TimeoutException ex) { reading.cancel(true); stream.close(); throw new Failure("GitLab 内容未完整读取", ex); }
             if (bytes.length > MAX_BYTES) throw new Failure("GitLab 响应超过1MiB限制");
             int status = response.statusCode();
-            if (body != null && Set.of(400, 401, 403, 404, 405, 422).contains(status)) throw new Rejected("GitLab 拒绝 MR 创建（HTTP " + status + "）");
+            if (body != null && Set.of(400, 401, 403, 404, 405, 409, 422).contains(status)) throw new Rejected("GitLab 拒绝操作，请核对权限、分支变化或合并冲突（HTTP " + status + "）");
             if (status == 404 && missingAllowed) return new Response(null, false);
-            if (status != (body == null ? 200 : 201)) throw new Failure("GitLab 请求未成功（HTTP " + status + "），未跟随跳转");
+            if (status != success) throw new Failure("GitLab 请求未成功（HTTP " + status + "），未跟随跳转");
             JsonNode value = json.readTree(bytes);
             if (value == null || !value.isContainer()) throw new Failure("GitLab 返回内容不是 JSON 对象或列表");
             return new Response(value, !response.headers().firstValue("X-Next-Page").orElse("").isBlank());

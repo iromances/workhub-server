@@ -8,6 +8,7 @@ import cn.aslight.workhub.model.intake.DevelopmentWorkItemDraft;
 import cn.aslight.workhub.model.intake.IntakeAIDraft;
 import cn.aslight.workhub.model.intake.IntakeBoardResponse;
 import cn.aslight.workhub.model.intake.IntakeBusinessLineUpdateRequest;
+import cn.aslight.workhub.model.intake.IntakeAiAgentUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeCreateRequest;
 import cn.aslight.workhub.model.intake.IntakeDashboardResponse;
 import cn.aslight.workhub.model.intake.IntakeDevelopmentBranchRequest;
@@ -126,6 +127,7 @@ public class IntakeService {
             IntakeDemandStatusRules.PENDING_SCHEDULING,
             IntakeDemandStatusRules.PENDING_DESIGN,
             IntakeDemandStatusRules.IN_DEVELOPMENT,
+            IntakeDemandStatusRules.DEVELOPMENT_COMPLETED,
             IntakeDemandStatusRules.TESTING,
             IntakeDemandStatusRules.PENDING_ACCEPTANCE,
             IntakeDemandStatusRules.PENDING_RELEASE,
@@ -153,7 +155,7 @@ public class IntakeService {
             new DashboardDemandGroup(
                     "developing",
                     "开发中的需求",
-                    List.of(IntakeDemandStatusRules.IN_DEVELOPMENT, IntakeDemandStatusRules.PROCESSING),
+                    List.of(IntakeDemandStatusRules.IN_DEVELOPMENT, IntakeDemandStatusRules.DEVELOPMENT_COMPLETED, IntakeDemandStatusRules.PROCESSING),
                     "已指定研发人员或执行人，正在推进实现",
                     "metric-card--developing",
                     "stage-tag--developing"
@@ -1027,6 +1029,7 @@ public class IntakeService {
         intakeCreateRequest.setSenderName(request.getSenderName());
         intakeCreateRequest.setDevelopmentOwnerUserName(request.getDevelopmentOwnerUserName());
         intakeCreateRequest.setDevelopmentStandard(request.getDevelopmentStandard());
+        intakeCreateRequest.setAiAgentId(trimToNull(request.getAiAgentId()));
         intakeCreateRequest.setSourceChannel(defaultChannel(request.getSourceChannel(), "需求截图录入"));
         intakeCreateRequest.setReceivedAt(request.getReceivedAt());
         BusinessLineEntity businessLine = resolveEnabledBusinessLine(request.getBusinessLineCode(), request.getBusinessLine(), false);
@@ -1110,6 +1113,10 @@ public class IntakeService {
                 currentStructuredData == null ? null : currentStructuredData.requirementType(),
                 action
         );
+        if (IntakeDemandStatusRules.ACTION_CONFIRM_DESIGN.equals(action) && intakeAiDevelopmentService != null
+                && isDevelopmentRequirement(currentStructuredData)) {
+            intakeAiDevelopmentService.validateBeforeDesignConfirmed(id, operatorUserName);
+        }
         IntakeStructuredData nextStructuredData = applyStageAction(currentStructuredData, request, action);
 
         List<String> uploadedFileNames = saveStageActionFiles(id, action, dataFiles);
@@ -1301,6 +1308,23 @@ public class IntakeService {
         return detail(id, null, false);
     }
 
+    /** 设置或清除需求的开发数字员工：AI 分支开发触发时优先使用，清除后回退系统配置默认。 */
+    @Transactional
+    public IntakeDetailResponse updateAiAgent(Long id, IntakeAiAgentUpdateRequest request, String operatorUserName) {
+        IntakeRecordEntity entity = requireExisting(id);
+        String agentId = trimToNull(request == null ? null : request.getAgentId());
+        if (agentId != null && agentId.length() > 64) {
+            throw new IllegalArgumentException("数字员工 ID 不能超过 64 字符");
+        }
+        String previous = trimToNull(entity.getAiAgentId());
+        intakeMapper.updateAiAgent(id, agentId);
+        recordHistory(id, "UPDATE", "设置开发数字员工",
+                agentId == null ? "已清除开发数字员工，AI 开发将回退系统配置默认"
+                        : "开发数字员工：" + agentId + (previous == null ? "" : "（原：" + previous + "）"),
+                operatorUserName);
+        return detail(id, null, false);
+    }
+
     @Transactional
     public IntakeDetailResponse updateBusinessLine(Long id,
                                                    IntakeBusinessLineUpdateRequest request,
@@ -1431,6 +1455,7 @@ public class IntakeService {
         entity.setRawContent(request.getRawContent().trim());
         entity.setDevelopmentOwnerUserName(trimToNull(request.getDevelopmentOwnerUserName()));
         entity.setDevelopmentStandard(normalizeDevelopmentStandard(request.getDevelopmentStandard()));
+        entity.setAiAgentId(trimToNull(request.getAiAgentId()));
         IntakeStructuredData structuredData = normalizeStructuredData(intakeStructuredDataExtractor.extract(entity.getRawContent()));
         intakeStructuredFieldNormalizer.applyStructuredData(entity, structuredData);
         if (trimToNull(entity.getPriority()) == null) {
@@ -1547,7 +1572,8 @@ public class IntakeService {
                 entity.getConvertedWorkItemId(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
-                IntakeProcessInfoSupport.read(entity, structuredData, objectMapper)
+                IntakeProcessInfoSupport.read(entity, structuredData, objectMapper),
+                entity.getAiAgentId()
         );
     }
 
@@ -1775,6 +1801,7 @@ public class IntakeService {
                 summarizeInvolvedSystems(entity.getLatestDevelopmentDraftJson()),
                 IntakeDemandStatusRules.resolveEnrichmentStatus(entity),
                 entity.getIntakeStatus(),
+                entity.getAiAgentId(),
                 entity.getConvertedWorkItemId(),
                 entity.getActiveTodoCount() == null ? 0L : entity.getActiveTodoCount()
         );

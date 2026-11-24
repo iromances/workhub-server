@@ -14,6 +14,32 @@ class ZCodeCliClientTest {
     private final ObjectMapper json = new ObjectMapper();
     private final ZCodeCliClient client = new ZCodeCliClient(json);
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"0.17.9", "0.18.0", "1.0.0"})
+    void preflightAcceptsConfiguredVersionWithAppServer(String version) throws Exception {
+        assertDoesNotThrow(() -> client.preflight(preflightProvider("zcode " + version + "\nCommands:\n  app-server Run stdio server", 0)));
+    }
+
+    @Test void preflightRejectsMissingCommandEvenWhenMentionedInHelp() throws Exception {
+        var error = assertThrows(IllegalArgumentException.class,
+                () -> client.preflight(preflightProvider("zcode 0.18.0\nNo app-server support\n  app-server-old Legacy command", 0)));
+        assertTrue(error.getMessage().contains("未提供 app-server 命令"));
+    }
+
+    @Test void preflightRejectsNonzeroExitDespiteAppServerHelp() throws Exception {
+        assertThrows(IllegalArgumentException.class,
+                () -> client.preflight(preflightProvider("zcode 0.18.0\n  app-server Run stdio server", 1)));
+    }
+
+    private AiProviderConfigEntity preflightProvider(String help, int exitCode) throws Exception {
+        Path executable = directory.resolve("zcode-fixture");
+        Files.writeString(executable, "#!/bin/sh\ncat <<'HELP'\n" + help + "\nHELP\nexit " + exitCode + "\n");
+        Files.setPosixFilePermissions(executable, PosixFilePermissions.fromString("rwx------"));
+        var provider = new AiProviderConfigEntity();
+        provider.setCliCommand(executable.toString());
+        return provider;
+    }
+
     private AiProviderConfigEntity provider() throws Exception {
         var provider = new AiProviderConfigEntity(); provider.setCliType("ZCODE"); provider.setChannelType("CLI");
         provider.setCliCommand("/usr/bin/true"); provider.setDefaultModel("custom/glm-4.6"); provider.setDefaultReasoningLevel("enabled"); provider.setDefaultSpeedMode("STANDARD");
@@ -40,6 +66,21 @@ class ZCodeCliClientTest {
         assertThrows(IllegalArgumentException.class, () -> AiCliType.resolve(null, "unrelated-cli"));
         assertEquals("ZCODE", AiCliType.resolve(null, "/opt/ZCode/zcode.cjs"));
         var provider = provider(); assertTrue(AiCliType.is(provider, "ZCODE")); assertFalse(AiCliType.is(provider, "CODEX"));
+    }
+    @Test void agentKeepsNativeHomeAndConfigWhileAddingTaskMcp() throws Exception {
+        var provider = provider(); Path run = Files.createDirectory(directory.resolve("agent"));
+        var launch = client.prepareAgent(provider, provider.getDefaultModel(), "enabled", run, run.resolve("result.json"),
+                "task", "http://localhost/mcp", "fixture-token", "{\"type\":\"object\"}");
+        assertEquals(System.getenv("HOME"), launch.builder().environment().get("HOME"));
+        assertFalse(Files.exists(run.resolve("profile")));
+        assertFalse(launch.builder().environment().containsKey("ZCODE_MAX_TOOL_CONCURRENCY"));
+        assertFalse(launch.builder().environment().containsKey("ZCODE_DATA_BASE_DIR"));
+        assertEquals(PosixFilePermissions.fromString("rw-------"), Files.getPosixFilePermissions(run.resolve("provider.json")));
+        var sent = new java.io.ByteArrayOutputStream(); launch.conversation().start(sent);
+        var params = json.readTree(sent.toString()).path("params");
+        assertFalse(params.has("toolAllowlist"));
+        assertEquals("workhub_task", params.path("mcpServers").get(0).path("name").asText());
+        assertEquals("yolo", params.path("mode").asText());
     }
     @Test void authenticationAndDeviceStateArePrivateCopiesAndSourceIsUnchanged() throws Exception {
         var provider = provider(); Path run = Files.createDirectory(directory.resolve("run"));

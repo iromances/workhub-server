@@ -167,6 +167,16 @@ class CodexCliDevelopmentAnalysisGeneratorTest {
         assertTrue(error.getMessage().contains("AI 未产出任务拆解"));
     }
 
+    @Test
+    void generationRetainsOriginalGatewayCause() {
+        var gateway = new RecordingAiGatewayClient();
+        gateway.failure = new IllegalArgumentException("ZCode 最终产物超长，bytes=24001");
+        var generator = new CodexCliDevelopmentAnalysisGenerator(gateway, new ChinaWorkdayCalendar(), new ObjectMapper());
+        var error = assertThrows(IllegalArgumentException.class, () -> generator.generate(
+                new IntakeRecordEntity(), minimalStructuredData(), minimalProject(), minimalBundle(), List.of(), "材料", ""));
+        org.junit.jupiter.api.Assertions.assertSame(gateway.failure, error.getCause());
+    }
+
     private IntakeStructuredData minimalStructuredData() {
         return new IntakeStructuredData(
                 "需求审批", "测试需求", "周拓", null, "202611130001", "2026/11/13 10:00", "研发需求",
@@ -190,6 +200,7 @@ class CodexCliDevelopmentAnalysisGeneratorTest {
         private AiGatewayRequest capturedRequest;
         /** 置空则返回默认含任务拆解的成功载荷；用于模拟模型只交过程叙述的失败形态。 */
         private String outputOverride;
+        private Throwable failure;
 
         @Override
         public boolean isConfigured(String useCaseCode) {
@@ -204,6 +215,7 @@ class CodexCliDevelopmentAnalysisGeneratorTest {
         @Override
         public AiGatewayResult executeStructured(AiGatewayRequest request) {
             this.capturedRequest = request;
+            if (failure != null) return AiGatewayResult.failed("gateway failed", "demo", "model", 1, failure);
             if (outputOverride != null) {
                 return AiGatewayResult.succeeded(outputOverride, "test-provider", "test-model", 1L);
             }

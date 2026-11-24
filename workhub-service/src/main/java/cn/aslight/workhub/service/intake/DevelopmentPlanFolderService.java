@@ -61,14 +61,14 @@ public class DevelopmentPlanFolderService {
                 projectKnowledgeBaseService.resolveRequirementIterationLocation(structuredData, project, intake.getId());
         Path folderPath = location.wikiFolderPath();
         try {
-            KnowledgeArchiveFiles.directory(location.vaultRoot(), folderPath);
+            KnowledgeArchiveFiles.directory(location.wikiRoot(), folderPath);
             pathOpener.open(folderPath);
         } catch (IOException ex) {
             throw new IllegalStateException("打开开发方案文件夹失败：" + folderPath, ex);
         }
         return new IntakeRequirementFolderResponse(
                 intakeId,
-                location.vaultRoot().toString(),
+                location.wikiRoot().toString(),
                 folderPath.getFileName() == null ? folderPath.toString() : folderPath.getFileName().toString(),
                 folderPath.toString(),
                 true

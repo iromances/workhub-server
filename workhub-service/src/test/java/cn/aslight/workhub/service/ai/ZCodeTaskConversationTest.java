@@ -69,6 +69,93 @@ class ZCodeTaskConversationTest {
     private tools.jackson.databind.JsonNode lastSent() throws Exception {
         return json.readTree(sent.toString().lines().reduce((a, b) -> b).orElseThrow());
     }
+    @Test void oversizedStructuredResultIsCompactedOnceWithoutReplayingInvestigation() throws Exception {
+        create("{\"type\":\"object\"}"); started();
+        String original = "{\"summary\":\"" + "中".repeat(8000) + "\"}";
+        conversation.accept(event("turn.completed", 2, Map.of("inputId", inputId, "resultType", "success", "response", original)));
+        assertEquals("workspace/generateText", lastSent().path("method").asText());
+        assertTrue(lastSent().path("params").path("prompt").asText().contains("24000 UTF-8"));
+        response("wh-format-result", Map.of("selection", model, "finishReason", "stop", "text", "{\"summary\":\"精简\"}"));
+        assertTrue(Files.readString(directory.resolve("result.json")).contains("精简"));
+        assertEquals(1, sent.toString().lines().filter(line -> line.contains("\"session/send\"")).count());
+    }
+
+    @Test void utf8FinalBoundaryIsEnforcedForPlainResults() throws Exception {
+        create(); started();
+        var error = assertThrows(IllegalArgumentException.class, () -> conversation.accept(event("turn.completed", 2,
+                Map.of("inputId", inputId, "resultType", "success", "response", "中".repeat(8000) + "a"))));
+        assertTrue(error.getMessage().contains("bytes=24001"));
+        assertTrue(error.getMessage().contains("limit=24000"));
+        conversation.accept(event("turn.completed", 3, Map.of("inputId", inputId, "resultType", "success", "response", "中".repeat(8000))));
+        assertEquals(24000, Files.size(directory.resolve("result.json")));
+    }
+
+    @Test void formattingInputBoundaryRejectsBeforeCallingModel() throws Exception {
+        create("{\"type\":\"object\"}"); started();
+        var error = assertThrows(IllegalArgumentException.class, () -> conversation.accept(event("turn.completed", 2,
+                Map.of("inputId", inputId, "resultType", "success", "response", "中".repeat(32000) + "a"))));
+        assertTrue(error.getMessage().contains("bytes=96001"));
+        assertFalse(sent.toString().contains("workspace/generateText"));
+        conversation.accept(event("turn.completed", 3, Map.of("inputId", inputId, "resultType", "success", "response", "中".repeat(32000))));
+        assertEquals("workspace/generateText", lastSent().path("method").asText());
+    }
+
+    @Test void missingWrongTypeAndBlankHaveDistinctDiagnostics() throws Exception {
+        create(); started();
+        var missing = assertThrows(IllegalArgumentException.class, () -> conversation.accept(event("turn.completed", 2,
+                Map.of("inputId", inputId, "resultType", "success"))));
+        var wrong = assertThrows(IllegalArgumentException.class, () -> conversation.accept(event("turn.completed", 3,
+                Map.of("inputId", inputId, "resultType", "success", "response", Map.of()))));
+        var blank = assertThrows(IllegalArgumentException.class, () -> conversation.accept(event("turn.completed", 4,
+                Map.of("inputId", inputId, "resultType", "success", "response", " "))));
+        assertTrue(missing.getMessage().contains("缺失"));
+        assertTrue(wrong.getMessage().contains("type=OBJECT"));
+        assertTrue(blank.getMessage().contains("空白"));
+    }
+
+    @Test void formattingFailureIncludesFinishReasonAndRejectsOversizedCorrection() throws Exception {
+        create("{\"type\":\"object\"}"); started();
+        conversation.accept(event("turn.completed", 2, Map.of("inputId", inputId, "resultType", "success", "response", "text")));
+        var error = assertThrows(IllegalArgumentException.class, () -> response("wh-format-result",
+                Map.of("selection", model, "finishReason", "length", "text", "中")));
+        assertTrue(error.getMessage().contains("finishReason=length"));
+        assertTrue(error.getMessage().contains("textBytes=3"));
+        var oversized = assertThrows(IllegalArgumentException.class, () -> response("wh-format-result",
+                Map.of("selection", model, "finishReason", "stop", "text", "中".repeat(8001))));
+        assertTrue(oversized.getMessage().contains("bytes=24003"));
+        assertFalse(Files.exists(directory.resolve("result.json")));
+        assertEquals(1, sent.toString().lines().filter(line -> line.contains("\"workspace/generateText\"")).count());
+    }
+
+    @Test void agentAcceptsNativeAndWorkhubToolsInOneSession() throws Exception {
+        conversation = ZCodeTaskConversation.agent(json, directory, directory.resolve("result.json"), "task", model,
+                "http://localhost/mcp", "fixture-token", "{\"type\":\"object\"}");
+        conversation.start(sent);
+        assertFalse(lastSent().path("params").has("toolAllowlist"));
+        response("wh-create", Map.of("protocol", Map.of("name", "ZCode Protocol", "version", 1),
+                "session", Map.of("sessionId", "session-1"), "settings", Map.of("model", Map.of("current", model))));
+        response("wh-subscribe", Map.of("sessionId", "session-1", "eventSeq", 0, "events", List.of()));
+        assertEquals("mcp/list", lastSent().path("method").asText());
+        response("wh-mcp", Map.of("statuses", Map.of("workhub_task", Map.of("status", "connected", "toolCount", 1))));
+        inputId = lastSent().path("params").path("inputId").asText();
+        started();
+        for (var entry : Map.of(2L, "Bash", 3L, "Write", 4L, "mcp__workhub_task__run_readonly_query").entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
+            assertNotNull(conversation.accept(event("tool.updated", entry.getKey(), Map.of("kind", "scheduled", "toolName", entry.getValue()))));
+        }
+        conversation.accept(event("turn.completed", 5, Map.of("inputId", inputId, "resultType", "success", "response", "{\"type\":\"RESULT\",\"summary\":\"完成\"}")));
+        assertTrue(Files.exists(directory.resolve("result.json")));
+    }
+
+    @Test void agentWithoutMcpKeepsNativeToolsAndNativePreferences() throws Exception {
+        conversation = ZCodeTaskConversation.agent(json, directory, directory.resolve("result.json"), "task", model, null, null, null);
+        conversation.start(sent);
+        assertFalse(lastSent().path("params").has("toolAllowlist"));
+        assertFalse(lastSent().path("params").has("mcpServers"));
+        conversation.accept(json.valueToTree(Map.of("id", "preferences", "method", "session/requestRuntimePreferences")));
+        assertTrue(lastSent().path("result").path("nativeSearchEnhancementsEnabled").asBoolean());
+        assertTrue(lastSent().path("result").path("memoryEnabled").asBoolean());
+        assertFalse(lastSent().path("result").has("subagentRuntimeConfigEnabled"));
+    }
     private long sentCount(String methodFragment) {
         return sent.toString().lines().filter(line -> line.contains(methodFragment)).count();
     }
@@ -174,6 +261,8 @@ class ZCodeTaskConversationTest {
         assertFalse(Files.exists(directory.resolve("result.json")));
         var correction = json.readTree(sent.toString().lines().reduce((a, b) -> b).orElseThrow());
         assertEquals("workspace/generateText", correction.path("method").asText());
+        // 带 operationId 走 CLI 可显式取消通道；缺省时 CLI 挂 60 秒内部超时，慢响应即被取消。
+        assertTrue(correction.path("params").path("operationId").asText().startsWith("wh-format-result-"));
         assertEquals(json.valueToTree(model), correction.path("params").path("selection"));
         assertEquals(json.createArrayNode(), correction.path("params").path("tools"));
         assertEquals(8192, correction.path("params").path("maxOutputTokens").asInt());

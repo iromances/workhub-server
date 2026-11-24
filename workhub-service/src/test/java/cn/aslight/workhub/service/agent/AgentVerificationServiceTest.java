@@ -91,11 +91,11 @@ class AgentVerificationServiceTest {
         service = proxy(new AgentVerificationService(verifications, plans, deployments, agents, observations, runs, access, changes,
                 new AgentReleasePlanGate(plans, deployments, agents, json), new AgentVerificationEvidence(json), data, json, clock));
         var specification = new AgentTaskSpecification("修复", "夹具", "复查", List.of("VERIFICATION"), List.of(scope, new AgentScope("BL000012", "PROD")), List.of(scope, new AgentScope("BL000012", "PROD")));
-        var configuration = new AgentConfiguration("Agent", "复查", 1L, "fixture", specification.scopes(), 200, 3600, 2);
+        var configuration = new AgentConfiguration("Agent","OPS", "复查", 1L, "fixture", specification.scopes(), 200, 3600, 2);
         agents.insertAgent(new AgentDefinitionEntity("agent", "Agent", json.writeValueAsString(configuration), true, "owner", 0, now(), now()));
         agents.insertRun(new AgentRunEntity("run", "task", "agent", "fixture", "owner", json.writeValueAsString(configuration), json.writeValueAsString(specification),
                 json.writeValueAsString(AgentProviderBinding.from(provider)), "QUEUED", 0, 0, false, null, null, null, null, null, 0, now(), now()));
-        context = runs.context(runs.claim(2));
+        context = runs.context(runs.claim());
         var repo = new AgentRepositoryChange("server", "Server", scope, "workspace", 1, "p".repeat(64), "development", "c".repeat(40), "candidate", sha, List.of("src/Main.java"), "d".repeat(64), "diff", false);
         var manifest = new AgentChangeManifest(1, "run", "task", specification, new AgentChangePlan("fix", "API", "regression", "restore", List.of()), null, List.of(repo), List.of("server"));
         change = new AgentChangeView("change", "run", "task", 1, manifestHash, now(), true, true, List.of(), manifest);
@@ -522,7 +522,7 @@ class AgentVerificationServiceTest {
         grants.remove("ops:accounting:view");
         assertThrows(org.springframework.security.access.AccessDeniedException.class,()->service.samplesForUser("plan","owner","health",0,null,10));
         assertThrows(org.springframework.security.access.AccessDeniedException.class,()->service.evidenceForUser("plan","owner",sampleId,observed,"/data/0"));
-        grants.add("ops:accounting:view");var config=(ObjectNode)json.readTree(agents.findAgent("agent").configurationJson());config.set("scopes",json.createArrayNode());
+        grants.add("ops:accounting:view");var config=(ObjectNode)json.readTree(agents.findAgent("agent").configurationJson());config.set("scopes",json.valueToTree(List.of(new AgentScope("BL000099", "TEST"))));
         jdbc.update("UPDATE pm_agent_definition SET configuration_json=? WHERE id='agent'",json.writeValueAsString(config));
         assertThrows(org.springframework.security.access.AccessDeniedException.class,()->service.detailForUser("plan","owner"));
         assertThrows(org.springframework.security.access.AccessDeniedException.class,()->service.samplesForUser("plan","owner","health",0,null,10));
@@ -686,7 +686,7 @@ class AgentVerificationServiceTest {
         var proof=new cn.aslight.workhub.model.ops.SystemAlertQueryEvidence(1,UUID.randomUUID().toString(),definition,AgentCodePolicy.hash(json.writeValueAsString(definition)),
                 window,"c".repeat(64),"d".repeat(64),1,to,to,to,to,from,to,from,to,!invalid,invalid?List.of("QUERY_CONTENT_DIFFERS_FROM_COLLECTION"):List.of(),
                 List.of(new cn.aslight.workhub.model.ops.BusinessLogQueryEvidence.Activity("a",1,activity,"e".repeat(64))),0,List.of(),List.of());
-        var result=new cn.aslight.workhub.model.ops.SystemAlertDashboardResponse(0,1,30,List.of(),List.of(),List.of(),proof);
+        var result=new cn.aslight.workhub.model.ops.SystemAlertDashboardResponse(0,1,30,List.of(),List.of(),proof);
         String key=UUID.randomUUID().toString(),tool="monitor.system.alerts";
         String payload=json.writeValueAsString(new AgentToolData(json).sanitize(Map.of("scope",scope,"observedAt",to.toString(),"recordTimeZone","UTC","query",Map.of("from",from.toString(),"to",to.toString()),"data",result)));
         observations.insertObservation(new AgentObservationEntity(key,"run","agent",key,tool,AgentObservationService.sourceType(tool,scope.businessLineCode()),scope.businessLineCode(),scope.environmentCode(),payload,AgentCodePolicy.hash(payload),now()));

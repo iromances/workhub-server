@@ -14,6 +14,16 @@ import java.util.List;
  */
 @Mapper
 public interface IntakeClarificationAnalysisMapper {
+    @Select("SELECT raw_output FROM pm_intake_clarification_analysis WHERE intake_id=#{intakeId} AND input_fingerprint=#{fingerprint} AND analysis_status='FAILED' AND recovery_pending=1 AND raw_output IS NOT NULL AND id=(SELECT MAX(id) FROM pm_intake_clarification_analysis WHERE intake_id=#{intakeId} AND input_fingerprint=#{fingerprint}) LIMIT 1")
+    String findRecoverableOutput(Long intakeId, String fingerprint);
+
+    @Update("UPDATE pm_intake_clarification_analysis SET raw_output=#{output}, input_fingerprint=#{fingerprint}, recovery_pending=1 WHERE id=#{id} AND analysis_status='RUNNING'")
+    int saveRawOutput(Long id, String fingerprint, String output);
+
+    @Update("UPDATE pm_intake_clarification_analysis SET recovery_pending=0 WHERE id=#{id} AND analysis_status='RUNNING'")
+    int completeRawFormatting(Long id);
+
+
 
     @Select("""
             SELECT a.id, a.intake_id, a.business_line_code, bl.business_line_name AS business_line,

@@ -35,7 +35,7 @@ class AgentJenkinsPolicyTest {
             if (!value.specification().scopes().contains(invocation.getArgument(1))) throw new AccessDeniedException("scope");
             return null;
         }).when(access).requireScope(any(), any());
-        var config = new AgentConfiguration("release", "prepare", 1L, "model", List.of(scope), 30, 120, 1);
+        var config = new AgentConfiguration("release","OPS", "prepare", 1L, "model", List.of(scope), 30, 120, 1);
         context = new AgentToolContext("run", "task", "agent", "owner", "lease", config,
                 new AgentTaskSpecification("inspect release", "", "report", List.of("REPORT"), List.of(scope)));
     }

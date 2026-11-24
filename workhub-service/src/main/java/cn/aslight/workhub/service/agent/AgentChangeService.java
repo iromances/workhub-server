@@ -126,8 +126,8 @@ public class AgentChangeService {
         var configuration = json.readValue(agent.configurationJson(), AgentConfiguration.class);
         for (var change : manifest.repositories()) {
             var repo = policy.require(change.repositoryId());
-            if (!repo.scope().equals(change.scope()) || !configuration.scopes().contains(change.scope())
-                    || !context.configuration().scopes().contains(change.scope()) || !context.specification().scopes().contains(change.scope())) {
+            if (!repo.scope().equals(change.scope()) || !configuration.allowsScope(change.scope())
+                    || !context.configuration().allowsScope(change.scope()) || !context.specification().scopes().contains(change.scope())) {
                 throw new AccessDeniedException("交付内容超出当前 Agent 或任务授权范围");
             }
             for (String path : change.changedPaths()) if (AgentCodePolicy.sensitive(path) || !AgentCodePolicy.within(path, repo.readablePaths())) {

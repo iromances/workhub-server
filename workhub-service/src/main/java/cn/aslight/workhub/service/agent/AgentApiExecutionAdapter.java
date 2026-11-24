@@ -97,6 +97,7 @@ public class AgentApiExecutionAdapter implements AgentExecutionAdapter {
                 } else {
                     try {
                         if (!context.configuration().model().equals(answer.model())) throw new IllegalArgumentException("实际模型与本次任务快照不符");
+                        store.record(runId, owner, "step:" + step + ":raw", "API_RAW_RESULT", Map.of("text", answer.output()));
                         receipt.put("decision", AgentApiDecision.parse(answer.output(), json));
                     } catch (IllegalArgumentException | tools.jackson.core.JacksonException ex) {
                         receipt.put("formatError", "请严格按协议返回单个行动对象：" + ex.getClass().getSimpleName());
@@ -114,7 +115,7 @@ public class AgentApiExecutionAdapter implements AgentExecutionAdapter {
             store.record(runId, owner, "step:" + step + ":plan", "PLAN", Map.of("summary", decision.plan()));
             store.requireActive(runId, owner);
             if ("RESULT".equals(decision.type()) || "NEEDS_INPUT".equals(decision.type())) {
-                try { store.finishDecision(runId, owner, modelRequestKey, "RESULT".equals(decision.type()) ? "COMPLETED" : "WAITING_INPUT", decision.summary()); }
+                try { store.finishDecision(runId, owner, modelRequestKey, "RESULT".equals(decision.type()) ? "COMPLETED" : "WAITING_INPUT", decision.summary(), decision.structuredResult()); }
                 catch (AgentRunStore.InputChanged ex) {
                     store.record(runId, owner, "step:" + step + ":handled", "INPUT_CHANGED", Map.of("message", "完成前收到新指令，请继续规划"));
                     continue;
@@ -134,6 +135,8 @@ public class AgentApiExecutionAdapter implements AgentExecutionAdapter {
         variables.put("platformGuide", platformGuide.guide(context));
         variables.put("trajectory", json.writeValueAsString(events.stream()
                 .map(event -> Map.of("ordinal", event.ordinal(), "kind", event.kind(), "payload", json.readTree(event.payloadJson()))).toList()));
-        return promptRenderer.render(config.getPromptTemplate(), variables, AiUseCaseDefinitions.require(AiUseCaseDefinitions.AGENT_API_STEP));
+        return promptRenderer.render(config.getPromptTemplate(), variables, AiUseCaseDefinitions.require(AiUseCaseDefinitions.AGENT_API_STEP))
+                + "\n最终报告按以下唯一结构返回，不再使用旧 plan/summary 格式；只返回 JSON，不加说明或围栏。"
+                + AgentReportContract.PRESENTATION_GUIDE + "\n" + AgentReportContract.SCHEMA;
     }
 }

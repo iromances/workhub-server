@@ -1,0 +1,138 @@
+{
+  "核验时间": "2026-11-16 12:38:29 Asia/Shanghai",
+  "入口恢复": {
+    "原因": "配置指向9090前端，前端无API代理，返回404；8080后端正常。",
+    "修改": "~/.codex/config.toml workhub URL端口9090改为8080",
+    "备份": "~/.codex/config.toml.workhub-endpoint-backup-20261116",
+    "验证": "修改后通过受控MCP成功执行生产只读查询"
+  },
+  "资源": "PROD / db-prod / readonly",
+  "代码口径": {
+    "叉车": "lease-saas/lease-finance origin/master dfdfd835528d8e00e09ea4b2752b1b2009add07a",
+    "智能柜": "ol/ol-order origin/master 16bcbd04292df1c3b1b170c3acd5a22476b45816",
+    "来源": "WorkHub配置映射及git ls-remote核实；不代表已核实生产部署SHA"
+  },
+  "结论": {
+    "叉车": {
+      "应生成": 66,
+      "已生成": 66,
+      "缺失": 0,
+      "说明": "已起租租售放款均有资产单和付款单；来源1模式2资产单亦全部匹配。"
+    },
+    "智能柜": {
+      "应生成": 3465,
+      "已生成": 3465,
+      "缺失": 0,
+      "说明": "已验收采购单和已验收申请全部匹配付款单；生产拆单批次表为空。"
+    },
+    "误报排除": "叉车库3463笔智能柜同步资产不在叉车库重复生成付款单。"
+  },
+  "边界": "核查当前未删除数据及生成关联，不证明历史从未延迟，不代表资金支付成功。未修改业务数据或重启服务。",
+  "evidence": [
+    {
+      "checked_at": "2026-11-16T12:37:37.818919+08:00",
+      "tool": "run_readonly_query",
+      "args": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT l.service_code,l.status,COUNT(*) AS total,SUM(EXISTS(SELECT 1 FROM lease_finance.asset_order a WHERE a.is_delete=0 AND a.loan_code=l.loan_code)) AS with_asset,SUM(EXISTS(SELECT 1 FROM lease_finance.payment_order p WHERE p.is_delete=0 AND p.loan_code=l.loan_code)) AS with_payment FROM lease_finance.loan_apply l WHERE l.id BETWEEN 1 AND 120 AND l.is_delete=0 GROUP BY l.service_code,l.status LIMIT 20"
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\",\n  \"result\" : {\n    \"columns\" : [ \"service_code\", \"status\", \"total\", \"with_asset\", \"with_payment\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"service_code\" : \"SW5RBVL6H88\",\n      \"status\" : \"360\",\n      \"total\" : 38,\n      \"with_asset\" : 0,\n      \"with_payment\" : 0\n    }, {\n      \"service_code\" : \"SW5RBVL6H88\",\n      \"status\" : \"270\",\n      \"total\" : 2,\n      \"with_asset\" : 0,\n      \"with_payment\" : 0\n    }, {\n      \"service_code\" : \"SW5RBVL6H88\",\n      \"status\" : \"370\",\n      \"total\" : 1,\n      \"with_asset\" : 0,\n      \"with_payment\" : 0\n    }, {\n      \"service_code\" : \"SW5RBVL6H88\",\n      \"status\" : \"290\",\n      \"total\" : 1,\n      \"with_asset\" : 0,\n      \"with_payment\" : 0\n    }, {\n      \"service_code\" : \"RSSEV20250115\",\n      \"status\" : \"360\",\n      \"total\" : 66,\n      \"with_asset\" : 66,\n      \"with_payment\" : 66\n    }, {\n      \"service_code\" : \"RSSEV20250115\",\n      \"status\" : \"300\",\n      \"total\" : 4,\n      \"with_asset\" : 0,\n      \"with_payment\" : 0\n    }, {\n      \"service_code\" : \"RSSEV20250115\",\n      \"status\" : \"270\",\n      \"total\" : 3,\n      \"with_asset\" : 0,\n      \"with_payment\" : 0\n    }, {\n      \"service_code\" : \"RSSEV20250115\",\n      \"status\" : \"370\",\n      \"total\" : 2,\n      \"with_asset\" : 0,\n      \"with_payment\" : 0\n    }, {\n      \"service_code\" : \"RSSEV20250115\",\n      \"status\" : \"290\",\n      \"total\" : 1,\n      \"with_asset\" : 0,\n      \"with_payment\" : 0\n    } ]\n  },\n  \"sql\" : \"SELECT l.service_code,l.status,COUNT(*) AS total,SUM(EXISTS(SELECT 1 FROM lease_finance.asset_order a WHERE a.is_delete=0 AND a.loan_code=l.loan_code)) AS with_asset,SUM(EXISTS(SELECT 1 FROM lease_finance.payment_order p WHERE p.is_delete=0 AND p.loan_code=l.loan_code)) AS with_payment FROM lease_finance.loan_apply l WHERE l.id BETWEEN 1 AND 120 AND l.is_delete=0 GROUP BY l.service_code,l.status LIMIT 20\"\n}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "checked_at": "2026-11-16T12:37:46.442327+08:00",
+      "tool": "run_readonly_query",
+      "args": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT a.asset_source,a.trans_model,COUNT(*) AS total,SUM(EXISTS(SELECT 1 FROM lease_finance.payment_order p WHERE p.asset_order_no=a.asset_order_no AND p.is_delete=0)) AS with_payment FROM lease_finance.asset_order a WHERE a.id BETWEEN 3 AND 3531 AND a.is_delete=0 AND a.asset_source='1' GROUP BY a.asset_source,a.trans_model LIMIT 10"
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\",\n  \"result\" : {\n    \"columns\" : [ \"asset_source\", \"trans_model\", \"total\", \"with_payment\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"asset_source\" : \"1\",\n      \"trans_model\" : \"2\",\n      \"total\" : 66,\n      \"with_payment\" : 66\n    } ]\n  },\n  \"sql\" : \"SELECT a.asset_source,a.trans_model,COUNT(*) AS total,SUM(EXISTS(SELECT 1 FROM lease_finance.payment_order p WHERE p.asset_order_no=a.asset_order_no AND p.is_delete=0)) AS with_payment FROM lease_finance.asset_order a WHERE a.id BETWEEN 3 AND 3531 AND a.is_delete=0 AND a.asset_source='***' GROUP BY a.asset_source,a.trans_model LIMIT 10\"\n}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "checked_at": "2026-11-16T12:38:30.780135+08:00",
+      "tool": "run_readonly_query",
+      "args": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT NOW() AS checked_at,'ol_purchase' AS scope,MIN(p.id) AS min_id,MAX(p.id) AS max_id,COUNT(*) AS eligible_count,SUM(EXISTS(SELECT 1 FROM ol_order.payment_order pay WHERE pay.is_delete=0 AND pay.purchase_order_no=p.order_no AND COALESCE(pay.batch_no,'')='')) AS with_payment FROM ol_order.purchase_order p WHERE p.id BETWEEN 259 AND 4000 AND p.is_delete=0 AND p.order_status='accept' AND COALESCE(p.split_flag,0)=0 AND p.check_in_time IS NOT NULL UNION ALL SELECT NOW(),'lease_rentsale_loan',MIN(l.id),MAX(l.id),COUNT(*),SUM(EXISTS(SELECT 1 FROM lease_finance.payment_order p WHERE p.is_delete=0 AND p.loan_code=l.loan_code)) FROM lease_finance.loan_apply l WHERE l.id BETWEEN 1 AND 120 AND l.is_delete=0 AND l.service_code='RSSEV20250115' AND l.status='360' LIMIT 2"
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\",\n  \"result\" : {\n    \"columns\" : [ \"checked_at\", \"scope\", \"min_id\", \"max_id\", \"eligible_count\", \"with_payment\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"checked_at\" : \"2026-11-16T12:38:29\",\n      \"scope\" : \"ol_purchase\",\n      \"min_id\" : 259,\n      \"max_id\" : 3770,\n      \"eligible_count\" : 3465,\n      \"with_payment\" : 3465\n    }, {\n      \"checked_at\" : \"2026-11-16T12:38:29\",\n      \"scope\" : \"lease_rentsale_loan\",\n      \"min_id\" : 44,\n      \"max_id\" : 119,\n      \"eligible_count\" : 66,\n      \"with_payment\" : 66\n    } ]\n  },\n  \"sql\" : \"SELECT NOW() AS checked_at,'***' AS scope,MIN(p.id) AS min_id,MAX(p.id) AS max_id,COUNT(*) AS eligible_count,SUM(EXISTS(SELECT 1 FROM ol_order.payment_order pay WHERE pay.is_delete=0 AND pay.purchase_order_no=p.order_no AND COALESCE(pay.batch_no,'***')='***')) AS with_payment FROM ol_order.purchase_order p WHERE p.id BETWEEN 259 AND 4000 AND p.is_delete=0 AND p.order_status='***' AND COALESCE(p.split_flag,0)=0 AND p.check_in_time IS NOT NULL UNION ALL SELECT NOW(),'***',MIN(l.id),MAX(l.id),COUNT(*),SUM(EXISTS(SELECT 1 FROM lease_finance.payment_order p WHERE p.is_delete=0 AND p.loan_code=l.loan_code)) FROM lease_finance.loan_apply l WHERE l.id BETWEEN 1 AND 120 AND l.is_delete=0 AND l.service_code='***' AND l.status='***' LIMIT 2\"\n}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "checked_at": "2026-11-16T12:38:11.927477+08:00",
+      "tool": "run_readonly_query",
+      "args": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT COUNT(*) AS total,MIN(id) AS min_id,MAX(id) AS max_id FROM ol_order.lease_apply_batch WHERE id>=0 LIMIT 1"
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\",\n  \"result\" : {\n    \"columns\" : [ \"total\", \"min_id\", \"max_id\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"total\" : 0,\n      \"min_id\" : null,\n      \"max_id\" : null\n    } ]\n  },\n  \"sql\" : \"SELECT COUNT(*) AS total,MIN(id) AS min_id,MAX(id) AS max_id FROM ol_order.lease_apply_batch WHERE id>=0 LIMIT 1\"\n}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "checked_at": "2026-11-16T12:38:06.294707+08:00",
+      "tool": "run_readonly_query",
+      "args": {
+        "targetKey": "db-prod",
+        "profileKey": "readonly",
+        "sql": "SELECT l.status,l.service_status,COUNT(*) AS total,SUM(EXISTS(SELECT 1 FROM ol_order.purchase_order p WHERE p.application_no=l.application_code AND p.is_delete=0 AND p.order_status='accept')) AS with_accepted_purchase,SUM(EXISTS(SELECT 1 FROM ol_order.payment_order p WHERE p.application_no=l.application_code AND p.is_delete=0)) AS with_payment FROM ol_order.lease_apply l WHERE l.id BETWEEN 1 AND 5417 AND l.is_delete=0 AND l.acceptance_time IS NOT NULL GROUP BY l.status,l.service_status LIMIT 30"
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\n  \"targetKey\" : \"db-prod\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\",\n  \"result\" : {\n    \"columns\" : [ \"status\", \"service_status\", \"total\", \"with_accepted_purchase\", \"with_payment\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"status\" : \"180\",\n      \"service_status\" : \"180\",\n      \"total\" : 3465,\n      \"with_accepted_purchase\" : 3465,\n      \"with_payment\" : 3465\n    } ]\n  },\n  \"sql\" : \"SELECT l.status,l.service_status,COUNT(*) AS total,SUM(EXISTS(SELECT 1 FROM ol_order.purchase_order p WHERE p.application_no=l.application_code AND p.is_delete=0 AND p.order_status='***')) AS with_accepted_purchase,SUM(EXISTS(SELECT 1 FROM ol_order.payment_order p WHERE p.application_no=l.application_code AND p.is_delete=0)) AS with_payment FROM ol_order.lease_apply l WHERE l.id BETWEEN 1 AND 5417 AND l.is_delete=0 AND l.acceptance_time IS NOT NULL GROUP BY l.status,l.service_status LIMIT 30\"\n}"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -2,6 +2,8 @@ package cn.aslight.workhub.controller.ops;
 
 import cn.aslight.workhub.model.ops.AccountingDashboardResponse;
 import cn.aslight.workhub.model.ops.AccountingDashboardSummaryResponse;
+import cn.aslight.workhub.model.ops.AccountingScenarioDimensionResponse;
+import cn.aslight.workhub.model.ops.AccountingScenarioTypeResponse;
 import cn.aslight.workhub.service.ops.AccountingMonitorService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -37,7 +39,24 @@ class AccountingMonitorControllerTest {
     }
 
     @Test
-    void manualRunShouldRejectMissingTimeWindow() throws Exception {
+    void scenariosShouldExposeTypeCatalogWithDimensions() throws Exception {
+        AccountingMonitorService service = mock(AccountingMonitorService.class);
+        when(service.scenarioTypes()).thenReturn(List.of(new AccountingScenarioTypeResponse(
+                "BATCH_WITHHOLD", "批量代扣", "每日定时批量发起账单扣款",
+                List.of(new AccountingScenarioDimensionResponse(
+                        "EXPECTED_VS_ACTUAL", "应发起 vs 实际", "应发起笔数与实际发起笔数差异超出容差时告警"))
+        )));
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AccountingMonitorController(service)).build();
+
+        mockMvc.perform(get("/api/ops/accounting/scenarios").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].type").value("BATCH_WITHHOLD"))
+                .andExpect(jsonPath("$.data[0].name").value("批量代扣"))
+                .andExpect(jsonPath("$.data[0].dimensions[0].dimensionCode").value("EXPECTED_VS_ACTUAL"));
+    }
+
+    @Test
+    void manualRunAllowsOptionalDateForServiceToValidateByScenario() throws Exception {
         AccountingMonitorService service = mock(AccountingMonitorService.class);
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AccountingMonitorController(service)).build();
 
@@ -46,10 +65,12 @@ class AccountingMonitorControllerTest {
                         .content("""
                                 {
                                   "configId": 10,
-                                  "ruleCodes": ["TX_INVALID_AMOUNT"],
                                   "requestKey": "request-1"
                                 }
                                 """))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isOk());
+        org.mockito.Mockito.verify(service).submitManual(
+                org.mockito.ArgumentMatchers.argThat(request -> request.checkDate() == null && request.configId() == 10L),
+                org.mockito.ArgumentMatchers.any());
     }
 }

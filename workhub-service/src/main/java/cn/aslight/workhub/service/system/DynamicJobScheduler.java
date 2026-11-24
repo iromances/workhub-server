@@ -168,7 +168,7 @@ public class DynamicJobScheduler {
         seed.setScheduleType(job.scheduleType().name());
         seed.setScheduleValue(job.defaultScheduleValue());
         seed.setDefaultScheduleValue(job.defaultScheduleValue());
-        seed.setEnabled(true);
+        seed.setEnabled(job.defaultEnabled());
         seed.setAllowManualTrigger(true);
         seed.setParamDesc(job.paramDescription());
         seed.setRemark("DynamicJobScheduler 启动种子");

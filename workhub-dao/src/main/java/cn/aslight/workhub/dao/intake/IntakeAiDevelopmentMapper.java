@@ -17,10 +17,26 @@ public interface IntakeAiDevelopmentMapper {
     @Select("""
             SELECT id, intake_id, development_branch, agent_id, agent_task_id, request_key,
                    execution_status, execution_message, created_by, updated_by, created_at, updated_at
+            FROM pm_intake_ai_development WHERE agent_task_id = #{taskId}
+            """)
+    IntakeAiDevelopmentEntity findByAgentTaskId(@Param("taskId") String taskId);
+
+    @Select("""
+            SELECT id, intake_id, development_branch, agent_id, agent_task_id, request_key,
+                   execution_status, execution_message, created_by, updated_by, created_at, updated_at
             FROM pm_intake_ai_development
             WHERE intake_id = #{intakeId}
             """)
     IntakeAiDevelopmentEntity findByIntakeId(@Param("intakeId") Long intakeId);
+
+    @Select("""
+            SELECT id, intake_id, development_branch, agent_id, agent_task_id, request_key,
+                   execution_status, execution_message, created_by, updated_by, created_at, updated_at
+            FROM pm_intake_ai_development
+            WHERE intake_id = #{intakeId}
+            FOR UPDATE
+            """)
+    IntakeAiDevelopmentEntity lockByIntakeId(@Param("intakeId") Long intakeId);
 
     @Insert("""
             INSERT INTO pm_intake_ai_development (
@@ -47,15 +63,27 @@ public interface IntakeAiDevelopmentMapper {
             """)
     int updateByIntakeId(IntakeAiDevelopmentEntity entity);
 
-    /** 巡检目标：已启动 Agent 且尚未终态（PENDING/SUCCEEDED）的记录，附带该 Agent 任务最新一次运行状态。 */
+    @Update("""
+            UPDATE pm_intake_ai_development
+            SET execution_status = 'FAILED', execution_message = #{message},
+                updated_by = #{operator}, updated_at = CURRENT_TIMESTAMP
+            WHERE intake_id = #{intakeId} AND execution_status = 'PENDING'
+            """)
+    int failPending(@Param("intakeId") Long intakeId, @Param("message") String message,
+                    @Param("operator") String operator);
+
+    /** 监测已启动任务；失败记录在同一任务重试后重新纳入，旧失败不重复同步。 */
     @Select("""
             SELECT d.intake_id AS intakeId,
                    d.agent_task_id AS agentTaskId,
                    d.execution_status AS executionStatus,
-                   (SELECT r.status FROM pm_agent_run r WHERE r.task_id = d.agent_task_id ORDER BY r.created_at DESC LIMIT 1) AS latestRunStatus
+                   r.status AS latestRunStatus
             FROM pm_intake_ai_development d
+            LEFT JOIN pm_agent_run r ON r.id =
+                (SELECT latest.id FROM pm_agent_run latest WHERE latest.task_id = d.agent_task_id ORDER BY latest.created_at DESC LIMIT 1)
             WHERE d.agent_task_id IS NOT NULL
-              AND d.execution_status IN ('PENDING', 'SUCCEEDED')
+              AND (d.execution_status IN ('PENDING', 'SUCCEEDED')
+                OR (d.execution_status = 'FAILED' AND r.status NOT IN ('FAILED', 'CANCELLED')))
             LIMIT 50
             """)
     java.util.List<java.util.Map<String, Object>> findWatchTargets();

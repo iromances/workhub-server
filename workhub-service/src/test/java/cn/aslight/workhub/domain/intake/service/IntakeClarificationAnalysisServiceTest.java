@@ -107,7 +107,7 @@ class IntakeClarificationAnalysisServiceTest {
                 mock(DevelopmentAnalysisService.class),
                 executor,
                 new ObjectMapper()
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         when(intakeMapper.findById(92L)).thenReturn(clarifyingDevelopmentIntake());
         IntakeClarificationAnalysisEntity inserted = pendingAnalysis(LocalDateTime.now());
@@ -154,7 +154,7 @@ class IntakeClarificationAnalysisServiceTest {
                 histories, analyses, mock(ProjectMapper.class), mock(GitlabRepositoryService.class), archive,
                 mock(CodexCliClarificationAnalysisGenerator.class), mock(DevelopmentAnalysisService.class),
                 ignored -> {
-                }, new ObjectMapper());
+                }, new ObjectMapper(), org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         when(intakes.findById(92L)).thenReturn(clarifyingDevelopmentIntake());
         var entity = pendingAnalysis(LocalDateTime.now());
@@ -228,10 +228,10 @@ class IntakeClarificationAnalysisServiceTest {
                 new ProjectKnowledgeBaseService.RequirementKnowledgeNote("raw/公司项目/requirements/历史版本/run1/source.md",
                         null, null, "原始需求", true));
         when(archive.buildContext(any(), any())).thenReturn("现状");
-        when(generator.generate(any(), any(), any(), any(), any(), any())).thenReturn(items);
+        when(generator.generate(any(), any(), any(), any(), any(), any(), any())).thenReturn(items);
         IntakeClarificationAnalysisService service = new IntakeClarificationAnalysisService(intakes,
                 mock(IntakeHistoryMapper.class), analyses, mock(ProjectMapper.class), repositories, archive,
-                generator, mock(DevelopmentAnalysisService.class), ignored -> { }, new ObjectMapper());
+                generator, mock(DevelopmentAnalysisService.class), ignored -> { }, new ObjectMapper(), org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
         service.executeAnalysis(2L, 92L, "reviewer");
         org.mockito.InOrder order = org.mockito.Mockito.inOrder(analyses, archive);
         order.verify(analyses).updateExecutionState(entity);
@@ -261,7 +261,7 @@ class IntakeClarificationAnalysisServiceTest {
                 mock(DevelopmentAnalysisService.class),
                 executor,
                 new ObjectMapper()
-        );
+        , org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
     }
 
     private IntakeRecordEntity clarifyingDevelopmentIntake() {

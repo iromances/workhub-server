@@ -160,8 +160,8 @@ public class AgentReleasePlanService {
         var context = runs.context(runs.get(plan.runId()));
         var agent = agents.findAgent(context.agentId());
         var config = json.readValue(agent.configurationJson(), AgentConfiguration.class);
-        for (var step : gate.snapshot(plan).steps()) if (!config.scopes().contains(step.binding().binding().scope())
-                || !context.configuration().scopes().contains(step.binding().binding().scope()) || !context.specification().scopes().contains(step.binding().binding().scope())) {
+        for (var step : gate.snapshot(plan).steps()) if (!config.allowsScope(step.binding().binding().scope())
+                || !context.configuration().allowsScope(step.binding().binding().scope()) || !context.specification().scopes().contains(step.binding().binding().scope())) {
             throw new AccessDeniedException("发布目标超出当前 Agent 或原任务的授权范围");
         }
         return plan;

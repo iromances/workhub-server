@@ -3,15 +3,17 @@ package cn.aslight.workhub.model.intake;
 import jakarta.validation.constraints.Size;
 
 /**
- * 提测确认请求：AI 审核与 Jenkins 构建均为可选项。
+ * 提测确认请求：AI 审核、禅道测试单与 Jenkins 构建均为可选项。
  *
  * <p>skipAiReview 为 true 时跳过 AI 审核前置校验（审核记录置 SKIPPED）；
- * triggerJenkins 为 false 时不触发 Jenkins 构建，environmentCode 与 jenkinsJobName 被忽略；
+ * createZentaoTestTask 为 false 时不创建禅道测试单，测试负责人仍必填；
+ * environmentCode 始终必填（须为业务线支持的非生产环境，触发构建时还须与测试发布绑定环境一致）；
+ * triggerJenkins 为 false 时不触发 Jenkins 构建，jenkinsJobName 被忽略；
  * 未跳过审核且审核不通过时须 forceConfirm 强制提测并记录确认人。
  */
 public class IntakeSubmitTestConfirmRequest {
 
-    /** 本次发布的测试环境编码；triggerJenkins 缺省或为 true 时必填。 */
+    /** 提测确认选择的测试环境编码；必填，不允许 PROD。 */
     @Size(max = 32, message = "测试环境编码长度不能超过 32")
     private String environmentCode;
 
@@ -21,6 +23,9 @@ public class IntakeSubmitTestConfirmRequest {
 
     /** 跳过 AI 提测审核直接确认；缺省为 false，维持先审后提。 */
     private Boolean skipAiReview;
+
+    /** 是否创建禅道测试单；缺省为 true 兼容存量调用。 */
+    private Boolean createZentaoTestTask;
 
     /** 是否触发测试环境 Jenkins 构建；缺省为 true 兼容存量调用。 */
     private Boolean triggerJenkins;
@@ -38,6 +43,11 @@ public class IntakeSubmitTestConfirmRequest {
 
     /** 本次发布的 Jenkins Job 名（顶层）；未填时按环境前缀+首个任务系统拼接。 */
     private String jenkinsJobName;
+
+    private IntakeTestDeployment.Request testDeployment;
+
+    public IntakeTestDeployment.Request getTestDeployment() { return testDeployment; }
+    public void setTestDeployment(IntakeTestDeployment.Request testDeployment) { this.testDeployment = testDeployment; }
 
     public String getEnvironmentCode() {
         return environmentCode;
@@ -61,6 +71,14 @@ public class IntakeSubmitTestConfirmRequest {
 
     public void setSkipAiReview(Boolean skipAiReview) {
         this.skipAiReview = skipAiReview;
+    }
+
+    public Boolean getCreateZentaoTestTask() {
+        return createZentaoTestTask;
+    }
+
+    public void setCreateZentaoTestTask(Boolean createZentaoTestTask) {
+        this.createZentaoTestTask = createZentaoTestTask;
     }
 
     public Boolean getTriggerJenkins() {

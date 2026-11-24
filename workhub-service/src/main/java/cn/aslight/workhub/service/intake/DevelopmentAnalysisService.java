@@ -15,6 +15,7 @@ import cn.aslight.workhub.model.intake.DevelopmentAnalysisDraftUpdateRequest;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisEntity;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisOwnerUpdateRequest;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisResponse;
+import cn.aslight.workhub.service.ai.AiFailureDiagnostics;
 import cn.aslight.workhub.model.intake.DevelopmentWorkItemDraft;
 import cn.aslight.workhub.model.intake.DevelopmentZentaoSyncResponse;
 import cn.aslight.workhub.model.intake.IntakeClarificationAnalysisEntity;
@@ -35,6 +36,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
@@ -91,6 +95,7 @@ public class DevelopmentAnalysisService {
     private final WorkItemService workItemService;
     private final Executor workhubTaskExecutor;
     private final ObjectMapper objectMapper;
+    private final TransactionTemplate analysisTransaction;
     private final ZentaoClient zentaoClient;
 
     @Autowired
@@ -108,7 +113,8 @@ public class DevelopmentAnalysisService {
                                       WorkItemService workItemService,
                                       @Qualifier("workhubTaskExecutor") Executor workhubTaskExecutor,
                                       ObjectMapper objectMapper,
-                                      ZentaoClient zentaoClient) {
+                                      ZentaoClient zentaoClient,
+                                      PlatformTransactionManager transactionManager) {
         this.intakeMapper = intakeMapper;
         this.intakeHistoryMapper = intakeHistoryMapper;
         this.developmentAnalysisMapper = developmentAnalysisMapper;
@@ -123,6 +129,8 @@ public class DevelopmentAnalysisService {
         this.workItemService = workItemService;
         this.workhubTaskExecutor = workhubTaskExecutor;
         this.objectMapper = objectMapper;
+        this.analysisTransaction = new TransactionTemplate(transactionManager);
+        this.analysisTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.zentaoClient = zentaoClient;
     }
 
@@ -137,7 +145,8 @@ public class DevelopmentAnalysisService {
                                CodexCliDevelopmentAnalysisGenerator analysisGenerator,
                                WorkItemService workItemService,
                                @Qualifier("workhubTaskExecutor") Executor workhubTaskExecutor,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               PlatformTransactionManager transactionManager) {
         this(
                 intakeMapper,
                 intakeHistoryMapper,
@@ -153,7 +162,7 @@ public class DevelopmentAnalysisService {
                 workItemService,
                 workhubTaskExecutor,
                 objectMapper,
-                null
+                null, transactionManager
         );
     }
 
@@ -175,6 +184,10 @@ public class DevelopmentAnalysisService {
     }
 
     private static class NoopIntakeClarificationAnalysisMapper implements IntakeClarificationAnalysisMapper {
+        @Override public int completeRawFormatting(Long id) { return 0; }
+        @Override public String findRecoverableOutput(Long intakeId, String fingerprint) { return null; }
+        @Override public int saveRawOutput(Long id, String fingerprint, String output) { return 0; }
+
         @Override
         public IntakeClarificationAnalysisEntity findById(Long id) {
             return null;
@@ -271,6 +284,25 @@ public class DevelopmentAnalysisService {
     }
 
     public DevelopmentAnalysisResponse analyze(Long intakeId, String businessLineOverride, String operatorUserName) {
+        PreparedAnalysis prepared = analysisTransaction.execute(status -> prepareAnalysis(intakeId, businessLineOverride, operatorUserName));
+        var entity = prepared.entity();
+        if (!prepared.created()) return toResponse(entity);
+        try {
+            workhubTaskExecutor.execute(() -> executeAnalysis(entity.getId(), intakeId, operatorUserName));
+        } catch (RejectedExecutionException ex) {
+            String message = "任务评估任务提交失败，系统繁忙，请稍后重试。";
+            analysisTransaction.executeWithoutResult(status -> {
+                markAnalysisFailed(entity.getId(), message, operatorUserName, ex);
+                recordHistory(intakeId, "任务评估失败", message + "原因：" + summarizeException(ex), operatorUserName);
+            });
+            throw new IllegalStateException(message, ex);
+        }
+        return toResponse(entity);
+    }
+
+    private record PreparedAnalysis(DevelopmentAnalysisEntity entity, boolean created) { }
+
+    private PreparedAnalysis prepareAnalysis(Long intakeId, String businessLineOverride, String operatorUserName) {
         IntakeRecordEntity intake = requireIntake(intakeId);
         IntakeStructuredData structuredData = readStructuredData(intake.getStructuredDataJson());
         requireDevelopmentRequirement(structuredData);
@@ -282,7 +314,7 @@ public class DevelopmentAnalysisService {
 
         DevelopmentAnalysisEntity existing = developmentAnalysisMapper.findLatestByIntakeId(intakeId);
         if (existing != null && isExecutionInProgress(existing.getAnalysisStatus()) && !isStaleExecution(existing)) {
-            return toResponse(existing);
+            return new PreparedAnalysis(existing, false);
         }
 
         if (existing != null && readDraft(existing.getDraftJson()) != null) {
@@ -296,15 +328,7 @@ public class DevelopmentAnalysisService {
                 trimToNull(nextStructuredData.projectHint()),
                 operatorUserName
         );
-        try {
-            workhubTaskExecutor.execute(() -> executeAnalysis(entity.getId(), intakeId, operatorUserName));
-        } catch (RejectedExecutionException ex) {
-            String message = "任务评估任务提交失败，系统繁忙，请稍后重试。";
-            markAnalysisFailed(entity.getId(), message, operatorUserName);
-            recordHistory(intakeId, "任务评估失败", message + "原因：" + summarizeException(ex), operatorUserName);
-            throw new IllegalStateException(message, ex);
-        }
-        return toResponse(entity);
+        return new PreparedAnalysis(entity, true);
     }
 
     @Transactional
@@ -385,7 +409,7 @@ public class DevelopmentAnalysisService {
             projectKnowledgeBaseService.publishSddDocuments(intake, structuredData,
                     resolveProjectForDraft(draft), entity.getId(), draft,
                     operatorUserName, LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-            historySummary += " SDD 三件套已发布到需求迭代目录。";
+            historySummary += " SDD 三件套已发布到需求归档目录。";
         }
         scheduleArchive(intakeId, entity.getId(), draft, STATUS_CONFIRMED, "确认研发评估", operatorUserName);
         recordHistory(intakeId, "确认研发评估", historySummary, operatorUserName);
@@ -911,7 +935,7 @@ public class DevelopmentAnalysisService {
             log.error("任务评估异常终止 analysisId={}, intakeId={}, 耗时={}ms",
                     analysisId, intakeId, System.currentTimeMillis() - startedAt, ex);
             try {
-                markAnalysisFailed(analysisId, "评估异常终止：" + summarizeThrowable(ex), operatorUserName);
+                markAnalysisFailed(analysisId, "评估异常终止：" + summarizeThrowable(ex), operatorUserName, ex);
                 recordHistory(intakeId, "任务评估失败",
                         "评估异常终止，已兜底置为失败：" + summarizeThrowable(ex), operatorUserName);
             } catch (Throwable fallbackEx) {
@@ -942,10 +966,19 @@ public class DevelopmentAnalysisService {
                     projectKnowledgeBaseService.buildContext(structuredData, project),
                     readClarificationItems(intakeId)
             );
+            var recovery = new cn.aslight.workhub.service.ai.AiResultRecovery(
+                    fingerprint -> developmentAnalysisMapper.findRecoverableOutput(intakeId, fingerprint),
+                    (fingerprint, output) -> {
+                        if (developmentAnalysisMapper.saveRawOutput(analysisId, fingerprint, output) != 1)
+                            throw new IllegalStateException("分析状态已变化，原始结果未保存，停止整理");
+                    }, () -> {
+                        if (developmentAnalysisMapper.completeRawFormatting(analysisId) != 1)
+                            throw new IllegalStateException("分析状态已变化，不能保存已过期的整理结果");
+                    });
             boolean sddMode = "SDD".equalsIgnoreCase(trimToNull(intake.getDevelopmentStandard()));
             DevelopmentAnalysisDraft generated = sddMode
-                    ? analysisGenerator.generateSdd(intake, structuredData, project, repositoryBundle, developers, requirementNote.asPromptContext(), knowledgeBaseContext, projectKnowledgeBaseService.readSddProcessSpec())
-                    : analysisGenerator.generate(intake, structuredData, project, repositoryBundle, developers, requirementNote.asPromptContext(), knowledgeBaseContext);
+                    ? analysisGenerator.generateSdd(intake, structuredData, project, repositoryBundle, developers, requirementNote.asPromptContext(), knowledgeBaseContext, projectKnowledgeBaseService.readSddProcessSpec(), recovery)
+                    : analysisGenerator.generate(intake, structuredData, project, repositoryBundle, developers, requirementNote.asPromptContext(), knowledgeBaseContext, recovery);
             DevelopmentAnalysisDraft draft = attachRequirementKnowledgeNote(
                     generated,
                     requirementNote
@@ -963,6 +996,7 @@ public class DevelopmentAnalysisService {
             completed.setRepositoryUrl(repositoryBundle.repositorySummary());
             completed.setAnalysisStatus(STATUS_DRAFT);
             completed.setAnalysisMessage(null);
+            completed.setErrorStack(null);
             completed.setDraftJson(writeDraftJson(draft));
             completed.setUpdatedBy(operatorUserName);
             developmentAnalysisMapper.update(completed);
@@ -973,6 +1007,7 @@ public class DevelopmentAnalysisService {
             DevelopmentAnalysisEntity failed = requireAnalysisEntity(analysisId);
             failed.setAnalysisStatus(STATUS_FAILED);
             failed.setAnalysisMessage(summarizeException(ex));
+            failed.setErrorStack(AiFailureDiagnostics.stackTrace(ex));
             failed.setDraftJson(null);
             failed.setUpdatedBy(operatorUserName);
             developmentAnalysisMapper.updateExecutionState(failed);
@@ -1225,10 +1260,11 @@ public class DevelopmentAnalysisService {
         return developmentAnalysisMapper.findLatestByIntakeId(intakeId);
     }
 
-    private void markAnalysisFailed(Long analysisId, String message, String operatorUserName) {
+    private void markAnalysisFailed(Long analysisId, String message, String operatorUserName, Throwable failure) {
         DevelopmentAnalysisEntity failed = requireAnalysisEntity(analysisId);
         failed.setAnalysisStatus(STATUS_FAILED);
-        failed.setAnalysisMessage(message);
+        failed.setAnalysisMessage(failureSummary(message));
+        failed.setErrorStack(AiFailureDiagnostics.stackTrace(failure));
         failed.setUpdatedBy(operatorUserName);
         developmentAnalysisMapper.updateExecutionState(failed);
     }
@@ -1483,7 +1519,8 @@ public class DevelopmentAnalysisService {
                 entity.getFinishedAt(),
                 draft,
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
+                entity.getUpdatedAt(),
+                entity.getErrorStack()
         );
     }
 
@@ -1984,8 +2021,13 @@ public class DevelopmentAnalysisService {
         return message == null || message.isBlank() ? ex.getClass().getName() : message;
     }
 
+    private String failureSummary(String message) {
+        String masked = new cn.aslight.workhub.mcp.security.ServerFileContentMasker().mask(message);
+        return masked.length() <= 240 ? masked : masked.substring(0, 240);
+    }
+
     private String summarizeException(Exception ex) {
         String message = trimToNull(ex.getMessage());
-        return message == null ? "任务评估失败，请查看后端日志" : message;
+        return message == null ? "任务评估失败，请查看后端日志" : failureSummary(message);
     }
 }

@@ -1,5 +1,27 @@
 # Design：需求任务评估SDD化与AI开发提测流程升级
 
+### 2026-11-17 需求状态序列补齐开发完成
+
+状态机（`IntakeDemandStatusRules`）中「开发完成」位于开发中与测试中之间，本轮仅补齐序列与展示，不动流转规则：
+
+- workhub-server `IntakeMapper.LIST_ORDER_BY`：CASE 排序插入 `WHEN '开发完成' THEN 7`，测试中及之后顺延为 8~14，ELSE 15。
+- workhub-server `IntakeService.DEMAND_STATUS_SORT_ORDER`：`IN_DEVELOPMENT` 与 `TESTING` 之间插入 `DEVELOPMENT_COMPLETED`（驱动项目进度报告待上线清单排序）。
+- workhub-server `IntakeService.DASHBOARD_DEMAND_GROUPS`：developing 组（开发中的需求）状态列表加入 `DEVELOPMENT_COMPLETED`，阶段卡片、业务线统计、重点需求、进度报告汇总不再漏计。
+- workhub-server `IntakeDemandStatusRules.normalizeEditableStatus` 报错文案补「开发完成」（清单本身已含，仅文案遗漏）。
+- workhub-web `IntakeListView.vue` 需求状态筛选下拉在「开发中」「测试中」之间插入「开发完成」选项。
+- workhub-web `IntakeBoardView.vue` `resolveStatusTagType`：「开发完成」与「开发中」同用 `primary`（与列表页两状态共用 developing 芯片一致）。
+- workhub-web `dashboardReport.ts` `statusThemes`：「测试中」前新增「开发完成」，配色复用开发中蓝色系。
+
+新增 `IntakeServiceDashboardGroupTest`（Mockito 仿 `IntakeServiceBoardTest`）：开发完成计入 developing 分组与业务线统计；进度报告待上线清单顺序为 开发中→开发完成→测试中。无迁移、无配置变更；回滚即还原上述清单插入。
+
+### 2026-11-17 开发完成提测兼容
+
+根因：IntakeDemandStatusRules 已允许开发完成执行 SUBMIT_TESTING，但 IntakeSubmitTestReviewService 的两个入口仍使用仅开发中的独立校验。两入口改为复用统一状态流转规则进行前置资格校验，不在校验时写状态；后续仍由原 advanceStage 流转。增加服务入口的双状态成功与非法状态无副作用测试，保留原有审核和外部集成测试。仅修改后端，无迁移、配置或前端变更。重启前检查在途任务，避免中断其他工作；实测不替用户实际建测试单或部署。回滚仅恢复该校验变更。
+
+### 2026-11-17 同一任务重试状态恢复
+
+巡检查询关联任务最新运行；FAILED 需求记录仅在最新运行已离开 FAILED/CANCELLED 时重新纳入。处理中恢复为 SUCCEEDED（已启动、待完成），COMPLETED 则直接沿既有完成流程推进。同步前核对当前 agentTaskId 仍与巡检目标一致，防止旧任务覆盖已重新分派的关联。原失败/取消不重复同步，保持历史与代码现场。使用真实 H2/MyBatis 验证运行→完成、跨轮快速完成、旧取消不重复处理。
+
 ## 1. 数据模型
 
 - 迁移 `V20261105_203000__intake_sdd_standard_reviewer_and_submit_test_review.sql`（仅 H2 验证，未执行真实 MySQL）：
@@ -98,3 +120,42 @@
 - 测试单标题仍为 `测试单：{需求名}`、版本名仍为研发分支名，本就无品牌字样；WorkHub 自身提测记录（`pm_intake_submit_test_review`）只存回执编号/URL/构建信息，不受影响。
 - 禅道中已存在的带该备注的历史对象不回溯修改。
 - 验证：`IntakeSddFlowTest` 15/15（桩用例本就未断言 desc）；真实链路待部署后下次提测观察禅道新对象描述为空。
+
+## 12. 后续变更（2026-11-18）：禅道测试单创建改为可选项
+
+用户要求提交测试时可选择是否向禅道提测试单（此前禅道建单无条件执行，未设研发分支等场景会整单阻断提测）。经确认测试负责人保持始终必填，开关默认开启兼容存量调用。
+
+- 契约：`IntakeSubmitTestConfirmRequest` 新增可选 `createZentaoTestTask`（Boolean，缺省/null 视为 true，语义与 `triggerJenkins` 缺省一致）；`confirmAndSubmit` 仅在开关为 true 时调用 `ZentaoClient.createTestTask` 并回写 `zentaoTestTaskNo/Url`，为 false 时显式清空两列（防回滚后重提残留旧回执）。`testOwnerUserName` 必填校验保持不变（不提单时同样必填）。无数据库结构变更（回执列本可空）。
+- 前端（workhub-web `IntakeListView.vue`）：提测弹窗在「测试负责人」与「触发 Jenkins 构建」之间新增「禅道测试单」开关（提单/不提单，默认开启，打开弹窗重置为开启）；Jenkins 关闭态提示随禅道开关联动（禅道关闭时为「仅推进测试中。」）；payload 新增 `createZentaoTestTask`；完成提示按「是否提单 × 是否构建」组合输出。`confirmSubmitTest` 类型同步新增可选字段。
+- 验证：`IntakeSddFlowTest` 27/27（新增用例：不提单不建单仍推进阶段、既有回执被清空、不提单仍必填测试负责人）；workhub-web `vue-tsc --noEmit -p tsconfig.app.json` 通过。
+
+
+## 2026-11-17 自动开发触发与重试
+
+阶段提交后以独立事务保存待执行状态，事务提交后提交后台执行。后台同一事务锁定执行记录并创建员工任务及首次运行，同时回写执行结果。重复提交由执行记录锁防止重复建任务。单次手动任务通过立即运行触发，关闭周期调度。失败摘要沿用当前详情。
+
+
+## 2026-11-17 提测 Jenkins 测试部署闭环方案（待确认）
+
+### 当前证据
+
+- 系统集成实例 jenkins 已能通过 MCP 认证查询。
+- 浏览器参数页实际提供 deploy_test_env=test-scs-server（唯一选项，10.10.116.43）、thctay_public_branch（默认 master）、project_branch（默认 master，包含 feature/repay_plan_query_202611050003）。MCP 的空参数列表不足以代表 Job 无参数，需修正读取参数定义的位置与结果截断。
+- 构建 #124 为用户石浩触发，SUCCESS，业务 checkout=e7c66a14289955b26f6e263fefa361e73d1f52fa，部署至 10.10.116.43 的 /mnt/scs-server/scs-saps；流水线包含 execute sql，不能把构建成功等同于应用健康验证完成。
+- 本轮 git ls-remote 核实需求远端仍为 e7c66a1；本地 HEAD 为 0775973224d6bcc7c77933950bdfea6f8da5ae37，包含资产管理费口径调整及用户删除测试文件，未推送。不得恢复用户删除的测试文件。
+
+### 实施方案
+
+1. 提测连接复用系统集成实例及其密钥引用，不复制或回显密钥。新增提测测试部署绑定，精确关联业务线/系统/TEST/实例/Job，以及已核实的固定参数。仅 TEST 可进入本路径；输入 Job 与绑定不符、环境不符、涉及系统未完整绑定时拒绝。保留数字员工既有生产发布审批链，不复用或放宽它。
+2. WorkHub 将需求研发分支与测试发布分支分别建模。单需求提测默认发布其研发分支；多需求合测时从当时远程 master 的提交创建新的测试集成分支，合入用户选定的各需求研发分支，记录基线 SHA、来源分支及 SHA、合并结果 SHA。需求 developmentBranchName 不变；Bug 修复仍提交原研发分支，重新合测时重新记录实际合入版本；合并冲突必须停止，不擅自选边解决。master 始终代表生产，本测试流程不向 master 推送、不把测试集成分支当上线来源。上线仍按开发分支处理，具体生产发布与 master 同步机制不在本轮实施范围。参数由后端构造：deploy_test_env=test-scs-server；project_branch=本次测试发布分支；thctay_public_branch=master（沿用既有测试默认）。触发前查询 Job 参数及测试目标是否匹配，不静默回退到默认分支。预检记录远端预期提交，构建后核对业务仓库实际 checkout；现有 Job 仅提供分支选择，不能宣称构建输入已精确锁定 SHA。
+3. 持久化独立部署尝试、参数快照、queueId、构建号/链接/状态/失败摘要、预期与实际版本。按需求锁定并拒绝并行重复请求。提交结果不明标记待核实，禁止自动重发；外部请求不依靠本地事务回滚来假装撤销。禅道创建与部署结果分别保留，避免 Jenkins 失败后丢失已创建测试单回执。
+4. 通过 WorkhubJob 和 sys_job_config 调度轮询已有队列/构建，按排队、构建中、成功、失败、取消、待核实回写。不新增静态 @Scheduled。SUCCESS 还需核对版本；服务健康验证与 Jenkins 构建结果分别展示。
+5. 前端支持单需求提测或选择多个需求合测，分别显示来源开发分支、本次测试发布分支、绑定的固定测试目标及部署状态；有本轮有效绑定时默认开启 Jenkins，已测试中支持只补发部署。当前需求不得通过回退阶段/重复建测试单来重试发布。
+6. 验证覆盖单需求默认研发分支、多需求从 master 新建测试分支、来源版本记录、合并冲突停止、Bug 修复回原开发分支、master 不被测试流程修改；使用本地 HTTP 桩覆盖参数、拒绝生产/错 Job、重复提交、未知回执不重发、重启恢复轮询、失败回写、版本不符。完成后以需求 202611050003 在已确认测试 Job 进行一次真实联调，记录构建编号、参数、checkout SHA、测试服务结果。
+
+### 边界、回滚与待确认
+
+本轮不修改 Jenkins 流水线/共享库，不变更生产权限或凭据。用户已补充 Job 的 execute sql 是 Jenkins 集成脚本平台后自动执行所发布系统 dbscript 目录脚本的既有流程。本轮沿用此流程，不增加 WorkHub 直连业务库或独立执行 SQL 的能力，不修改脚本平台配置；代码构建及脚本平台必须使用同一本次测试发布分支，脚本步骤失败按流水线结果展示。脚本平台的执行基线、去重和幂等语义尚未核实，不宣称每次仅执行新增脚本。停止自动化可停用本测试绑定及轮询任务；已提交 Jenkins 构建不能靠停用配置撤销，须只读核实其结果。失败后不自动回滚应用或数据库。
+
+生产防护、状态跟踪和版本核验按本节实现；数据库表/字段与端点细节在确认后按既有工程规范落地，迁移仅涉及 WorkHub 自身。
+

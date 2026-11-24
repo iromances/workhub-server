@@ -182,7 +182,7 @@ class SystemAlertVerificationQueryServiceTest {
     private void create(String sql,String table){var match=Pattern.compile("(?s)CREATE TABLE (?:IF NOT EXISTS )?`"+table+"`.*?;",Pattern.CASE_INSENSITIVE).matcher(sql);assertTrue(match.find());jdbc.execute(match.group().replaceAll("(?i)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", ""));}
     private AgentVerificationEvidence.Fact inspect(SystemAlertDashboardResponse result) {
         var scope=new AgentScope("BL000012","TEST");var at=clock.instant();var proof=result.executionEvidence();
-        var context=new AgentToolContext("run","task","agent","owner",new AgentConfiguration("巡检","巡检",1L,null,List.of(scope),20,60,1),new AgentTaskSpecification("巡检","","判断恢复",List.of("REPORT"),List.of(scope)));
+        var context=new AgentToolContext("run","task","agent","owner",new AgentConfiguration("巡检","OPS","巡检",1L,null,List.of(scope),20,60,1),new AgentTaskSpecification("巡检","","判断恢复",List.of("REPORT"),List.of(scope)));
         String tool="monitor.system.alerts";
         String payload=json.writeValueAsString(new AgentToolData(json).sanitize(Map.of("scope",scope,"observedAt",at.toString(),"recordTimeZone","Z","query",Map.of("from",proof.from().toString(),"to",proof.to().toString()),"data",result)));
         var row=new AgentObservationEntity(UUID.randomUUID().toString(),"run","agent","key",tool,AgentObservationService.sourceType(tool,"BL000012"),"BL000012","TEST",payload,AccountingExecutionEvidenceService.hash(payload),now());

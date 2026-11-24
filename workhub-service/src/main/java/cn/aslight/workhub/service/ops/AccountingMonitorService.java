@@ -8,9 +8,9 @@ import cn.aslight.workhub.model.ops.AccountingManualRunRequest;
 import cn.aslight.workhub.model.ops.AccountingMonitorConfigEntity;
 import cn.aslight.workhub.model.ops.AccountingMonitorSaveRequest;
 import cn.aslight.workhub.model.ops.AccountingMonitorStatusResponse;
-import cn.aslight.workhub.model.ops.AccountingRuleResponse;
 import cn.aslight.workhub.model.ops.AccountingRunDetailResponse;
 import cn.aslight.workhub.model.ops.AccountingRunEntity;
+import cn.aslight.workhub.model.ops.AccountingScenarioTypeResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.core.task.TaskRejectedException;
@@ -18,40 +18,89 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
+import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * REQ-d227e09d：账务场景监测——配置按业务场景维度维护，核对按日窗口执行；
+ * 计数 SQL 全部经 func_call_sql 登记渲染，不再扫表做数据一致性校验。
+ */
 @Service
 public class AccountingMonitorService {
 
     private static final ZoneId ZONE = AccountingExecutionEvidenceService.RECORD_ZONE;
-    private static final Duration MAX_MANUAL_RANGE = Duration.ofDays(31);
     private static final DateTimeFormatter RUN_TIME = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private final AccountingMonitorMapper monitorMapper;
     private final AccountingRunMapper runMapper;
-    private final AccountingRuleCatalog ruleCatalog;
-    private final AccountingReconcileExecutor reconcileExecutor;
+    private final AccountingScenarioCheckExecutor scenarioCheckExecutor;
+    private final FunctionCallService functionCallService;
     private final TaskExecutor taskExecutor;
+    private org.springframework.transaction.support.TransactionTemplate rejectionTransaction;
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setTransactionManager(org.springframework.transaction.PlatformTransactionManager manager) {
+        rejectionTransaction = new org.springframework.transaction.support.TransactionTemplate(manager);
+        rejectionTransaction.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    }
+    private cn.aslight.workhub.dao.ops.FuncCallAuditMapper audits;
+    private cn.aslight.workhub.dao.agent.AgentMonitorRunMapper links;
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setEvidenceMappers(cn.aslight.workhub.dao.ops.FuncCallAuditMapper audits,
+                                   cn.aslight.workhub.dao.agent.AgentMonitorRunMapper links) {
+        this.audits = audits; this.links = links;
+    }
+
+    /** REQ-372e4ce1：family 为逗号分隔的规则组/用途过滤；去空白、去重，最多取前 8 个。 */
+    public SqlEvidencePage sqlEvidence(Long id, String family, int page, int pageSize) {
+        requireRun(id);
+        int size = Math.min(50, Math.max(1, pageSize));
+        List<String> families = families(family);
+        return new SqlEvidencePage(audits.countMonitor(id, families),
+                audits.forMonitor(id, families, size, (Math.max(1, page)-1)*size));
+    }
+
+    private List<String> families(String family) {
+        if (family == null || family.isBlank()) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(family.split(","))
+                .map(String::trim)
+                .filter(item -> !item.isEmpty())
+                .distinct()
+                .limit(8)
+                .toList();
+    }
+
+    public record SqlEvidencePage(long total, List<cn.aslight.workhub.model.ops.FuncCallAuditEntity> items) { }
+
+    public List<String> agentRuns(Long id) { requireRun(id); return links.agents(id); }
+
+    public List<java.util.Map<String, Object>> rules(Long configId) {
+        var config = requireConfig(configId);
+        if (!AccountingIntegrityCatalog.TYPE.equals(config.scenarioType())) return List.of();
+        return AccountingIntegrityCatalog.families(config.businessLineCode()).stream().map(f -> java.util.Map.<String,Object>of(
+                "code", f.code(), "name", f.name(), "checks", f.checks(),
+                "sqlCodes", List.of(f.sqlCode("BOUNDS"), f.sqlCode("SUMMARY"), f.sqlCode("SAMPLE")))).toList();
+    }
 
     public AccountingMonitorService(AccountingMonitorMapper monitorMapper,
                                     AccountingRunMapper runMapper,
-                                    AccountingRuleCatalog ruleCatalog,
-                                    AccountingReconcileExecutor reconcileExecutor,
+                                    AccountingScenarioCheckExecutor scenarioCheckExecutor,
+                                    FunctionCallService functionCallService,
                                     @Qualifier("accountingTaskExecutor") TaskExecutor taskExecutor) {
         this.monitorMapper = monitorMapper;
         this.runMapper = runMapper;
-        this.ruleCatalog = ruleCatalog;
-        this.reconcileExecutor = reconcileExecutor;
+        this.scenarioCheckExecutor = scenarioCheckExecutor;
+        this.functionCallService = functionCallService;
         this.taskExecutor = taskExecutor;
     }
 
@@ -65,28 +114,31 @@ public class AccountingMonitorService {
         AccountingMonitorConfigEntity duplicate = monitorMapper.findByIdentity(
                 request.businessLineCode().trim(),
                 normalizeEnvironmentCode(request.environmentCode()),
-                request.systemName().trim());
+                request.systemName().trim(),
+                request.scenarioType().trim());
         if (duplicate != null) {
-            throw new IllegalArgumentException("该业务线、环境和系统的账务监测配置已存在");
+            throw new IllegalArgumentException("该业务线、环境、系统和场景的业务监测配置已存在");
         }
         AccountingMonitorConfigEntity entity = configEntity(null, request);
         monitorMapper.insert(entity);
         return monitorMapper.findByIdentity(
-                entity.businessLineCode(), entity.environmentCode(), entity.systemName());
+                entity.businessLineCode(), entity.environmentCode(),
+                entity.systemName(), entity.scenarioType());
     }
 
     @Transactional
     public AccountingMonitorConfigEntity updateConfig(Long id, AccountingMonitorSaveRequest request) {
         validateConfig(request);
         if (monitorMapper.findById(id) == null) {
-            throw new IllegalArgumentException("账务监测配置不存在");
+            throw new IllegalArgumentException("业务监测配置不存在");
         }
         AccountingMonitorConfigEntity duplicate = monitorMapper.findByIdentity(
                 request.businessLineCode().trim(),
                 normalizeEnvironmentCode(request.environmentCode()),
-                request.systemName().trim());
+                request.systemName().trim(),
+                request.scenarioType().trim());
         if (duplicate != null && !id.equals(duplicate.id())) {
-            throw new IllegalArgumentException("该业务线、环境和系统的账务监测配置已存在");
+            throw new IllegalArgumentException("该业务线、环境、系统和场景的业务监测配置已存在");
         }
         AccountingMonitorConfigEntity entity = configEntity(id, request);
         monitorMapper.update(entity);
@@ -99,7 +151,7 @@ public class AccountingMonitorService {
                 .toList();
         List<AccountingRunEntity> latestRuns = monitors.stream()
                 .map(AccountingMonitorStatusResponse::latestRun)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .toList();
         int running = statusCount(latestRuns, "PENDING") + statusCount(latestRuns, "RUNNING");
         int success = statusCount(latestRuns, "SUCCESS");
@@ -112,22 +164,23 @@ public class AccountingMonitorService {
         );
     }
 
-    public List<AccountingRuleResponse> listRules(String ruleProfile) {
-        return ruleCatalog.responses(requireValue(ruleProfile, "规则包不能为空"));
+    public List<AccountingScenarioTypeResponse> scenarioTypes() {
+        return AccountingScenarioCatalog.responses();
     }
 
     public List<AccountingRunEntity> listRuns(String businessLineCode,
                                               String status,
+                                              Long configId,
                                               int page,
                                               int pageSize) {
         int normalizedPage = Math.max(page, 1);
         int normalizedSize = Math.min(Math.max(pageSize, 1), 200);
-        return runMapper.findRuns(trimToNull(businessLineCode), trimToNull(status),
+        return runMapper.findRuns(trimToNull(businessLineCode), trimToNull(status), configId,
                 (normalizedPage - 1) * normalizedSize, normalizedSize);
     }
 
-    public int countRuns(String businessLineCode, String status) {
-        return runMapper.countRuns(trimToNull(businessLineCode), trimToNull(status));
+    public int countRuns(String businessLineCode, String status, Long configId) {
+        return runMapper.countRuns(trimToNull(businessLineCode), trimToNull(status), configId);
     }
 
     public AccountingRunDetailResponse detail(Long id) {
@@ -135,62 +188,76 @@ public class AccountingMonitorService {
         return new AccountingRunDetailResponse(run, runMapper.findResults(id));
     }
 
+    @Transactional
     public AccountingRunEntity submitManual(AccountingManualRunRequest request, String operator) {
+        monitorMapper.lockConfig(request.configId());
         AccountingMonitorConfigEntity config = requireConfig(request.configId());
         if (!Boolean.TRUE.equals(config.enabled())) {
-            throw new IllegalArgumentException("账务监测配置未启用");
+            throw new IllegalArgumentException("业务监测配置未启用");
         }
-        validateWindow(request.startTime(), request.endTime());
-        String ruleCodes = validateRuleCodes(config.ruleProfile(), request.ruleCodes());
+        LocalDate checkDate = request.checkDate();
+        if (checkDate == null && !AccountingIntegrityCatalog.TYPE.equals(config.scenarioType())) {
+            throw new IllegalArgumentException("流程场景必须选择核对日期");
+        }
+        if (checkDate != null && checkDate.isAfter(LocalDate.now(ZONE))) {
+            throw new IllegalArgumentException("核对日期不能晚于今天");
+        }
         String requestKey = trimToNull(request.requestKey());
         if (requestKey == null) {
             requestKey = UUID.randomUUID().toString();
         }
-        String idempotencyKey = "MANUAL:" + config.id() + ":" + requestKey;
-        return submit(config, "MANUAL", request.startTime(), request.endTime(),
-                ruleCodes, idempotencyKey, operator == null ? "unknown" : operator);
+        String idempotencyKey = "MANUAL:" + config.id() + ":" + checkDate + ":" + requestKey;
+        Long active = runMapper.findActive(config.id(), window(checkDate));
+        if (active != null) return runMapper.findById(active);
+        return submit(config, "MANUAL", window(checkDate), idempotencyKey,
+                operator == null ? "unknown" : operator);
     }
 
+    @Transactional
     public AccountingRunEntity retry(Long id, String operator) {
         AccountingRunEntity source = requireRun(id);
+        monitorMapper.lockConfig(source.configId());
         AccountingMonitorConfigEntity config = requireConfig(source.configId());
+        Long active = runMapper.findActive(config.id(), source.startTime());
+        if (active != null) return runMapper.findById(active);
         String key = "RETRY:" + source.id() + ":" + UUID.randomUUID();
-        return submit(config, "RETRY", source.startTime(), source.endTime(),
-                source.ruleCodes(), key, operator == null ? "unknown" : operator);
+        return submit(config, "RETRY", source.startTime(), key,
+                operator == null ? "unknown" : operator);
     }
 
-    public void submitPreviousDay() {
+    /** 场景核对 Job 入口：核对时间已到且当日尚未核对（幂等键防重）的启用配置逐个提交。 */
+    @Transactional
+    public void submitDueScheduled() {
         LocalDate today = LocalDate.now(ZONE);
-        LocalDateTime start = LocalDateTime.of(today.minusDays(1), LocalTime.MIDNIGHT);
-        LocalDateTime end = LocalDateTime.of(today, LocalTime.MIDNIGHT);
+        LocalTime now = LocalTime.now(ZONE);
         for (AccountingMonitorConfigEntity config : monitorMapper.findAll(null, true)) {
-            if (!Boolean.TRUE.equals(config.dailyEnabled())) {
+            if (AccountingIntegrityCatalog.TYPE.equals(config.scenarioType())) {
                 continue;
             }
-            String key = "SCHEDULED:" + config.id() + ":" + start + ":" + end;
-            submit(config, "SCHEDULED", start, end, null, key, "SYSTEM");
+            if (config.checkTime() == null || now.isBefore(config.checkTime())) {
+                continue;
+            }
+            monitorMapper.lockConfig(config.id());
+            if (runMapper.findActive(config.id(), window(today)) != null) continue;
+            String key = "SCENARIO:" + config.id() + ":" + today;
+            submit(config, "SCHEDULED", window(today), key, "SYSTEM");
         }
     }
 
     private AccountingRunEntity submit(AccountingMonitorConfigEntity config,
                                        String triggerType,
-                                       LocalDateTime startTime,
-                                       LocalDateTime endTime,
-                                       String ruleCodes,
+                                       LocalDateTime windowStart,
                                        String idempotencyKey,
                                        String operator) {
         AccountingRunEntity existing = runMapper.findByIdempotencyKey(idempotencyKey);
         if (existing != null) {
             return existing;
         }
-        if (trimToNull(config.databaseTargetKey()) == null) {
-            throw new IllegalArgumentException("当前业务线尚未配置生产数据库目标");
-        }
-        String runNo = "AR" + RUN_TIME.format(LocalDateTime.now(ZONE))
+        String runNo = "AS" + RUN_TIME.format(LocalDateTime.now(ZONE))
                 + UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase(Locale.ROOT);
         try {
             runMapper.insertRun(runNo, idempotencyKey, config.id(), triggerType,
-                    startTime, endTime, ruleCodes, "PENDING", operator);
+                    windowStart, windowStart == null ? null : windowStart.plusDays(1), null, "PENDING", operator);
         } catch (DataIntegrityViolationException ex) {
             AccountingRunEntity concurrent = runMapper.findByIdempotencyKey(idempotencyKey);
             if (concurrent != null) {
@@ -200,63 +267,76 @@ public class AccountingMonitorService {
         }
         Long runId = runMapper.findIdByRunNo(runNo);
         if (runId == null) {
-            throw new IllegalStateException("对账批次创建后未能取得批次ID");
+            throw new IllegalStateException("场景核对批次创建后未能取得批次ID");
         }
-        try {
-            taskExecutor.execute(() -> reconcileExecutor.execute(runId));
-        } catch (TaskRejectedException ex) {
-            runMapper.finishRun(runId, "FAILED", 0, 0, 0, 0, 0, 0,
-                    "账务对账执行队列已满，请稍后重试");
-        }
+        Runnable enqueue = () -> {
+            try { taskExecutor.execute(() -> scenarioCheckExecutor.execute(runId)); }
+            catch (TaskRejectedException ex) {
+                // afterCommit 的原事务已提交；拒绝状态必须在新事务中落库，避免遗留 PENDING。
+                rejectionTransaction.executeWithoutResult(status -> runMapper.finishRun(
+                        runId, "FAILED", 0, 0, 0, 0, 0, 0, "业务监测执行队列已满，请稍后重试"));
+            }
+        };
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override public void afterCommit() { enqueue.run(); }
+                    });
+        } else enqueue.run();
         return runMapper.findById(runId);
     }
 
     private void validateConfig(AccountingMonitorSaveRequest request) {
-        AccountingRuleCatalog.validateSchema(request.schemaName());
-        if (!ruleCatalog.supportedProfiles().contains(request.ruleProfile())) {
-            throw new IllegalArgumentException("不支持的账务规则包：" + request.ruleProfile());
+        AccountingScenarioCatalog.requireType(request.scenarioType().trim());
+        if (AccountingIntegrityCatalog.TYPE.equals(request.scenarioType().trim())) {
+            if (AccountingIntegrityCatalog.families(request.businessLineCode().trim()).isEmpty()) {
+                throw new IllegalArgumentException("单据及支付一致性仅支持叉车 BL000008、智能柜 BL000005");
+            }
+            if (Boolean.TRUE.equals(request.alertEnabled())) {
+                throw new IllegalArgumentException("单据及支付一致性当前仅手动核验，通知保持关闭");
+            }
+            return;
         }
-        if ((Boolean.TRUE.equals(request.enabled()) || Boolean.TRUE.equals(request.dailyEnabled()))
-                && trimToNull(request.databaseTargetKey()) == null) {
-            throw new IllegalArgumentException("启用账务监测前必须配置数据库目标");
+        if (trimToNull(request.actualCountSqlCode()) == null) {
+            throw new IllegalArgumentException("实际发起笔数 SQL 编码未配置");
         }
-        if (Boolean.TRUE.equals(request.dailyEnabled()) && !Boolean.TRUE.equals(request.enabled())) {
-            throw new IllegalArgumentException("启用每日任务前必须先启用账务监测配置");
+        if (request.expectedCountSqlCode() != null && request.expectedCountSqlCode().isBlank()) {
+            throw new IllegalArgumentException("应发起笔数 SQL 编码不能为空白");
+        }
+        boolean hasExpectedSql = trimToNull(request.expectedCountSqlCode()) != null;
+        boolean hasFixedExpected = request.expectedFixedCount() != null;
+        if (hasExpectedSql == hasFixedExpected) {
+            throw new IllegalArgumentException("应发起笔数必须且只能配置 SQL 编码或固定值之一");
+        }
+        if (hasFixedExpected && request.expectedFixedCount() < 0) {
+            throw new IllegalArgumentException("固定应发起笔数不能为负数");
+        }
+        BigDecimal tolerance = request.toleranceRate();
+        if (tolerance.compareTo(BigDecimal.ZERO) < 0 || tolerance.compareTo(BigDecimal.ONE) > 0) {
+            throw new IllegalArgumentException("容差比例必须在 0 到 1 之间");
+        }
+        if (Boolean.TRUE.equals(request.enabled())) {
+            requireSqlEnabled(trimToNull(request.actualCountSqlCode()), "实际发起笔数");
+            if (hasExpectedSql) {
+                requireSqlEnabled(trimToNull(request.expectedCountSqlCode()), "应发起笔数");
+            }
+            if (trimToNull(request.successCountSqlCode()) != null) {
+                requireSqlEnabled(trimToNull(request.successCountSqlCode()), "成功笔数");
+            }
         }
     }
 
-    private void validateWindow(LocalDateTime startTime, LocalDateTime endTime) {
-        if (startTime == null || endTime == null || !startTime.isBefore(endTime)) {
-            throw new IllegalArgumentException("开始时间必须早于结束时间");
+    private void requireSqlEnabled(String sqlCode, String purpose) {
+        if (sqlCode == null) {
+            throw new IllegalArgumentException(purpose + " SQL 编码未配置");
         }
-        if (!isHour(startTime) || !isHour(endTime)) {
-            throw new IllegalArgumentException("手动对账时间必须精确到整点");
-        }
-        if (Duration.between(startTime, endTime).compareTo(MAX_MANUAL_RANGE) > 0) {
-            throw new IllegalArgumentException("单次手动对账区间不能超过31天");
+        if (!functionCallService.isCodeEnabled(sqlCode)) {
+            throw new IllegalArgumentException(purpose + " SQL 编码未登记或已停用：" + sqlCode);
         }
     }
 
-    private boolean isHour(LocalDateTime value) {
-        return value.getMinute() == 0 && value.getSecond() == 0 && value.getNano() == 0;
-    }
-
-    private String validateRuleCodes(String profile, List<String> requestedCodes) {
-        if (requestedCodes == null || requestedCodes.isEmpty()) {
-            return null;
-        }
-        Set<String> available = ruleCatalog.rulesForProfile(profile).stream()
-                .map(AccountingRuleDefinition::ruleCode)
-                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-        LinkedHashSet<String> selected = requestedCodes.stream()
-                .map(this::trimToNull)
-                .filter(java.util.Objects::nonNull)
-                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-        if (!available.containsAll(selected)) {
-            selected.removeAll(available);
-            throw new IllegalArgumentException("包含不属于当前规则包的规则：" + String.join(",", selected));
-        }
-        return String.join(",", selected);
+    private LocalDateTime window(LocalDate checkDate) {
+        return checkDate == null ? null : checkDate.atStartOfDay();
     }
 
     private AccountingMonitorConfigEntity configEntity(Long id, AccountingMonitorSaveRequest request) {
@@ -267,11 +347,16 @@ public class AccountingMonitorService {
                 normalizeEnvironmentCode(request.environmentCode()),
                 request.systemName().trim(),
                 request.displayName().trim(),
-                trimToNull(request.databaseTargetKey()),
-                request.schemaName().trim(),
-                request.ruleProfile().trim(),
+                request.scenarioType().trim(),
+                request.expectedTime(),
+                request.checkTime(),
+                trimToNull(request.expectedCountSqlCode()),
+                request.expectedFixedCount(),
+                trimToNull(request.actualCountSqlCode()),
+                trimToNull(request.successCountSqlCode()),
+                request.toleranceRate(),
+                request.alertEnabled(),
                 request.enabled(),
-                request.dailyEnabled(),
                 trimToNull(request.remark()),
                 null,
                 null
@@ -281,7 +366,7 @@ public class AccountingMonitorService {
     private AccountingMonitorConfigEntity requireConfig(Long id) {
         AccountingMonitorConfigEntity config = monitorMapper.findById(id);
         if (config == null) {
-            throw new IllegalArgumentException("账务监测配置不存在");
+            throw new IllegalArgumentException("业务监测配置不存在");
         }
         return config;
     }

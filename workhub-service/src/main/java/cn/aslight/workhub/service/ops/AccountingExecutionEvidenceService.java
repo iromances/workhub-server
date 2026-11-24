@@ -22,31 +22,6 @@ public class AccountingExecutionEvidenceService {
         this.mapper = mapper; this.json = json;
     }
 
-    /** 保存成功后才允许查询；同一运行的证据不可覆盖。SQL 只构造一次，并返回给实际执行器使用。 */
-    List<PreparedRule> capture(AccountingRunEntity run, AccountingMonitorConfigEntity config,
-            List<AccountingRuleDefinition> rules, String targetHash) {
-        if (targetHash == null || !targetHash.matches("[a-f0-9]{64}")) throw new IllegalArgumentException("缺少数据库目标快照摘要");
-        var prepared = rules.stream().map(rule -> new PreparedRule(rule, rule.buildSql(config.schemaName(), run.startTime(), run.endTime()))).toList();
-        var definition = new AccountingExecutionSnapshot.Configuration(config.id(), config.businessLineCode(), config.environmentCode(),
-                config.systemName(), config.displayName(), config.databaseTargetKey(), config.schemaName(), config.ruleProfile(), config.enabled());
-        var descriptions = prepared.stream().map(item -> {
-            var rule = item.rule();
-            // 固定参照窗口以比较规则定义；实际窗口 SQL 另存摘要，不能因改日期而伪装成改了规则。
-            var reference = rule.buildSql("verification_schema", LocalDateTime.of(2000, 1, 1, 0, 0), LocalDateTime.of(2000, 1, 2, 0, 0));
-            String ruleHash = hash(json.writeValueAsString(List.of(rule.ruleCode(), rule.category(), rule.granularity(), rule.severity(),
-                    rule.requiredTables().stream().sorted().toList(), reference.summarySql(), reference.sampleSql())));
-            return new AccountingExecutionSnapshot.Rule(rule.ruleCode(), rule.ruleName(), rule.category(), rule.granularity(), rule.severity(),
-                    rule.requiredTables().stream().sorted().toList(), ruleHash, hash(item.sql().summarySql()), hash(item.sql().sampleSql()));
-        }).toList();
-        var snapshot = new AccountingExecutionSnapshot(1, run.id(), definition, hash(json.writeValueAsString(definition)),
-                descriptions, hash(json.writeValueAsString(descriptions)), run.startTime(), run.endTime(), RECORD_ZONE.getId(), targetHash);
-        String payload = json.writeValueAsString(snapshot);
-        var saved = new AccountingExecutionEvidenceEntity(run.id(), config.businessLineCode(), config.environmentCode(), config.systemName(),
-                config.displayName(), payload, hash(payload), LocalDateTime.now(ZoneOffset.UTC));
-        if (mapper.insert(saved) != 1) throw new IllegalStateException("未能保存实际执行上下文，账务查询未开始");
-        return prepared;
-    }
-
     public Verified read(AccountingRunEntity run) {
         var saved = mapper.find(run.id());
         if (saved == null) return null;
@@ -83,6 +58,5 @@ public class AccountingExecutionEvidenceService {
         catch (NoSuchAlgorithmException ex) { throw new IllegalStateException(ex); }
     }
     private static IllegalStateException invalid() { return new IllegalStateException("账务执行凭据与运行记录不一致"); }
-    record PreparedRule(AccountingRuleDefinition rule, AccountingRuleSql sql) { }
     public record Verified(AccountingExecutionSnapshot snapshot, String contentHash, LocalDateTime capturedAt) { }
 }

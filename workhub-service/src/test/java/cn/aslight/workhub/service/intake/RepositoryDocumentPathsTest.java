@@ -52,4 +52,21 @@ class RepositoryDocumentPathsTest {
         Files.createSymbolicLink(root.resolve("docs"), temporary);
         assertThrows(IllegalStateException.class, () -> RepositoryDocumentPaths.resolve(config));
     }
+
+    @Test
+    void routesWorkhubPlatformToDocsBusinessLinesAndOthersToPlaybookRepository() {
+        SysConfigService config = mock(SysConfigService.class);
+        Path docs = Path.of("/repo").resolve("docs");
+        assertEquals(docs.resolve("业务线"), RepositoryDocumentPaths.wikiArchiveRoot(config, docs, "BL000012"));
+        assertEquals(docs.resolve("业务线"), RepositoryDocumentPaths.wikiArchiveRoot(config, docs, " BL000012 "));
+        assertEquals(Path.of("/repo").resolve("agents-playbook").resolve("docs").resolve("业务线"),
+                RepositoryDocumentPaths.playbookArchiveRoot(config, docs));
+        when(config.findPlainValue("knowledge.project", RepositoryDocumentPaths.CONFIG_KEY_PLAYBOOK_PATH))
+                .thenReturn("/ext/agents-playbook");
+        assertEquals(Path.of("/ext/agents-playbook").resolve("docs").resolve("业务线"),
+                RepositoryDocumentPaths.playbookArchiveRoot(config, docs));
+        when(config.findPlainValue("knowledge.project", RepositoryDocumentPaths.CONFIG_KEY_PLAYBOOK_PATH))
+                .thenReturn("/repo");
+        assertThrows(IllegalStateException.class, () -> RepositoryDocumentPaths.playbookArchiveRoot(config, docs));
+    }
 }

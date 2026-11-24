@@ -129,9 +129,9 @@ class AgentChangeServiceTest {
         testEvidence=new AgentBuildTestEvidence(testMapper,agents,new AgentBuildTestPolicy(testJenkins),testJenkins,json,clock);
         acceptance = new AgentRunAcceptanceService(agents, mapper, deliveries, new org.springframework.beans.factory.ObjectProvider<AgentChangeService>() {
             @Override public AgentChangeService getObject() { return service; }
-        }, testEvidence, access, json, clock);
+        }, testEvidence, access, json, clock, mock(AgentNativeDeliveryService.class));
         runs = proxy(new AgentRunStore(agents, json, access, data, providers, clock, acceptance));
-        var config = new AgentConfiguration("Code", "修复", 1L, "fixture", List.of(scope), 100, 3600, 2);
+        var config = new AgentConfiguration("Code","OPS", "修复", 1L, "fixture", List.of(scope), 100, 3600, 2);
         var specification = new AgentTaskSpecification("修复代码", "输入", "实际测试后交付", List.of("CHANGE_SET", "TEST_REPORT"), List.of(scope));
         LocalDateTime now = LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC);
         agents.insertAgent(new AgentDefinitionEntity("agent", "Code", json.writeValueAsString(config), true, "owner", 0, now, now));

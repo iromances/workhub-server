@@ -267,7 +267,7 @@ class AgentCodeWorkspaceServiceTest {
 
     private AgentCodeWorkspaceService service(AgentCodeGit git) { return new AgentCodeWorkspaceService(policy, mapper, store, runs, access, git, json); }
     private AgentToolContext context(String runId) {
-        var config = new AgentConfiguration("Code", "task", 1L, "model", List.of(scope), 50, 300, 1);
+        var config = new AgentConfiguration("Code","OPS", "task", 1L, "model", List.of(scope), 50, 300, 1);
         return new AgentToolContext(runId, "task", "agent", "owner", "lease", config,
                 new AgentTaskSpecification("fix", "", "verified", List.of("CHANGE_SET", "TEST_REPORT"), List.of(scope)));
     }

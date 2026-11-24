@@ -50,6 +50,16 @@ class AgentGitLabClientTest {
         assertThrows(AgentGitLabClient.Conflict.class, () -> client.project(target));
     }
 
+    @Test void resolvesNativeDeliveryProjectByExactPathWithoutWrites() {
+        handler = exchange -> send(exchange, 200, project());
+        var resolved = client.resolve(target.baseUri(), target.projectPath(), "fixture-token");
+        assertEquals(17, resolved.projectId()); assertEquals("GET", method);
+        assertEquals("/gitlab/api/v4/projects/group%2Frepository", path);
+        var foreign = new LinkedHashMap<>(project()); foreign.put("path_with_namespace", "foreign/repository");
+        handler = exchange -> send(exchange, 200, foreign);
+        assertThrows(AgentGitLabClient.Conflict.class, () -> client.resolve(target.baseUri(), target.projectPath(), "fixture-token"));
+    }
+
     @Test void encodesBranchAndDoesNotInventMissingBranch() {
         handler = exchange -> send(exchange, 200, Map.of("name", "codex/fix", "protected", false, "default", false, "commit", Map.of("id", sha)));
         assertEquals(sha, client.branch(target, "codex/fix").sha()); assertTrue(path.endsWith("/repository/branches/codex%2Ffix"));

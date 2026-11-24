@@ -96,13 +96,24 @@ public class CodexCliDevelopmentAnalysisGenerator {
                                              List<UserOptionResponse> developers,
                                              String requirementMarkdownContext,
                                              String knowledgeBaseContext) {
+        return generate(entity, structuredData, project, repositoryBundle, developers, requirementMarkdownContext, knowledgeBaseContext, null);
+    }
+
+    public DevelopmentAnalysisDraft generate(IntakeRecordEntity entity,
+                                             IntakeStructuredData structuredData,
+                                             ProjectDetailResponse project,
+                                             GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle,
+                                             List<UserOptionResponse> developers,
+                                             String requirementMarkdownContext,
+                                             String knowledgeBaseContext,
+            cn.aslight.workhub.service.ai.AiResultRecovery recovery) {
         return execute(
                 ANALYZE_USE_CASE_CODE,
                 buildVariables(entity, structuredData, project, repositoryBundle, developers, requirementMarkdownContext, knowledgeBaseContext),
                 project,
                 repositoryBundle,
                 developers,
-                false
+                false, recovery
         );
     }
 
@@ -117,6 +128,18 @@ public class CodexCliDevelopmentAnalysisGenerator {
                                                 String requirementMarkdownContext,
                                                 String knowledgeBaseContext,
                                                 String sddProcessSpec) {
+        return generateSdd(entity, structuredData, project, repositoryBundle, developers, requirementMarkdownContext, knowledgeBaseContext, sddProcessSpec, null);
+    }
+
+    public DevelopmentAnalysisDraft generateSdd(IntakeRecordEntity entity,
+                                                IntakeStructuredData structuredData,
+                                                ProjectDetailResponse project,
+                                                GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle,
+                                                List<UserOptionResponse> developers,
+                                                String requirementMarkdownContext,
+                                                String knowledgeBaseContext,
+                                                String sddProcessSpec,
+            cn.aslight.workhub.service.ai.AiResultRecovery recovery) {
         Map<String, Object> variables = buildVariables(entity, structuredData, project, repositoryBundle, developers, requirementMarkdownContext, knowledgeBaseContext);
         variables.put("sddProcessSpec", value(sddProcessSpec));
         return execute(
@@ -125,7 +148,7 @@ public class CodexCliDevelopmentAnalysisGenerator {
                 project,
                 repositoryBundle,
                 developers,
-                true
+                true, recovery
         );
     }
 
@@ -140,7 +163,7 @@ public class CodexCliDevelopmentAnalysisGenerator {
                 project,
                 repositoryBundle,
                 developers,
-                false
+                false, null
         );
     }
 
@@ -149,7 +172,7 @@ public class CodexCliDevelopmentAnalysisGenerator {
                                              ProjectDetailResponse project,
                                              GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle,
                                              List<UserOptionResponse> developers,
-                                             boolean sddMode) {
+                                             boolean sddMode, cn.aslight.workhub.service.ai.AiResultRecovery recovery) {
         if (!aiGatewayClient.isConfigured(useCaseCode)) {
             throw new IllegalArgumentException("AI 场景未配置或已停用，不能执行代码影响分析");
         }
@@ -160,9 +183,9 @@ public class CodexCliDevelopmentAnalysisGenerator {
                 repositoryBundle.repositories().stream().map(item -> item.localPath().toString()).toList(),
                 List.of(),
                 OUTPUT_SCHEMA
-        ));
+        ).withResultRecovery(recovery));
         if (!result.succeeded()) {
-            throw new IllegalArgumentException(result.failureSummary());
+            throw new IllegalArgumentException(result.failureSummary(), result.failureCause());
         }
         try {
             RawDevelopmentAnalysis raw = objectMapper.readValue(result.output(), RawDevelopmentAnalysis.class);

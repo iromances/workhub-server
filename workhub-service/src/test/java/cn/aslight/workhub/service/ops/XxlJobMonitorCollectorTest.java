@@ -474,6 +474,51 @@ class XxlJobMonitorCollectorTest {
                 () -> new XxlJobMonitorCollector(invalid).collectLogs(monitor(), from, to, 1, 20, null, null, "BOGUS"));
     }
 
+    /** REQ-4a3634e6：状态筛选支持逗号分隔多选（OR 谓词、规范序证据、组合文案），含 ALL 归一与非法成员拒绝。 */
+    @Test
+    void logStatusFilterSupportsCommaSeparatedMultiSelect() {
+        LocalDate from = LocalDate.of(2026, 6, 1);
+        LocalDate to = LocalDate.of(2026, 6, 9);
+
+        var multi = new FakeXxlJobDatabaseQueryClient();
+        multi.nextRows(List.of(Map.of("failedJobTotal", 1, "activityCount", 3, "latestActivityAt", "2026-06-02 09:02:00")));
+        multi.nextRows(List.of(failedJobRow()));
+        var multiResult = new XxlJobMonitorCollector(multi).collectLogs(monitor(), from, to, 1, 20, null, null, "STUCK,EXECUTION_FAILED");
+        assertEquals("ERROR", multiResult.status());
+        assertTrue(multiResult.message().contains("卡死（回调丢失）、执行失败日志数"));
+        assertTrue(multi.sqls.getFirst().contains("(l.handle_code = 0 OR l.handle_code IS NULL) AND l.trigger_time < '"));
+        assertTrue(multi.sqls.getFirst().contains(" OR l.trigger_code IS NULL OR l.trigger_code <> 200"));
+        assertEquals("STUCK,EXECUTION_FAILED", multiResult.executionEvidence().definition().logStatus());
+
+        var normalize = new FakeXxlJobDatabaseQueryClient();
+        normalize.nextRows(List.of(Map.of("failedJobTotal", 1, "activityCount", 3, "latestActivityAt", "2026-06-02 09:02:00")));
+        normalize.nextRows(List.of(failedJobRow()));
+        var normalizeResult = new XxlJobMonitorCollector(normalize).collectLogs(monitor(), from, to, 1, 20, null, null, "EXECUTION_FAILED,stuck, STUCK");
+        assertEquals("STUCK,EXECUTION_FAILED", normalizeResult.executionEvidence().definition().logStatus());
+        assertEquals("ERROR", normalizeResult.status());
+
+        var normalStates = new FakeXxlJobDatabaseQueryClient();
+        normalStates.nextRows(List.of(Map.of("failedJobTotal", 1, "activityCount", 3, "latestActivityAt", "2026-06-02 09:02:00")));
+        normalStates.nextRows(List.of(failedJobRow()));
+        var normalStatesResult = new XxlJobMonitorCollector(normalStates).collectLogs(monitor(), from, to, 1, 20, null, null, "RUNNING,SUCCESS");
+        assertEquals("SUCCESS,RUNNING", normalStatesResult.executionEvidence().definition().logStatus());
+        assertEquals("UP", normalStatesResult.status());
+        assertTrue(normalStatesResult.message().contains("执行成功、执行中日志数"));
+
+        var allMixed = new FakeXxlJobDatabaseQueryClient();
+        allMixed.nextRows(List.of(Map.of("failedJobTotal", 1, "activityCount", 3, "latestActivityAt", "2026-06-02 09:02:00")));
+        allMixed.nextRows(List.of(failedJobRow()));
+        var allMixedResult = new XxlJobMonitorCollector(allMixed).collectLogs(monitor(), from, to, 1, 20, null, null, "ALL,STUCK");
+        assertEquals("ALL", allMixedResult.executionEvidence().definition().logStatus());
+        assertTrue(allMixedResult.message().contains("XXL-JOB 区间日志数"));
+        assertTrue(allMixed.sqls.getFirst().contains("COUNT(1) AS failedJobTotal"));
+        assertTrue(!allMixed.sqls.getFirst().contains("COUNT(CASE WHEN"));
+
+        var invalidMember = new FakeXxlJobDatabaseQueryClient();
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> new XxlJobMonitorCollector(invalidMember).collectLogs(monitor(), from, to, 1, 20, null, null, "STUCK,BOGUS"));
+    }
+
     @Test
     void noActivityRemainsExplicitInsteadOfInventingDataTime() {
         var client = new FakeXxlJobDatabaseQueryClient(); var statistics = new LinkedHashMap<String,Object>();

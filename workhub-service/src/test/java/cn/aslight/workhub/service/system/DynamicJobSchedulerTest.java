@@ -75,6 +75,47 @@ class DynamicJobSchedulerTest {
         assertTrue(scheduler.nextFireTime("TEST_BLOCKING") != null);
     }
 
+    /** REQ-d227e09d：defaultEnabled=false 的任务（账务场景核对）种子即停用、不进调度。 */
+    @Test
+    void startSeedsDisabledWhenJobDefaultsToDisabled() {
+        WorkhubJob disabledByDefault = new WorkhubJob() {
+            @Override
+            public String code() {
+                return "TEST_DISABLED_DEFAULT";
+            }
+
+            @Override
+            public String name() {
+                return "默认停用测试任务";
+            }
+
+            @Override
+            public ScheduleType scheduleType() {
+                return ScheduleType.CRON;
+            }
+
+            @Override
+            public String defaultScheduleValue() {
+                return "0 */10 * * * *";
+            }
+
+            @Override
+            public boolean defaultEnabled() {
+                return false;
+            }
+
+            @Override
+            public void run(String params) {
+                runs.incrementAndGet();
+            }
+        };
+        scheduler = newScheduler(disabledByDefault);
+        scheduler.start();
+        SysJobConfigEntity config = mapper.configs.get("TEST_DISABLED_DEFAULT");
+        assertEquals(Boolean.FALSE, config.getEnabled());
+        assertTrue(scheduler.nextFireTime("TEST_DISABLED_DEFAULT") == null);
+    }
+
     @Test
     void manualTriggerRejectedWhileRunning() throws Exception {
         scheduler = newScheduler(blockingJob);

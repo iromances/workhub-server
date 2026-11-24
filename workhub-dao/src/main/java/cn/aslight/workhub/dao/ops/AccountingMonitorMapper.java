@@ -9,25 +9,38 @@ import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
+/**
+ * REQ-d227e09d：账务场景监测配置存取（ops_account_monitor_config 已迁移为场景结构）。
+ */
 @Mapper
 public interface AccountingMonitorMapper {
 
-    @Select("""
-            <script>
-            SELECT c.id,
-                   c.business_line_code AS businessLineCode,
-                   bl.business_line_name AS businessLineName,
-                   c.environment_code AS environmentCode,
-                   c.system_name AS systemName,
-                   c.display_name AS displayName,
-                   c.database_target_key AS databaseTargetKey,
-                   c.schema_name AS schemaName,
-                   c.rule_profile AS ruleProfile,
-                   c.enabled,
-                   c.daily_enabled AS dailyEnabled,
-                   c.remark,
-                   c.created_at AS createdAt,
-                   c.updated_at AS updatedAt
+    String CONFIG_COLUMNS = """
+            c.id,
+            c.business_line_code AS businessLineCode,
+            bl.business_line_name AS businessLineName,
+            c.environment_code AS environmentCode,
+            c.system_name AS systemName,
+            c.display_name AS displayName,
+            c.scenario_type AS scenarioType,
+            c.expected_time AS expectedTime,
+            c.check_time AS checkTime,
+            c.expected_count_sql_code AS expectedCountSqlCode,
+            c.expected_fixed_count AS expectedFixedCount,
+            c.actual_count_sql_code AS actualCountSqlCode,
+            c.success_count_sql_code AS successCountSqlCode,
+            c.tolerance_rate AS toleranceRate,
+            c.alert_enabled AS alertEnabled,
+            c.enabled,
+            c.remark,
+            c.created_at AS createdAt,
+            c.updated_at AS updatedAt
+            """;
+
+    @Select("SELECT id FROM ops_account_monitor_config WHERE id=#{id} FOR UPDATE")
+    Long lockConfig(Long id);
+
+    @Select("<script>SELECT " + CONFIG_COLUMNS + """
             FROM ops_account_monitor_config c
             LEFT JOIN pm_business_line bl ON bl.business_line_code = c.business_line_code
             WHERE 1 = 1
@@ -37,65 +50,43 @@ public interface AccountingMonitorMapper {
             <if test="enabledOnly">
               AND c.enabled = 1
             </if>
-            ORDER BY c.enabled DESC, c.business_line_code ASC, c.system_name ASC
+            ORDER BY c.enabled DESC, c.business_line_code ASC, c.system_name ASC, c.scenario_type ASC
             </script>
             """)
     List<AccountingMonitorConfigEntity> findAll(@Param("businessLineCode") String businessLineCode,
                                                 @Param("enabledOnly") boolean enabledOnly);
 
-    @Select("""
-            SELECT c.id,
-                   c.business_line_code AS businessLineCode,
-                   bl.business_line_name AS businessLineName,
-                   c.environment_code AS environmentCode,
-                   c.system_name AS systemName,
-                   c.display_name AS displayName,
-                   c.database_target_key AS databaseTargetKey,
-                   c.schema_name AS schemaName,
-                   c.rule_profile AS ruleProfile,
-                   c.enabled,
-                   c.daily_enabled AS dailyEnabled,
-                   c.remark,
-                   c.created_at AS createdAt,
-                   c.updated_at AS updatedAt
+    @Select("SELECT " + CONFIG_COLUMNS + """
             FROM ops_account_monitor_config c
             LEFT JOIN pm_business_line bl ON bl.business_line_code = c.business_line_code
             WHERE c.id = #{id}
             """)
     AccountingMonitorConfigEntity findById(Long id);
 
-    @Select("""
-            SELECT c.id,
-                   c.business_line_code AS businessLineCode,
-                   bl.business_line_name AS businessLineName,
-                   c.environment_code AS environmentCode,
-                   c.system_name AS systemName,
-                   c.display_name AS displayName,
-                   c.database_target_key AS databaseTargetKey,
-                   c.schema_name AS schemaName,
-                   c.rule_profile AS ruleProfile,
-                   c.enabled,
-                   c.daily_enabled AS dailyEnabled,
-                   c.remark,
-                   c.created_at AS createdAt,
-                   c.updated_at AS updatedAt
+    @Select("SELECT " + CONFIG_COLUMNS + """
             FROM ops_account_monitor_config c
             LEFT JOIN pm_business_line bl ON bl.business_line_code = c.business_line_code
             WHERE c.business_line_code = #{businessLineCode}
               AND c.environment_code = #{environmentCode}
               AND c.system_name = #{systemName}
+              AND c.scenario_type = #{scenarioType}
             """)
     AccountingMonitorConfigEntity findByIdentity(@Param("businessLineCode") String businessLineCode,
                                                   @Param("environmentCode") String environmentCode,
-                                                  @Param("systemName") String systemName);
+                                                  @Param("systemName") String systemName,
+                                                  @Param("scenarioType") String scenarioType);
 
     @Insert("""
             INSERT INTO ops_account_monitor_config (
                 business_line_code, environment_code, system_name, display_name,
-                database_target_key, schema_name, rule_profile, enabled, daily_enabled, remark
+                scenario_type, expected_time, check_time,
+                expected_count_sql_code, expected_fixed_count, actual_count_sql_code, success_count_sql_code,
+                tolerance_rate, alert_enabled, enabled, remark
             ) VALUES (
                 #{businessLineCode}, #{environmentCode}, #{systemName}, #{displayName},
-                #{databaseTargetKey}, #{schemaName}, #{ruleProfile}, #{enabled}, #{dailyEnabled}, #{remark}
+                #{scenarioType}, #{expectedTime}, #{checkTime},
+                #{expectedCountSqlCode}, #{expectedFixedCount}, #{actualCountSqlCode}, #{successCountSqlCode},
+                #{toleranceRate}, #{alertEnabled}, #{enabled}, #{remark}
             )
             """)
     int insert(AccountingMonitorConfigEntity entity);
@@ -106,30 +97,19 @@ public interface AccountingMonitorMapper {
                 environment_code = #{environmentCode},
                 system_name = #{systemName},
                 display_name = #{displayName},
-                database_target_key = #{databaseTargetKey},
-                schema_name = #{schemaName},
-                rule_profile = #{ruleProfile},
+                scenario_type = #{scenarioType},
+                expected_time = #{expectedTime},
+                check_time = #{checkTime},
+                expected_count_sql_code = #{expectedCountSqlCode},
+                expected_fixed_count = #{expectedFixedCount},
+                actual_count_sql_code = #{actualCountSqlCode},
+                success_count_sql_code = #{successCountSqlCode},
+                tolerance_rate = #{toleranceRate},
+                alert_enabled = #{alertEnabled},
                 enabled = #{enabled},
-                daily_enabled = #{dailyEnabled},
                 remark = #{remark},
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = #{id}
             """)
     int update(AccountingMonitorConfigEntity entity);
-
-    @Select("""
-            SELECT rule_code
-            FROM ops_account_rule_config
-            WHERE monitor_config_id = #{configId}
-              AND enabled = 1
-            ORDER BY rule_code
-            """)
-    List<String> findEnabledRuleCodes(Long configId);
-
-    @Select("""
-            SELECT COUNT(*)
-            FROM ops_account_rule_config
-            WHERE monitor_config_id = #{configId}
-            """)
-    int countRuleConfigs(Long configId);
 }

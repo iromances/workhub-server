@@ -10,7 +10,6 @@ import cn.aslight.workhub.model.ops.SystemAlertNotificationCandidate;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemEntity;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemIndexPatternEntity;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemSaveRequest;
-import cn.aslight.workhub.model.ops.SystemAlertSubsystemSummaryResponse;
 import cn.aslight.workhub.service.system.SystemAuditService;
 import org.junit.jupiter.api.Test;
 
@@ -55,9 +54,6 @@ class SystemAlertServiceTest {
         LocalDateTime endTime = LocalDateTime.of(2026, 6, 4, 10, 0);
         mapper.subsystems = List.of(subsystem());
         mapper.totalCount = 2;
-        mapper.summaries = List.of(
-                new SystemAlertSubsystemSummaryResponse("保费分期", "prod", "资产支付", "asset-payment", 2, LocalDateTime.of(2026, 6, 4, 9, 50))
-        );
         mapper.events = List.of(
                 new SystemAlertEventResponse(11L, "保费分期", "prod", "资产支付", "asset-payment", "ERROR",
                         "SYSTEM_ERROR", "NullPointerException", "支付回调失败", "java.lang.NullPointerException", "空指针",
@@ -229,7 +225,6 @@ class SystemAlertServiceTest {
 
     private static class FakeSystemAlertMapper implements SystemAlertMapper {
         private List<SystemAlertSubsystemEntity> subsystems = List.of();
-        private List<SystemAlertSubsystemSummaryResponse> summaries = List.of();
         private List<SystemAlertEventResponse> events = List.of();
         private int totalCount;
         private String lastBusinessLineCode;
@@ -317,15 +312,6 @@ class SystemAlertServiceTest {
             lastStartTime = startTime;
             lastEndTime = endTime;
             return totalCount;
-        }
-
-        @Override
-        public List<SystemAlertSubsystemSummaryResponse> summarizeEvents(String businessLineCode, String environmentCode,
-                                                                         String serviceName, String level,
-                                                                         String eventCategory,
-                                                                         String messageKeyword,
-                                                                         LocalDateTime startTime, LocalDateTime endTime) {
-            return summaries;
         }
 
         @Override

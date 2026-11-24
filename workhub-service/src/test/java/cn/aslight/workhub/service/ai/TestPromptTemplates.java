@@ -24,7 +24,9 @@ public final class TestPromptTemplates {
             "V20261112_160000__agent_platform_guide.sql",
             "V20261112_161000__tighten_clarification_prompt.sql",
             "V20261114_210000__remove_development_analysis_risks_questions.sql",
-            "V20261114_213000__freeze_clarification_prompt.sql");
+            "V20261114_213000__freeze_clarification_prompt.sql",
+            "V20261116_160000__agent_instructions_draft.sql",
+            "V20261116_170000__agent_position.sql");
     private static final Pattern TEMPLATE_BLOCK = Pattern.compile("SET @tpl := '([\\s\\S]*?)';");
     private static final Pattern USE_CASE_CODE = Pattern.compile("'((?:intake|agent)\\.[a-z0-9.-]+)'");
 

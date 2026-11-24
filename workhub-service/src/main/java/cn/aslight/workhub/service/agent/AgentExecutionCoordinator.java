@@ -20,6 +20,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Service
 public class AgentExecutionCoordinator {
     private static final Logger log = LoggerFactory.getLogger(AgentExecutionCoordinator.class);
+    private AgentMonitorExecutionService monitorExecution;
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setMonitorExecution(AgentMonitorExecutionService service) { this.monitorExecution = service; }
     private final AgentMapper mapper;
     private final AgentWorkbenchService workbench;
     private final AgentRunStore store;
@@ -49,7 +52,7 @@ public class AgentExecutionCoordinator {
         pulses.scheduleWithFixedDelay(this::heartbeat, 1, 5, TimeUnit.SECONDS);
     }
 
-    public void tick(int globalLimit) {
+    public void tick() {
         if (closed.get()) return;
         var now = LocalDateTime.now(ZoneOffset.UTC);
         for (String task : mapper.findDueTaskIds(now)) {
@@ -60,8 +63,8 @@ public class AgentExecutionCoordinator {
             try { store.recoverExpired(run); }
             catch (RuntimeException ex) { log.warn("Agent run recovery failed. runId={}, errorType={}", run, ex.getClass().getSimpleName()); }
         }
-        for (int i = 0; i < globalLimit && !closed.get(); i++) {
-            AgentRunEntity claimed = store.claim(globalLimit);
+        while (!closed.get()) {
+            AgentRunEntity claimed = store.claim();
             if (claimed == null) break;
             var execution = new Execution(claimed);
             local.put(claimed.id(), execution);
@@ -85,6 +88,7 @@ public class AgentExecutionCoordinator {
                 store.finish(claim.id(), claim.ownerToken(), "WAITING_RESOURCE", null, "所选 AI 通道缺少可用执行适配器: " + provider.getChannelType());
                 return;
             }
+            if (monitorExecution != null) monitorExecution.prepare(claim.id(), claim.ownerToken());
             adapter.execute(claim.id(), claim.ownerToken());
             // 巡检通知：仅在运行完成且报告含 P0/P1 时发送；失败不影响运行结果（内部吞异常）。
             runNotifier.notifyCompletion(claim.id());

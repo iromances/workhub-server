@@ -27,6 +27,9 @@ public class AgentIssueService {
     public static final Set<String> DOMAINS = Set.of("SYSTEM_ALERT", "BUSINESS_MONITOR", "ACCOUNTING");
     public static final Set<String> TERMINAL = Set.of("OPEN", "ANALYZED", "FIXING", "PENDING_REVIEW", "TESTING", "FIXED", "REJECTED", "CLOSED");
 
+    private cn.aslight.workhub.dao.agent.AgentReportMapper reportMapper;
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setReportMapper(cn.aslight.workhub.dao.agent.AgentReportMapper mapper) { this.reportMapper = mapper; }
     private final AgentIssueMapper issues;
     private final AgentMapper mapper;
     private final ObjectMapper json;
@@ -40,8 +43,9 @@ public class AgentIssueService {
     /** 巡检运行完成后摄取结构化问题：按去重键聚合；FIXED 复现自动重开。 */
     @Transactional
     public void ingest(String runId) {
-        var run = mapper.findRun(runId);
+        var run = mapper.lockRun(runId);
         if (run == null || !"COMPLETED".equals(run.status())) return;
+        if (mapper.findEventByKey(runId, "report:issues-ingested") != null) return;
         JsonNode problems = extractProblems(run.resultText());
         if (problems == null || !problems.isArray()) problems = cliResultProblems(runId);
         if (problems == null || !problems.isArray()) return;
@@ -49,10 +53,28 @@ public class AgentIssueService {
         if (context == null) return;
         var seen = new ArrayList<String>();
         for (JsonNode problem : problems) {
-            try { ingestOne(run, context.agentId(), problem, seen); }
-            catch (RuntimeException ex) { /* 单条坏行不阻断整轮摄取 */ }
+            ingestOne(run, context.agentId(), problem, seen);
+            if (reportMapper != null && seen.contains(text(problem, "signature"))) {
+                var issue = issues.findBySignature(run.taskId(), text(problem, "signature"));
+                if (issue != null) reportMapper.linkIssue(run.id(), issue.signature(), issue.id());
+            }
         }
-        markUnseen(run.taskId(), run.id(), seen);
+        if (completeCoverage(runId)) markUnseen(run.taskId(), run.id(), seen);
+        mapper.insertEvent(new cn.aslight.workhub.model.agent.AgentEventEntity(UUID.randomUUID().toString(), runId,
+                "report:issues-ingested", mapper.nextEventOrdinal(runId), "REPORT_ISSUES_INGESTED", "{}", "agent-runtime", LocalDateTime.now(ZoneOffset.UTC)));
+    }
+
+    private boolean completeCoverage(String runId) {
+        for (var event : mapper.listEvents(runId).reversed()) {
+            if (!Set.of("CLI_RESULT", "STRUCTURED_RESULT").contains(event.kind())) continue;
+            var result = json.readTree(event.payloadJson()).path("result");
+            if (!AgentReportContract.isV2(result)) continue;
+            var report = result.path("report");
+            if ("INCONCLUSIVE".equals(report.path("assessment").asText()) || !report.path("limitations").isEmpty() || report.path("checks").isEmpty()) return false;
+            for (var check : report.path("checks")) if (!Set.of("PASS", "FAIL", "NOT_APPLICABLE").contains(check.path("outcome").asText())) return false;
+            return true;
+        }
+        return true;
     }
 
     /** 结果中的结构化问题块：兼容 CLI 最终输出 {"type","summary","problems":[...]}。 */
@@ -72,9 +94,9 @@ public class AgentIssueService {
      */
     private JsonNode cliResultProblems(String runId) {
         for (var event : mapper.listEvents(runId).reversed()) {
-            if (!"CLI_RESULT".equals(event.kind()) || event.payloadJson() == null) continue;
+            if (!Set.of("CLI_RESULT", "STRUCTURED_RESULT").contains(event.kind()) || event.payloadJson() == null) continue;
             try {
-                JsonNode problems = json.readTree(event.payloadJson()).path("result").path("problems");
+                JsonNode problems = AgentReportContract.problems(json.readTree(event.payloadJson()).path("result"));
                 if (problems.isArray()) return problems;
             } catch (RuntimeException ignored) { /* 坏事件不阻断，继续找上一条 */ }
         }
@@ -103,6 +125,7 @@ public class AgentIssueService {
                     json.writeValueAsString(java.util.Map.of("title", title, "severity", severity, "domain", domain)), now);
             return;
         }
+        if (run.id().equals(existing.lastRunId())) return;
         // 复发：更新观测；FIXED/TESTING 后再出现自动重开（修复无效信号）。
         boolean reopen = Set.of("FIXED", "CLOSED").contains(existing.status());
         var updated = new AgentIssueEntity(existing.id(), existing.taskId(), existing.agentId(),
@@ -124,7 +147,7 @@ public class AgentIssueService {
     private void markUnseen(String taskId, String runId, List<String> seen) {
         for (var issue : issues.list(null, null, null, null, null, null, 500)) {
             if (!taskId.equals(issue.taskId()) || !Set.of("OPEN", "ANALYZED", "REJECTED").contains(issue.status())) continue;
-            if (seen.contains(issue.signature())) continue;
+            if (seen.contains(issue.signature()) || runId.equals(issue.lastRunId())) continue;
             LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
             var updated = new AgentIssueEntity(issue.id(), issue.taskId(), issue.agentId(),
                     issue.businessLineCode(), issue.environmentCode(), issue.domain(), issue.signature(),

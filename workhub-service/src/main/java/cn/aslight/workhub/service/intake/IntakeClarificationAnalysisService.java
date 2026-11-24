@@ -17,6 +17,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
@@ -56,6 +59,7 @@ public class IntakeClarificationAnalysisService {
     private final DevelopmentAnalysisService developmentAnalysisService;
     private final Executor workhubTaskExecutor;
     private final ObjectMapper objectMapper;
+    private final TransactionTemplate analysisTransaction;
 
     public IntakeClarificationAnalysisService(IntakeMapper intakeMapper,
                                               IntakeHistoryMapper intakeHistoryMapper,
@@ -66,7 +70,8 @@ public class IntakeClarificationAnalysisService {
                                               CodexCliClarificationAnalysisGenerator clarificationGenerator,
                                               DevelopmentAnalysisService developmentAnalysisService,
                                               @Qualifier("workhubTaskExecutor") Executor workhubTaskExecutor,
-                                              ObjectMapper objectMapper) {
+                                              ObjectMapper objectMapper,
+                                              PlatformTransactionManager transactionManager) {
         this.intakeMapper = intakeMapper;
         this.intakeHistoryMapper = intakeHistoryMapper;
         this.clarificationAnalysisMapper = clarificationAnalysisMapper;
@@ -77,6 +82,8 @@ public class IntakeClarificationAnalysisService {
         this.developmentAnalysisService = developmentAnalysisService;
         this.workhubTaskExecutor = workhubTaskExecutor;
         this.objectMapper = objectMapper;
+        this.analysisTransaction = new TransactionTemplate(transactionManager);
+        this.analysisTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     public IntakeClarificationAnalysisResponse detail(Long intakeId) {
@@ -91,6 +98,25 @@ public class IntakeClarificationAnalysisService {
     }
 
     public IntakeClarificationAnalysisResponse analyze(Long intakeId, String operatorUserName) {
+        PreparedAnalysis prepared = analysisTransaction.execute(status -> prepareAnalysis(intakeId, operatorUserName));
+        var entity = prepared.entity();
+        if (!prepared.created()) return toResponse(entity);
+        try {
+            workhubTaskExecutor.execute(() -> executeAnalysis(entity.getId(), intakeId, operatorUserName));
+        } catch (RejectedExecutionException ex) {
+            String message = "澄清分析任务提交失败，系统繁忙，请稍后重试。";
+            analysisTransaction.executeWithoutResult(status -> {
+                markAnalysisFailed(entity.getId(), message, operatorUserName);
+                recordHistory(intakeId, "需求澄清分析失败", message + "原因：" + summarizeException(ex), operatorUserName);
+            });
+            throw new IllegalStateException(message, ex);
+        }
+        return toResponse(entity);
+    }
+
+    private record PreparedAnalysis(IntakeClarificationAnalysisEntity entity, boolean created) { }
+
+    private PreparedAnalysis prepareAnalysis(Long intakeId, String operatorUserName) {
         IntakeRecordEntity intake = requireIntake(intakeId);
         IntakeStructuredData structuredData = readStructuredData(intake.getStructuredDataJson());
         requireDevelopmentRequirement(structuredData);
@@ -100,7 +126,7 @@ public class IntakeClarificationAnalysisService {
         }
         IntakeClarificationAnalysisEntity existing = clarificationAnalysisMapper.findLatestByIntakeId(intakeId);
         if (existing != null && isExecutionInProgress(existing.getAnalysisStatus()) && !isStaleExecution(existing)) {
-            return toResponse(existing);
+            return new PreparedAnalysis(existing, false);
         }
         if (existing != null && existing.getItemsJson() != null) {
             projectKnowledgeBaseService.appendAnalysisNote(intakeId, existing.getId(), "重评前保留澄清记录",
@@ -112,15 +138,7 @@ public class IntakeClarificationAnalysisService {
                 resolveBusinessLine(structuredData),
                 operatorUserName
         );
-        try {
-            workhubTaskExecutor.execute(() -> executeAnalysis(entity.getId(), intakeId, operatorUserName));
-        } catch (RejectedExecutionException ex) {
-            String message = "澄清分析任务提交失败，系统繁忙，请稍后重试。";
-            markAnalysisFailed(entity.getId(), message, operatorUserName);
-            recordHistory(intakeId, "需求澄清分析失败", message + "原因：" + summarizeException(ex), operatorUserName);
-            throw new IllegalStateException(message, ex);
-        }
-        return toResponse(entity);
+        return new PreparedAnalysis(entity, true);
     }
 
     @Transactional
@@ -215,13 +233,22 @@ public class IntakeClarificationAnalysisService {
             ProjectKnowledgeBaseService.RequirementKnowledgeNote requirementNote =
                     projectKnowledgeBaseService.upsertRequirementIterationNote(intake, structuredData, project);
             String knowledgeBaseContext = projectKnowledgeBaseService.buildContext(structuredData, project);
+            var recovery = new cn.aslight.workhub.service.ai.AiResultRecovery(
+                    fingerprint -> clarificationAnalysisMapper.findRecoverableOutput(intakeId, fingerprint),
+                    (fingerprint, output) -> {
+                        if (clarificationAnalysisMapper.saveRawOutput(analysisId, fingerprint, output) != 1)
+                            throw new IllegalStateException("分析状态已变化，原始结果未保存，停止整理");
+                    }, () -> {
+                        if (clarificationAnalysisMapper.completeRawFormatting(analysisId) != 1)
+                            throw new IllegalStateException("分析状态已变化，不能保存已过期的整理结果");
+                    });
             List<IntakeClarificationItem> items = clarificationGenerator.generate(
                     intake,
                     structuredData,
                     project,
                     repositoryBundle,
                     requirementNote.asPromptContext(),
-                    knowledgeBaseContext
+                    knowledgeBaseContext, recovery
             );
             IntakeClarificationAnalysisEntity completed = requireAnalysisEntity(analysisId);
             completed.setBusinessLineCode(project.businessLineCode());

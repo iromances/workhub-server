@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -512,8 +513,14 @@ class McpResourceServiceTest {
         assertEquals("notes.md#公司项目", catalog.knowledge().get("temporaryAnalysisPath"));
         assertTrue(catalog.knowledge().get("projectDocumentPath").toString().endsWith("/docs"));
         assertEquals("requirement-sources/{业务线}/{项目名称}/{年份}/{审批编号}/source.md", catalog.knowledge().get("requirementRawPathPattern"));
-        assertTrue(catalog.knowledge().get("requirementWikiPathPattern").toString().endsWith("/研发评估.md"));
-        assertTrue(catalog.knowledge().get("wikiPublishRule").toString().contains("用户确认后"));
+        String wikiPattern = catalog.knowledge().get("requirementWikiPathPattern").toString();
+        assertTrue(wikiPattern.contains("docs/业务线/{业务线编码}-{业务线名称}/需求迭代/{项目名称}/{年份}/{审批编号}-{需求名称}/研发评估.md（仅 WorkHub 平台 BL000012-工作台）"));
+        assertTrue(wikiPattern.contains("agents-playbook 仓库 docs/业务线/{业务线编码}-{业务线名称}/需求/{审批编号}-{需求名称}/研发评估.md（其余业务线）"));
+        assertTrue(wikiPattern.endsWith("/研发评估.md（其余业务线）"));
+        String publishRule = catalog.knowledge().get("wikiPublishRule").toString();
+        assertTrue(publishRule.contains("用户确认后"));
+        assertTrue(publishRule.contains("agents-playbook 仓库 docs/业务线/{业务线编码}-{业务线名称}/需求/{审批编号}-{需求名称}"));
+        assertNotNull(catalog.knowledge().get("projectPlaybookPath"));
         assertEquals("http://gitlab.example.com", catalog.gitlab().get("webApiUrl"));
         assertEquals(true, catalog.gitlab().get("accessTokenConfigured"));
         assertTrue(!catalog.gitlab().containsValue("plain-gitlab-token"));

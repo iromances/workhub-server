@@ -259,7 +259,7 @@ public interface AgentMapper {
     @Select("SELECT id FROM pm_agent_dispatch_lock WHERE id='DISPATCH' FOR UPDATE")
     String lockDispatcher();
 
-    @Select("SELECT id FROM pm_agent_run WHERE status='QUEUED' AND owner_token IS NULL AND external_handle IS NULL AND cancel_requested=0 ORDER BY created_at,id LIMIT 100")
+    @Select("SELECT id FROM pm_agent_run WHERE status='QUEUED' AND owner_token IS NULL AND external_handle IS NULL AND cancel_requested=0 AND EXISTS (SELECT 1 FROM pm_agent_definition a WHERE a.id=pm_agent_run.agent_id AND a.enabled=1) ORDER BY created_at,id LIMIT 100")
     List<String> findQueuedRunIds();
 
     /** 只统计租约仍存活的运行；执行器失联后被恢复为 WAITING_RESOURCE 的残留 owner（租约已过期）不再占用并发额度。 */

@@ -272,16 +272,25 @@ public class McpResourceService {
                 ProjectKnowledgeBaseService.CONFIG_GROUP,
                 ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH
         ));
+        Path documents = null;
         try {
-            knowledge.put("projectDocumentPath", RepositoryDocumentPaths.resolve(sysConfigService).toString());
+            documents = RepositoryDocumentPaths.resolve(sysConfigService);
+            knowledge.put("projectDocumentPath", documents.toString());
         } catch (IllegalStateException ex) {
             knowledge.put("projectDocumentPathError", ex.getMessage());
         }
+        if (documents != null) {
+            try {
+                knowledge.put("projectPlaybookPath", RepositoryDocumentPaths.playbookArchiveRoot(sysConfigService, documents).toString());
+            } catch (IllegalStateException ex) {
+                knowledge.put("projectPlaybookPathError", ex.getMessage());
+            }
+        }
         knowledge.put("requirementRawPathPattern", "requirement-sources/{业务线}/{项目名称}/{年份}/{审批编号}/source.md");
-        knowledge.put("requirementWikiPathPattern", "业务线/{业务线编码}-{业务线名称}/需求迭代/{项目名称}/{年份}/{审批编号}-{需求名称}/研发评估.md");
+        knowledge.put("requirementWikiPathPattern", "WorkHub 仓库 docs/业务线/{业务线编码}-{业务线名称}/需求迭代/{项目名称}/{年份}/{审批编号}-{需求名称}/研发评估.md（仅 WorkHub 平台 BL000012-工作台）；agents-playbook 仓库 docs/业务线/{业务线编码}-{业务线名称}/需求/{审批编号}-{需求名称}/研发评估.md（其余业务线）");
         knowledge.put("temporaryAnalysisPath", "notes.md#公司项目");
         knowledge.put("historyDirectory", "历史版本/{版本ID}/");
-        knowledge.put("wikiPublishRule", "用户确认后发布到项目 docs/业务线/{业务线编码}-{业务线名称}/需求迭代，WorkHub 平台需求即 BL000012-工作台，按同样结构归档；原始材料与过程记录同样保存在项目 docs，知识库只读");
+        knowledge.put("wikiPublishRule", "用户确认后发布到对应仓库：WorkHub 平台需求（BL000012-工作台）发布到 WorkHub 仓库 docs/业务线/BL000012-工作台/需求迭代，其余业务线发布到 agents-playbook 仓库 docs/业务线/{业务线编码}-{业务线名称}/需求/{审批编号}-{需求名称}，按同样结构归档；原始材料与过程记录保存在 WorkHub 仓库 docs，知识库只读");
         return knowledge;
     }
 

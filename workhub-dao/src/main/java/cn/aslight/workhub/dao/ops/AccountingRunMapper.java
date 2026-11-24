@@ -41,6 +41,11 @@ public interface AccountingRunMapper {
             r.created_at AS createdAt
             """;
 
+    @Select("SELECT id FROM ops_account_reconcile_run WHERE monitor_config_id=#{configId} "
+            + "AND status IN ('PENDING','RUNNING') AND ((start_time IS NULL AND #{start} IS NULL) OR start_time=#{start}) "
+            + "ORDER BY id LIMIT 1")
+    Long findActive(@Param("configId") Long configId, @Param("start") LocalDateTime start);
+
     @Insert("""
             INSERT INTO ops_account_reconcile_run (
                 run_no, idempotency_key, monitor_config_id, trigger_type,
@@ -105,12 +110,17 @@ public interface AccountingRunMapper {
             <if test="status != null and status != ''">
               AND r.status = #{status}
             </if>
+            <if test="configId != null">
+              AND r.monitor_config_id = #{configId}
+              AND (e.run_id IS NULL OR (e.business_line_code=c.business_line_code AND e.environment_code=c.environment_code))
+            </if>
             ORDER BY r.id DESC
             LIMIT #{limit} OFFSET #{offset}
             </script>
             """)
     List<AccountingRunEntity> findRuns(@Param("businessLineCode") String businessLineCode,
                                        @Param("status") String status,
+                                       @Param("configId") Long configId,
                                        @Param("offset") int offset,
                                        @Param("limit") int limit);
 
@@ -127,10 +137,15 @@ public interface AccountingRunMapper {
             <if test="status != null and status != ''">
               AND r.status = #{status}
             </if>
+            <if test="configId != null">
+              AND r.monitor_config_id = #{configId}
+              AND (e.run_id IS NULL OR (e.business_line_code=c.business_line_code AND e.environment_code=c.environment_code))
+            </if>
             </script>
             """)
     int countRuns(@Param("businessLineCode") String businessLineCode,
-                  @Param("status") String status);
+                  @Param("status") String status,
+                  @Param("configId") Long configId);
 
     @Update("""
             UPDATE ops_account_reconcile_run

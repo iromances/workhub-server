@@ -6,9 +6,9 @@ import cn.aslight.workhub.model.ops.AccountingDashboardResponse;
 import cn.aslight.workhub.model.ops.AccountingManualRunRequest;
 import cn.aslight.workhub.model.ops.AccountingMonitorConfigEntity;
 import cn.aslight.workhub.model.ops.AccountingMonitorSaveRequest;
-import cn.aslight.workhub.model.ops.AccountingRuleResponse;
 import cn.aslight.workhub.model.ops.AccountingRunDetailResponse;
 import cn.aslight.workhub.model.ops.AccountingRunEntity;
+import cn.aslight.workhub.model.ops.AccountingScenarioTypeResponse;
 import cn.aslight.workhub.service.ops.AccountingMonitorService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,6 +32,26 @@ public class AccountingMonitorController {
 
     public AccountingMonitorController(AccountingMonitorService accountingMonitorService) {
         this.accountingMonitorService = accountingMonitorService;
+    }
+
+    @GetMapping("/runs/{id}/sql-evidence")
+    @PreAuthorize("hasAuthority('ops:accounting:view') or hasAuthority('ops:accounting:manage')")
+    public ApiResponse<AccountingMonitorService.SqlEvidencePage> sqlEvidence(
+            @PathVariable Long id, @RequestParam(defaultValue="1") int page, @RequestParam(defaultValue="20") int pageSize,
+            @RequestParam(required = false) String family) {
+        return ApiResponse.success(accountingMonitorService.sqlEvidence(id, family, page, pageSize));
+    }
+
+    @GetMapping("/runs/{id}/agent-runs")
+    @PreAuthorize("hasAuthority('ops:accounting:view') or hasAuthority('ops:accounting:manage')")
+    public ApiResponse<List<String>> agentRuns(@PathVariable Long id) {
+        return ApiResponse.success(accountingMonitorService.agentRuns(id));
+    }
+
+    @GetMapping("/configs/{id}/rules")
+    @PreAuthorize("hasAuthority('ops:accounting:view') or hasAuthority('ops:accounting:manage')")
+    public ApiResponse<List<java.util.Map<String,Object>>> rules(@PathVariable Long id) {
+        return ApiResponse.success(accountingMonitorService.rules(id));
     }
 
     @GetMapping("/dashboard")
@@ -66,10 +86,10 @@ public class AccountingMonitorController {
         return ApiResponse.success(accountingMonitorService.updateConfig(id, request));
     }
 
-    @GetMapping("/rules")
+    @GetMapping("/scenarios")
     @PreAuthorize("hasAuthority('ops:accounting:view') or hasAuthority('ops:accounting:manage')")
-    public ApiResponse<List<AccountingRuleResponse>> rules(@RequestParam String ruleProfile) {
-        return ApiResponse.success(accountingMonitorService.listRules(ruleProfile));
+    public ApiResponse<List<AccountingScenarioTypeResponse>> scenarios() {
+        return ApiResponse.success(accountingMonitorService.scenarioTypes());
     }
 
     @GetMapping("/runs")
@@ -77,12 +97,12 @@ public class AccountingMonitorController {
     public ApiResponse<PageResponse<AccountingRunEntity>> runs(
             @RequestParam(required = false) String businessLineCode,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long configId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
-        List<AccountingRunEntity> items =
-                accountingMonitorService.listRuns(businessLineCode, status, page, pageSize);
+        List<AccountingRunEntity> items = accountingMonitorService.listRuns(businessLineCode, status, configId, page, pageSize);
         return ApiResponse.success(new PageResponse<>(
-                accountingMonitorService.countRuns(businessLineCode, status),
+                accountingMonitorService.countRuns(businessLineCode, status, configId),
                 items
         ));
     }

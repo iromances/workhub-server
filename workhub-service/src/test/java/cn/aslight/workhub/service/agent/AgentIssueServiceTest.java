@@ -88,6 +88,7 @@ class AgentIssueServiceTest {
                                         java.util.Map.of("domain", "ACCOUNTING", "signature", "scf-prod-reconcile-miss", "title", "对账缺运行", "severity", "P2"))))),
                 "agent-runtime", LocalDateTime.now(ZoneOffset.UTC));
         service.ingest(run);
+        service.ingest(run); // 同一运行重放不得累计两次观测。
         var all = issues.list(null, null, null, null, null, null, 50);
         assertEquals(2, all.size());
         var analyzed = all.stream().filter(issue -> "scf-prod-xxl-fail".equals(issue.signature())).findFirst().orElseThrow();

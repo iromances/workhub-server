@@ -106,7 +106,7 @@ final class IntakeDemandStatusRules {
         if (EDITABLE_BUSINESS_STATUSES.contains(normalized)) {
             return normalized;
         }
-        throw new IllegalArgumentException("当前仅允许维护业务阶段状态: 已收录 / 待澄清 / 待处理 / 处理中 / 待评估 / 待排期 / 待设计 / 开发中 / 测试中 / 待验收 / 待上线 / 已暂停 / 已完成 / 终止关闭");
+            throw new IllegalArgumentException("当前仅允许维护业务阶段状态: 已收录 / 待澄清 / 待处理 / 处理中 / 待评估 / 待排期 / 待设计 / 开发中 / 开发完成 / 测试中 / 待验收 / 待上线 / 已暂停 / 已完成 / 终止关闭");
     }
 
     static String resolveNextStatus(String currentStatus, String requirementType, String action) {

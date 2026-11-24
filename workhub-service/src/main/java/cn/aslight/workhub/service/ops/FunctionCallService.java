@@ -43,9 +43,26 @@ public class FunctionCallService {
     public static final String SOURCE_MANUAL = "MANUAL";
 
     /** 已渲染待执行语句及其归属编码；组合语句（统计+分页外壳、分支 UNION）编码为参与码 + 连接。 */
-    public record Statement(String sqlCode, String sql) {
+    public record Statement(String sqlCode, String sql, Long monitorRunId, String ruleFamily,
+                            String parametersJson, String templateHash) {
+        public Statement(String sqlCode, String sql) { this(sqlCode, sql, null, null, null, null); }
         public static Statement of(String sqlCode, String sql) {
             return new Statement(sqlCode, sql);
+        }
+    }
+
+    /** 在同一次模板读取中冻结 SQL 与哈希，避免模板修改造成历史证据漂移。 */
+    public Statement monitorStatement(Long runId, String family, String sqlCode, Map<String, String> params) {
+        FuncCallSqlEntity template = templateStore.byCode(sqlCode);
+        if (template == null || !Boolean.TRUE.equals(template.getEnabled()))
+            throw new IllegalArgumentException("SQL 模板未登记或未启用：" + sqlCode);
+        try {
+            String hash = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(template.getSqlTemplate().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+            return new Statement(sqlCode, renderTemplate(template, params), runId, family,
+                    new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(params), hash);
+        } catch (java.security.NoSuchAlgorithmException | com.fasterxml.jackson.core.JsonProcessingException ex) {
+            throw new IllegalStateException("无法冻结监测 SQL 证据", ex);
         }
     }
 
@@ -107,6 +124,12 @@ public class FunctionCallService {
             throw new IllegalArgumentException("SQL 编码已停用：" + sqlCode);
         }
         return renderTemplate(entity, params);
+    }
+
+    /** 模板是否已登记且启用（供配置启用前校验；渲染执行仍走 render/executeStatements）。 */
+    public boolean isCodeEnabled(String sqlCode) {
+        FuncCallSqlEntity entity = templateStore.byCode(requireCode(sqlCode));
+        return entity != null && !Boolean.FALSE.equals(entity.getEnabled());
     }
 
     /** 按场景编码渲染全部启用分支（按 branch_order 升序）；无启用分支时报错。 */
@@ -180,7 +203,7 @@ public class FunctionCallService {
         }
     }
 
-    /** 每条语句一行审计；审计写入失败只记日志，不阻断业务结果。 */
+    /** 每条语句一行审计；场景核验必须留存证据，审计失败时不能返回核验成功。 */
     private void auditAll(List<Statement> statements, List<String> sqls, String businessLineCode,
                           String environmentCode, String source, String operator,
                           LocalDateTime startedAt, String error, List<List<Map<String, Object>>> results) {
@@ -192,6 +215,10 @@ public class FunctionCallService {
         for (int i = 0; i < statements.size(); i++) {
             Statement statement = statements.get(i);
             FuncCallAuditEntity audit = new FuncCallAuditEntity();
+            audit.setMonitorRunId(statement.monitorRunId());
+            audit.setRuleFamily(statement.ruleFamily());
+            audit.setParametersJson(statement.parametersJson());
+            audit.setTemplateHash(statement.templateHash());
             audit.setSqlCode(statement.sqlCode());
             audit.setScenarioCode(scenarioOf(statement.sqlCode()));
             audit.setSource(source);
@@ -208,6 +235,7 @@ public class FunctionCallService {
             try {
                 auditMapper.insert(audit);
             } catch (Exception ex) {
+                if (statement.monitorRunId() != null) throw new IllegalStateException("监测 SQL 审计保存失败，不能证明本次核验完成", ex);
                 log.error("Function call audit write failed. sqlCode={}, message={}", statement.sqlCode(), ex.getMessage());
             }
         }

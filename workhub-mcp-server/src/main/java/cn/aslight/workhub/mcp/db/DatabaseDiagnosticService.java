@@ -84,17 +84,17 @@ public class DatabaseDiagnosticService {
         return runQuery("run_readonly_query", targetKey, profileKey, sql);
     }
 
-    /** 多条只读 SQL 复用同一个连接执行，返回与入参顺序一致的结果集。 */
+    /** 内部批量查询复用连接，保留行数/超时约束，不按外部诊断输出的字节预算截断。 */
     public List<Map<String, Object>> runReadonlyQueries(String targetKey, String profileKey, List<String> rawSqls) {
         DatabaseProfile profile = catalog.requireDatabaseProfile(targetKey, profileKey);
         List<String> sqls = rawSqls.stream()
                 .map(rawSql -> sqlPolicyGuard.validateReadonly(rawSql, profile.maxRows()))
                 .toList();
-        return runStatements("run_readonly_query", targetKey, profileKey, sqls);
+        return runStatements("run_readonly_query", targetKey, profileKey, sqls, false);
     }
 
     private Map<String, Object> runQuery(String toolName, String targetKey, String profileKey, String sql) {
-        Map<String, Object> result = runStatements(toolName, targetKey, profileKey, List.of(sql)).getFirst();
+        Map<String, Object> result = runStatements(toolName, targetKey, profileKey, List.of(sql), true).getFirst();
         return Map.of(
                 "targetKey", targetKey,
                 "profileKey", profileKey,
@@ -104,7 +104,8 @@ public class DatabaseDiagnosticService {
         );
     }
 
-    private List<Map<String, Object>> runStatements(String toolName, String targetKey, String profileKey, List<String> sqls) {
+    private List<Map<String, Object>> runStatements(String toolName, String targetKey, String profileKey, List<String> sqls,
+                                                   boolean limitResultBytes) {
         DatabaseTarget target = catalog.requireDatabaseTarget(targetKey);
         DatabaseProfile profile = catalog.requireDatabaseProfile(targetKey, profileKey);
         Instant startedAt = Instant.now();
@@ -117,7 +118,9 @@ public class DatabaseDiagnosticService {
                     statement.setMaxRows(profile.maxRows());
                     statement.setQueryTimeout(profile.queryTimeoutSeconds());
                     try (ResultSet resultSet = statement.executeQuery(sql)) {
-                        Map<String, Object> result = resultSetToRows(resultSet, profile.maxRows(), profile.maxResultBytes());
+                        Map<String, Object> result = limitResultBytes
+                                ? resultSetToRows(resultSet, profile.maxRows(), profile.maxResultBytes())
+                                : resultSetToRows(resultSet, profile.maxRows());
                         int rowCount = ((List<?>) result.get("rows")).size();
                         audit(toolName, target, profile, "SUCCEEDED", sql, rowCount, statementStartedAt, null);
                         results.add(result);
@@ -166,6 +169,15 @@ public class DatabaseDiagnosticService {
     }
 
     Map<String, Object> resultSetToRows(ResultSet resultSet, int maxRows, int maxBytes) throws Exception {
+        return readRows(resultSet, maxRows, maxBytes <= 0 ? 65536 : maxBytes);
+    }
+
+    Map<String, Object> resultSetToRows(ResultSet resultSet, int maxRows) throws Exception {
+        return readRows(resultSet, maxRows, null);
+    }
+
+    /** byteBudget 为 null 表示内部读取不限制结果字节数。 */
+    private Map<String, Object> readRows(ResultSet resultSet, int maxRows, Integer byteBudget) throws Exception {
         ResultSetMetaData metaData = resultSet.getMetaData();
         List<String> columns = new ArrayList<>();
         List<String> sourceColumns = new ArrayList<>();
@@ -174,24 +186,27 @@ public class DatabaseDiagnosticService {
             sourceColumns.add(metaData.getColumnName(i));
         }
         List<Map<String, Object>> rows = new ArrayList<>();
-        int byteBudget = maxBytes <= 0 ? 65536 : maxBytes;
-        int currentBytes = 0;
+        long currentBytes = 0;
+        boolean truncated = false;
         while (resultSet.next() && rows.size() < maxRows) {
             Map<String, Object> row = new LinkedHashMap<>();
             for (int i = 1; i <= columns.size(); i++) {
                 Object value = resultSet.getObject(i);
                 row.put(columns.get(i - 1), sensitiveDataMasker.mask(columns.get(i - 1), sourceColumns.get(i - 1), value));
             }
-            currentBytes += row.toString().getBytes(StandardCharsets.UTF_8).length;
-            if (currentBytes > byteBudget) {
-                break;
+            if (byteBudget != null) {
+                currentBytes += row.toString().getBytes(StandardCharsets.UTF_8).length;
+                if (currentBytes > byteBudget) {
+                    truncated = true;
+                    break;
+                }
             }
             rows.add(row);
         }
         return Map.of(
                 "columns", columns,
                 "rows", rows,
-                "truncatedByBytes", currentBytes > byteBudget,
+                "truncatedByBytes", truncated,
                 "dataMasked", true
         );
     }

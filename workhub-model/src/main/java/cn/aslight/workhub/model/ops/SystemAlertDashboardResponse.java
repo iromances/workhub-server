@@ -6,11 +6,10 @@ public record SystemAlertDashboardResponse(Integer totalCount,
                                            Integer page,
                                            Integer pageSize,
                                            List<SystemAlertSubsystemResponse> subsystems,
-                                           List<SystemAlertSubsystemSummaryResponse> summaries,
                                            List<SystemAlertEventResponse> events,
                                            SystemAlertQueryEvidence executionEvidence) {
     public SystemAlertDashboardResponse(Integer totalCount,Integer page,Integer pageSize,
-            List<SystemAlertSubsystemResponse> subsystems,List<SystemAlertSubsystemSummaryResponse> summaries,List<SystemAlertEventResponse> events) {
-        this(totalCount,page,pageSize,subsystems,summaries,events,null);
+            List<SystemAlertSubsystemResponse> subsystems,List<SystemAlertEventResponse> events) {
+        this(totalCount,page,pageSize,subsystems,events,null);
     }
 }

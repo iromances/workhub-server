@@ -36,12 +36,40 @@ public class AgentJenkinsClient {
 
     /** 只读检查 Job 和参数，不用触发构建代替连通性测试。 */
     public Probe probe(Target target) {
-        var value = get(target, target.jobUri("api/json?tree=" + encode("name,fullName,buildable,actions[parameterDefinitions[name,type]]")), false);
+        var value = testJobDefinition(target);
         var names = new TreeSet<String>();
-        for (var action : value.path("actions")) for (var parameter : action.path("parameterDefinitions")) {
+        for (String section : List.of("actions", "property"))
+        for (var action : value.path(section)) for (var parameter : action.path("parameterDefinitions")) {
             if (parameter.path("name").isString()) names.add(parameter.path("name").asText());
         }
         return new Probe(value.path("fullName").asText(), value.path("buildable").asBoolean(), List.copyOf(names));
+    }
+
+    /** Pipeline 参数通常在 property 下；读取实际参数和选择范围，不以空列表放行。 */
+    public JsonNode testJobDefinition(Target target) {
+        return get(target, target.jobUri("api/json?tree=" + encode("name,fullName,buildable,"
+                + "actions[parameterDefinitions[name,type,choices]],property[parameterDefinitions[name,type,choices]]")), false);
+    }
+
+    /** 按已持久化队列号回查构建，避免队列过期后使用最近一次构建误认回执。 */
+    public Long buildForQueue(Target target, long queueId) {
+        var value = get(target, target.jobUri("api/json?tree=" + encode("builds[number,queueId]{0,100}")), false);
+        for (var build : value.path("builds"))
+            if (build.path("queueId").asLong(-1) == queueId) return build.path("number").asLong();
+        return null;
+    }
+
+    /** 读取 Git 插件按仓库记录的实际构建提交，不读取控制台凭据。 */
+    public String repositoryRevision(Target target, long number, String projectPath) {
+        var value = get(target, target.jobUri(number + "/api/json?tree="
+                + encode("actions[remoteUrls,lastBuiltRevision[SHA1]]")), false);
+        var revisions = new TreeSet<String>();
+        for (var action : value.path("actions")) for (var remote : action.path("remoteUrls")) {
+            String url = remote.asText();
+            if (url.endsWith("/" + projectPath + ".git") || url.endsWith(":" + projectPath + ".git"))
+                revisions.add(action.path("lastBuiltRevision").path("SHA1").asText());
+        }
+        return revisions.size() == 1 ? revisions.getFirst() : null;
     }
 
     /** 只读检查实例连通性，返回 Jenkins 版本；不依赖任何具体 Job。 */

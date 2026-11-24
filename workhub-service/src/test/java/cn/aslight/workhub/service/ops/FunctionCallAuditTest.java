@@ -38,6 +38,16 @@ class FunctionCallAuditTest {
             return inserted.stream().skip(offset).limit(limit).toList();
         }
 
+        public List<FuncCallAuditEntity> forMonitor(Long id, List<String> families, int limit, int offset) {
+            return inserted.stream().filter(a -> id.equals(a.getMonitorRunId()))
+                    .filter(a -> families == null || families.isEmpty() || families.contains(a.getRuleFamily()))
+                    .skip(offset).limit(limit).toList();
+        }
+        public long countMonitor(Long id, List<String> families) {
+            return inserted.stream().filter(a -> id.equals(a.getMonitorRunId()))
+                    .filter(a -> families == null || families.isEmpty() || families.contains(a.getRuleFamily())).count();
+        }
+
         @Override
         public int deleteBefore(java.time.LocalDateTime cutoff) {
             return 0;
@@ -145,4 +155,61 @@ class FunctionCallAuditTest {
         assertEquals(1, service.executeStatements("BL000004", "PROD",
                 List.of(FunctionCallService.Statement.of("OPS_XXL_EXECUTORS", "SELECT 1"))).size());
     }
+    @Test
+    void monitorFamilyFilterScriptParsesAndBinds() {
+        // REQ-372e4ce1：验证 @Select 动态脚本可解析，family 集合进入 IN 绑定、空集合不过滤。
+        // 文本块每行行尾空白会被剥掉，SELECT 与 COLUMNS 拼接必须各自成行，否则 SQL 粘连（线上 BadSqlGrammar）。
+        var configuration = new org.apache.ibatis.session.Configuration();
+        configuration.addMapper(FuncCallAuditMapper.class);
+        var statement = configuration.getMappedStatement(
+                "cn.aslight.workhub.dao.ops.FuncCallAuditMapper.forMonitor");
+        var bound = statement.getBoundSql(Map.of("runId", 30L,
+                "families", List.of("实际发起笔数", "应发起笔数"), "limit", 20, "offset", 0));
+        assertTrue(bound.getSql().contains("rule_family IN"));
+        assertEquals(5, bound.getParameterMappings().size());
+        assertTrue(bound.getSql().replaceAll("\\s+", " ").startsWith("SELECT monitor_run_id AS monitorRunId"));
+        var unfiltered = statement.getBoundSql(Map.of("runId", 30L,
+                "families", List.of(), "limit", 20, "offset", 0));
+        assertTrue(!unfiltered.getSql().contains("rule_family IN"));
+
+        var page = configuration.getMappedStatement(
+                "cn.aslight.workhub.dao.ops.FuncCallAuditMapper.findPage");
+        java.util.Map<String, Object> pageParams = new java.util.HashMap<>();
+        pageParams.put("sqlCode", null);
+        pageParams.put("source", null);
+        pageParams.put("status", null);
+        pageParams.put("from", null);
+        pageParams.put("to", null);
+        pageParams.put("limit", 20);
+        pageParams.put("offset", 0);
+        var pageSql = page.getBoundSql(pageParams).getSql();
+        assertTrue(pageSql.replaceAll("\\s+", " ").startsWith("SELECT monitor_run_id AS monitorRunId"));
+    }
+
+    @Test
+    void monitorEvidenceFreezesTemplateParametersAndRunAssociation() {
+        var client = new FixedClient();
+        var audits = new RecordingAuditMapper();
+        var template = new cn.aslight.workhub.model.ops.FuncCallSqlEntity();
+        template.setSqlCode("MONITOR"); template.setEnabled(true); template.setSqlTemplate("SELECT :startId LIMIT 1");
+        var templates = new FunctionCallService.TemplateStore() {
+            public cn.aslight.workhub.model.ops.FuncCallSqlEntity byCode(String code) { return template; }
+            public List<cn.aslight.workhub.model.ops.FuncCallSqlEntity> byScenario(String code) { return List.of(template); }
+        };
+        var service = new FunctionCallService(templates, client, audits);
+        var statement = service.monitorStatement(31L, "payments", "MONITOR", Map.of("startId", "42"));
+        template.setSqlTemplate("SELECT 999 LIMIT 1");
+        service.executeStatements("BL000005", "PROD", List.of(statement));
+        var evidence = audits.inserted.getFirst();
+        assertEquals(31L, evidence.getMonitorRunId());
+        assertEquals("payments", evidence.getRuleFamily());
+        assertEquals("SELECT 42 LIMIT 1", evidence.getRenderedSql());
+        assertEquals(64, evidence.getTemplateHash().length());
+        assertTrue(evidence.getParametersJson().contains("42"));
+        var brokenAudits = org.mockito.Mockito.mock(FuncCallAuditMapper.class);
+        org.mockito.Mockito.doThrow(new IllegalStateException("audit down")).when(brokenAudits).insert(org.mockito.ArgumentMatchers.any());
+        var strict = new FunctionCallService(templates, client, brokenAudits);
+        assertThrows(IllegalStateException.class, () -> strict.executeStatements("BL000005", "PROD", List.of(statement)));
+    }
+
 }

@@ -18,6 +18,28 @@ public class ZCodeCliClient {
     private final ObjectMapper json;
     public ZCodeCliClient(ObjectMapper json) { this.json = json; }
 
+    /** 数字员工保留原生配置与工具；仅会话存储、日志和 Provider 副本属于临时运行目录。 */
+    public CliTaskLaunch prepareAgent(AiProviderConfigEntity provider, String model, String reasoning, Path directory, Path output,
+                                     String prompt, String mcpUrl, String token, String finalResultSchema) throws IOException {
+        Path work = privateDirectory(directory.resolve("work"));
+        Path storage = privateDirectory(directory.resolve("storage"));
+        Path personal = provider.getCliPersonalConfigPath() == null || provider.getCliPersonalConfigPath().isBlank()
+                ? Path.of(System.getProperty("user.home"), ".zcode", "v2", "provider_config.json") : absolute(provider.getCliPersonalConfigPath());
+        copyConfig(resolveBuiltin(provider), directory.resolve("builtin.json"), "ZCode 内置 Provider 定义");
+        copyConfig(personal, directory.resolve("provider.json"), "ZCode 个人 Provider 配置");
+        var command = new ArrayList<>(command(provider));
+        command.addAll(List.of("app-server", "--stdio", "--cwd", work.toString()));
+        var builder = new ProcessBuilder(command).directory(work.toFile()).redirectError(ProcessBuilder.Redirect.DISCARD);
+        restrictEnvironment(builder.environment());
+        builder.environment().put("ZCODE_BUILTIN_PROVIDER_CONFIG_FILE", directory.resolve("builtin.json").toString());
+        builder.environment().put("ZCODE_PERSONAL_PROVIDER_CONFIG_FILE", directory.resolve("provider.json").toString());
+        builder.environment().put("ZCODE_STORAGE_DIR", storage.toString());
+        builder.environment().put("ZCODE_SESSION_DB_PATH", storage.resolve("session.db").toString());
+        builder.environment().put("ZCODE_LOG_DIR", privateDirectory(directory.resolve("logs")).toString());
+        return new CliTaskLaunch(builder, ZCodeTaskConversation.agent(json, work, output, prompt,
+                AiCliType.selection(model, reasoning), mcpUrl, token, finalResultSchema));
+    }
+
     public void preflight(AiProviderConfigEntity provider) throws IOException, InterruptedException {
         var command = new ArrayList<>(command(provider)); command.add("--help");
         var builder = new ProcessBuilder(command).redirectErrorStream(true);
@@ -32,8 +54,9 @@ public class ZCodeCliClient {
             reader.join(1000);
             if (reader.isAlive() || bytes.size() > 65536 || process.exitValue() != 0) throw new IllegalArgumentException("ZCode CLI 无法启动；CJS 分发需要已安装且支持 node:sqlite 的 Node 运行时");
             String help = bytes.toString(StandardCharsets.UTF_8);
-            if (!help.matches("(?s)^zcode 0\\.17\\.[0-9]+(?:\\s.*)?") || !help.contains("app-server")) {
-                throw new IllegalArgumentException("当前适配已核验 ZCode CLI 0.17 原生协议；所选版本未通过预检，未自动安装或升级");
+            // 跟随服务配置指向的 CLI 版本；具体协议兼容性由后续会话回执验证。
+            if (help.lines().noneMatch(line -> line.stripLeading().matches("app-server(?:\\s.*)?"))) {
+                throw new IllegalArgumentException("当前 ZCode CLI 未提供 app-server 命令，无法启动原生协议会话");
             }
         } finally { stopTree(process, new LinkedHashMap<>()); }
     }
@@ -126,7 +149,19 @@ public class ZCodeCliClient {
     private String execute(AiProviderConfigEntity provider, String model, String reasoning, String prompt, int seconds,
                            List<String> imagePaths, String finalResultSchema, boolean schemaOnlyForFormatting,
                            String mcpUrl, String mcpToken, List<String> toolNames) throws IOException, InterruptedException {
-        if (seconds < 1 || seconds > 14400 || prompt == null || prompt.length() > 180000) throw new IllegalArgumentException("ZCode 任务输入或时间预算无效");
+        return execute(provider, model, reasoning, prompt, seconds, imagePaths, finalResultSchema, schemaOnlyForFormatting, mcpUrl, mcpToken, toolNames, null);
+    }
+
+    public String executeRecoverableAnalysis(AiProviderConfigEntity provider, String model, String reasoning, String prompt, int seconds,
+                                             List<String> imagePaths, String schema, String mcpUrl, String token, List<String> tools,
+                                             AiResultRecovery.Session recovery) throws IOException, InterruptedException {
+        return execute(provider, model, reasoning, prompt, seconds, imagePaths, schema, true, mcpUrl, token, tools, recovery);
+    }
+
+    private String execute(AiProviderConfigEntity provider, String model, String reasoning, String prompt, int seconds,
+                           List<String> imagePaths, String finalResultSchema, boolean schemaOnlyForFormatting,
+                           String mcpUrl, String mcpToken, List<String> toolNames, AiResultRecovery.Session recovery) throws IOException, InterruptedException {
+        if (seconds < 1 || seconds > 14400 || prompt == null || (recovery == null && prompt.length() > 180000)) throw new IllegalArgumentException("ZCode 任务输入或时间预算无效");
         List<String> images = imagePaths == null ? List.of() : List.copyOf(imagePaths);
         preflight(provider);
         Path directory = Files.createTempDirectory("workhub-zcode-");
@@ -137,6 +172,7 @@ public class ZCodeCliClient {
             var launch = schemaOnlyForFormatting
                     ? prepareStructuredWithoutCliSchema(provider, model, reasoning, directory, output, prompt, toolNames == null ? List.of() : List.copyOf(toolNames), mcpUrl, mcpToken, finalResultSchema, images)
                     : prepare(provider, model, reasoning, directory, output, prompt, toolNames == null ? List.of() : List.copyOf(toolNames), mcpUrl, mcpToken, finalResultSchema, images);
+            if (recovery != null) ((ZCodeTaskConversation) launch.conversation()).analysisRecovery(recovery);
             process = launch.builder().start(); Process observed = process;
             var failure = new AtomicReference<Exception>();
             Thread writer = Thread.ofVirtual().start(() -> {
@@ -157,7 +193,9 @@ public class ZCodeCliClient {
             }
             stopped = stopTree(process, descendants); reader.join(1000); writer.join(1000);
             if (!stopped || reader.isAlive() || writer.isAlive() || failure.get() != null || process.exitValue() != 0) throw new IllegalStateException("ZCode CLI 未返回有效终态", failure.get());
-            if (!Files.isRegularFile(output, LinkOption.NOFOLLOW_LINKS) || Files.size(output) > 24000) throw new IllegalStateException("ZCode CLI 缺少最终产物");
+            if (!Files.isRegularFile(output, LinkOption.NOFOLLOW_LINKS)) throw new IllegalStateException("ZCode CLI 最终产物文件缺失或不是普通文件");
+            if (recovery == null && Files.size(output) > ZCodeTaskConversation.MAX_RESULT_BYTES) throw new IllegalStateException(
+                    "ZCode CLI 最终产物文件超长，bytes=" + Files.size(output) + "，limit=" + ZCodeTaskConversation.MAX_RESULT_BYTES);
             return Files.readString(output);
         } finally {
             boolean interrupted = Thread.interrupted();
@@ -170,10 +208,10 @@ public class ZCodeCliClient {
     public static void readProtocol(InputStream input, CliTaskConversation conversation, java.util.function.Consumer<String> progress) throws IOException {
         var json = new ObjectMapper();
         try (var reader = new InputStreamReader(input, StandardCharsets.UTF_8)) {
-            char[] chars = new char[2048]; var line = new StringBuilder(); int total = 0, count;
+            char[] chars = new char[2048]; var line = new StringBuilder(); long total = 0; int count;
             while ((count = reader.read(chars)) >= 0) {
                 total += count;
-                if (total > 64_000_000) throw new IOException("CLI 协议输出超过上限");
+                if (!conversation.unlimitedResultMessages() && total > 64_000_000) throw new IOException("CLI 协议输出超过上限");
                 for (int i = 0; i < count; i++) {
                     if (chars[i] == '\n') {
                         if (!line.isEmpty()) {
@@ -181,7 +219,7 @@ public class ZCodeCliClient {
                             if (text != null) progress.accept(text);
                         }
                         line.setLength(0);
-                    } else if (line.length() < 524288) line.append(chars[i]);
+                    } else if (conversation.unlimitedResultMessages() || line.length() < 524288) line.append(chars[i]);
                     else throw new IOException("CLI 协议单条消息超过上限");
                 }
             }
@@ -246,7 +284,7 @@ public class ZCodeCliClient {
         throw new IllegalArgumentException("未找到已安装的 CLI 程序");
     }
     static void restrictEnvironment(Map<String, String> environment) {
-        environment.keySet().removeIf(key -> !Set.of("PATH", "HOME", "USER", "LANG", "LC_ALL", "TMPDIR", "SSL_CERT_FILE", "SSL_CERT_DIR", "NODE_EXTRA_CA_CERTS").contains(key)
+        environment.keySet().removeIf(key -> !Set.of("PATH", "HOME", "USER", "LANG", "LC_ALL", "TMPDIR", "SSL_CERT_FILE", "SSL_CERT_DIR", "NODE_EXTRA_CA_CERTS", "SSH_AUTH_SOCK").contains(key)
                 && !key.startsWith("CODEX_SANDBOX"));
     }
     private static Path privateDirectory(Path path) throws IOException { Files.createDirectories(path); Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rwx------")); return path; }

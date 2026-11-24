@@ -78,7 +78,7 @@ public class SystemAlertVerificationQueryService {
                 state.windowId,state.target,state.chainHash,state.pages,started,clock.instant(),state.started,state.finished,
                 from.atZone(zone).toInstant(),to.atZone(zone).toInstant(),state.availableFrom,state.availableThrough,state.problems.isEmpty(),
                 List.copyOf(state.problems),state.activities,state.ignoredCount,List.copyOf(state.ignored),state.rules);
-        return new SystemAlertDashboardResponse(result.totalCount(),result.page(),result.pageSize(),result.subsystems(),result.summaries(),result.events(),proof);
+        return new SystemAlertDashboardResponse(result.totalCount(),result.page(),result.pageSize(),result.subsystems(),result.events(),proof);
     }
 
     private void verify(Evidence state,SystemAlertCollectionMapper.Page end,String definitionHash,List<String> expected,

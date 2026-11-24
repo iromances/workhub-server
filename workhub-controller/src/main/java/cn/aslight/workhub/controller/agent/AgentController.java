@@ -20,6 +20,12 @@ public class AgentController {
         this.options = options;
     }
 
+    @GetMapping("/{id}/runs/{runId}/report")
+    @PreAuthorize("hasAuthority('agent:task:view')")
+    public ApiResponse<java.util.Map<String, Object>> report(@PathVariable String id, @PathVariable String runId, Authentication auth) {
+        return ApiResponse.success(service.report(id, runId, auth.getName()));
+    }
+
     @GetMapping("/options")
     @PreAuthorize("hasAuthority('agent:view')")
     public ApiResponse<AgentOptionsResponse> options(Authentication auth) {

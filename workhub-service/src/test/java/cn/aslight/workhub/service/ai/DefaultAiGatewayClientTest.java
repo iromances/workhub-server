@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -183,6 +184,34 @@ class DefaultAiGatewayClientTest {
         provider.setCliType("ZCODE"); provider.setCliCommand("zcode");
         provider.setDefaultModel("GLM/glm-4.6"); provider.setDefaultReasoningLevel("disabled"); provider.setDefaultSpeedMode("STANDARD");
         return provider;
+    }
+
+    @Test void analysisRecoveryUsesSeparateClientPathAndMarksFormattingCompletedOnlyOnSuccess() throws Exception {
+        var context = new TestContext(); var provider = zcodeProvider();
+        var useCase = useCase(AiUseCaseDefinitions.DEVELOPMENT_ANALYZE, 7L);
+        when(context.useCaseService.requireEnabledByCode(useCase.getUseCaseCode())).thenReturn(useCase);
+        when(context.providerService.requireExisting(7L)).thenReturn(provider);
+        when(context.mcpRuntime.toolNames()).thenReturn(List.of("list_repository_files", "read_repository_text_file"));
+        when(context.mcpRuntimeProvider.getIfAvailable()).thenReturn(context.mcpRuntime);
+        context.mcpProperties.setAccessToken("test-token");
+        var saved = new java.util.HashMap<String, String>();
+        var completed = new java.util.concurrent.atomic.AtomicInteger();
+        var recovery = new AiResultRecovery(key -> "已调查的原始结论", saved::put, completed::incrementAndGet);
+        when(context.zcodeCliClient.executeRecoverableAnalysis(any(), any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any()))
+                .thenAnswer(call -> {
+                    assertTrue(((String) call.getArgument(3)).contains("ELI5"));
+                    AiResultRecovery.Session checkpoint = call.getArgument(10);
+                    assertEquals("已调查的原始结论", checkpoint.original());
+                    checkpoint.save().accept("完整原文");
+                    return "{}";
+                });
+        var request = AiGatewayRequest.withVariables(useCase.getUseCaseCode(), variables(useCase.getUseCaseCode(), "测试"),
+                Path.of("/tmp"), List.of(), List.of(), "{\"type\":\"object\"}").withResultRecovery(recovery);
+        assertTrue(context.gateway.executeStructured(request).succeeded());
+        assertEquals(1, saved.size()); assertEquals(1, completed.get());
+        doThrow(new IllegalStateException("格式未完成")).when(context.zcodeCliClient).executeRecoverableAnalysis(any(), any(), any(), any(), anyInt(), any(), any(), any(), any(), any(), any());
+        assertFalse(context.gateway.executeStructured(request).succeeded());
+        assertEquals(1, completed.get());
     }
 
     @Test

@@ -92,8 +92,10 @@ class AgentInspectionServiceTest {
         jdbc.update("INSERT INTO pm_business_line(business_line_code,business_line_name) VALUES ('BL000012','工作台'),('BL000001','其他业务线')");
         jdbc.update("INSERT INTO pm_project(id,project_code,project_name,project_type,business_line_code,project_status,owner_user_name) VALUES (1,'test','测试','SYSTEM','BL000012','ACTIVE','owner'),(2,'other','其他','SYSTEM','BL000001','ACTIVE','owner')");
         jdbc.update("INSERT INTO ops_account_monitor_config(id,business_line_code,environment_code,system_name,display_name,schema_name,rule_profile) VALUES (1,'BL000012','TEST','test','测试','fixture','fixture'),(2,'BL000012','PROD','prod','生产','fixture','fixture')");
+        jdbc.execute("CREATE TABLE dict(id BIGINT AUTO_INCREMENT PRIMARY KEY, dict_type VARCHAR(64), dict_desc VARCHAR(128), enum_code VARCHAR(128), enum_desc VARCHAR(256), parent_code VARCHAR(128), root_code VARCHAR(128), sort_order INT DEFAULT 0, create_time DATETIME DEFAULT CURRENT_TIMESTAMP, create_by VARCHAR(64), modify_time DATETIME, delete_time DATETIME, delete_by VARCHAR(64), is_delete TINYINT DEFAULT 0, version INT DEFAULT 0, remark VARCHAR(512))");
+        jdbc.update("INSERT INTO dict(dict_type,enum_code,enum_desc) VALUES ('agentPosition','OPS','运维')");
         var configuration = new Configuration(); configuration.setMapUnderscoreToCamelCase(true);
-        for (var type : List.of(AgentMapper.class, AgentInspectionMapper.class, AgentMonitorReadMapper.class, AutonomyMapper.class, AccountingExecutionEvidenceMapper.class)) configuration.addMapper(type);
+        for (var type : List.of(AgentMapper.class, AgentInspectionMapper.class, AgentMonitorReadMapper.class, AutonomyMapper.class, AccountingExecutionEvidenceMapper.class, cn.aslight.workhub.dao.system.DictMapper.class)) configuration.addMapper(type);
         var factory = new SqlSessionFactoryBean(); factory.setDataSource(ds); factory.setConfiguration(configuration);
         var sessions = new SqlSessionTemplate(factory.getObject());
         agents = sessions.getMapper(AgentMapper.class); mapper = sessions.getMapper(AgentInspectionMapper.class);
@@ -117,8 +119,12 @@ class AgentInspectionServiceTest {
         validation = Validation.buildDefaultValidatorFactory();
         cases = proxy(new AutonomyCaseService(autonomy, agents, runs, access, new AutonomyEvidence(json), data, json, validation.getValidator(), sources));
         inspections = service(mapper);
-        workbench = proxy(new AgentWorkbenchService(agents, access, providers, json, clock));
-        agent = workbench.create(new AgentSaveRequest(null, new AgentConfiguration("巡检", "主动巡检", 1L, "fixture", List.of(scope), 200, 3600, 8)), "owner");
+        var cryptoProperties = new cn.aslight.workhub.config.PaymentProperties();
+        cryptoProperties.setMasterKey("test-master-key");
+        workbench = proxy(new AgentWorkbenchService(agents, access, providers,
+                new cn.aslight.workhub.service.system.DictService(sessions.getMapper(cn.aslight.workhub.dao.system.DictMapper.class)),
+                new cn.aslight.workhub.service.payment.PaymentCryptoService(cryptoProperties), json, clock));
+        agent = workbench.create(new AgentSaveRequest(null, new AgentConfiguration("巡检","OPS", "主动巡检", 1L, "fixture", List.of(scope), 200, 3600, 8)), "owner");
         agent = workbench.setEnabled(agent.id(), agent.version(), true, "owner");
     }
     @AfterEach void close() throws Exception { if (validation != null) validation.close(); if (keepAlive != null) keepAlive.close(); }
@@ -355,7 +361,7 @@ class AgentInspectionServiceTest {
         assertTrue(receipt.path("succeeded").asBoolean());
         assertEquals(json.writeValueAsString(lost.result()), json.writeValueAsString(receipt.path("value")));
         assertEquals(1, runs.events(run.runId()).stream().filter(event -> "TOOL_RECEIPT_RECOVERED".equals(event.kind())).count());
-        var next = runs.claim(8); assertEquals(run.runId(), next.id());
+        var next = runs.claim(); assertEquals(run.runId(), next.id());
         var gateway = mock(AiGatewayClient.class);
         when(gateway.executeAgentApi(any())).thenAnswer(call -> {
             String prompt = ((AiAgentApiRequest) call.getArgument(0)).prompt();
@@ -399,12 +405,12 @@ class AgentInspectionServiceTest {
             if (!stoppedFirst) {
                 assertEquals("WAITING_RESOURCE", runs.get(run.runId()).status()); assertNotNull(runs.get(run.runId()).ownerToken());
                 assertFalse(json.readTree(runs.get(run.runId()).externalHandle()).has("activeTool"));
-                assertNull(runs.claim(8));
+                assertNull(runs.claim());
                 runs.endNative(run.runId(), run.ownerToken(), attempt, stopProof);
                 runs.recoverExpired(run.runId());
             }
             assertEquals("QUEUED", runs.get(run.runId()).status());
-            var reclaimed = runs.claim(8);
+            var reclaimed = runs.claim();
             assertTrue(runs.finishSavedNative(run.runId(), reclaimed.ownerToken()));
             assertEquals("WAITING_INPUT", runs.get(run.runId()).status());
             assertEquals(1, runs.events(run.runId()).stream().filter(event -> "TOOL_RECEIPT_RECOVERED".equals(event.kind())).count());
@@ -444,7 +450,7 @@ class AgentInspectionServiceTest {
         bug(1, 1, "补充前已取得的事实"); var run = run(null);
         var lost = committedWithoutCallback(run, "inspection.next", nextArgs(BUG));
         workbench.message(run.taskId(), new AgentMessageRequest(run.runId(), "clarify", runs.get(run.runId()).version(), "请先保留证据，等待环境确认"), "owner");
-        expire(run); runs.recoverExpired(run.runId()); var reclaimed = runs.claim(8);
+        expire(run); runs.recoverExpired(run.runId()); var reclaimed = runs.claim();
         var gateway = mock(AiGatewayClient.class);
         when(gateway.executeAgentApi(any())).thenAnswer(call -> {
             var prompt = ((AiAgentApiRequest) call.getArgument(0)).prompt();
@@ -741,7 +747,7 @@ class AgentInspectionServiceTest {
             workbench.createTask(agent.id(), new AgentTaskCreateRequest(UUID.randomUUID().toString(), specification,
                     new AgentScheduleRequest(null, "MANUAL", null, "Asia/Shanghai", "RUN_ONCE", false), true), "owner");
         } else workbench.run(taskId, new AgentRunRequest(UUID.randomUUID().toString(), 0L), "owner");
-        var claimed = runs.claim(8); assertNotNull(claimed); return runs.context(claimed);
+        var claimed = runs.claim(); assertNotNull(claimed); return runs.context(claimed);
     }
     private void bug(long id, long project, String description) {
         jdbc.update("INSERT INTO pm_work_item(id,work_item_no,project_id,work_item_type,title,description,source_type,source_channel,priority,status,creator_user_name,owner_user_name,follower_user_name,acceptance_criteria) VALUES (?,?,?,'缺陷','样本',?,'MANUAL','fixture','P1','处理中','owner','owner','owner','固定验收')", id, "BUG" + id, project, description);

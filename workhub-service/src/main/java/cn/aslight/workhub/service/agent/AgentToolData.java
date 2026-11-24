@@ -20,7 +20,7 @@ public class AgentToolData {
     public AgentToolData(ObjectMapper json) { this.json = json; }
 
     public JsonNode sanitize(Object value) {
-        JsonNode masked = mask("", json.valueToTree(value), 0);
+        JsonNode masked = sanitizeReport(value);
         String encoded = json.writeValueAsString(masked);
         if (encoded.length() <= MAX_RESULT_CHARS) return masked;
         ObjectNode result = json.createObjectNode();
@@ -30,6 +30,9 @@ public class AgentToolData {
         result.put("preview", encoded.substring(0, 16_000));
         return result;
     }
+
+    /** 报告及恢复证据完整脱敏，不能套用工具分页预览的截断规则。 */
+    public JsonNode sanitizeReport(Object value) { return mask("", json.valueToTree(value), 0); }
 
     private JsonNode mask(String key, JsonNode node, int depth) {
         if (depth > 24) throw new IllegalArgumentException("工具数据嵌套过深");

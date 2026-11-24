@@ -93,7 +93,8 @@ public class FuncCallSchemaInitializer {
                 }
             }
             int seeded = 0;
-            for (FuncCallSqlSeeds.Seed seed : FuncCallSqlSeeds.SEEDS) {
+            for (FuncCallSqlSeeds.Seed seed : java.util.stream.Stream.concat(
+                    FuncCallSqlSeeds.SEEDS.stream(), AccountingIntegrityCatalog.seeds().stream()).toList()) {
                 if (funcCallSqlMapper.findByCode(seed.sqlCode()) == null) {
                     funcCallSqlMapper.insert(seed.toEntity());
                     seeded++;

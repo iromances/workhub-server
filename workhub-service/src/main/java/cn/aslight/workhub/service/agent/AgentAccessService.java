@@ -86,8 +86,8 @@ public class AgentAccessService {
         AgentDefinitionEntity current = mapper.findAgent(context.agentId());
         if (current == null || !current.enabled()) throw new AccessDeniedException("Agent 已停用");
         AgentConfiguration currentConfig = json.readValue(current.configurationJson(), AgentConfiguration.class);
-        if (!context.configuration().scopes().contains(scope) || !context.specification().scopes().contains(scope)
-                || !currentConfig.scopes().contains(scope)) {
+        if (!context.configuration().allowsScope(scope) || !context.specification().scopes().contains(scope)
+                || !currentConfig.allowsScope(scope)) {
             throw new AccessDeniedException("业务线或环境超出本次任务授权");
         }
         validateScopes(List.of(scope));
@@ -99,7 +99,7 @@ public class AgentAccessService {
         if (current == null || !current.enabled()) throw new AccessDeniedException("Agent 已停用");
         var configuration = json.readValue(current.configurationJson(), AgentConfiguration.class);
         var permitted = context.specification().scopes().stream().filter(scope -> line.equals(scope.businessLineCode()))
-                .filter(context.configuration().scopes()::contains).filter(configuration.scopes()::contains).toList();
+                .filter(context.configuration()::allowsScope).filter(configuration::allowsScope).toList();
         if (permitted.isEmpty()) throw new AccessDeniedException("业务线超出本次任务授权");
         validateScopes(permitted);
     }

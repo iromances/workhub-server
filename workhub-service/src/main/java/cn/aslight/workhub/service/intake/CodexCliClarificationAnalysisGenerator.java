@@ -76,6 +76,16 @@ public class CodexCliClarificationAnalysisGenerator {
                                                   GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle,
                                                   String requirementMarkdownContext,
                                                   String knowledgeBaseContext) {
+        return generate(intake, structuredData, project, repositoryBundle, requirementMarkdownContext, knowledgeBaseContext, null);
+    }
+
+    public List<IntakeClarificationItem> generate(IntakeRecordEntity intake,
+                                                  IntakeStructuredData structuredData,
+                                                  ProjectDetailResponse project,
+                                                  GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle,
+                                                  String requirementMarkdownContext,
+                                                  String knowledgeBaseContext,
+            cn.aslight.workhub.service.ai.AiResultRecovery recovery) {
         if (!aiGatewayClient.isConfigured(USE_CASE_CODE)) {
             throw new IllegalArgumentException("AI 场景未配置或已停用，不能执行需求澄清分析");
         }
@@ -86,7 +96,7 @@ public class CodexCliClarificationAnalysisGenerator {
                 repositoryBundle.repositories().stream().map(item -> item.localPath().toString()).toList(),
                 List.of(),
                 OUTPUT_SCHEMA
-        ));
+        ).withResultRecovery(recovery));
         if (!result.succeeded()) {
             throw new IllegalArgumentException(result.failureSummary());
         }

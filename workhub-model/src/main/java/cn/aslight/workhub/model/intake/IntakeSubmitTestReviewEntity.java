@@ -18,6 +18,7 @@ public class IntakeSubmitTestReviewEntity {
     private LocalDateTime humanConfirmedAt;
     private String zentaoTestTaskNo;
     private String zentaoTestTaskUrl;
+    /** 提测确认选择的测试环境编码（沿用 jenkins_environment_code 列，无论是否触发构建均记录）。 */
     private String jenkinsEnvironmentCode;
     private Long jenkinsBuildNumber;
     private String jenkinsBuildUrl;

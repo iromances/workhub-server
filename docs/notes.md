@@ -1,5 +1,13 @@
 # WorkHub 需求分析与排查笔记
 
+## 2026-11-17 开发完成提测被拦截
+
+需求 202611050003 自动开发后进入开发完成，提测服务 startReview/confirmAndSubmit 仍调用仅接受开发中的旧校验，而统一 IntakeDemandStatusRules 已支持开发完成。按用户明确授权修复两入口，统一复用 SUBMIT_TESTING 规则，补齐双状态及其他阶段无副作用回归，30 项全部通过。确认无在途数字员工运行后于 16:59 重启本机服务并核实启动成功。浏览器验证需要登录，未实际提交提测、建测试单或部署；服务成功路径与外部调用使用桩验证。规格归属 REQ-a71851db。
+
+## 2026-11-17 数字员工完整 CLI 与需求 202611050003 交付
+
+按用户确认恢复数字员工 Codex/ZCode 原生能力并追加 WorkHub MCP，修复空授权范围、设计完成触发和同任务重试状态同步。实际自动开发期间发现预算累计耗尽，以及原生 Git 已推送但旧清单不能验收；保留历史运行，补充平台独立 GitLab 分支提交核验。经独立浏览器续跑，15:29 运行 COMPLETED，15:30 需求自动同步开发完成。scs/scs-saps 研发分支 `feature/repay_plan_query_202611050003` 的远端提交为 `e7c66a14289955b26f6e263fefa361e73d1f52fa`，2 项自测通过；TEST 联调和部署未执行。第三次重启前临时暂停新派发并等待在途任务结束，重启后已恢复原 5000ms 调度。详见 [平台验证](业务线/BL000012-工作台/需求迭代/REQ-bf94e06e-8737-47dc-a7ba-68dba9556f9e-平台内置Agent自主迭代一期/验证/20261117-原生CLI完整能力/验证说明.md)。
+
 ## 公司项目
 
 ### 2026-11-13 漏跑影响账单查询口径更正
@@ -4878,6 +4886,2272 @@ saps-back 未找到上述 feature 或 release 升级分支。其 origin/master �
 ```
 
 
+
+### 临时分析 · 生成需求澄清项 · 需求 279
+
+<!-- analysis-record:e6acfb33022c7572ba5d3922f6bd88e3ee39a08b9be2ccd2fa30e30b05b7b803 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：49
+- 记录时间：2026-11-17T14:06:14.003153
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/新消费分期/申城-医美-诚泰保理/2026/202611120004/历史版本/ed5b3477-c664-4d5c-bd82-caa93ab9551b/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "华美项目是否保留名义融担方（陕西瑞恒永欣/DBF000082）",
+  "description" : "需求PDF正文称除『替换直接资金方、诚泰向华美收款账户放款、合同套系调整』三点外，交互流程、产品规则、费用科目、费率均与现有项目保持不变；但附件要素表又写明『融担公司：无』『本项目没有融担公司，没有担保费』。而现有【申城-医美-诚泰再保理】项目实际配置了名义融担方（仅形式担保），且多处实现依赖该主体：放款校验硬性要求融担编码 DBF000082、试算一致性校验『名义担保费=技术服务费+合作方服务费』、贴息第二笔放款金额构成=资金方服务费+担保费、进件合同清单含221委托担保合同/242连带责任保证担保确认函。请明确一个口径：华美项目沿用名义融担方（与现有项目一致，仅资金方换成华美），还是真正去掉融担方（后者需同步调整放款校验、名义担保费口径与合同清单）。",
+  "evidence" : "已查证：①需求PDF概述章节（仅列3处变化、其余不变）与要素表『融担公司：无/没有担保费』两处口径冲突；②现有项目口径：scs-order/docs/assets/database/DML/20260902_sc_reuse_old_project_product.dml.sql 及 issue 文档 reuse_old_sc_project_product_v0.1.md（『融担仍为 DBF000082』）、scs-capital/docs/申城-诚泰保理项目需求方案20260723.md（融担=陕西瑞恒永欣，仅形式担保）、docs/申城-诚泰保理项目-付息、贴息产品要素及测算表-IRR-Markdown表格版.md:18（列瑞恒永欣）；③代码依赖：scs-capital/scs-capital-service/.../algorithm/shencheng/ShenChengLoanRules.java:26-31（GUARANTOR_CODE=DBF000011 同级硬编码 GUARANTOR_CODE=DBF000082，validate() 编码不匹配即拒单）、ShenChengCalculationApplicationService.validateScheduleCommon（名义担保费=repayXxtFee+repayGeexFee）、http/loan-confirm-payment-sc-a001.http（合同221/242为必传附件）。综合后仍无法确定唯一答案。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "QUESTION",
+  "title" : "『单一用户额度上限10万元』是否跨智融/华美两个项目合并计算",
+  "description" : "新增华美项目后，申城医美资产将同时存在两个平行项目（现有项目直接资金方=智融、新项目=华美），客群同为申城医美用户。需求正文与要素表均只写『单一用户额度上限10万元、允许同一用户同时多笔在贷订单（额度范围内即可）』，未说明用户在两个项目间的在贷余额是否合并占用10万额度。该口径直接决定进件额度校验行为（例如用户在智融项目已有10万在贷时，华美项目能否再放款），且业务明确未来还会按此模式继续克隆新资金方项目，口径影响会持续放大。请确认：两项目各自独立10万，还是按证件号跨两项目合并共10万。",
+  "evidence" : "已查证：①需求PDF、要素表、结构化字段均无跨项目额度表述（仅『单一用户额度上限10万元』）；②代码侧：scs-order ApplicationLoanMapper.xml getLoanData（customerLimitAmount=prj.person_loan_limit，项目级配置），同文件 getOnAuditAmount/getInTransitOrderAmount 的 projectId 均为可选过滤条件（两口径均可实现）；③实际聚合范围由 ApplicationLoanServiceImpl.java:1164-1475（validationCredit/getOnAuditAmount 调用处）决定，该文件超出只读工具20KB读取上限无法核实具体入参；④scs-order wiki（放款处理阶段.md）记载资金系统统计含『跨项目在贷余额』，平台具备跨项目聚合能力。现有证据无法推出唯一口径。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "申城放款链路多处硬编码旧项目/产品/参与方编码，新项目无法纯配置克隆，须逐一扩展代码",
+  "description" : "需求按『新增项目+产品、规则不变』设计，但申城逻辑在代码中按固定编码分发：ShenChengLoanRules 硬编码 PROJECT_CODE=XXT-PRJ-SC-A、GUARANTOR_CODE=DBF000082、FUNDER_CODE=ZJF000011，validate() 对项目/合作方/融担/资金方编码不匹配直接拒单『申城项目或参与方编码不匹配』；ShenChengCalculationApplicationService 仅认 PRD-SC-A001/A002，其余产品编码抛『申城试算不支持产品』；SAPS 费用映射（Hzf000144SapsRepaymentPlanMappingStrategy、LoanOrderEquipService.pushRepaymentPlanEntitys）按产品编码分支，未命中的新编码会落入公共默认口径（贴息 refund*/资管费映射被盖错）。新项目/新产品编码确定后，上述位置必须同步改码，否则放款申请被拒或 SAPS 科目口径错误。",
+  "evidence" : "scs-capital/scs-capital-service/.../algorithm/shencheng/ShenChengLoanRules.java:26-31 及 validate()（编码不匹配 reject）；.../shencheng/ShenChengCalculationApplicationService.java（PAID_INTEREST_PRODUCT/REBATE_PRODUCT 白名单，else 抛『申城试算不支持产品』）；.../saps/Hzf000144SapsRepaymentPlanMappingStrategy.java（仅 A001/A002 分支，其余静默返回）；docs/summary/申城-诚泰保理项目-放款代码评审报告20260802.md §3.3（pushRepaymentPlanEntitys 需按合作方+产品编码双重判断，否则公共 refund*=repay* 覆盖贴息口径）及 LoanOrderEquipServiceSapsMappingTest。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "本地仓库代码与 TEST 实测行为存在版本差，资金方编码与收款账户规则需先对齐基线",
+  "description" : "当前工作区 ShenChengLoanRules.FUNDER_CODE 硬编码为 ZJF000011（诚泰旧直接资金方编码），而文档记录现行项目（智融再保理化后）申请单 funder_code=ZJF000016 且 2026-11-10 TEST 黑盒实测放款流程可走通——说明本地代码落后或领先于 TEST 部署版本。同时仓库内并存两套收款账户规则：贴息『商户+合作方双账户拆分』校验（validateRebate）与『收款人必须是直接资方』校验（LoanRecaccountServiceImpl，按 remitType 分支），黑盒实测口径为『打款合计=申请本金』。设计华美改造前必须先确认 TEST/生产实际生效版本与账户规则分支，避免基于过期代码出方案。",
+  "evidence" : "ShenChengLoanRules.java:31（FUNDER_CODE=ZJF000011）；scs-order/docs/assets/project-summary/issue/loan_data_funder_fields_v0.1.md（测试库申城单 funder_code=ZJF000016）、reuse_old_sc_project_product_v0.1.md（资金方绑定智融 ZJF000016）；知识库 202610260004 黑盒测试.md（2026-11-10 TEST 实例等额校验通过，且明确『分支状态不能推断 TEST 部署版本』）；ShenChengLoanRules.validateRebate（贴息双账户）与 LoanRecaccountServiceImpl.loanRecaccountCheck（『收款人非直接资方』，remitType=20 时跳过）。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 2,
+  "itemType" : "RISK",
+  "title" : "scs-saps 结算/账单/退费/凭证按申城项目常量硬编码路由，新项目账单不会命中现有申城规则",
+  "description" : "资管平台的申城专属逻辑（账单生成与科目归属、代偿回购后收款方=资管公司、结算与全额校验、退费、EAS 凭证推送等）全部以 ScCtFactoringConstants 的 PROJECT_CODE=XXT-PRJ-SC-A、PRODUCT_CODES=[PRD-SC-A001,PRD-SC-A002] 及固定主体编码/商户号分发，StatementMapper.xml 还直接写死『通汇诚泰』主体名。华美项目若只建主数据不扩展这些常量与判断，其账单将按存量通用规则结算，科目归属、资金方服务费/资产管理费月结对账单、分账与凭证口径都会偏离『与现有一致』的需求要求。",
+  "evidence" : "scs-saps/saps-common/.../constants/ScCtFactoringConstants.java（项目/产品/主体/商户号全量常量）；使用点：saps-business/.../CustomerBillGenerateBizServiceImpl.java:633/650/1037/1135、settleV2/PaySettleCheckBizImpl.java:195、settleV2/PaySettleHelpBizImpl.java:434/477、repayment/SettleApplyCheckBizImpl.java、refund/RefundBizImpl.java、saps-service/.../BillFeeDetailServiceImpl.java:168、RepaymentPlanServiceImpl.java:1518/2778、EasVoucherPushBizImpl.java:135、CustomerOrderAsinfoImpl.java:148；saps-dao/.../mapper/StatementMapper.xml:560-722（写死通汇诚泰）；openspec sc-ct-factoring-202607240001/specs/sc-settlement-subject-routing/spec.md（按产品编号启用申城专属结算规则、存量产品行为不变）。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 3,
+  "itemType" : "RISK",
+  "title" : "scs-order 开户回调硬编码『通汇诚泰』账户名，华美项目主数据将被写错",
+  "description" : "已知缺口：AmpProjectServiceImpl 开户回调把账户 account_name 写死为『通汇诚泰』，此前智融替换时仅手工改库内展示名、未修代码。华美项目直接资金方为华美商业保理（深圳）有限公司（收款账户为中信银行广州分行营业部 8110901012101292393），若不修复该回调或明确规避方案，新项目收款账户名会被错误写为通汇诚泰，破坏项目主数据与放款收款主体的一致性展示。",
+  "evidence" : "scs-order/scs-order-service/.../impl/AmpProjectServiceImpl.java:504（『通汇诚泰』硬编码）；scs-order/docs/assets/project-summary/issue/reuse_old_sc_project_product_v0.1.md §3.3『开户回调仍把 account_name 写死为通汇诚泰（AmpProjectServiceImpl），属放款/主数据缺口，本次只改库内展示名』；本需求要素表华美收款账户信息。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 4,
+  "itemType" : "RISK",
+  "title" : "历史编码 XXT-PRJ-SC-B/PRD-SC-B001 已逻辑删除且部署脚本带防复活守卫，新项目编码须避开",
+  "description" : "2026-09 申城再保理曾新建 XXT-PRJ-SC-B/PRD-SC-B001 后决策废弃（逻辑删除保留），现行 DML 幂等脚本对已存在编码（含已逻辑删除）一律跳过以防复活。新项目/新产品若复用 B 系编码，部署脚本会静默跳过 INSERT 造成配置缺失且不易察觉；须使用全新编码，并在脚本中对历史逻辑删除行做显式处理。",
+  "evidence" : "scs-order/docs/assets/database/DML/20260901_sc_refactoring_project_party_v1.dml.sql（头注『重跑不得复活 XXT-PRJ-SC-B/PRD-SC-B001』）；20260902_sc_reuse_old_project_product.dml.sql（INSERT 改为『no/code 已存在即跳过（含已逻辑删除）』）；reuse_old_sc_project_product_v0.1.md §3.1/§4（B 项目/产品 is_delete=1、『禁止再为资管费新建 B 项目/产品』、幂等必须以业务键存在为准）。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 5,
+  "itemType" : "RISK",
+  "title" : "新项目为『配置克隆+代码扩展』混合改造，启用开关分散多库多表，漏配即整链快速失败",
+  "description" : "除代码硬编码外，申城产品启用依赖大量分散配置：scs-order 产品配置（repaymentPlanVerification=HZF000144 缺失或不等直接拒单、repaymentPlanCalculation、plateformFeeRate=0、fpFeeRate 按期数、不得配 repayDateRule、绑卡校验、附件清单、进件属性、assetFeeRate 等）与资金方主数据/项目绑定（org_funding_party 新增华美、amp_project_funding direct=1 华美 + direct=0 诚泰间接）；scs-capital remit_config 按项目+产品+合作方三键配置；scs-saps 渠道/商户/科目配置（首信易商户号、P0003/P0004/P0005/P0012 归属）。任一漏配都会在进件或放款环节直接拒单，需求排期与联调需按完整清单推进。",
+  "evidence" : "scs-capital/docs/summary/申城-诚泰保理项目-放款代码评审报告20260802.md §3.5『产品配置检查清单（amp-order 侧，是申城逻辑的启用开关）：repaymentPlanVerification=HZF000144 缺失或不等直接拒单』等；scs-capital/dbscript/DML/202609_remit_config_init.sql（remit_config 按 project_code+product_code+cooperation_code）；scs-order 20260901/20260902 DML（资金方主数据 org_funding_party/org_funding_party_indirect 与 amp_project_funding 绑定结构）；scs-saps/docs/backup/db/am_fee_recon_202608260001/DML/2026/V13_sc_ct_factoring_channel_config_dml.sql 及 dbscript/DML/2026/V1_interest_product_202609210003.sql（渠道/科目按项目落库）。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 257
+
+<!-- analysis-record:762004c49602b49a18259ac44663a0351a29b58126a721912d026f5996bc7b94 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：103
+- 记录时间：2026-11-17T14:55:53.495371
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230003/历史版本/3cc48e7c-9e84-4ffa-83e9-23854e168b02/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "嘉泰租赁资产保理",
+  "projectId" : 42,
+  "projectName" : "中恒信合乘用车保理项目",
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202610230003/历史版本/3cc48e7c-9e84-4ffa-83e9-23854e168b02/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "恒昌项目新增二维码扫码还款功能，业务系统通过“恒昌-中金商户号”生成还款二维码并推送客户完成还款，扣款成功后按固定比例清分；还款台账和资方账单页面需区分并展示二维码还款类型。",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "cairui" ],
+  "workItems" : [ {
+    "title" : "研发",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "assets-saps" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "8h",
+    "ownerUserName" : "cairui",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  } ],
+  "totalEstimatedEffort" : "16h",
+  "developmentEstimatedEffort" : "8h",
+  "testingEstimatedEffort" : "8h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-17T14:55:53.067452",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null,
+  "zentaoSyncedTaskIds" : null
+}
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 283
+
+<!-- analysis-record:e55028d3f182fa743541771e63af86cea6da195fc0f6895f6812dc1bb41348af -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：123
+- 记录时间：2026-11-18T10:55:09.303422
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/BL000005/BL000005/2026/202608310002/历史版本/b5c3c6f3-fbce-43c1-94d0-69060a190b53/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "BL000005",
+  "projectId" : null,
+  "projectName" : null,
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/BL000005/BL000005/2026/202608310002/历史版本/b5c3c6f3-fbce-43c1-94d0-69060a190b53/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "先行通设备科技平台新增客户端小程序“小猪先行”（一期），设计主色调为先行通品牌色（黄色）。覆盖先行通平台现有及未来所有项目，叉车租售、叉车融资租赁项目除外。主要内容包括：1）首页按是否扫展业/营销码及历史归属渠道数量展示对应渠道商品页或宣传页；2）注册/登录改造，新增微信手机号快捷登录，协议文本待法务提供；3）【订单】【账单】【我的】等功能按现有H5实现，优利卡项目对客合同不在【我的合同】展示；4）【购物车】支持多项目/多渠道设备展示；5）“先行通设备科技”公众号菜单调整；6）后台新增【业务需求】菜单，支持查询、需求处理及新增业务需求。",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ ],
+  "workItems" : [ ],
+  "totalEstimatedEffort" : null,
+  "developmentEstimatedEffort" : null,
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-18T10:55:08.623781",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null,
+  "zentaoSyncedTaskIds" : null
+}
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 270
+
+<!-- analysis-record:087d3906e9cffb2f1fe31cfb912e08d5285546a34c2bac9ce3d56d242e0696cf -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：107
+- 记录时间：2026-11-18T11:25:33.021268
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/历史版本/0da047d3-430c-4dcd-afb0-c06910f4d372/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "保费分期",
+  "projectId" : 21,
+  "projectName" : "聚保融保费分期项目",
+  "repositoryUrl" : "scf (13 repositories)",
+  "requirementRawPath" : "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/历史版本/0da047d3-430c-4dcd-afb0-c06910f4d372/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "评估草稿：需求可复用现有保费补缴、线下入金识别、备付金账户和交行代付链路，预计涉及 scf-order、scf-saps、scf-gateway、scf-intf-common、insurance_admin，合计约 54h。未发现 scf-intf-zhonghua 承载聚保融补缴接口的代码证据，故不纳入改造范围。",
+  "requirementChangePoints" : [ "备付金余额明细查询响应新增“订单号”：充值、对账单扣款返回空；首笔款扣款、首笔款退款及保费补缴返回客户订单号。", "新增聚保融保费补缴申请接口，接收渠道申请单号、客户订单号、补缴金额（分）、原因、打款保司摘要、补费方式和申请文件 fileKey。", "补缴申请必须先校验客户订单状态，再按补费方式处理；订单非放款成功时拒绝，备付金不足时拒绝并记录明确原因。", "支持“备付金补费”和“另行付款”两种入账方式：前者即时扣减渠道备付金，后者按补费业务单号和等额金额识别或人工确认入账。", "补缴款入账后自动调用交行银企直联向原订单保险公司账户打款，维护入账、打款状态、打款时间和摘要，且不得修改原订单金额、合同、账单及融资数据。", "新增保费补缴结果查询和异步结果通知，返回申请单号、补费业务单号、入账状态、打款状态、打款时间及摘要，并具备幂等和失败补偿能力。", "保费补缴记录增加审核结果、拒绝原因、补费方式和聚保融申请单号；自营存量及新增记录默认审核通过、补费方式为另行付款。", "后台保费补缴页面及导出增加审核结果、补费方式字段，并增加对应下拉检索项。", "文件上传能力增加“保费补缴申请文件”类型，并在申请接口中校验 fileKey 的存在性及文件类型。", "新增聚保融保费补缴申请、审核和结果查询接口。", "支持备付金补费、另行付款两种入账方式及入账状态更新。", "补缴入账后自动向保司打款并异步通知聚保融结果。", "备付金余额明细接口新增订单号返回字段及保费补缴交易类型。", "后台保费补缴记录增加审核结果、补费方式表头及检索项。", "文件类型新增“保费补缴申请文件”。" ],
+  "impactedModules" : [ "scf-order", "scf-saps", "scf-gateway", "scf-intf-common", "insurance_admin" ],
+  "risks" : [ "备付金扣减、补缴记录创建和入账回调跨系统执行，若缺少业务单号唯一约束、账户行锁或补偿机制，可能发生重复扣款、重复入账或账实不一致。", "现有保费补缴打款通过 CompletableFuture 异步触发，缺少可靠消息或明确的持久化调度证据；进程重启和调用超时可能导致已入账但未向保司打款。", "现有 application_premium_supplement 表没有渠道申请单号、审核结果、拒绝原因和补费方式，新增字段需兼容并回填自营存量记录。", "现有备付金交易枚举仅覆盖充值、对账单扣款、首笔款扣款和首笔款退款，补缴交易类型及客户订单号映射需同步所有查询、导出和对账使用方。", "结果通知地址、应答协议和补偿策略未在材料中给出；若仅依赖网关同步通知，可能出现打款成功但聚保融长期未获知结果。", "“放款成功”若严格限定 ApplicationStatus.LOAN_SUCCESS，订单进入 INSURANCE_NORMAL 等后续状态后将不能补费，需在开发前确认业务状态口径。", "文件类型编码及文件规格未明确，无法直接确定 oss.support.file-types 的配置值和验收数据。" ],
+  "questions" : [ "审核拒绝后重新申请时，聚保融是否会复用原“申请单号”？若复用，接口幂等规则应允许拒绝记录生成新补费业务单；若不复用，则应强制申请单号全局唯一。", "“客户订单状态=放款成功”是仅允许 ApplicationStatus.LOAN_SUCCESS，还是也允许已放款后的 INSURANCE_NORMAL 等状态？", "请明确结果通知地址配置键、请求签名方式、成功应答格式、超时重试次数和最终失败后的人工补偿入口。", "“保费补缴申请文件”的 serviceType 编码、允许的文件后缀、大小及数量限制是什么？", "向保司打款失败、超时或退票时，是持续自动重试、转人工处理，还是需要向聚保融通知失败结果？当前需求返回字段只有已打款/未打款。" ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ {
+    "title" : "scf-order 新增聚保融保费补缴申请与结果查询能力",
+    "description" : "扩展现有保费补缴业务单，承接聚保融申请、审核结果落库和主动结果查询；复用原订单渠道、运营商、保险公司和收款账户信息，但不更新原订单金额、合同、账单或融资数据。",
+    "requirementChangePoint" : "新增聚保融保费补缴申请、审核和结果查询接口。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "application_premium_supplement", "聚保融保费补缴申请接口", "聚保融保费补缴结果查询接口", "保费补缴查询及导出模型" ],
+    "changePoints" : [ "1. 追加 DDL/DML：增加渠道申请单号、审核结果、拒绝原因、补费方式、申请来源等字段及必要唯一索引；将自营存量记录回填为审核通过、另行付款。", "2. 新增聚保融申请和查询契约，完成金额分转元、枚举、必填项、fileKey、渠道归属及客户订单存在性校验。", "3. 按规定顺序校验订单状态和补费方式；无论通过或拒绝均生成可追溯记录并返回补费业务单号、审核结果及拒绝原因。", "4. 根据客户订单补全渠道、申请时间、运营商、保险公司和打款摘要；聚保融传入摘要优先，未传时保持为空。", "5. 以渠道机构与申请单号建立幂等边界，防止重复请求生成多笔有效补缴单，同时落实审核拒绝后重新申请规则。", "6. 增加结果查询权限隔离，只允许调用机构查询自身补缴记录，并返回入账、打款状态及打款信息。", "7. 增加接口、状态校验、金额转换、重复申请及“不修改原订单”回归测试。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/po/PremiumSupplement.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/enums/ApplicationStatus.java", "scf-order/dbscript/DDL/V11__202510_scf_selfoperation_20251016.ddl.sql", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/AmpIntfCommonClient.java" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-order",
+    "relatedFiles" : [ "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/po/PremiumSupplement.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementDTO.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementPage.java", "scf-order/scf-order-dao/src/main/resources/com/thchengtay/order/mapper/application/PremiumSupplementMapper.xml", "scf-order/dbscript/DDL/V11__202510_scf_selfoperation_20251016.ddl.sql" ],
+    "estimatedEffort" : "2h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖“scf-intf-common 增加保费补缴申请文件上传类型”明确文件类型配置。",
+    "risk" : "拒绝后重新申请的申请单号规则和可补费订单状态范围尚未确认，可能影响唯一索引与审核逻辑。",
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "scf-saps 扩展保费补缴双方式入账与回调规则",
+    "description" : "为补缴业务提供备付金即时扣款和另行付款识别入账能力，入账成功后可靠通知 scf-order 继续向保司打款。",
+    "requirementChangePoint" : "支持备付金补费、另行付款两种入账方式及入账状态更新。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "备付金扣款接口", "account", "account_balance_record", "customer_order", "pend_transaction", "保费补缴入账回调" ],
+    "changePoints" : [ "1. 新增保费补缴备付金扣款服务契约，以补费业务单号作为幂等键，并校验渠道账户归属、启用状态和可用余额。", "2. 在同一事务内锁定备付金账户、扣减余额并写入补缴交易流水；余额不足时不扣款，返回可映射为“备付金余额不足”的业务结果。", "3. 为另行付款复用现有 PREMIUM 线下订单及挂账匹配逻辑，严格按补费业务单号、渠道和等额金额匹配，避免仅按金额误匹配。", "4. 兼容系统识别入账和人工手动入账，两条路径均统一推进补缴入账状态，且重复清分不重复结算。", "5. 入账事务提交后调用 scf-order 的 positing/completed 能力；失败时落持久化补偿记录并由稳定调度重试。", "6. 覆盖并发扣款、余额不足、重复请求、重复银行流水、人工与自动入账竞争及回调失败补偿测试。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountService.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountBalanceRecordService.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendAutoClearBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendClearingBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/strategy/payment/result/PremiumPaymentResultProcesser.java", "scf-saps/saps-api/src/main/java/com/amp/saps/api/service/OrderApiService.java" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-saps",
+    "relatedFiles" : [ "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountService.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountBalanceRecordService.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendAutoClearBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/pend/impl/PendClearingBizImpl.java", "scf-saps/saps-business/src/main/java/com/amp/saps/business/strategy/payment/result/PremiumPaymentResultProcesser.java", "scf-saps/saps-api/src/main/java/com/amp/saps/api/service/OrderApiService.java" ],
+    "estimatedEffort" : "2h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖 scf-order 先生成补费业务单并提供幂等入账回调接口。",
+    "risk" : "资金扣减与跨系统回调无法形成单库事务，必须通过业务幂等和持久化补偿保证最终一致。",
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "scf-order/scf-gateway 串联保费补缴打款保司与结果通知能力",
+    "description" : "补缴款入账后复用现有交行代付链路向原订单保险公司打款，并在成功后通过统一网关主动通知聚保融。",
+    "requirementChangePoint" : "补缴入账后自动向保司打款并异步通知聚保融结果。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "交行单笔代付", "保费补缴打款状态回调", "聚保融结果通知", "api_notify", "org_external_access.notify_url" ],
+    "changePoints" : [ "1. 入账成功后幂等触发现有 generateToUnderwriterPaymentSlip，按原订单保司收款账户、补缴金额和渠道摘要生成独立代付单。", "2. 以补费业务单号控制打款幂等，持久化代付请求号、未打款/已打款状态、完成时间和摘要，禁止写回原订单金额科目。", "3. 处理同步异常、异步成功、失败、超时和退票状态；用持久化任务替代仅依赖进程内异步执行，并提供人工重试边界。", "4. 新增补缴结果通知业务类型及聚保融通知地址配置，通知载荷与主动查询返回字段保持一致。", "5. 复用 api_notify 或新增等价通知记录，记录通知中、成功、失败和重试次数；聚保融重复接收时以补费业务单号幂等。", "6. 验证入账成功仅打款一次、回调重复不重复通知、通知失败补偿及打款失败/退票处置。" ],
+    "systemTags" : [ "scf-order", "scf-gateway" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/GatewayFeignClient.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/loan/impl/ApiNotifyServiceImpl.java", "scf-gateway/src/main/java/com/amp/gateway/controller/NotifyPartnerController.java", "scf-gateway/src/main/java/com/amp/gateway/enums/NotifyBusinessType.java" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "scf-order/scf-gateway",
+    "relatedFiles" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/application/v2/PremiumSupplementService.java", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/application/PremiumSupplementController.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/GatewayFeignClient.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/loan/ApiNotify.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/loan/impl/ApiNotifyServiceImpl.java", "scf-gateway/src/main/java/com/amp/gateway/controller/NotifyPartnerController.java", "scf-gateway/src/main/java/com/amp/gateway/enums/NotifyBusinessType.java" ],
+    "estimatedEffort" : "2h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖补缴申请记录和两种入账方式完成；联调前需取得聚保融通知协议及地址配置。",
+    "risk" : "通知协议、重试规则和打款失败/退票终态未明确，当前可靠性方案只能按现有网关及 api_notify 能力估算。",
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "scf-saps 补充备付金明细订单号与补缴交易类型",
+    "description" : "扩展既有备付金余额明细接口，按交易类型返回客户订单号，并将保费补缴纳入明细查询。",
+    "requirementChangePoint" : "备付金余额明细接口新增订单号返回字段及保费补缴交易类型。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "POST /api/account/balance/record/query", "AccountTransactionTypeEnum", "account_balance_record.order_no" ],
+    "changePoints" : [ "1. 扩展 AccountTransactionTypeEnum 和接口字段说明，增加保费补缴交易类型。", "2. 响应模型增加 orderNo，并在查询组装中读取 account_balance_record.order_no。", "3. 充值、对账单扣款返回空订单号；首笔款扣款、首笔款退款和保费补缴写入并返回客户订单号。", "4. 保持 sourceOrderNo 现有语义：补缴场景返回补费业务单号，其他交易类型保持原关联业务单号。", "5. 同步管理端查询/导出模型中受交易类型枚举影响的展示，并验证历史数据空值兼容。", "6. 增加五类交易明细映射、分页过滤和金额单位转换测试。" ],
+    "systemTags" : [ "scf-saps" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-saps/saps-controller/src/main/java/com/amp/saps/controller/APIs/AccountApiController.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountApiService.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/APIs/AccountBalanceRecordQueryApiResponse.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/AccountBalanceRecordEntity.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/enums/AccountTransactionTypeEnum.java" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-saps",
+    "relatedFiles" : [ "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountApiService.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/APIs/AccountBalanceRecordQueryApiRequest.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/APIs/AccountBalanceRecordQueryApiResponse.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/entity/AccountBalanceRecordEntity.java", "scf-saps/saps-model/src/main/java/com/amp/saps/model/enums/AccountTransactionTypeEnum.java", "scf-saps/saps-service/src/main/java/com/amp/saps/service/impl/AccountBalanceRecordService.java" ],
+    "estimatedEffort" : "2h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "保费补缴交易流水由“双方式入账与回调规则”任务写入。",
+    "risk" : "首笔款退款现有流水是否均已保存客户订单号需做数据抽样；历史记录可能只能返回空值。",
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "insurance_admin 增加保费补缴审核结果与补费方式检索展示",
+    "description" : "在现有运营后台保费补缴页面和导出中展示审核结果、补费方式，并提供对应筛选项。",
+    "requirementChangePoint" : "后台保费补缴记录增加审核结果、补费方式表头及检索项。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "保费补缴列表页", "保费补缴查询参数", "保费补缴导出模板", "审核结果与补费方式字典" ],
+    "changePoints" : [ "1. 在检索区增加审核结果和补费方式下拉框，枚举分别为通过/拒绝、备付金补费/另行付款。", "2. 在表格增加审核结果、补费方式列，并兼容存量记录默认值。", "3. 后端分页查询增加 auditResult、paymentMethod 条件并同步 Mapper SQL。", "4. 更新 operator、channel、funder 三套保费补缴导出模板及填充模型，确保筛选条件与列表一致。", "5. 复核现有页面、导出和下载权限；本需求无新增操作按钮时不扩展写权限。", "6. 验证聚保融通过/拒绝记录、自营默认记录、组合筛选和导出字段。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "insurance_admin/src/views/order/premiumBackPayment/index.vue", "insurance_admin/src/api/api_list.js", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementPage.java", "scf-order/scf-order-dao/src/main/resources/com/thchengtay/order/mapper/application/PremiumSupplementMapper.xml", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_operator.xlsx" ],
+    "confidence" : "HIGH",
+    "moduleName" : "insurance_admin",
+    "relatedFiles" : [ "insurance_admin/src/views/order/premiumBackPayment/index.vue", "insurance_admin/src/api/api_list.js", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/application/dto/apply/PremiumSupplementPage.java", "scf-order/scf-order-dao/src/main/resources/com/thchengtay/order/mapper/application/PremiumSupplementMapper.xml", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_operator.xlsx", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_channel.xlsx", "scf-order/scf-order-start/src/main/resources/export/premium_supplement_funder.xlsx" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "依赖 scf-order 完成审核结果、补费方式字段及查询条件。",
+    "risk" : "三套导出模板均需同步，遗漏任一角色模板会导致页面有字段而导出缺列。",
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "scf-intf-common 增加保费补缴申请文件上传类型",
+    "description" : "为聚保融通过既有文件上传接口取得补缴申请文件 fileKey 提供类型白名单，并支持 scf-order 回查文件信息。",
+    "requirementChangePoint" : "文件类型新增“保费补缴申请文件”。",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "POST /api/file/fileUpload", "oss.support.file-types", "文件详情查询接口" ],
+    "changePoints" : [ "1. 在各目标环境 oss.support.file-types 中新增保费补缴申请文件 serviceType 映射。", "2. 明确并配置允许的后缀、大小和数量规则，保持上传返回 fileKey 的既有契约。", "3. 在 scf-order 申请处理时通过文件详情接口校验 fileKey 存在、归属和文件类型，并解析后台下载所需 URL。", "4. 验证未知类型拒绝、合法文件上传、伪造/失效 fileKey 拒绝及后台下载。" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "requirement-sources/保费分期/聚保融保费分期项目/2026/202610190007/附件/489-保费分期-聚保融新增接口（保费补缴）、备付金余额明细查询接口新增反馈字段20261019.pdf", "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/oss/OutwardController.java", "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/config/FileTypeProperties.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/AmpIntfCommonClient.java", "scf_channel_admin/src/views/order/components/PremiumSupplement.vue" ],
+    "confidence" : "MEDIUM",
+    "moduleName" : "scf-intf-common",
+    "relatedFiles" : [ "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/oss/OutwardController.java", "scf-intf-common/intfcommon-controller/src/main/java/com/amp/intfcommon/controller/config/FileTypeProperties.java", "scf-order/scf-order-api/src/main/java/com/thchengtay/order/api/AmpIntfCommonClient.java" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "xujieni",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "需产品或接口方先明确 serviceType 编码和文件规格。",
+    "risk" : "类型白名单位于外部配置中心，仓库内无当前环境配置值，发布时可能漏配某一环境。",
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  } ],
+  "totalEstimatedEffort" : "32h",
+  "developmentEstimatedEffort" : "16h",
+  "testingEstimatedEffort" : "16h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-05T11:09:19.945294",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null,
+  "zentaoSyncedTaskIds" : null
+}
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 283
+
+<!-- analysis-record:905aff14acab3616579372c1bd2642b84feb16e1245ffcb7bc086f9ee484b621 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：123
+- 记录时间：2026-11-18T14:14:42.212589
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/BL000005/BL000005/2026/202608310002/历史版本/b5c3c6f3-fbce-43c1-94d0-69060a190b53/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "智能柜",
+  "projectId" : null,
+  "projectName" : null,
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/BL000005/BL000005/2026/202608310002/历史版本/b5c3c6f3-fbce-43c1-94d0-69060a190b53/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "先行通设备科技平台新增客户端小程序“小猪先行”（一期），设计主色调为先行通品牌色（黄色）。覆盖先行通平台现有及未来所有项目，叉车租售、叉车融资租赁项目除外。主要内容包括：1）首页按是否扫展业/营销码及历史归属渠道数量展示对应渠道商品页或宣传页；2）注册/登录改造，新增微信手机号快捷登录，协议文本待法务提供；3）【订单】【账单】【我的】等功能按现有H5实现，优利卡项目对客合同不在【我的合同】展示；4）【购物车】支持多项目/多渠道设备展示；5）“先行通设备科技”公众号菜单调整；6）后台新增【业务需求】菜单，支持查询、需求处理及新增业务需求。",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "hanmeng" ],
+  "workItems" : [ {
+    "title" : "支付支持小程序终端类型",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "ol-saps" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "8h",
+    "ownerUserName" : "hanmeng",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "支付结果通知发货通知",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "ol-saps" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "8h",
+    "ownerUserName" : "hanmeng",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  } ],
+  "totalEstimatedEffort" : "24h",
+  "developmentEstimatedEffort" : "16h",
+  "testingEstimatedEffort" : "8h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-18T10:55:08.623781",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null,
+  "zentaoSyncedTaskIds" : null
+}
+```
+
+
+
+### 临时分析 · 生成研发评估 · 需求 271
+
+<!-- analysis-record:b7817dbb226cf02372c49255e922ee432a4ab004d82b43d6fd07ddc1a4801f05 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：124
+- 记录时间：2026-11-18T14:29:49.121093
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202611040003/历史版本/40af1c06-19e6-4335-847e-78dd0da92dc0/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "保费分期",
+  "projectId" : 21,
+  "projectName" : "聚保融保费分期项目",
+  "repositoryUrl" : "scf (13 repositories)",
+  "requirementRawPath" : "requirement-sources/保费分期/聚保融保费分期项目/2026/202611040003/历史版本/40af1c06-19e6-4335-847e-78dd0da92dc0/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "核心结论：系统已内建“资方服务费结算方式”能力（org_funding_party.funding_service_fee_settlement_method，1=差额放款/2=放款后支付，运营端资金方配置页可维护），生产库中化(ZJF000015)当前为'2'、测试库已为'1'。本需求主体是：生产将中化切换为差额放款后，融资单创建时loanAmount即=资方融资金额-资方服务费（FinanceApplicationService.financeHandle既有分支），放款到账校验（liquidationAmount vs loanAmount）随口径自动生效；中化放款结果通知/查询paymentAmt新值经scf-intf-zhonghua透传，DTO无需结构性改动；打款链路需全面下线（zhFinanceOverHandle与financeConfirm自动触发、PaymentFactoringFeeSchedule两个XXL-JOB、/api/adjustment手动接口）并按结算方式加防护；手续费不一致人工确认改为仅复写资方服务费；insurance_admin确认弹窗文案需去掉“并向资方支付”。合同推送/电签/回传链路无需改动（模板由中化调整）。需人工复核的新问题：1)上线时点存量“审批通过待放款/放款中”中化融资单loanAmount已按全额生成，切换后到账校验必然异常，需存量修正或人工确认兜底方案；2)在途finance_adjustment_plan调账打款需保留notifyPayResult回调以闭环；3)放款金额口径变化对报表与融资导出的影响未深入核查，建议复核；4)测试库中化配置已为'1'与生产不一致，需确认是否为预置变更；5)XXL-JOB停用需运维侧同步下线调度。",
+  "requirementChangePoints" : [ "中化保理放款金额计算规则变更：放款金额=资方融资金额-资方服务费，资方融资金额（商业险垫资金额）与资方服务费（保理手续费）计算公式不变，通过将中化资金方服务费结算方式切换为差额放款实现", "中化接口传值调整：放款结果通知、放款结果查询接口中paymentAmt放款金额值=商业险垫资金额-保理手续费（中化侧传值变化，先行通侧透传解析与金额校验口径同步）", "先行通到账校验规则变更：应收到账金额=资方应放款金额=资方融资金额-资方服务费；中化推送保理手续费与系统按产品规则计算的资方服务费的一致性校验保持不变", "保理手续费不一致人工确认规则调整：标记异常与备注、人工弹窗输入确认值流程不变，确认后系统仅以人工填写数值复写资方服务费并重建资方还款计划，不再向中化保理打款", "取消先行通收款后向中化保理支付资方服务费的流程：放款成功自动触发、中化线下融资确认触发、XXL-JOB定时打款/轮询、手动补偿接口全面下线并对中化封禁", "合同调整：中化保理负责调整保理合同模板及合同金额内容，合同附件推送、先行通电签、回传流程保持不变（无系统改造，仅回归验证）" ],
+  "impactedModules" : [ "scf-order/融资管理（融资单生成、放款结果通知、到账校验、人工确认）", "scf-order/保理手续费支付（调整计划AdjustmentPlan、XXL-JOB任务、手动补偿接口）", "scf-order/资金方配置（org_funding_party资方服务费结算方式）", "scf-intf-zhonghua/中化接口（放款结果通知与查询paymentAmt透传口径，无结构性改动）", "insurance_admin/融资管理页面（确认保理手续费弹窗文案、列表与导出口径）" ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghongjun", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ {
+    "title" : "scf-order 切换中化资方服务费结算方式为差额放款并适配放款金额计算",
+    "description" : "将生产环境org_funding_party中中化(ZJF000015)的资方服务费结算方式由'2'放款后支付切换为'1'差额放款，复用financeHandle既有差额放款分支使融资单放款金额=资方融资金额-资方服务费，并制定存量进行中单据处理方案。生产库现值'2'、测试库已为'1'。",
+    "requirementChangePoint" : "中化保理放款金额计算规则变更：放款金额=资方融资金额-资方服务费，资方融资金额（商业险垫资金额）与资方服务费（保理手续费）计算公式不变，通过将中化资金方服务费结算方式切换为差额放款实现",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "org_funding_party.funding_service_fee_settlement_method（ZJF000015）", "FinanceApplicationService.financeHandle/buildFinanceApplication", "dbscript DML脚本" ],
+    "changePoints" : [ "配置/SQL：新增生产DML脚本将ZJF000015的funding_service_fee_settlement_method由'2'改为'1'（差额放款），与中化放款规则切换时点对齐", "接口/服务：复核financeHandle差额放款分支（loanAmount=financeAmount-serviceFee）在融资单创建、中化线下确认路径下的执行与落库时序", "幂等/验证：梳理上线时点存量'审批通过待放款/放款中'中化融资单（loanAmount已按全额生成）的修正或人工确认兜底方案" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceApplicationService.java:484-489（if(\"1\".equals(getFundingServiceFeeSettlementMethod()))差额放款赋值loanAmount）", "scf-order/dbscript/DDL/zh_payment_20250912.sql:26-28（org_funding_party含funding_service_fee_settlement_method列）", "insurance_admin/src/views/counterparty/Funding/components/configDia.vue:120-134（资方服务费结算方式：差额放款/放款后支付配置UI）", "只读DB查询：PROD scf_self_order.org_funding_party ZJF000015 funding_service_fee_settlement_method='2'；TEST同表='1'" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-order/资金方配置与融资单生成",
+    "relatedFiles" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceApplicationService.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/organization/po/OrgFundingParty.java", "scf-order/dbscript/DDL/zh_payment_20250912.sql" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "lvliuhao",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "scf-order 调整中化放款到账校验规则为应收差额并同步接口金额校验",
+    "description" : "放款结果通知与主动查询链路中，到账校验口径切换为应收到账金额=资方融资金额-资方服务费（loanAmount随差额放款配置自动切换），并核对中化paymentAmt新值（商业险垫资金额-保理手续费）的校验与落库口径。",
+    "requirementChangePoint" : "中化接口传值调整：放款结果通知、放款结果查询接口中paymentAmt放款金额值=商业险垫资金额-保理手续费（中化侧传值变化，先行通侧透传解析与金额校验口径同步）",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "FinanceBusinessService.loanResultNotify/compareAmountAndPush2Saps", "FinanceApplicationCallbackApiController（/api/finance/loan/result、/api/finance/loan/query）", "FinanceLoanPaymentService.saveCapitalLoanPayment", "scf-intf-zhonghua LoanDetail（paymentAmt/serviceFee透传）" ],
+    "changePoints" : [ "接口/服务：compareAmountAndPush2Saps到账校验按差额口径复核（liquidationAmount vs loanAmount），LOAN_AMOUNT_NOT_MATCH与SERVICE_FEE_NOT_MATCH及组合异常标记逻辑回归", "接口/服务：放款结果通知入口checkLoanDetail与confirmReceived主动查询路径，按新口径校验中化paymentAmt，必要时增加通知放款金额与应收差额的一致性校验", "幂等/验证：saveCapitalLoanPayment落库paymentAmt/realPaymentAmt与银行到账liquidationAmount金额口径一致性回归，确认分布式锁与重复通知幂等不受影响" ],
+    "systemTags" : [ "scf-order", "scf-intf-zhonghua" ],
+    "evidenceRefs" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceBusinessService.java:105-210（loanResultNotify到账查询、compareAmountAndPush2Saps金额与手续费比对）", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/api/FinanceApplicationCallbackApiController.java:75-140（放款结果通知/查询入口及paymentAmt、serviceFee>0校验）", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceLoanPaymentService.java:122-143（saveCapitalLoanPayment按中化通知金额落库）", "scf-intf-zhonghua/intfCapital-model/src/main/java/com/scf/intfCapital/dto/capital/zhonghua/resp/loan/LoanDetail.java（paymentAmt/serviceFee字段透传，无结构性改动）" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-order/融资管理-放款结果处理",
+    "relatedFiles" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceBusinessService.java", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/api/FinanceApplicationCallbackApiController.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceLoanPaymentService.java", "scf-intf-zhonghua/intfCapital-service/src/main/java/com/scf/intfCapital/service/capital/zhonghua/LoanResultNotifyServiceImpl.java" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "lvliuhao",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "WI1",
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "scf-order 调整保理手续费人工确认仅复写资方服务费不再打款",
+    "description" : "保理手续费不一致人工确认（确认保理手续费、确认保理手续费并确认已融资收款）后，仅以人工填写值复写资方服务费并重建资方还款计划，不再触发向中化保理打款；异常标记与弹窗操作流程保持不变。",
+    "requirementChangePoint" : "保理手续费不一致人工确认规则调整：标记异常与备注、人工弹窗输入确认值流程不变，确认后系统仅以人工填写数值复写资方服务费并重建资方还款计划，不再向中化保理打款",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "FinanceBusinessService.confirmServiceFee/confirmReceivedAndFee/zhFinanceOverHandle", "FinanceApplicationController（/manage/finance/confirm/serviceFee、/confirm/receivedAndFee）", "FinanceFundingRepaymentPlanService还款计划重建" ],
+    "changePoints" : [ "接口/服务：confirmServiceFee/confirmReceivedAndFee确认后复写serviceFee、清异常、重建资方还款计划，按资金方服务费结算方式跳过adjustmentPlanService.executeAdjustmentPlan打款调用", "接口/服务：zhFinanceOverHandle中'触发一次保理手续费打款'调用条件化，保留SAPS动账结算、loanSuccess、合同下载与放款成功邮件", "幂等/验证：确认接口幂等（LOAN_SUCCESS直接返回）与复写后资方还款计划、推送SAPS数据一致性回归；FinanceAbnormalTypeEnum五种异常类型入口校验不变" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceBusinessService.java:283-330（confirmServiceFee/confirmReceivedAndFee复写服务费后走zhFinanceOverHandle）", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceBusinessService.java:365-391（zhFinanceOverHandle内adjustmentPlanService.executeAdjustmentPlan触发打款）", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/finance/FinanceApplicationController.java:180-247（确认保理服务费/确认融资收款和服务费接口及异常类型白名单）", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/finance/enums/FinanceAbnormalTypeEnum.java（fee_not_match/two_abnormal等异常枚举）" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-order/融资管理-人工确认",
+    "relatedFiles" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceBusinessService.java", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/finance/FinanceApplicationController.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/calculation/funding/ZhongHuaFundingCalculationStrategy.java" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "lvliuhao",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "WI1",
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "scf-order 下线中化资方服务费支付流程并停用保理手续费打款任务",
+    "description" : "取消先行通收款后向中化支付资方服务费的全部触发链路：放款成功自动触发、中化线下融资确认触发、XXL-JOB定时打款与轮询、手动补偿接口，调整计划生成加结算方式防护，保留支付回调以闭环在途打款。",
+    "requirementChangePoint" : "取消先行通收款后向中化保理支付资方服务费的流程：放款成功自动触发、中化线下融资确认触发、XXL-JOB定时打款/轮询、手动补偿接口全面下线并对中化封禁",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "FinanceApplicationService.financeConfirm", "FinanceBusinessService.zhFinanceOverHandle", "PaymentFactoringFeeSchedule（queryAdjustmentPlanProcessingJob/executeAdjustmentPlanJob）", "AdjustmentPlanService（executeAdjustmentPlan/paymentFactoringFee/notifyPayResult）", "AdjustmentPlanController（/api/adjustment/*）", "finance_adjustment_plan表" ],
+    "changePoints" : [ "接口/服务：FinanceApplicationService.financeConfirm中化线下确认后的'支付保理手续费'调用移除/按结算方式条件化", "任务调度：PaymentFactoringFeeSchedule两个XXL-JOB停止调度并在代码标注下线，queryAdjustmentPlanProcessing轮询查单同步退役（运维侧需同步下线xxl-job调度配置）", "接口/服务：AdjustmentPlanService.executeAdjustmentPlan/paymentFactoringFee按资金方结算方式防护，差额放款模式下不再生成finance_adjustment_plan调账单；/api/adjustment/executeAdjustmentPlan、/api/adjustment/adjustmentPaymentAgain手动接口对中化封禁；notifyPayResult回调保留处理存量在途打款" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/xxljob/PaymentFactoringFeeSchedule.java（JOB任务-支付保理手续费，两个XxlJob入口）", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/AdjustmentPlanService.java:56-135（仅ZJF000015且factoringPaymentResult=3时生成调账单并sapsClient.singleRemit打款给中化账户）", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/AdjustmentPlanController.java:56-77（手动executeAdjustmentPlan/adjustmentPaymentAgain接口）", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceApplicationService.java:292-296（financeConfirm确认后支付保理手续费）", "scf-order/dbscript/DDL/fix_payment_20260112.sql（finance_adjustment_plan融资调账计划表）" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-order/保理手续费支付",
+    "relatedFiles" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/xxljob/PaymentFactoringFeeSchedule.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/AdjustmentPlanService.java", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/AdjustmentPlanController.java", "scf-order/dbscript/DDL/fix_payment_20260112.sql" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "zhanghuajun",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "WI1",
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "insurance_admin 调整融资管理保理手续费确认弹窗文案与金额展示口径",
+    "description" : "融资管理页面'确认保理手续费'、'确认保理手续费并确认已融资收款'弹窗提示语去掉'并向资方支付'表述，改为仅复写资方服务费口径；列表、详情与导出中放款金额、资方服务费等字段按差额放款口径核对。",
+    "requirementChangePoint" : "保理手续费不一致人工确认规则调整：标记异常与备注、人工弹窗输入确认值流程不变，确认后系统仅以人工填写数值复写资方服务费并重建资方还款计划，不再向中化保理打款",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "insurance_admin/src/views/financialManage/financing/index.vue（确认弹窗、按钮、列表列）", "insurance_admin/src/views/financialManage/financing/components/detail.vue", "/manage/finance/page/query/download导出" ],
+    "changePoints" : [ "页面/文案：confirmFactoringServiceFee、confirmFactoringServiceFeeAndFinancingReceipt两个弹窗提示语去掉'并向资方支付'，改为'仅更新资方服务费'口径；确认按钮权限保持不变", "页面/展示：融资管理列表与详情中放款金额、资方服务费、资方计算保理手续费字段按差额放款口径核对展示", "导出：/manage/finance/page/query/download导出模板字段口径核对（资方放款金额=差额口径）" ],
+    "systemTags" : [ "insurance_admin" ],
+    "evidenceRefs" : [ "insurance_admin/src/views/financialManage/financing/index.vue:763-812（两个确认弹窗文案含'继续后续流程并向资方支付'）", "insurance_admin/src/views/financialManage/financing/index.vue:298-320（三个确认操作按钮及权限标识）", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/finance/vo/FinanceApplicationRespVo.java:200-205（serviceFee/capitalServiceFee/factoringPaymentResult导出字段）", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/finance/FinanceApplicationController.java:88-113（融资管理导出）" ],
+    "confidence" : "HIGH",
+    "moduleName" : "insurance_admin/融资管理页面",
+    "relatedFiles" : [ "insurance_admin/src/views/financialManage/financing/index.vue", "insurance_admin/src/views/financialManage/financing/components/detail.vue", "insurance_admin/src/api/api_list.js" ],
+    "estimatedEffort" : "2h",
+    "ownerUserName" : null,
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "WI3",
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "scf-order/insurance_admin 中化差额放款与不打款全链路联调回归",
+    "description" : "与中化保理联调放款结果通知/查询新paymentAmt值，回归到账校验、手续费一致性异常、人工确认复写不打款、打款流程下线与在途调账闭环、合同推送电签回传不变等全场景，并完成生产配置切换演练。",
+    "requirementChangePoint" : "合同调整：中化保理负责调整保理合同模板及合同金额内容，合同附件推送、先行通电签、回传流程保持不变（无系统改造，仅回归验证）",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "测试环境全链路（scf-order、scf-intf-zhonghua、insurance_admin、SAPS动账）", "xxl-job调度配置", "org_funding_party生产配置切换窗口" ],
+    "changePoints" : [ "幂等/验证：与中化联调放款结果通知/放款结果查询paymentAmt新值（商业险垫资金额-保理手续费）场景，验证到账校验、手续费不一致标记与人工确认仅复写不打款", "幂等/验证：打款流程下线回归——确认不再新增finance_adjustment_plan调账单、XXL-JOB停用生效、在途打款notifyPayResult回调可正常闭环", "幂等/验证：合同附件推送、电签、回传流程回归（应不受影响）；存量全额口径单据修正/人工兜底方案演练与生产配置切换演练" ],
+    "systemTags" : [ "scf-order", "scf-intf-zhonghua", "insurance_admin" ],
+    "evidenceRefs" : [ "测试库scf_self_order.org_funding_party ZJF000015已为'1'（差额放款），可先行联调", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceBusinessService.java:105-210（放款结果处理全链路入口）", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceContractService（queryNeedFunderContract合同下载链路保持不变）" ],
+    "confidence" : "HIGH",
+    "moduleName" : "保费分期/中化融资全链路",
+    "relatedFiles" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceBusinessService.java", "scf-intf-zhonghua/intfCapital-service/src/main/java/com/scf/intfCapital/service/capital/zhonghua/LoanQueryServiceImpl.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/AdjustmentPlanService.java" ],
+    "estimatedEffort" : "8h",
+    "ownerUserName" : null,
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "WI1、WI2、WI3、WI4、WI5",
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  } ],
+  "totalEstimatedEffort" : "26h",
+  "developmentEstimatedEffort" : "26h",
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-18T14:29:48.936316",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null,
+  "zentaoSyncedTaskIds" : null
+}
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 282
+
+<!-- analysis-record:fe777d5238ba3cadcd28073fda4d77c360d81e3137c208ecddfb318639627651 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：125
+- 记录时间：2026-11-18T15:55:31.751875
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/BL000008/BL000008/2026/202609070003/历史版本/71f99110-d117-477d-938f-4624658bfce4/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "BL000008",
+  "projectId" : null,
+  "projectName" : null,
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/BL000008/BL000008/2026/202609070003/历史版本/71f99110-d117-477d-938f-4624658bfce4/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "1.前端交互页面和逻辑优化；2.经销商入网流程优化、合作协议电子签约、付款结算周期优化；3.订单申请流程优化",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "hanmeng" ],
+  "workItems" : [ {
+    "title" : "账单增加线下还款转账凭证上传权限",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "lease-saps", "lease-admin" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "hanmeng",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  } ],
+  "totalEstimatedEffort" : "4h",
+  "developmentEstimatedEffort" : "4h",
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-18T15:55:30.494658",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null,
+  "zentaoSyncedTaskIds" : null
+}
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 282
+
+<!-- analysis-record:f696bcf9339462b6ff48b68a8aeeb2e4858285b1854573bef1ac044167ce664d -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：125
+- 记录时间：2026-11-18T15:55:49.282935
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/BL000008/BL000008/2026/202609070003/历史版本/71f99110-d117-477d-938f-4624658bfce4/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "BL000008",
+  "projectId" : null,
+  "projectName" : null,
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/BL000008/BL000008/2026/202609070003/历史版本/71f99110-d117-477d-938f-4624658bfce4/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "1.前端交互页面和逻辑优化；2.经销商入网流程优化、合作协议电子签约、付款结算周期优化；3.订单申请流程优化",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "hanmeng" ],
+  "workItems" : [ {
+    "title" : "客户账单账单增加线下还款转账凭证上传权限",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "lease-saps", "lease-admin" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "hanmeng",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  } ],
+  "totalEstimatedEffort" : "4h",
+  "developmentEstimatedEffort" : "4h",
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-18T15:55:30.494658",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null,
+  "zentaoSyncedTaskIds" : null
+}
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 282
+
+<!-- analysis-record:b8b8af2301992bc68b85290a4d38c8f3ce6ada62708d191d6e84f60f4ba4e781 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：125
+- 记录时间：2026-11-18T15:56:02.917046
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/BL000008/BL000008/2026/202609070003/历史版本/71f99110-d117-477d-938f-4624658bfce4/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "BL000008",
+  "projectId" : null,
+  "projectName" : null,
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/BL000008/BL000008/2026/202609070003/历史版本/71f99110-d117-477d-938f-4624658bfce4/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "1.前端交互页面和逻辑优化；2.经销商入网流程优化、合作协议电子签约、付款结算周期优化；3.订单申请流程优化",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "hanmeng" ],
+  "workItems" : [ {
+    "title" : "客户账单账单增加线下还款转账凭证上传权限",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "lease-saps", "lease-admin" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "hanmeng",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "缴费单和账单的上传凭证按钮都需要给到合作商权限",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "lease-saps" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "hanmeng",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  } ],
+  "totalEstimatedEffort" : "8h",
+  "developmentEstimatedEffort" : "8h",
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-18T15:55:30.494658",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null,
+  "zentaoSyncedTaskIds" : null
+}
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 282
+
+<!-- analysis-record:bb8d7301395e55e589a801bac284173e1ed731605803e2f68b78ae5dc3de2bab -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：125
+- 记录时间：2026-11-18T15:56:40.768820
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/BL000008/BL000008/2026/202609070003/历史版本/71f99110-d117-477d-938f-4624658bfce4/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "BL000008",
+  "projectId" : null,
+  "projectName" : null,
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/BL000008/BL000008/2026/202609070003/历史版本/71f99110-d117-477d-938f-4624658bfce4/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "1.前端交互页面和逻辑优化；2.经销商入网流程优化、合作协议电子签约、付款结算周期优化；3.订单申请流程优化",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "hanmeng" ],
+  "workItems" : [ {
+    "title" : "客户账单账单增加线下还款转账凭证上传权限",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "lease-saps", "lease-admin" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "hanmeng",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "缴费单和账单的上传凭证按钮都需要给到合作商权限",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "lease-saps" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "hanmeng",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "上传后邮件通知运营",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "lease-saps" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "hanmeng",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  } ],
+  "totalEstimatedEffort" : "12h",
+  "developmentEstimatedEffort" : "12h",
+  "testingEstimatedEffort" : null,
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-18T15:55:30.494658",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null,
+  "zentaoSyncedTaskIds" : null
+}
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 282
+
+<!-- analysis-record:3479a5463c26abbf517cb0abb0f30ced59748dc013d0cf004bb6adfc7b559417 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：125
+- 记录时间：2026-11-18T16:01:53.256510
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/BL000008/BL000008/2026/202609070003/历史版本/71f99110-d117-477d-938f-4624658bfce4/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "BL000008",
+  "projectId" : null,
+  "projectName" : null,
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/BL000008/BL000008/2026/202609070003/历史版本/71f99110-d117-477d-938f-4624658bfce4/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "1.前端交互页面和逻辑优化；2.经销商入网流程优化、合作协议电子签约、付款结算周期优化；3.订单申请流程优化",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "hanmeng" ],
+  "workItems" : [ {
+    "title" : "客户账单账单增加线下还款转账凭证上传权限",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "lease-saps", "lease-admin" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "hanmeng",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "缴费单和账单的上传凭证按钮都需要给到合作商权限",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "lease-saps" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "hanmeng",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "上传后邮件通知运营",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "lease-saps" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "hanmeng",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "10 经销商付款结算规则新增枚举值",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "lease-admin" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "8h",
+    "ownerUserName" : "hanmeng",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  } ],
+  "totalEstimatedEffort" : "36h",
+  "developmentEstimatedEffort" : "20h",
+  "testingEstimatedEffort" : "16h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-18T15:55:30.494658",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null,
+  "zentaoSyncedTaskIds" : null
+}
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 271
+
+<!-- analysis-record:f349a0ec893c68cc02433feaf938940f335d96c34a3782202470d96ca7349133 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：124
+- 记录时间：2026-11-18T17:35:06.103653
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/保费分期/聚保融保费分期项目/2026/202611040003/历史版本/40af1c06-19e6-4335-847e-78dd0da92dc0/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "保费分期",
+  "projectId" : 21,
+  "projectName" : "聚保融保费分期项目",
+  "repositoryUrl" : "scf (13 repositories)",
+  "requirementRawPath" : "requirement-sources/保费分期/聚保融保费分期项目/2026/202611040003/历史版本/40af1c06-19e6-4335-847e-78dd0da92dc0/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "核心结论：系统已内建“资方服务费结算方式”能力（org_funding_party.funding_service_fee_settlement_method，1=差额放款/2=放款后支付，运营端资金方配置页可维护），生产库中化(ZJF000015)当前为'2'、测试库已为'1'。本需求主体是：生产将中化切换为差额放款后，融资单创建时loanAmount即=资方融资金额-资方服务费（FinanceApplicationService.financeHandle既有分支），放款到账校验（liquidationAmount vs loanAmount）随口径自动生效；中化放款结果通知/查询paymentAmt新值经scf-intf-zhonghua透传，DTO无需结构性改动；打款链路需全面下线（zhFinanceOverHandle与financeConfirm自动触发、PaymentFactoringFeeSchedule两个XXL-JOB、/api/adjustment手动接口）并按结算方式加防护；手续费不一致人工确认改为仅复写资方服务费；insurance_admin确认弹窗文案需去掉“并向资方支付”。合同推送/电签/回传链路无需改动（模板由中化调整）。需人工复核的新问题：1)上线时点存量“审批通过待放款/放款中”中化融资单loanAmount已按全额生成，切换后到账校验必然异常，需存量修正或人工确认兜底方案；2)在途finance_adjustment_plan调账打款需保留notifyPayResult回调以闭环；3)放款金额口径变化对报表与融资导出的影响未深入核查，建议复核；4)测试库中化配置已为'1'与生产不一致，需确认是否为预置变更；5)XXL-JOB停用需运维侧同步下线调度。",
+  "requirementChangePoints" : [ "中化保理放款金额计算规则变更：放款金额=资方融资金额-资方服务费，资方融资金额（商业险垫资金额）与资方服务费（保理手续费）计算公式不变，通过将中化资金方服务费结算方式切换为差额放款实现", "中化接口传值调整：放款结果通知、放款结果查询接口中paymentAmt放款金额值=商业险垫资金额-保理手续费（中化侧传值变化，先行通侧透传解析与金额校验口径同步）", "先行通到账校验规则变更：应收到账金额=资方应放款金额=资方融资金额-资方服务费；中化推送保理手续费与系统按产品规则计算的资方服务费的一致性校验保持不变", "保理手续费不一致人工确认规则调整：标记异常与备注、人工弹窗输入确认值流程不变，确认后系统仅以人工填写数值复写资方服务费并重建资方还款计划，不再向中化保理打款", "取消先行通收款后向中化保理支付资方服务费的流程：放款成功自动触发、中化线下融资确认触发、XXL-JOB定时打款/轮询、手动补偿接口全面下线并对中化封禁", "合同调整：中化保理负责调整保理合同模板及合同金额内容，合同附件推送、先行通电签、回传流程保持不变（无系统改造，仅回归验证）" ],
+  "impactedModules" : [ "scf-order/融资管理（融资单生成、放款结果通知、到账校验、人工确认）", "scf-order/保理手续费支付（调整计划AdjustmentPlan、XXL-JOB任务、手动补偿接口）", "scf-order/资金方配置（org_funding_party资方服务费结算方式）", "scf-intf-zhonghua/中化接口（放款结果通知与查询paymentAmt透传口径，无结构性改动）", "insurance_admin/融资管理页面（确认保理手续费弹窗文案、列表与导出口径）" ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "admin", "cairui", "caobin", "caofeng", "dujunchen", "hanmeng", "jiangmin", "lvliuhao", "shihao", "wangwenlong", "xuewentao", "xujieni", "yanggang", "yinjun", "yufanghua", "zhanghongjun", "zhanghuajun", "zhiyuntao" ],
+  "workItems" : [ {
+    "title" : "scf-order 切换中化资方服务费结算方式为差额放款并适配放款金额计算",
+    "description" : "将生产环境org_funding_party中中化(ZJF000015)的资方服务费结算方式由'2'放款后支付切换为'1'差额放款，复用financeHandle既有差额放款分支使融资单放款金额=资方融资金额-资方服务费，并制定存量进行中单据处理方案。生产库现值'2'、测试库已为'1'。",
+    "requirementChangePoint" : "中化保理放款金额计算规则变更：放款金额=资方融资金额-资方服务费，资方融资金额（商业险垫资金额）与资方服务费（保理手续费）计算公式不变，通过将中化资金方服务费结算方式切换为差额放款实现",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "org_funding_party.funding_service_fee_settlement_method（ZJF000015）", "FinanceApplicationService.financeHandle/buildFinanceApplication", "dbscript DML脚本" ],
+    "changePoints" : [ "配置/SQL：新增生产DML脚本将ZJF000015的funding_service_fee_settlement_method由'2'改为'1'（差额放款），与中化放款规则切换时点对齐", "接口/服务：复核financeHandle差额放款分支（loanAmount=financeAmount-serviceFee）在融资单创建、中化线下确认路径下的执行与落库时序", "幂等/验证：梳理上线时点存量'审批通过待放款/放款中'中化融资单（loanAmount已按全额生成）的修正或人工确认兜底方案" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceApplicationService.java:484-489（if(\"1\".equals(getFundingServiceFeeSettlementMethod()))差额放款赋值loanAmount）", "scf-order/dbscript/DDL/zh_payment_20250912.sql:26-28（org_funding_party含funding_service_fee_settlement_method列）", "insurance_admin/src/views/counterparty/Funding/components/configDia.vue:120-134（资方服务费结算方式：差额放款/放款后支付配置UI）", "只读DB查询：PROD scf_self_order.org_funding_party ZJF000015 funding_service_fee_settlement_method='2'；TEST同表='1'" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-order/资金方配置与融资单生成",
+    "relatedFiles" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceApplicationService.java", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/organization/po/OrgFundingParty.java", "scf-order/dbscript/DDL/zh_payment_20250912.sql" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "hanmeng",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "scf-order 调整中化放款到账校验规则为应收差额并同步接口金额校验",
+    "description" : "放款结果通知与主动查询链路中，到账校验口径切换为应收到账金额=资方融资金额-资方服务费（loanAmount随差额放款配置自动切换），并核对中化paymentAmt新值（商业险垫资金额-保理手续费）的校验与落库口径。",
+    "requirementChangePoint" : "中化接口传值调整：放款结果通知、放款结果查询接口中paymentAmt放款金额值=商业险垫资金额-保理手续费（中化侧传值变化，先行通侧透传解析与金额校验口径同步）",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "FinanceBusinessService.loanResultNotify/compareAmountAndPush2Saps", "FinanceApplicationCallbackApiController（/api/finance/loan/result、/api/finance/loan/query）", "FinanceLoanPaymentService.saveCapitalLoanPayment", "scf-intf-zhonghua LoanDetail（paymentAmt/serviceFee透传）" ],
+    "changePoints" : [ "接口/服务：compareAmountAndPush2Saps到账校验按差额口径复核（liquidationAmount vs loanAmount），LOAN_AMOUNT_NOT_MATCH与SERVICE_FEE_NOT_MATCH及组合异常标记逻辑回归", "接口/服务：放款结果通知入口checkLoanDetail与confirmReceived主动查询路径，按新口径校验中化paymentAmt，必要时增加通知放款金额与应收差额的一致性校验", "幂等/验证：saveCapitalLoanPayment落库paymentAmt/realPaymentAmt与银行到账liquidationAmount金额口径一致性回归，确认分布式锁与重复通知幂等不受影响" ],
+    "systemTags" : [ "scf-order", "scf-intf-zhonghua" ],
+    "evidenceRefs" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceBusinessService.java:105-210（loanResultNotify到账查询、compareAmountAndPush2Saps金额与手续费比对）", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/api/FinanceApplicationCallbackApiController.java:75-140（放款结果通知/查询入口及paymentAmt、serviceFee>0校验）", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceLoanPaymentService.java:122-143（saveCapitalLoanPayment按中化通知金额落库）", "scf-intf-zhonghua/intfCapital-model/src/main/java/com/scf/intfCapital/dto/capital/zhonghua/resp/loan/LoanDetail.java（paymentAmt/serviceFee字段透传，无结构性改动）" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-order/融资管理-放款结果处理",
+    "relatedFiles" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceBusinessService.java", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/api/FinanceApplicationCallbackApiController.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceLoanPaymentService.java", "scf-intf-zhonghua/intfCapital-service/src/main/java/com/scf/intfCapital/service/capital/zhonghua/LoanResultNotifyServiceImpl.java" ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "hanmeng",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "WI1",
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "scf-order 调整保理手续费人工确认仅复写资方服务费不再打款",
+    "description" : "保理手续费不一致人工确认（确认保理手续费、确认保理手续费并确认已融资收款）后，仅以人工填写值复写资方服务费并重建资方还款计划，不再触发向中化保理打款；异常标记与弹窗操作流程保持不变。",
+    "requirementChangePoint" : "保理手续费不一致人工确认规则调整：标记异常与备注、人工弹窗输入确认值流程不变，确认后系统仅以人工填写数值复写资方服务费并重建资方还款计划，不再向中化保理打款",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "FinanceBusinessService.confirmServiceFee/confirmReceivedAndFee/zhFinanceOverHandle", "FinanceApplicationController（/manage/finance/confirm/serviceFee、/confirm/receivedAndFee）", "FinanceFundingRepaymentPlanService还款计划重建" ],
+    "changePoints" : [ "接口/服务：confirmServiceFee/confirmReceivedAndFee确认后复写serviceFee、清异常、重建资方还款计划，按资金方服务费结算方式跳过adjustmentPlanService.executeAdjustmentPlan打款调用", "接口/服务：zhFinanceOverHandle中'触发一次保理手续费打款'调用条件化，保留SAPS动账结算、loanSuccess、合同下载与放款成功邮件", "幂等/验证：确认接口幂等（LOAN_SUCCESS直接返回）与复写后资方还款计划、推送SAPS数据一致性回归；FinanceAbnormalTypeEnum五种异常类型入口校验不变" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceBusinessService.java:283-330（confirmServiceFee/confirmReceivedAndFee复写服务费后走zhFinanceOverHandle）", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceBusinessService.java:365-391（zhFinanceOverHandle内adjustmentPlanService.executeAdjustmentPlan触发打款）", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/finance/FinanceApplicationController.java:180-247（确认保理服务费/确认融资收款和服务费接口及异常类型白名单）", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/finance/enums/FinanceAbnormalTypeEnum.java（fee_not_match/two_abnormal等异常枚举）" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-order/融资管理-人工确认",
+    "relatedFiles" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceBusinessService.java", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/finance/FinanceApplicationController.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/calculation/funding/ZhongHuaFundingCalculationStrategy.java" ],
+    "estimatedEffort" : "2h",
+    "ownerUserName" : "hanmeng",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "WI1",
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "scf-order 下线中化资方服务费支付流程并停用保理手续费打款任务",
+    "description" : "取消先行通收款后向中化支付资方服务费的全部触发链路：放款成功自动触发、中化线下融资确认触发、XXL-JOB定时打款与轮询、手动补偿接口，调整计划生成加结算方式防护，保留支付回调以闭环在途打款。",
+    "requirementChangePoint" : "取消先行通收款后向中化保理支付资方服务费的流程：放款成功自动触发、中化线下融资确认触发、XXL-JOB定时打款/轮询、手动补偿接口全面下线并对中化封禁",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "FinanceApplicationService.financeConfirm", "FinanceBusinessService.zhFinanceOverHandle", "PaymentFactoringFeeSchedule（queryAdjustmentPlanProcessingJob/executeAdjustmentPlanJob）", "AdjustmentPlanService（executeAdjustmentPlan/paymentFactoringFee/notifyPayResult）", "AdjustmentPlanController（/api/adjustment/*）", "finance_adjustment_plan表" ],
+    "changePoints" : [ "接口/服务：FinanceApplicationService.financeConfirm中化线下确认后的'支付保理手续费'调用移除/按结算方式条件化", "任务调度：PaymentFactoringFeeSchedule两个XXL-JOB停止调度并在代码标注下线，queryAdjustmentPlanProcessing轮询查单同步退役（运维侧需同步下线xxl-job调度配置）", "接口/服务：AdjustmentPlanService.executeAdjustmentPlan/paymentFactoringFee按资金方结算方式防护，差额放款模式下不再生成finance_adjustment_plan调账单；/api/adjustment/executeAdjustmentPlan、/api/adjustment/adjustmentPaymentAgain手动接口对中化封禁；notifyPayResult回调保留处理存量在途打款" ],
+    "systemTags" : [ "scf-order" ],
+    "evidenceRefs" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/xxljob/PaymentFactoringFeeSchedule.java（JOB任务-支付保理手续费，两个XxlJob入口）", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/AdjustmentPlanService.java:56-135（仅ZJF000015且factoringPaymentResult=3时生成调账单并sapsClient.singleRemit打款给中化账户）", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/AdjustmentPlanController.java:56-77（手动executeAdjustmentPlan/adjustmentPaymentAgain接口）", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceApplicationService.java:292-296（financeConfirm确认后支付保理手续费）", "scf-order/dbscript/DDL/fix_payment_20260112.sql（finance_adjustment_plan融资调账计划表）" ],
+    "confidence" : "HIGH",
+    "moduleName" : "scf-order/保理手续费支付",
+    "relatedFiles" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/xxljob/PaymentFactoringFeeSchedule.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/AdjustmentPlanService.java", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/AdjustmentPlanController.java", "scf-order/dbscript/DDL/fix_payment_20260112.sql" ],
+    "estimatedEffort" : "2h",
+    "ownerUserName" : "hanmeng",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "WI1",
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "insurance_admin 调整融资管理保理手续费确认弹窗文案与金额展示口径",
+    "description" : "融资管理页面'确认保理手续费'、'确认保理手续费并确认已融资收款'弹窗提示语去掉'并向资方支付'表述，改为仅复写资方服务费口径；列表、详情与导出中放款金额、资方服务费等字段按差额放款口径核对。",
+    "requirementChangePoint" : "保理手续费不一致人工确认规则调整：标记异常与备注、人工弹窗输入确认值流程不变，确认后系统仅以人工填写数值复写资方服务费并重建资方还款计划，不再向中化保理打款",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "insurance_admin/src/views/financialManage/financing/index.vue（确认弹窗、按钮、列表列）", "insurance_admin/src/views/financialManage/financing/components/detail.vue", "/manage/finance/page/query/download导出" ],
+    "changePoints" : [ "页面/文案：confirmFactoringServiceFee、confirmFactoringServiceFeeAndFinancingReceipt两个弹窗提示语去掉'并向资方支付'，改为'仅更新资方服务费'口径；确认按钮权限保持不变", "页面/展示：融资管理列表与详情中放款金额、资方服务费、资方计算保理手续费字段按差额放款口径核对展示", "导出：/manage/finance/page/query/download导出模板字段口径核对（资方放款金额=差额口径）" ],
+    "systemTags" : [ "insurance_admin" ],
+    "evidenceRefs" : [ "insurance_admin/src/views/financialManage/financing/index.vue:763-812（两个确认弹窗文案含'继续后续流程并向资方支付'）", "insurance_admin/src/views/financialManage/financing/index.vue:298-320（三个确认操作按钮及权限标识）", "scf-order/scf-order-model/src/main/java/com/thchengtay/order/model/finance/vo/FinanceApplicationRespVo.java:200-205（serviceFee/capitalServiceFee/factoringPaymentResult导出字段）", "scf-order/scf-order-controller/src/main/java/com/thchengtay/order/controller/finance/FinanceApplicationController.java:88-113（融资管理导出）" ],
+    "confidence" : "HIGH",
+    "moduleName" : "insurance_admin/融资管理页面",
+    "relatedFiles" : [ "insurance_admin/src/views/financialManage/financing/index.vue", "insurance_admin/src/views/financialManage/financing/components/detail.vue", "insurance_admin/src/api/api_list.js" ],
+    "estimatedEffort" : "2h",
+    "ownerUserName" : "hanmeng",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "WI3",
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  }, {
+    "title" : "scf-order/insurance_admin 中化差额放款与不打款全链路联调回归",
+    "description" : "与中化保理联调放款结果通知/查询新paymentAmt值，回归到账校验、手续费一致性异常、人工确认复写不打款、打款流程下线与在途调账闭环、合同推送电签回传不变等全场景，并完成生产配置切换演练。",
+    "requirementChangePoint" : "合同调整：中化保理负责调整保理合同模板及合同金额内容，合同附件推送、先行通电签、回传流程保持不变（无系统改造，仅回归验证）",
+    "taskType" : "UNKNOWN",
+    "targetResources" : [ "测试环境全链路（scf-order、scf-intf-zhonghua、insurance_admin、SAPS动账）", "xxl-job调度配置", "org_funding_party生产配置切换窗口" ],
+    "changePoints" : [ "幂等/验证：与中化联调放款结果通知/放款结果查询paymentAmt新值（商业险垫资金额-保理手续费）场景，验证到账校验、手续费不一致标记与人工确认仅复写不打款", "幂等/验证：打款流程下线回归——确认不再新增finance_adjustment_plan调账单、XXL-JOB停用生效、在途打款notifyPayResult回调可正常闭环", "幂等/验证：合同附件推送、电签、回传流程回归（应不受影响）；存量全额口径单据修正/人工兜底方案演练与生产配置切换演练" ],
+    "systemTags" : [ "scf-order", "scf-intf-zhonghua", "insurance_admin" ],
+    "evidenceRefs" : [ "测试库scf_self_order.org_funding_party ZJF000015已为'1'（差额放款），可先行联调", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceBusinessService.java:105-210（放款结果处理全链路入口）", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceContractService（queryNeedFunderContract合同下载链路保持不变）" ],
+    "confidence" : "HIGH",
+    "moduleName" : "保费分期/中化融资全链路",
+    "relatedFiles" : [ "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/FinanceBusinessService.java", "scf-intf-zhonghua/intfCapital-service/src/main/java/com/scf/intfCapital/service/capital/zhonghua/LoanQueryServiceImpl.java", "scf-order/scf-order-service/src/main/java/com/thchengtay/order/service/finance/AdjustmentPlanService.java" ],
+    "estimatedEffort" : "2h",
+    "ownerUserName" : "hanmeng",
+    "priority" : "3",
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : "WI1、WI2、WI3、WI4、WI5",
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  } ],
+  "totalEstimatedEffort" : "32h",
+  "developmentEstimatedEffort" : "16h",
+  "testingEstimatedEffort" : "16h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-18T14:29:48.936316",
+  "generator" : "Codex CLI",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null,
+  "zentaoSyncedTaskIds" : null
+}
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 276
+
+<!-- analysis-record:cc069da646a78507250eae232663c963816a036ca361eb2f0e33870ea6a6aa21 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：126
+- 记录时间：2026-11-18T17:36:56.236286
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/2026110600003/历史版本/a8dbcf8d-d3c9-4b83-be36-d4004d667f5f/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "嘉泰租赁资产保理",
+  "projectId" : 42,
+  "projectName" : "中恒信合乘用车保理项目",
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/2026110600003/历史版本/a8dbcf8d-d3c9-4b83-be36-d4004d667f5f/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "国胜项目系统迭代，包含5项变更：1) 线上还款二维码失效规则由生成后5分钟有效调整为当日24:00失效，跨日自动失效；2) 客户提前结清推送增加T+1个工作日宽限期，允许合作方在T+1个工作日内推送客户实际结清时间且不多计利息/罚息；3) 还款台账搜索栏及列表新增“客户实还时间”字段，结算方式为提前结清/代偿/回购且线下还款的结算时间由账单生成日改为按账单核销收款时间；4) 为国胜合作方开通4个外部查询账号（邓艳艳、李星野、秦轶斐、何洋）并配置资产管理及中恒信合资产查询权限（搜索、查询列表、查看详情）；5) 客户账单“客户实还时间”搜索框改为日期控件并缩短。",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "xujieni" ],
+  "workItems" : [ {
+    "title" : "资产管理权限",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "assets-lease", "assets-lease-admin" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "xujieni",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  } ],
+  "totalEstimatedEffort" : "12h",
+  "developmentEstimatedEffort" : "4h",
+  "testingEstimatedEffort" : "8h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-18T17:36:55.401245",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null,
+  "zentaoSyncedTaskIds" : null
+}
+```
+
+
+
+### 临时分析 · 生成需求澄清项 · 需求 274
+
+<!-- analysis-record:46bc390dd09917eaa86141ea7f9d3acdf02cbd294aad748afe1d586e889248c4 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：53
+- 记录时间：2026-11-19T09:50:50.022384
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/BL000005/BL000005/2026/202610280004/历史版本/e0d82b5b-6967-4c42-aa17-789efd462ca4/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "付款流程口径：全自动系统代付，还是\"人工发起付款申请+财务复核\"工作流",
+  "description" : "需确认最终流程：A. 按产品方案全自动（扣款成功自动生成记录并系统代付，失败自动重试，无人工环节）；B. 按需求描述构建\"人工发起付款申请→财务复核→付款\"流程（需新增申请/复核状态机、操作人与时间字段、权限与操作留痕）。二者数据结构、交互与实现工作量差异巨大，需产品给定唯一口径。",
+  "evidence" : "已查证：①受理单需求描述与需求简介均为\"线上代收对账单新增【系统内人工发起付款申请及财务复核完成付款】功能\"；②产品方案《新增【线上代收付明细自动付款】功能.docx》V1.0（2026/11/09 范怡）全文描述全自动：扣款成功自动生成记录、\"由先行通设备科技的宝付代付商户号，向对应的设备厂家打款相同金额\"、代付方式仅\"系统自动/线下打款\"、代付结果仅\"付款中/付款成功\"、\"代付失败系统重新调用代付接口直至成功\"，字段清单与筛选项中无申请人/申请时间/复核人/复核时间/待复核状态等任何字段；③代码现状：ol-saps StatementManageV2Controller（/saps/statement/online/collection/* 4个查询导出接口+核销复用/saps/statement/v2/check）与 ol-admin factoryBill 模块（onlineCollectionBill.vue、OnlineCollectionDetail.vue、FactoryStatementWriteOff.vue）均无付款申请/复核功能。两份需求材料口径相反，无法从证据推断唯一答案。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "QUESTION",
+  "title" : "强制回购（待强制回购/已强制回购）后的线上扣款账单是否纳入生成与代付范围",
+  "description" : "需确认新【线上代收付明细】的账单状态过滤口径：A. 仅代偿/回购（500/501/600/601），排除强制回购；B. 沿用现有线上代收数据源（500/501/600/601/700/701），强制回购账单线上扣款成功同样生成记录并系统代付，此时\"代偿/回购对账单编号\"字段及打款备注是否取强制回购对账单（FB前缀）编号也需一并明确。该口径直接决定取数范围与打款边界。",
+  "evidence" : "已查证：①需求描述与docx均仅写\"代偿、回购后…扣款成功的账单\"，字段与打款备注规则均只定义\"代偿/回购对账单编号\"；②代码现实：ol-saps CustomerBillPayDetailMapper.xml listOnlineCollectionPayDetails（第75-76行）过滤条件为 cb.bill_status IN (500,501,600,601,700,701)，明确包含待/已强制回购，StatementTypeEnum 存在独立的 FORCE_BUYBACK(2010,\"强制回购\",\"FB\")；③生产库(PRJ000088)：已强制回购(701)账单2458条，远多于已代偿(501)20条、已回购(601)20条，强制回购账单当前回款全部走线下(channel=8,sub_mode 32/40，46笔)，线上代收对账单明细(30条)目前仅含已代偿账单——即需求文本与被替换功能的既有数据源口径不一致，且一旦强制回购账单发生线上扣款，按字面口径将不生成记录、不代付。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "宝付代付渠道能力缺失：可查证的支付系统代付链路仅支持通联，宝付仅有代收实现，代付商户1283248无配置与生产执行先例",
+  "description" : "需求核心依赖\"宝付代付商户号1283248系统代付\"，但当前可查证的支付系统代码中代付通道硬编码通联且无宝付代付策略、请求接口不携带商户号、生产库无宝付代付商户配置、宝付代付无任何生产执行记录。落地需在支付侧新增宝付代付渠道对接（接口适配、渠道路由、商户/密钥配置、回调与对账文件），并依赖宝付侧接口开通与联调，属资金出账通道，无法在ol组仓库内复用现成实现。",
+  "evidence" : "已查证：①ol-payment lease-payment-business/.../service/impl/RemitBizServiceImpl.java singleRemit 中\"// 通道选择(路由),默认通联 ChannelEnum channel = ChannelEnum.ALLINPAY;\"，无宝付路由分支；②ol-payment channel/impl/remit/ 目录仅有 AllinPayRemitStrategyImpl.java，宝付目录(baofu/)仅有 BaofuAgreePayStrategyImpl(代收)/BaofuCardBindStrategyImpl/BaofuPayQueryServiceImpl/BaofuPayResultNotifyStrategy，无代付策略；③生产库 ol_payment.remit_channel_config 仅1条宝付配置：BAOFUPAY+SIGN_PAY(协议代收)+商户1273947，无代付商户1283248；④ol-saps 退款单虽有宝付代付设计（RefundOrderProperties.baofuRemitMerchantNo=1283248、RefundInterfaceTypeEnum.BANK_TRANSFER\"银行卡代付\"），但生产库 ol_saps.refund_payment_flow 仅有 ORIGINAL_REFUND 记录(14成功/1失败)，BANK_TRANSFER 为0条，宝付代付无生产执行先例；⑤代付调用链 ol-saps PaymentApiService→xxt-pay /pay/remit/singleRemit 的 RemitReq（lease-saps-api/.../RemitReq.java）无商户号字段，无法指定1283248。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "\"代付失败重新调用直至成功\"与现有代付幂等及异步状态机冲突：同一订单号重复提交会被拒绝，处理中/未知态下重发存在重复出款风险",
+  "description" : "需求要求代付失败即重新调用代付接口直至成功，且代付结果无失败终态（仅付款中/付款成功）。而现有代付框架按\"租户+业务订单号\"做幂等，同单重发直接报 DUPLICATE_ORDER，每次重试必须更换业务订单号；同时代付存在 PROCESSING 中间态、依赖异步回调或主动查询推进终态。若重试逻辑不严格区分\"确定失败\"与\"处理中/结果未知\"即重新发起，存在对同一笔款项重复打款的资金风险；若仅凭同步返回失败重发，异步失败场景又会长期滞留\"付款中\"。重试机制需明确逐次换号、终态核实后再重发的口径并配套查询兜底。",
+  "evidence" : "已查证：①ol-payment RemitBizServiceImpl.singleRemit 入口 isDuplicateRequest 按 RemitOrderEntity.tenantCode+BizSerialNo 查重，存在即抛 BizException(DUPLICATE_ORDER)——同一业务订单号无法二次发起；②同文件代付订单初始状态即 PROCESSING，终态依赖 remitNotify 异步回调（通联回调模型）或 queryRemit 渠道同步查询推进，存在\"提交成功但结果未知\"窗口；③产品方案代付结果枚举仅\"付款中/付款成功\"且要求\"重新调用代付接口进行代付，直至成功为止\"，未定义重试频率、次数与结果未知时的处理规则；④ol-saps 侧既有先例为退款单逐次请求换号（refund_payment_flow.requestNo/thirdTradeNo/queryCount/nextQueryTime 字段），新功能需按同等模式设计而非简单重发。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### 临时分析 · 生成需求澄清项 · 需求 285
+
+<!-- analysis-record:a93105e0c60fc4a9c117317ea976eab0d759c571c3f1b57f8b081b1d4a0aaa97 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：56
+- 记录时间：2026-11-19T11:26:16.095149
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/消费分期/即科医美通汇诚泰保理/2026/202611190001/历史版本/7fa66c11-25c6-438e-8b16-bd749cbbcd2c/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "按项目号补跑回购出账任务会绕过 removeBuyBack 排除配置，指定 projectNo 重跑仍会生成回购对账单",
+  "description" : "排除逻辑只作用于日批未传 projectNo 的分支；若运维通过 xxl-job 以 projectNo=XXT-PRJ-JK-A/C/D 参数补跑 buyBackStatementGenerateSchedule，回购对账单仍会照常生成，与需求“系统不再生成回购对账单”的口径存在缺口。需在方案中明确二选一：补跑操作纪律约束，或在代码层（else 分支）增加同一排除校验。",
+  "evidence" : "已查证：amp-saps/saps-schedule/src/main/java/com/amp/saps/schedule/statement/BuyBackStatementGenerateSchedule.java:86-96，removeBuyBack 排除仅位于 projectNo 为空的分支；同文件 else 分支（117-146 行）按传入 projectNo 直接执行 statementGenerateBizService.execute(BUYBACK)，不读取排除字典。仓库内本需求草案 dbscript/DML/2026/V5_cancel_buyback_202611190001_dml.sql:16 注释亦自认“指定 projectNo 补跑不读取该排除项”。生产库 amp_saps.business_config 现有 removeBuyBack 仅 XXT-PRJ-DP-A/B 两值，三项目尚未排除。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "强制回购分析跑批链路不校验 removeBuyBack，CRM 侧一旦重新开启强制回购配置，回购对账单将恢复生成",
+  "description" : "强制回购有三条入口：日批（校验排除）、/api/mandatory/buyback 手动接口（校验排除）、mandatoryBuyBackAnalyzeSchedule 跑批内部直调 statementBizService.mandatoryBuyBack（无任何排除校验）。当前三项目 forced_buyback_flag=0 不触发，但该配置由 CRM 推送可随时变更，若开启即绕过本次排除配置。草案 DML 注释“强制回购接口也使用该配置”仅对手动 API 成立，对跑批内部链路不成立；方案需明确该链路的处理（如同步下线/锁定三项目的强制回购配置，或在 analyze 调用前增加排除校验）。",
+  "evidence" : "已查证：全仓 removeBuyBack 仅出现在 BuyBackStatementGenerateSchedule.java:86 与 CapitalProviderController.java:81 两处；amp-saps/saps-business/.../MandatoryBuybackBizServiceImpl.java:90 在 analyze 中直接调用 statementBizService.mandatoryBuyBack，StatementBizServiceImpl.java:1637 的 mandatoryBuyBack 实现无排除校验；MandatoryBuyBackConfigServiceImpl.saveByPush/updateByPush 接受 CRM 推送变更配置。生产库 amp_saps.mandatory_buyback_config：XXT-PRJ-JK-A/C/D 三行 forced_buyback_flag 均为 0（JK-A 另有 compensation_rule='<='），即当前关闭、但未加锁。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### 临时分析 · 回复需求澄清项 · 需求 285
+
+<!-- analysis-record:fc514cf3ef22b7db128f7a2084b72b4d7ed169f6ae648a7bbedfd73767339911 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：56
+- 记录时间：2026-11-19T11:43:49.597616
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/消费分期/即科医美通汇诚泰保理/2026/202611190001/历史版本/7fa66c11-25c6-438e-8b16-bd749cbbcd2c/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "按项目号补跑回购出账任务会绕过 removeBuyBack 排除配置，指定 projectNo 重跑仍会生成回购对账单",
+  "description" : "排除逻辑只作用于日批未传 projectNo 的分支；若运维通过 xxl-job 以 projectNo=XXT-PRJ-JK-A/C/D 参数补跑 buyBackStatementGenerateSchedule，回购对账单仍会照常生成，与需求“系统不再生成回购对账单”的口径存在缺口。需在方案中明确二选一：补跑操作纪律约束，或在代码层（else 分支）增加同一排除校验。",
+  "evidence" : "已查证：amp-saps/saps-schedule/src/main/java/com/amp/saps/schedule/statement/BuyBackStatementGenerateSchedule.java:86-96，removeBuyBack 排除仅位于 projectNo 为空的分支；同文件 else 分支（117-146 行）按传入 projectNo 直接执行 statementGenerateBizService.execute(BUYBACK)，不读取排除字典。仓库内本需求草案 dbscript/DML/2026/V5_cancel_buyback_202611190001_dml.sql:16 注释亦自认“指定 projectNo 补跑不读取该排除项”。生产库 amp_saps.business_config 现有 removeBuyBack 仅 XXT-PRJ-DP-A/B 两值，三项目尚未排除。",
+  "status" : "ACKNOWLEDGED",
+  "responseText" : "允许，采用removeBuyBack的方案",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-19T11:43:49.515374"
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "强制回购分析跑批链路不校验 removeBuyBack，CRM 侧一旦重新开启强制回购配置，回购对账单将恢复生成",
+  "description" : "强制回购有三条入口：日批（校验排除）、/api/mandatory/buyback 手动接口（校验排除）、mandatoryBuyBackAnalyzeSchedule 跑批内部直调 statementBizService.mandatoryBuyBack（无任何排除校验）。当前三项目 forced_buyback_flag=0 不触发，但该配置由 CRM 推送可随时变更，若开启即绕过本次排除配置。草案 DML 注释“强制回购接口也使用该配置”仅对手动 API 成立，对跑批内部链路不成立；方案需明确该链路的处理（如同步下线/锁定三项目的强制回购配置，或在 analyze 调用前增加排除校验）。",
+  "evidence" : "已查证：全仓 removeBuyBack 仅出现在 BuyBackStatementGenerateSchedule.java:86 与 CapitalProviderController.java:81 两处；amp-saps/saps-business/.../MandatoryBuybackBizServiceImpl.java:90 在 analyze 中直接调用 statementBizService.mandatoryBuyBack，StatementBizServiceImpl.java:1637 的 mandatoryBuyBack 实现无排除校验；MandatoryBuyBackConfigServiceImpl.saveByPush/updateByPush 接受 CRM 推送变更配置。生产库 amp_saps.mandatory_buyback_config：XXT-PRJ-JK-A/C/D 三行 forced_buyback_flag 均为 0（JK-A 另有 compensation_rule='<='），即当前关闭、但未加锁。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### 临时分析 · 回复需求澄清项 · 需求 285
+
+<!-- analysis-record:f7f4022ae1cefb1f81cfc52a3f975e4bee6fa9d59e0e5065cc3058112d6fcd5b -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：56
+- 记录时间：2026-11-19T11:44:00.676613
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/消费分期/即科医美通汇诚泰保理/2026/202611190001/历史版本/7fa66c11-25c6-438e-8b16-bd749cbbcd2c/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "按项目号补跑回购出账任务会绕过 removeBuyBack 排除配置，指定 projectNo 重跑仍会生成回购对账单",
+  "description" : "排除逻辑只作用于日批未传 projectNo 的分支；若运维通过 xxl-job 以 projectNo=XXT-PRJ-JK-A/C/D 参数补跑 buyBackStatementGenerateSchedule，回购对账单仍会照常生成，与需求“系统不再生成回购对账单”的口径存在缺口。需在方案中明确二选一：补跑操作纪律约束，或在代码层（else 分支）增加同一排除校验。",
+  "evidence" : "已查证：amp-saps/saps-schedule/src/main/java/com/amp/saps/schedule/statement/BuyBackStatementGenerateSchedule.java:86-96，removeBuyBack 排除仅位于 projectNo 为空的分支；同文件 else 分支（117-146 行）按传入 projectNo 直接执行 statementGenerateBizService.execute(BUYBACK)，不读取排除字典。仓库内本需求草案 dbscript/DML/2026/V5_cancel_buyback_202611190001_dml.sql:16 注释亦自认“指定 projectNo 补跑不读取该排除项”。生产库 amp_saps.business_config 现有 removeBuyBack 仅 XXT-PRJ-DP-A/B 两值，三项目尚未排除。",
+  "status" : "ACKNOWLEDGED",
+  "responseText" : "允许，采用removeBuyBack的方案",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-19T11:43:49.515374"
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "强制回购分析跑批链路不校验 removeBuyBack，CRM 侧一旦重新开启强制回购配置，回购对账单将恢复生成",
+  "description" : "强制回购有三条入口：日批（校验排除）、/api/mandatory/buyback 手动接口（校验排除）、mandatoryBuyBackAnalyzeSchedule 跑批内部直调 statementBizService.mandatoryBuyBack（无任何排除校验）。当前三项目 forced_buyback_flag=0 不触发，但该配置由 CRM 推送可随时变更，若开启即绕过本次排除配置。草案 DML 注释“强制回购接口也使用该配置”仅对手动 API 成立，对跑批内部链路不成立；方案需明确该链路的处理（如同步下线/锁定三项目的强制回购配置，或在 analyze 调用前增加排除校验）。",
+  "evidence" : "已查证：全仓 removeBuyBack 仅出现在 BuyBackStatementGenerateSchedule.java:86 与 CapitalProviderController.java:81 两处；amp-saps/saps-business/.../MandatoryBuybackBizServiceImpl.java:90 在 analyze 中直接调用 statementBizService.mandatoryBuyBack，StatementBizServiceImpl.java:1637 的 mandatoryBuyBack 实现无排除校验；MandatoryBuyBackConfigServiceImpl.saveByPush/updateByPush 接受 CRM 推送变更配置。生产库 amp_saps.mandatory_buyback_config：XXT-PRJ-JK-A/C/D 三行 forced_buyback_flag 均为 0（JK-A 另有 compensation_rule='<='），即当前关闭、但未加锁。",
+  "status" : "ACKNOWLEDGED",
+  "responseText" : "没问题",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-19T11:44:00.573673"
+} ]
+```
+
+
+
+### 临时分析 · 生成需求澄清项 · 需求 275
+
+<!-- analysis-record:87f6cbcf7b41f0a51029bf16cb4500c327f1bb4bb33b1fec5e18a7357c95a50e -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：58
+- 记录时间：2026-11-19T18:37:19.711523
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/BL000008/BL000008/2026/2026110600006/历史版本/30ccafec-3ab6-46c2-8ec3-9bdd52ede180/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "“服务费”字段的适用范围与判定口径：仅嘉泰还是全部可转让资方，按资方编码还是按转让模式判定",
+  "description" : "需求简介写“嘉泰模式转让界面新增服务费字段”，但产品方案 docx 正文为“弹窗界面新增字段‘服务费’，人工填写值（保留两位小数）”，未限定嘉泰。请明确一个口径：(a) 弹窗对所有可转让资方无条件显示；(b) 仅转让模式=3（直租-资金方）时显示；(c) 仅实际转让资金方为 ZJF000027（通汇嘉泰融资租赁（天津））时显示。口径决定弹窗显隐/必填校验、列表与详情字段展示范围以及后续科目下发的适用边界。",
+  "evidence" : "已查证：1) intake 275 结构化“需求简介”=“现申请嘉泰模式转让界面新增服务费字段”，而附件《资金方平台新增服务费字段.docx》正文（附件499全文提取）无嘉泰限定，两处口径不一致；2) 前端弹窗 lease-admin/src/views/assetTransfer/assetOrder/components/transferPop.vue 对所有可转让资方统一渲染，无按资方/模式分支的先例；3) 后端转让模式由资金方交易模式决定（AssetTransferOrderServiceImpl.resolveTransferMode，AssetTransferModelEnum：1售后回租/2直租-先行通/3直租-资金方）；4) 生产库 lease_crm.org_funding_party（2026-11 只读核对）：名含“嘉泰”的主体有3家（ZJF000014 通汇嘉泰、ZJF000023 通汇嘉泰融资租赁(天津)、ZJF000027 通汇嘉泰融资租赁(天津)），仅 ZJF000027 配置 transaction_mode='3' 且生效，ZJF000014/ZJF000023 交易模式为空，另 ZJF000026 浙银为'2'——“嘉泰”与“模式3”并非一一对应，无法从现有证据唯一确定判定口径。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "QUESTION",
+  "title" : "“同时新增服务费科目”的具体口径：科目落点、编码与金额结算方式",
+  "description" : "需求仅有一句“同时新增服务费科目”（docx 中仅为标题行“资金方平台新增服务费科目”，无正文），未说明科目编码、挂在哪个系统（对资金方账单费用明细/付款单科目/清结算台账）以及服务费金额如何结算（建单即生成、确认放款时并入资方账单首期、生成单独付款单，还是仅在资产转让单上记录展示）。请给出明确口径，例如：新增对资方账单科目“服务费”（新编码，如1020x），金额=弹窗填写值，在确认放款推送资方账单时随首期/一次性下发；或复用既有10201等。",
+  "evidence" : "已查证：1) 附件499 docx全文提取中“资金方平台新增服务费科目”仅为标题行，其后仅描述弹窗/单据/详情三处字段，无科目任何细节；需求描述（source.md/requirementSummary）同样仅尾句“同时新增服务费科目”；需求截图 image.png 为图片仅可取元数据，无法补充信息；2) 既有科目枚举均为对客/付款方向：BillSubjectEnum（10201服务费（资金方）、1020201服务费（先行通）、1020202服务费（业务合作商））、PaymentSlipSubjectEnum（203服务费（一次性收取）、106首期服务费及10201/1020201/1020202首期变体）、RentSaleCustomerBillSubjectNoEnum，均与本需求“对资方收取的服务费”方向不同，无现成可套用口径；3) 对资金方账单推送链路（AssetTransferOrderServiceImpl.syncFundingRepaymentPlan → FunderBillGenerateDTO.funderBillList[].feeDetailList，实现文件885-886行使用 PRINCIPAL/INTEREST 组装）目前科目仅有本金/利息，无服务费科目；lease-saps 侧 FeeDetailDTO 注释列明的测算科目（10001/1020201/1020202）亦不含该服务费。综上无法从需求材料、知识库与代码中确定科目编码、落点与结算方式。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "lease-admin 存在新旧两套资产转让页面树，菜单实际指向未确认，前端改动可能落错页面导致上线后字段不显示",
+  "description" : "服务费字段需改动弹窗（transferPop）、资产转让单列表（transferOrder/index.vue）、查看详情（transferOrderDetail.vue）。lease-admin 同时存在 src/views/assetTransfer/**（二期改造树）与 src/views/deviceRentAndSale/assetTransfer/**（旧树，含独立 transferPop.vue，同样调用 POST /assetTransfer/order/transfer）。若生产菜单 component 仍指向旧树而改动只落在新树（或反之），上线后弹窗/列表/详情均不出现服务费字段。实施前需先确认目标环境菜单绑定，并明确是否两套同改。",
+  "evidence" : "1) 两套页面并存：lease-admin/src/views/assetTransfer/assetOrder/components/transferPop.vue 与 lease-admin/src/views/deviceRentAndSale/assetTransfer/assetOrder/components/transferPop.vue（375行调用同一 /assetTransfer/order/transfer 接口）；2) 资产转让二期发布手册（lease-admin/docs/assets/prd/2026/asset_transfer_ui_phase2/release-handbook.md §10.6）明确记录已知问题：“lease-admin 两套同名页面树：本分支只改 src/views/assetTransfer/**；若生产菜单 component 指向 src/views/deviceRentAndSale/assetTransfer/**，需单独评估”，且 §0 状态为“生产未发布”；3) 权限中心库 xxt_authing.resource（生产只读）中未检索到叉车租售资产转让菜单行（仅消费金融/设备金融等其他平台的“资产转让单”菜单），菜单实际 component 指向在现有可查证据内无法确认。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "资产转让二期代码尚未上生产，本需求开发基线若不含二期改动，弹窗改造将落在旧实现上并产生合并冲突与口径漂移",
+  "description" : "本需求独立分支为 feature/funder_service_fee_2026110600006，而弹窗 transferPop 在二期分支（价款人工改写锁定、可转让资方口径后端收口、切换资方重算等）已被大幅重构且仅部署测试环境。若新分支基于未合入二期的 master 开发，服务费字段的添加位置与交互会基于旧弹窗，后续与二期合并存在冲突及交互口径漂移；上线顺序上本需求需晚于或随二期同窗发布。",
+  "evidence" : "1) intake 275 结构化字段 developmentBranchName=feature/funder_service_fee_2026110600006（本需求独立分支）；2) 二期发布手册 §0：分支 feature/asset_transfer_ui_phase2_20260930 涉及 lease-finance/lease-admin 等六仓，“代码仅部署测试环境，生产未发布”，§5 要求按序合入发布；3) 当前 transferPop.vue（src/views/assetTransfer 树）内含二期改造注释（“转让资产价款已被人工改写…切换资金方时解除锁定”“可转让资金方：…口径由后端收口，含嘉泰等跨业务编码资方”），证明弹窗现状即二期版本，开发基线必须包含该批次变更。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 285
+
+<!-- analysis-record:1b5fc7f41b2841278224250c94959ca2fc643b236b0a1c54c1b574709a317fa9 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：129
+- 记录时间：2026-11-20T09:13:59.457462
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/消费分期/即科医美通汇诚泰保理/2026/202611190001/历史版本/26a0b815-508f-416e-904d-41f63a65ac93/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "消费分期",
+  "projectId" : 4,
+  "projectName" : "即科医美通汇诚泰保理",
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/消费分期/即科医美通汇诚泰保理/2026/202611190001/历史版本/26a0b815-508f-416e-904d-41f63a65ac93/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "内部管理要求，针对即科项目回购功能调整。合作方：上海即科智能技术集团有限公司，针对资方是通汇诚泰保理的项目取消回购逻辑，涉及项目：1、XXT-PRJ-JK-A（即科医美通汇诚泰保理）；2、XXT-PRJ-JK-C（即科医美通汇诚泰保理（担保公司））；3、XXT-PRJ-JK-D（即科商品分期通汇诚泰保理）。取消原有\"连4累6\"或\"连3累5\"触发回购的逻辑，系统不再生成回购对账单；后续客户逾期满足代偿规则后触发代偿，生成代偿对账单即可。",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "shihao" ],
+  "workItems" : [ {
+    "title" : "取消回购",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "amp-saps" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "8h",
+    "ownerUserName" : "shihao",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  } ],
+  "totalEstimatedEffort" : "12h",
+  "developmentEstimatedEffort" : "8h",
+  "testingEstimatedEffort" : "4h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-20T09:13:58.645408",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null,
+  "zentaoSyncedTaskIds" : null
+}
+```
+
+
+
+### 临时分析 · 生成需求澄清项 · 需求 286
+
+<!-- analysis-record:49af28cd0c3c687a6aaa138f7460e2e1b586b4409611b0e96cc043d061ec423f -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：59
+- 记录时间：2026-11-20T10:02:10.065705
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202611170005/历史版本/684f9c63-e8f0-4774-8810-3e787cbbf557/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "恒昌存量宝付（channel 15）扣款通道与存量绑卡的处置口径",
+  "description" : "需求只写了\"原恒昌中金商户切换为嘉泰保理中金商户（010583/0006）\"并要求扣款资金100%清分至嘉泰保理，但已查证恒昌生产线上扣款当前跑在宝付渠道且为转付对账单清分（非实时清分），中金渠道在恒昌应用下目前仅配了二维码（subMode=16）费率：若口径是\"全部扣款切到中金010583\"，需新增 21+10/11 费率与绑卡配置，且存量客户宝付协议绑卡在中金商户下不可用（绑卡与支付必须同渠道同商户，协议号按渠道隔离），需求未说明宝付是否停用、存量客户如何重新签约；若口径是\"仅中金通道（二维码及其扣款）切换、宝付照旧\"，则\"扣款100%清分至嘉泰保理\"对宝付扣款不成立。请回复一个明确口径：宝付扣款是否退役，存量绑卡迁移/双通道并行方案。",
+  "evidence" : "已查需求原文与附件摘要（仅提中金商户切换、无宝付及绑卡迁移表述）；assets-payment dbscript/DML/V3_hengchang_250521_dml.sql（恒昌 9800005 生产 bind/pay/remit 全套配置在宝付 channel 15）；assets-saps dbscript/DML/V18_payment_share_type_hc_20260515.sql 与 dbscript/DML/2026/V1_jd_pay_switch_202606290003_dml.sql §2.3（恒昌 shareAccountInfo 仅 channel 15、clearingMode=30，注释\"恒昌 9800005 PRD-HC-001 宝付线上目前对账单清分\"）；assets-saps docs/plan/feature/qr_repayment_202610230003/261120-测试用例.md F1（channel_fee_config 9800005 仅 subMode=16 一条中金费率）、F4（\"bind/pay 指向同一商户，避免协议支付跨商户\"）；assets-payment 全部 DML/docs/sql 无恒昌中金扣款（21+10/11）配置脚本。上述证据仍无法唯一确定宝付通道及存量绑卡的处置口径。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "与在途需求 202610230003（恒昌二维码扫码还款）的商户切换目标与清分基线冲突",
+  "description" : "202610230003 的上线阻塞项 A7/F4 原计划\"上线前切换并回归\"到恒昌专属中金商户 M1000305（当前测试环境临时走 010583 嘉泰商户），其已通过的测试基线为三方分账（ZJF000029/HZF000055/GLF000003 按固定比例、clearingMode=10）。本需求把商户正式定为嘉泰保理中金商户 010583 并将清分改为 100% 归嘉泰保理，直接推翻 A7 的切换目标并使 A2/B2/F3 的清分测试基线失效。两个需求改动同一批配置（channel_pay_config 商户、shareAccountInfo[\"21\"]、商户 sharingEnabled），若 202610230003 按原方案先上线再执行本需求，会产生二次切换、二次回归；需两个需求统一口径、合并安排上线与回归。",
+  "evidence" : "assets-saps/docs/plan/feature/qr_repayment_202610230003/261120-测试用例.md：A7（\"核对 M1000305 pay 商户为恒昌专属商户…上线阻塞项\"）、§七风险移交（\"恒昌专属商户（A7/F4）：当前测试走 010583 嘉泰商户，上线前切换并回归\"）、A2/B2（三方分账固定比例、SplitType=30）、F3（shareAccountInfo[\"21\"] 含三分账方 clearingMode=10）、F4/F5。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "嘉泰保理中金商户 010583 及分账能力依赖 ca-assets 之外的系统，超出需求声明的涉及系统范围",
+  "description" : "商户号 010583、结算标识 0006 与聚合分账门禁（商户 sharingEnabled、交易方式配置）实际落点在 xxt-pay 与 intf-paychannel（业务线全局系统，本次授权代码范围之外），assets-payment 侧只经 channel_pay_config 指向 xxt-pay 内部地址上送 merchantNo/asinfo。测试环境已用 010583 验证出码与分账，但生产上线要求 xxt-pay 生产侧 010583 商户、结算标识 0006、恒昌应用交易方式与分账配置同步就绪且 intf-paychannel 部署版本满足门禁；需求\"涉及系统\"仅写了创新保理资产管理系统，该跨系统依赖未纳入交付范围，缺失会导致上线后报\"渠道配置信息加载异常\"或分账指令被门禁拦截。",
+  "evidence" : "业务线上下文 involvedSystems/globalSystems（全局系统含 xxt-pay、xxt-pay-gateway、intf-paychannel）；assets-payment docs/sql/V8_cpc_merchant_setup_202606020007_dml.sql（中金 channel_url 指向 xxt-pay-internal.thchengtay.com，member_id/terminal_id 为 xxt-pay 侧商户编码）；qr_repayment 261120-测试用例.md F2/F5 与 §七（\"聚合分账门禁版本：测试环境 intf-paychannel 版本旧于仓库，上线版本需按门禁逻辑配 sharingEnabled\"、A6 \"resv_three 为空报 303002 渠道配置信息加载异常\"）。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 2,
+  "itemType" : "RISK",
+  "title" : "恒昌 statement_project_config 中合作方（HZF000055）收款账户为空，新增合作方服务费对账单将无收款账号",
+  "description" : "本需求要复用中恒已落地的合作方服务费对账单（StatementTypeEnum.PARTNER_SERVICE_FEE，资方→合作方方向、明细取 statement_project_config 中 PARTNER 交易方收款账户）。恒昌项目 PRJ-HC-001 的 statement_project_config 中 PARTNER（HZF000055 恒昌众鼎融资租赁有限公司）银行账户字段在初始脚本中全部为空，后续脚本未补；中恒同功能上线时该问题被明确列为\"上线前人工补充，否则合作方服务费对账单明细没有收款账号\"。恒昌若不补充账户，新增的对账单生成后无法结算/打款。",
+  "evidence" : "assets-saps dbscript/DML/V8_hengchang_20250526.sql 末段 statement_project_config（PRJ-HC-001，HZF000055 的 accountBankChCn/accountNameCh/accountNumCh/accountBankColCn 等均为空串）；对照 assets-saps dbscript/DML/2026/V7_zh_penalty_split_202610270001_dml.sql 第4节（PRJ-ZH-001 PARTNER 账户为空需上线前人工补充，否则\"合作方服务费对账单明细将没有收款账号\"）；dbscript 全量检索确认无后续脚本更新 PRJ-HC-001 的 statement_project_config。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### 临时分析 · 回复需求澄清项 · 需求 286
+
+<!-- analysis-record:716ca924ad889756e0dab3c8c3472bc7811a4ac7fa424e26808691d6b1bd49f4 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：59
+- 记录时间：2026-11-20T14:44:43.728248
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202611170005/历史版本/684f9c63-e8f0-4774-8810-3e787cbbf557/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "恒昌存量宝付（channel 15）扣款通道与存量绑卡的处置口径",
+  "description" : "需求只写了\"原恒昌中金商户切换为嘉泰保理中金商户（010583/0006）\"并要求扣款资金100%清分至嘉泰保理，但已查证恒昌生产线上扣款当前跑在宝付渠道且为转付对账单清分（非实时清分），中金渠道在恒昌应用下目前仅配了二维码（subMode=16）费率：若口径是\"全部扣款切到中金010583\"，需新增 21+10/11 费率与绑卡配置，且存量客户宝付协议绑卡在中金商户下不可用（绑卡与支付必须同渠道同商户，协议号按渠道隔离），需求未说明宝付是否停用、存量客户如何重新签约；若口径是\"仅中金通道（二维码及其扣款）切换、宝付照旧\"，则\"扣款100%清分至嘉泰保理\"对宝付扣款不成立。请回复一个明确口径：宝付扣款是否退役，存量绑卡迁移/双通道并行方案。",
+  "evidence" : "已查需求原文与附件摘要（仅提中金商户切换、无宝付及绑卡迁移表述）；assets-payment dbscript/DML/V3_hengchang_250521_dml.sql（恒昌 9800005 生产 bind/pay/remit 全套配置在宝付 channel 15）；assets-saps dbscript/DML/V18_payment_share_type_hc_20260515.sql 与 dbscript/DML/2026/V1_jd_pay_switch_202606290003_dml.sql §2.3（恒昌 shareAccountInfo 仅 channel 15、clearingMode=30，注释\"恒昌 9800005 PRD-HC-001 宝付线上目前对账单清分\"）；assets-saps docs/plan/feature/qr_repayment_202610230003/261120-测试用例.md F1（channel_fee_config 9800005 仅 subMode=16 一条中金费率）、F4（\"bind/pay 指向同一商户，避免协议支付跨商户\"）；assets-payment 全部 DML/docs/sql 无恒昌中金扣款（21+10/11）配置脚本。上述证据仍无法唯一确定宝付通道及存量绑卡的处置口径。",
+  "status" : "RESPONDED",
+  "responseText" : "宝付渠道已经不能用了，仅中金渠道需要处理",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-20T14:44:43.544818"
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "与在途需求 202610230003（恒昌二维码扫码还款）的商户切换目标与清分基线冲突",
+  "description" : "202610230003 的上线阻塞项 A7/F4 原计划\"上线前切换并回归\"到恒昌专属中金商户 M1000305（当前测试环境临时走 010583 嘉泰商户），其已通过的测试基线为三方分账（ZJF000029/HZF000055/GLF000003 按固定比例、clearingMode=10）。本需求把商户正式定为嘉泰保理中金商户 010583 并将清分改为 100% 归嘉泰保理，直接推翻 A7 的切换目标并使 A2/B2/F3 的清分测试基线失效。两个需求改动同一批配置（channel_pay_config 商户、shareAccountInfo[\"21\"]、商户 sharingEnabled），若 202610230003 按原方案先上线再执行本需求，会产生二次切换、二次回归；需两个需求统一口径、合并安排上线与回归。",
+  "evidence" : "assets-saps/docs/plan/feature/qr_repayment_202610230003/261120-测试用例.md：A7（\"核对 M1000305 pay 商户为恒昌专属商户…上线阻塞项\"）、§七风险移交（\"恒昌专属商户（A7/F4）：当前测试走 010583 嘉泰商户，上线前切换并回归\"）、A2/B2（三方分账固定比例、SplitType=30）、F3（shareAccountInfo[\"21\"] 含三分账方 clearingMode=10）、F4/F5。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "嘉泰保理中金商户 010583 及分账能力依赖 ca-assets 之外的系统，超出需求声明的涉及系统范围",
+  "description" : "商户号 010583、结算标识 0006 与聚合分账门禁（商户 sharingEnabled、交易方式配置）实际落点在 xxt-pay 与 intf-paychannel（业务线全局系统，本次授权代码范围之外），assets-payment 侧只经 channel_pay_config 指向 xxt-pay 内部地址上送 merchantNo/asinfo。测试环境已用 010583 验证出码与分账，但生产上线要求 xxt-pay 生产侧 010583 商户、结算标识 0006、恒昌应用交易方式与分账配置同步就绪且 intf-paychannel 部署版本满足门禁；需求\"涉及系统\"仅写了创新保理资产管理系统，该跨系统依赖未纳入交付范围，缺失会导致上线后报\"渠道配置信息加载异常\"或分账指令被门禁拦截。",
+  "evidence" : "业务线上下文 involvedSystems/globalSystems（全局系统含 xxt-pay、xxt-pay-gateway、intf-paychannel）；assets-payment docs/sql/V8_cpc_merchant_setup_202606020007_dml.sql（中金 channel_url 指向 xxt-pay-internal.thchengtay.com，member_id/terminal_id 为 xxt-pay 侧商户编码）；qr_repayment 261120-测试用例.md F2/F5 与 §七（\"聚合分账门禁版本：测试环境 intf-paychannel 版本旧于仓库，上线版本需按门禁逻辑配 sharingEnabled\"、A6 \"resv_three 为空报 303002 渠道配置信息加载异常\"）。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 2,
+  "itemType" : "RISK",
+  "title" : "恒昌 statement_project_config 中合作方（HZF000055）收款账户为空，新增合作方服务费对账单将无收款账号",
+  "description" : "本需求要复用中恒已落地的合作方服务费对账单（StatementTypeEnum.PARTNER_SERVICE_FEE，资方→合作方方向、明细取 statement_project_config 中 PARTNER 交易方收款账户）。恒昌项目 PRJ-HC-001 的 statement_project_config 中 PARTNER（HZF000055 恒昌众鼎融资租赁有限公司）银行账户字段在初始脚本中全部为空，后续脚本未补；中恒同功能上线时该问题被明确列为\"上线前人工补充，否则合作方服务费对账单明细没有收款账号\"。恒昌若不补充账户，新增的对账单生成后无法结算/打款。",
+  "evidence" : "assets-saps dbscript/DML/V8_hengchang_20250526.sql 末段 statement_project_config（PRJ-HC-001，HZF000055 的 accountBankChCn/accountNameCh/accountNumCh/accountBankColCn 等均为空串）；对照 assets-saps dbscript/DML/2026/V7_zh_penalty_split_202610270001_dml.sql 第4节（PRJ-ZH-001 PARTNER 账户为空需上线前人工补充，否则\"合作方服务费对账单明细将没有收款账号\"）；dbscript 全量检索确认无后续脚本更新 PRJ-HC-001 的 statement_project_config。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### 临时分析 · 回复需求澄清项 · 需求 275
+
+<!-- analysis-record:78e96984418aa64c7972024b776b63db115e48f6749948f85d0a765f40a4e786 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：58
+- 记录时间：2026-11-20T15:11:07.227508
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/BL000008/BL000008/2026/2026110600006/历史版本/30ccafec-3ab6-46c2-8ec3-9bdd52ede180/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "“服务费”字段的适用范围与判定口径：仅嘉泰还是全部可转让资方，按资方编码还是按转让模式判定",
+  "description" : "需求简介写“嘉泰模式转让界面新增服务费字段”，但产品方案 docx 正文为“弹窗界面新增字段‘服务费’，人工填写值（保留两位小数）”，未限定嘉泰。请明确一个口径：(a) 弹窗对所有可转让资方无条件显示；(b) 仅转让模式=3（直租-资金方）时显示；(c) 仅实际转让资金方为 ZJF000027（通汇嘉泰融资租赁（天津））时显示。口径决定弹窗显隐/必填校验、列表与详情字段展示范围以及后续科目下发的适用边界。",
+  "evidence" : "已查证：1) intake 275 结构化“需求简介”=“现申请嘉泰模式转让界面新增服务费字段”，而附件《资金方平台新增服务费字段.docx》正文（附件499全文提取）无嘉泰限定，两处口径不一致；2) 前端弹窗 lease-admin/src/views/assetTransfer/assetOrder/components/transferPop.vue 对所有可转让资方统一渲染，无按资方/模式分支的先例；3) 后端转让模式由资金方交易模式决定（AssetTransferOrderServiceImpl.resolveTransferMode，AssetTransferModelEnum：1售后回租/2直租-先行通/3直租-资金方）；4) 生产库 lease_crm.org_funding_party（2026-11 只读核对）：名含“嘉泰”的主体有3家（ZJF000014 通汇嘉泰、ZJF000023 通汇嘉泰融资租赁(天津)、ZJF000027 通汇嘉泰融资租赁(天津)），仅 ZJF000027 配置 transaction_mode='3' 且生效，ZJF000014/ZJF000023 交易模式为空，另 ZJF000026 浙银为'2'——“嘉泰”与“模式3”并非一一对应，无法从现有证据唯一确定判定口径。",
+  "status" : "RESPONDED",
+  "responseText" : "全部",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-20T15:11:07.013776"
+}, {
+  "index" : 1,
+  "itemType" : "QUESTION",
+  "title" : "“同时新增服务费科目”的具体口径：科目落点、编码与金额结算方式",
+  "description" : "需求仅有一句“同时新增服务费科目”（docx 中仅为标题行“资金方平台新增服务费科目”，无正文），未说明科目编码、挂在哪个系统（对资金方账单费用明细/付款单科目/清结算台账）以及服务费金额如何结算（建单即生成、确认放款时并入资方账单首期、生成单独付款单，还是仅在资产转让单上记录展示）。请给出明确口径，例如：新增对资方账单科目“服务费”（新编码，如1020x），金额=弹窗填写值，在确认放款推送资方账单时随首期/一次性下发；或复用既有10201等。",
+  "evidence" : "已查证：1) 附件499 docx全文提取中“资金方平台新增服务费科目”仅为标题行，其后仅描述弹窗/单据/详情三处字段，无科目任何细节；需求描述（source.md/requirementSummary）同样仅尾句“同时新增服务费科目”；需求截图 image.png 为图片仅可取元数据，无法补充信息；2) 既有科目枚举均为对客/付款方向：BillSubjectEnum（10201服务费（资金方）、1020201服务费（先行通）、1020202服务费（业务合作商））、PaymentSlipSubjectEnum（203服务费（一次性收取）、106首期服务费及10201/1020201/1020202首期变体）、RentSaleCustomerBillSubjectNoEnum，均与本需求“对资方收取的服务费”方向不同，无现成可套用口径；3) 对资金方账单推送链路（AssetTransferOrderServiceImpl.syncFundingRepaymentPlan → FunderBillGenerateDTO.funderBillList[].feeDetailList，实现文件885-886行使用 PRINCIPAL/INTEREST 组装）目前科目仅有本金/利息，无服务费科目；lease-saps 侧 FeeDetailDTO 注释列明的测算科目（10001/1020201/1020202）亦不含该服务费。综上无法从需求材料、知识库与代码中确定科目编码、落点与结算方式。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "lease-admin 存在新旧两套资产转让页面树，菜单实际指向未确认，前端改动可能落错页面导致上线后字段不显示",
+  "description" : "服务费字段需改动弹窗（transferPop）、资产转让单列表（transferOrder/index.vue）、查看详情（transferOrderDetail.vue）。lease-admin 同时存在 src/views/assetTransfer/**（二期改造树）与 src/views/deviceRentAndSale/assetTransfer/**（旧树，含独立 transferPop.vue，同样调用 POST /assetTransfer/order/transfer）。若生产菜单 component 仍指向旧树而改动只落在新树（或反之），上线后弹窗/列表/详情均不出现服务费字段。实施前需先确认目标环境菜单绑定，并明确是否两套同改。",
+  "evidence" : "1) 两套页面并存：lease-admin/src/views/assetTransfer/assetOrder/components/transferPop.vue 与 lease-admin/src/views/deviceRentAndSale/assetTransfer/assetOrder/components/transferPop.vue（375行调用同一 /assetTransfer/order/transfer 接口）；2) 资产转让二期发布手册（lease-admin/docs/assets/prd/2026/asset_transfer_ui_phase2/release-handbook.md §10.6）明确记录已知问题：“lease-admin 两套同名页面树：本分支只改 src/views/assetTransfer/**；若生产菜单 component 指向 src/views/deviceRentAndSale/assetTransfer/**，需单独评估”，且 §0 状态为“生产未发布”；3) 权限中心库 xxt_authing.resource（生产只读）中未检索到叉车租售资产转让菜单行（仅消费金融/设备金融等其他平台的“资产转让单”菜单），菜单实际 component 指向在现有可查证据内无法确认。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "资产转让二期代码尚未上生产，本需求开发基线若不含二期改动，弹窗改造将落在旧实现上并产生合并冲突与口径漂移",
+  "description" : "本需求独立分支为 feature/funder_service_fee_2026110600006，而弹窗 transferPop 在二期分支（价款人工改写锁定、可转让资方口径后端收口、切换资方重算等）已被大幅重构且仅部署测试环境。若新分支基于未合入二期的 master 开发，服务费字段的添加位置与交互会基于旧弹窗，后续与二期合并存在冲突及交互口径漂移；上线顺序上本需求需晚于或随二期同窗发布。",
+  "evidence" : "1) intake 275 结构化字段 developmentBranchName=feature/funder_service_fee_2026110600006（本需求独立分支）；2) 二期发布手册 §0：分支 feature/asset_transfer_ui_phase2_20260930 涉及 lease-finance/lease-admin 等六仓，“代码仅部署测试环境，生产未发布”，§5 要求按序合入发布；3) 当前 transferPop.vue（src/views/assetTransfer 树）内含二期改造注释（“转让资产价款已被人工改写…切换资金方时解除锁定”“可转让资金方：…口径由后端收口，含嘉泰等跨业务编码资方”），证明弹窗现状即二期版本，开发基线必须包含该批次变更。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### 临时分析 · 回复需求澄清项 · 需求 275
+
+<!-- analysis-record:64f0dc0f7bec8ae160f7da2ec7578ec752ca515519557c558196503bace60f0a -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：58
+- 记录时间：2026-11-23T10:42:36.647003
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/BL000008/BL000008/2026/2026110600006/历史版本/30ccafec-3ab6-46c2-8ec3-9bdd52ede180/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "“服务费”字段的适用范围与判定口径：仅嘉泰还是全部可转让资方，按资方编码还是按转让模式判定",
+  "description" : "需求简介写“嘉泰模式转让界面新增服务费字段”，但产品方案 docx 正文为“弹窗界面新增字段‘服务费’，人工填写值（保留两位小数）”，未限定嘉泰。请明确一个口径：(a) 弹窗对所有可转让资方无条件显示；(b) 仅转让模式=3（直租-资金方）时显示；(c) 仅实际转让资金方为 ZJF000027（通汇嘉泰融资租赁（天津））时显示。口径决定弹窗显隐/必填校验、列表与详情字段展示范围以及后续科目下发的适用边界。",
+  "evidence" : "已查证：1) intake 275 结构化“需求简介”=“现申请嘉泰模式转让界面新增服务费字段”，而附件《资金方平台新增服务费字段.docx》正文（附件499全文提取）无嘉泰限定，两处口径不一致；2) 前端弹窗 lease-admin/src/views/assetTransfer/assetOrder/components/transferPop.vue 对所有可转让资方统一渲染，无按资方/模式分支的先例；3) 后端转让模式由资金方交易模式决定（AssetTransferOrderServiceImpl.resolveTransferMode，AssetTransferModelEnum：1售后回租/2直租-先行通/3直租-资金方）；4) 生产库 lease_crm.org_funding_party（2026-11 只读核对）：名含“嘉泰”的主体有3家（ZJF000014 通汇嘉泰、ZJF000023 通汇嘉泰融资租赁(天津)、ZJF000027 通汇嘉泰融资租赁(天津)），仅 ZJF000027 配置 transaction_mode='3' 且生效，ZJF000014/ZJF000023 交易模式为空，另 ZJF000026 浙银为'2'——“嘉泰”与“模式3”并非一一对应，无法从现有证据唯一确定判定口径。",
+  "status" : "RESPONDED",
+  "responseText" : "全部",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-20T15:11:07.013776"
+}, {
+  "index" : 1,
+  "itemType" : "QUESTION",
+  "title" : "“同时新增服务费科目”的具体口径：科目落点、编码与金额结算方式",
+  "description" : "需求仅有一句“同时新增服务费科目”（docx 中仅为标题行“资金方平台新增服务费科目”，无正文），未说明科目编码、挂在哪个系统（对资金方账单费用明细/付款单科目/清结算台账）以及服务费金额如何结算（建单即生成、确认放款时并入资方账单首期、生成单独付款单，还是仅在资产转让单上记录展示）。请给出明确口径，例如：新增对资方账单科目“服务费”（新编码，如1020x），金额=弹窗填写值，在确认放款推送资方账单时随首期/一次性下发；或复用既有10201等。",
+  "evidence" : "已查证：1) 附件499 docx全文提取中“资金方平台新增服务费科目”仅为标题行，其后仅描述弹窗/单据/详情三处字段，无科目任何细节；需求描述（source.md/requirementSummary）同样仅尾句“同时新增服务费科目”；需求截图 image.png 为图片仅可取元数据，无法补充信息；2) 既有科目枚举均为对客/付款方向：BillSubjectEnum（10201服务费（资金方）、1020201服务费（先行通）、1020202服务费（业务合作商））、PaymentSlipSubjectEnum（203服务费（一次性收取）、106首期服务费及10201/1020201/1020202首期变体）、RentSaleCustomerBillSubjectNoEnum，均与本需求“对资方收取的服务费”方向不同，无现成可套用口径；3) 对资金方账单推送链路（AssetTransferOrderServiceImpl.syncFundingRepaymentPlan → FunderBillGenerateDTO.funderBillList[].feeDetailList，实现文件885-886行使用 PRINCIPAL/INTEREST 组装）目前科目仅有本金/利息，无服务费科目；lease-saps 侧 FeeDetailDTO 注释列明的测算科目（10001/1020201/1020202）亦不含该服务费。综上无法从需求材料、知识库与代码中确定科目编码、落点与结算方式。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "lease-admin 存在新旧两套资产转让页面树，菜单实际指向未确认，前端改动可能落错页面导致上线后字段不显示",
+  "description" : "服务费字段需改动弹窗（transferPop）、资产转让单列表（transferOrder/index.vue）、查看详情（transferOrderDetail.vue）。lease-admin 同时存在 src/views/assetTransfer/**（二期改造树）与 src/views/deviceRentAndSale/assetTransfer/**（旧树，含独立 transferPop.vue，同样调用 POST /assetTransfer/order/transfer）。若生产菜单 component 仍指向旧树而改动只落在新树（或反之），上线后弹窗/列表/详情均不出现服务费字段。实施前需先确认目标环境菜单绑定，并明确是否两套同改。",
+  "evidence" : "1) 两套页面并存：lease-admin/src/views/assetTransfer/assetOrder/components/transferPop.vue 与 lease-admin/src/views/deviceRentAndSale/assetTransfer/assetOrder/components/transferPop.vue（375行调用同一 /assetTransfer/order/transfer 接口）；2) 资产转让二期发布手册（lease-admin/docs/assets/prd/2026/asset_transfer_ui_phase2/release-handbook.md §10.6）明确记录已知问题：“lease-admin 两套同名页面树：本分支只改 src/views/assetTransfer/**；若生产菜单 component 指向 src/views/deviceRentAndSale/assetTransfer/**，需单独评估”，且 §0 状态为“生产未发布”；3) 权限中心库 xxt_authing.resource（生产只读）中未检索到叉车租售资产转让菜单行（仅消费金融/设备金融等其他平台的“资产转让单”菜单），菜单实际 component 指向在现有可查证据内无法确认。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "资产转让二期代码尚未上生产，本需求开发基线若不含二期改动，弹窗改造将落在旧实现上并产生合并冲突与口径漂移",
+  "description" : "本需求独立分支为 feature/funder_service_fee_2026110600006，而弹窗 transferPop 在二期分支（价款人工改写锁定、可转让资方口径后端收口、切换资方重算等）已被大幅重构且仅部署测试环境。若新分支基于未合入二期的 master 开发，服务费字段的添加位置与交互会基于旧弹窗，后续与二期合并存在冲突及交互口径漂移；上线顺序上本需求需晚于或随二期同窗发布。",
+  "evidence" : "1) intake 275 结构化字段 developmentBranchName=feature/funder_service_fee_2026110600006（本需求独立分支）；2) 二期发布手册 §0：分支 feature/asset_transfer_ui_phase2_20260930 涉及 lease-finance/lease-admin 等六仓，“代码仅部署测试环境，生产未发布”，§5 要求按序合入发布；3) 当前 transferPop.vue（src/views/assetTransfer 树）内含二期改造注释（“转让资产价款已被人工改写…切换资金方时解除锁定”“可转让资金方：…口径由后端收口，含嘉泰等跨业务编码资方”），证明弹窗现状即二期版本，开发基线必须包含该批次变更。",
+  "status" : "ACKNOWLEDGED",
+  "responseText" : "独立分支",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-23T10:42:36.562231"
+} ]
+```
+
+
+
+### 临时分析 · 回复需求澄清项 · 需求 286
+
+<!-- analysis-record:9231b9c7ab2dd8cff40a02bd204b87367127c734c479c7f364d6be8f4abbd9f4 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：59
+- 记录时间：2026-11-23T13:21:56.928887
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202611170005/历史版本/684f9c63-e8f0-4774-8810-3e787cbbf557/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "恒昌存量宝付（channel 15）扣款通道与存量绑卡的处置口径",
+  "description" : "需求只写了\"原恒昌中金商户切换为嘉泰保理中金商户（010583/0006）\"并要求扣款资金100%清分至嘉泰保理，但已查证恒昌生产线上扣款当前跑在宝付渠道且为转付对账单清分（非实时清分），中金渠道在恒昌应用下目前仅配了二维码（subMode=16）费率：若口径是\"全部扣款切到中金010583\"，需新增 21+10/11 费率与绑卡配置，且存量客户宝付协议绑卡在中金商户下不可用（绑卡与支付必须同渠道同商户，协议号按渠道隔离），需求未说明宝付是否停用、存量客户如何重新签约；若口径是\"仅中金通道（二维码及其扣款）切换、宝付照旧\"，则\"扣款100%清分至嘉泰保理\"对宝付扣款不成立。请回复一个明确口径：宝付扣款是否退役，存量绑卡迁移/双通道并行方案。",
+  "evidence" : "已查需求原文与附件摘要（仅提中金商户切换、无宝付及绑卡迁移表述）；assets-payment dbscript/DML/V3_hengchang_250521_dml.sql（恒昌 9800005 生产 bind/pay/remit 全套配置在宝付 channel 15）；assets-saps dbscript/DML/V18_payment_share_type_hc_20260515.sql 与 dbscript/DML/2026/V1_jd_pay_switch_202606290003_dml.sql §2.3（恒昌 shareAccountInfo 仅 channel 15、clearingMode=30，注释\"恒昌 9800005 PRD-HC-001 宝付线上目前对账单清分\"）；assets-saps docs/plan/feature/qr_repayment_202610230003/261120-测试用例.md F1（channel_fee_config 9800005 仅 subMode=16 一条中金费率）、F4（\"bind/pay 指向同一商户，避免协议支付跨商户\"）；assets-payment 全部 DML/docs/sql 无恒昌中金扣款（21+10/11）配置脚本。上述证据仍无法唯一确定宝付通道及存量绑卡的处置口径。",
+  "status" : "RESPONDED",
+  "responseText" : "宝付渠道已经不能用了，仅中金渠道需要处理",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-20T14:44:43.544818"
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "与在途需求 202610230003（恒昌二维码扫码还款）的商户切换目标与清分基线冲突",
+  "description" : "202610230003 的上线阻塞项 A7/F4 原计划\"上线前切换并回归\"到恒昌专属中金商户 M1000305（当前测试环境临时走 010583 嘉泰商户），其已通过的测试基线为三方分账（ZJF000029/HZF000055/GLF000003 按固定比例、clearingMode=10）。本需求把商户正式定为嘉泰保理中金商户 010583 并将清分改为 100% 归嘉泰保理，直接推翻 A7 的切换目标并使 A2/B2/F3 的清分测试基线失效。两个需求改动同一批配置（channel_pay_config 商户、shareAccountInfo[\"21\"]、商户 sharingEnabled），若 202610230003 按原方案先上线再执行本需求，会产生二次切换、二次回归；需两个需求统一口径、合并安排上线与回归。",
+  "evidence" : "assets-saps/docs/plan/feature/qr_repayment_202610230003/261120-测试用例.md：A7（\"核对 M1000305 pay 商户为恒昌专属商户…上线阻塞项\"）、§七风险移交（\"恒昌专属商户（A7/F4）：当前测试走 010583 嘉泰商户，上线前切换并回归\"）、A2/B2（三方分账固定比例、SplitType=30）、F3（shareAccountInfo[\"21\"] 含三分账方 clearingMode=10）、F4/F5。",
+  "status" : "ACKNOWLEDGED",
+  "responseText" : "先处理该需求，后续在处理其他的",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-23T13:21:56.775558"
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "嘉泰保理中金商户 010583 及分账能力依赖 ca-assets 之外的系统，超出需求声明的涉及系统范围",
+  "description" : "商户号 010583、结算标识 0006 与聚合分账门禁（商户 sharingEnabled、交易方式配置）实际落点在 xxt-pay 与 intf-paychannel（业务线全局系统，本次授权代码范围之外），assets-payment 侧只经 channel_pay_config 指向 xxt-pay 内部地址上送 merchantNo/asinfo。测试环境已用 010583 验证出码与分账，但生产上线要求 xxt-pay 生产侧 010583 商户、结算标识 0006、恒昌应用交易方式与分账配置同步就绪且 intf-paychannel 部署版本满足门禁；需求\"涉及系统\"仅写了创新保理资产管理系统，该跨系统依赖未纳入交付范围，缺失会导致上线后报\"渠道配置信息加载异常\"或分账指令被门禁拦截。",
+  "evidence" : "业务线上下文 involvedSystems/globalSystems（全局系统含 xxt-pay、xxt-pay-gateway、intf-paychannel）；assets-payment docs/sql/V8_cpc_merchant_setup_202606020007_dml.sql（中金 channel_url 指向 xxt-pay-internal.thchengtay.com，member_id/terminal_id 为 xxt-pay 侧商户编码）；qr_repayment 261120-测试用例.md F2/F5 与 §七（\"聚合分账门禁版本：测试环境 intf-paychannel 版本旧于仓库，上线版本需按门禁逻辑配 sharingEnabled\"、A6 \"resv_three 为空报 303002 渠道配置信息加载异常\"）。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 2,
+  "itemType" : "RISK",
+  "title" : "恒昌 statement_project_config 中合作方（HZF000055）收款账户为空，新增合作方服务费对账单将无收款账号",
+  "description" : "本需求要复用中恒已落地的合作方服务费对账单（StatementTypeEnum.PARTNER_SERVICE_FEE，资方→合作方方向、明细取 statement_project_config 中 PARTNER 交易方收款账户）。恒昌项目 PRJ-HC-001 的 statement_project_config 中 PARTNER（HZF000055 恒昌众鼎融资租赁有限公司）银行账户字段在初始脚本中全部为空，后续脚本未补；中恒同功能上线时该问题被明确列为\"上线前人工补充，否则合作方服务费对账单明细没有收款账号\"。恒昌若不补充账户，新增的对账单生成后无法结算/打款。",
+  "evidence" : "assets-saps dbscript/DML/V8_hengchang_20250526.sql 末段 statement_project_config（PRJ-HC-001，HZF000055 的 accountBankChCn/accountNameCh/accountNumCh/accountBankColCn 等均为空串）；对照 assets-saps dbscript/DML/2026/V7_zh_penalty_split_202610270001_dml.sql 第4节（PRJ-ZH-001 PARTNER 账户为空需上线前人工补充，否则\"合作方服务费对账单明细将没有收款账号\"）；dbscript 全量检索确认无后续脚本更新 PRJ-HC-001 的 statement_project_config。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### 临时分析 · 回复需求澄清项 · 需求 286
+
+<!-- analysis-record:0f71ef9d3d70aae445ca05afb12ae2af3bad87655215e30fe15127b0e0f69aed -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：59
+- 记录时间：2026-11-23T13:22:06.159937
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202611170005/历史版本/684f9c63-e8f0-4774-8810-3e787cbbf557/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "恒昌存量宝付（channel 15）扣款通道与存量绑卡的处置口径",
+  "description" : "需求只写了\"原恒昌中金商户切换为嘉泰保理中金商户（010583/0006）\"并要求扣款资金100%清分至嘉泰保理，但已查证恒昌生产线上扣款当前跑在宝付渠道且为转付对账单清分（非实时清分），中金渠道在恒昌应用下目前仅配了二维码（subMode=16）费率：若口径是\"全部扣款切到中金010583\"，需新增 21+10/11 费率与绑卡配置，且存量客户宝付协议绑卡在中金商户下不可用（绑卡与支付必须同渠道同商户，协议号按渠道隔离），需求未说明宝付是否停用、存量客户如何重新签约；若口径是\"仅中金通道（二维码及其扣款）切换、宝付照旧\"，则\"扣款100%清分至嘉泰保理\"对宝付扣款不成立。请回复一个明确口径：宝付扣款是否退役，存量绑卡迁移/双通道并行方案。",
+  "evidence" : "已查需求原文与附件摘要（仅提中金商户切换、无宝付及绑卡迁移表述）；assets-payment dbscript/DML/V3_hengchang_250521_dml.sql（恒昌 9800005 生产 bind/pay/remit 全套配置在宝付 channel 15）；assets-saps dbscript/DML/V18_payment_share_type_hc_20260515.sql 与 dbscript/DML/2026/V1_jd_pay_switch_202606290003_dml.sql §2.3（恒昌 shareAccountInfo 仅 channel 15、clearingMode=30，注释\"恒昌 9800005 PRD-HC-001 宝付线上目前对账单清分\"）；assets-saps docs/plan/feature/qr_repayment_202610230003/261120-测试用例.md F1（channel_fee_config 9800005 仅 subMode=16 一条中金费率）、F4（\"bind/pay 指向同一商户，避免协议支付跨商户\"）；assets-payment 全部 DML/docs/sql 无恒昌中金扣款（21+10/11）配置脚本。上述证据仍无法唯一确定宝付通道及存量绑卡的处置口径。",
+  "status" : "RESPONDED",
+  "responseText" : "宝付渠道已经不能用了，仅中金渠道需要处理",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-20T14:44:43.544818"
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "与在途需求 202610230003（恒昌二维码扫码还款）的商户切换目标与清分基线冲突",
+  "description" : "202610230003 的上线阻塞项 A7/F4 原计划\"上线前切换并回归\"到恒昌专属中金商户 M1000305（当前测试环境临时走 010583 嘉泰商户），其已通过的测试基线为三方分账（ZJF000029/HZF000055/GLF000003 按固定比例、clearingMode=10）。本需求把商户正式定为嘉泰保理中金商户 010583 并将清分改为 100% 归嘉泰保理，直接推翻 A7 的切换目标并使 A2/B2/F3 的清分测试基线失效。两个需求改动同一批配置（channel_pay_config 商户、shareAccountInfo[\"21\"]、商户 sharingEnabled），若 202610230003 按原方案先上线再执行本需求，会产生二次切换、二次回归；需两个需求统一口径、合并安排上线与回归。",
+  "evidence" : "assets-saps/docs/plan/feature/qr_repayment_202610230003/261120-测试用例.md：A7（\"核对 M1000305 pay 商户为恒昌专属商户…上线阻塞项\"）、§七风险移交（\"恒昌专属商户（A7/F4）：当前测试走 010583 嘉泰商户，上线前切换并回归\"）、A2/B2（三方分账固定比例、SplitType=30）、F3（shareAccountInfo[\"21\"] 含三分账方 clearingMode=10）、F4/F5。",
+  "status" : "ACKNOWLEDGED",
+  "responseText" : "先处理该需求，后续在处理其他续期",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-23T13:22:05.988612"
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "嘉泰保理中金商户 010583 及分账能力依赖 ca-assets 之外的系统，超出需求声明的涉及系统范围",
+  "description" : "商户号 010583、结算标识 0006 与聚合分账门禁（商户 sharingEnabled、交易方式配置）实际落点在 xxt-pay 与 intf-paychannel（业务线全局系统，本次授权代码范围之外），assets-payment 侧只经 channel_pay_config 指向 xxt-pay 内部地址上送 merchantNo/asinfo。测试环境已用 010583 验证出码与分账，但生产上线要求 xxt-pay 生产侧 010583 商户、结算标识 0006、恒昌应用交易方式与分账配置同步就绪且 intf-paychannel 部署版本满足门禁；需求\"涉及系统\"仅写了创新保理资产管理系统，该跨系统依赖未纳入交付范围，缺失会导致上线后报\"渠道配置信息加载异常\"或分账指令被门禁拦截。",
+  "evidence" : "业务线上下文 involvedSystems/globalSystems（全局系统含 xxt-pay、xxt-pay-gateway、intf-paychannel）；assets-payment docs/sql/V8_cpc_merchant_setup_202606020007_dml.sql（中金 channel_url 指向 xxt-pay-internal.thchengtay.com，member_id/terminal_id 为 xxt-pay 侧商户编码）；qr_repayment 261120-测试用例.md F2/F5 与 §七（\"聚合分账门禁版本：测试环境 intf-paychannel 版本旧于仓库，上线版本需按门禁逻辑配 sharingEnabled\"、A6 \"resv_three 为空报 303002 渠道配置信息加载异常\"）。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 2,
+  "itemType" : "RISK",
+  "title" : "恒昌 statement_project_config 中合作方（HZF000055）收款账户为空，新增合作方服务费对账单将无收款账号",
+  "description" : "本需求要复用中恒已落地的合作方服务费对账单（StatementTypeEnum.PARTNER_SERVICE_FEE，资方→合作方方向、明细取 statement_project_config 中 PARTNER 交易方收款账户）。恒昌项目 PRJ-HC-001 的 statement_project_config 中 PARTNER（HZF000055 恒昌众鼎融资租赁有限公司）银行账户字段在初始脚本中全部为空，后续脚本未补；中恒同功能上线时该问题被明确列为\"上线前人工补充，否则合作方服务费对账单明细没有收款账号\"。恒昌若不补充账户，新增的对账单生成后无法结算/打款。",
+  "evidence" : "assets-saps dbscript/DML/V8_hengchang_20250526.sql 末段 statement_project_config（PRJ-HC-001，HZF000055 的 accountBankChCn/accountNameCh/accountNumCh/accountBankColCn 等均为空串）；对照 assets-saps dbscript/DML/2026/V7_zh_penalty_split_202610270001_dml.sql 第4节（PRJ-ZH-001 PARTNER 账户为空需上线前人工补充，否则\"合作方服务费对账单明细将没有收款账号\"）；dbscript 全量检索确认无后续脚本更新 PRJ-HC-001 的 statement_project_config。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### 临时分析 · 回复需求澄清项 · 需求 286
+
+<!-- analysis-record:f2f7e8d169daf4524956741d975a2ceb70f3385dfe38f7c6e80c9e0e917b9405 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：59
+- 记录时间：2026-11-23T13:22:09.950615
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202611170005/历史版本/684f9c63-e8f0-4774-8810-3e787cbbf557/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "恒昌存量宝付（channel 15）扣款通道与存量绑卡的处置口径",
+  "description" : "需求只写了\"原恒昌中金商户切换为嘉泰保理中金商户（010583/0006）\"并要求扣款资金100%清分至嘉泰保理，但已查证恒昌生产线上扣款当前跑在宝付渠道且为转付对账单清分（非实时清分），中金渠道在恒昌应用下目前仅配了二维码（subMode=16）费率：若口径是\"全部扣款切到中金010583\"，需新增 21+10/11 费率与绑卡配置，且存量客户宝付协议绑卡在中金商户下不可用（绑卡与支付必须同渠道同商户，协议号按渠道隔离），需求未说明宝付是否停用、存量客户如何重新签约；若口径是\"仅中金通道（二维码及其扣款）切换、宝付照旧\"，则\"扣款100%清分至嘉泰保理\"对宝付扣款不成立。请回复一个明确口径：宝付扣款是否退役，存量绑卡迁移/双通道并行方案。",
+  "evidence" : "已查需求原文与附件摘要（仅提中金商户切换、无宝付及绑卡迁移表述）；assets-payment dbscript/DML/V3_hengchang_250521_dml.sql（恒昌 9800005 生产 bind/pay/remit 全套配置在宝付 channel 15）；assets-saps dbscript/DML/V18_payment_share_type_hc_20260515.sql 与 dbscript/DML/2026/V1_jd_pay_switch_202606290003_dml.sql §2.3（恒昌 shareAccountInfo 仅 channel 15、clearingMode=30，注释\"恒昌 9800005 PRD-HC-001 宝付线上目前对账单清分\"）；assets-saps docs/plan/feature/qr_repayment_202610230003/261120-测试用例.md F1（channel_fee_config 9800005 仅 subMode=16 一条中金费率）、F4（\"bind/pay 指向同一商户，避免协议支付跨商户\"）；assets-payment 全部 DML/docs/sql 无恒昌中金扣款（21+10/11）配置脚本。上述证据仍无法唯一确定宝付通道及存量绑卡的处置口径。",
+  "status" : "RESPONDED",
+  "responseText" : "宝付渠道已经不能用了，仅中金渠道需要处理",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-20T14:44:43.544818"
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "与在途需求 202610230003（恒昌二维码扫码还款）的商户切换目标与清分基线冲突",
+  "description" : "202610230003 的上线阻塞项 A7/F4 原计划\"上线前切换并回归\"到恒昌专属中金商户 M1000305（当前测试环境临时走 010583 嘉泰商户），其已通过的测试基线为三方分账（ZJF000029/HZF000055/GLF000003 按固定比例、clearingMode=10）。本需求把商户正式定为嘉泰保理中金商户 010583 并将清分改为 100% 归嘉泰保理，直接推翻 A7 的切换目标并使 A2/B2/F3 的清分测试基线失效。两个需求改动同一批配置（channel_pay_config 商户、shareAccountInfo[\"21\"]、商户 sharingEnabled），若 202610230003 按原方案先上线再执行本需求，会产生二次切换、二次回归；需两个需求统一口径、合并安排上线与回归。",
+  "evidence" : "assets-saps/docs/plan/feature/qr_repayment_202610230003/261120-测试用例.md：A7（\"核对 M1000305 pay 商户为恒昌专属商户…上线阻塞项\"）、§七风险移交（\"恒昌专属商户（A7/F4）：当前测试走 010583 嘉泰商户，上线前切换并回归\"）、A2/B2（三方分账固定比例、SplitType=30）、F3（shareAccountInfo[\"21\"] 含三分账方 clearingMode=10）、F4/F5。",
+  "status" : "ACKNOWLEDGED",
+  "responseText" : "先处理该需求，后续再处理其他续期",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-23T13:22:09.879509"
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "嘉泰保理中金商户 010583 及分账能力依赖 ca-assets 之外的系统，超出需求声明的涉及系统范围",
+  "description" : "商户号 010583、结算标识 0006 与聚合分账门禁（商户 sharingEnabled、交易方式配置）实际落点在 xxt-pay 与 intf-paychannel（业务线全局系统，本次授权代码范围之外），assets-payment 侧只经 channel_pay_config 指向 xxt-pay 内部地址上送 merchantNo/asinfo。测试环境已用 010583 验证出码与分账，但生产上线要求 xxt-pay 生产侧 010583 商户、结算标识 0006、恒昌应用交易方式与分账配置同步就绪且 intf-paychannel 部署版本满足门禁；需求\"涉及系统\"仅写了创新保理资产管理系统，该跨系统依赖未纳入交付范围，缺失会导致上线后报\"渠道配置信息加载异常\"或分账指令被门禁拦截。",
+  "evidence" : "业务线上下文 involvedSystems/globalSystems（全局系统含 xxt-pay、xxt-pay-gateway、intf-paychannel）；assets-payment docs/sql/V8_cpc_merchant_setup_202606020007_dml.sql（中金 channel_url 指向 xxt-pay-internal.thchengtay.com，member_id/terminal_id 为 xxt-pay 侧商户编码）；qr_repayment 261120-测试用例.md F2/F5 与 §七（\"聚合分账门禁版本：测试环境 intf-paychannel 版本旧于仓库，上线版本需按门禁逻辑配 sharingEnabled\"、A6 \"resv_three 为空报 303002 渠道配置信息加载异常\"）。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+}, {
+  "index" : 2,
+  "itemType" : "RISK",
+  "title" : "恒昌 statement_project_config 中合作方（HZF000055）收款账户为空，新增合作方服务费对账单将无收款账号",
+  "description" : "本需求要复用中恒已落地的合作方服务费对账单（StatementTypeEnum.PARTNER_SERVICE_FEE，资方→合作方方向、明细取 statement_project_config 中 PARTNER 交易方收款账户）。恒昌项目 PRJ-HC-001 的 statement_project_config 中 PARTNER（HZF000055 恒昌众鼎融资租赁有限公司）银行账户字段在初始脚本中全部为空，后续脚本未补；中恒同功能上线时该问题被明确列为\"上线前人工补充，否则合作方服务费对账单明细没有收款账号\"。恒昌若不补充账户，新增的对账单生成后无法结算/打款。",
+  "evidence" : "assets-saps dbscript/DML/V8_hengchang_20250526.sql 末段 statement_project_config（PRJ-HC-001，HZF000055 的 accountBankChCn/accountNameCh/accountNumCh/accountBankColCn 等均为空串）；对照 assets-saps dbscript/DML/2026/V7_zh_penalty_split_202610270001_dml.sql 第4节（PRJ-ZH-001 PARTNER 账户为空需上线前人工补充，否则\"合作方服务费对账单明细将没有收款账号\"）；dbscript 全量检索确认无后续脚本更新 PRJ-HC-001 的 statement_project_config。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### 临时分析 · 回复需求澄清项 · 需求 286
+
+<!-- analysis-record:81aff90b3f44ba15e88f6ff2d90946fba1256b483e90a7c9708d1851fca1ad5f -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：59
+- 记录时间：2026-11-23T13:22:34.996863
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202611170005/历史版本/684f9c63-e8f0-4774-8810-3e787cbbf557/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "恒昌存量宝付（channel 15）扣款通道与存量绑卡的处置口径",
+  "description" : "需求只写了\"原恒昌中金商户切换为嘉泰保理中金商户（010583/0006）\"并要求扣款资金100%清分至嘉泰保理，但已查证恒昌生产线上扣款当前跑在宝付渠道且为转付对账单清分（非实时清分），中金渠道在恒昌应用下目前仅配了二维码（subMode=16）费率：若口径是\"全部扣款切到中金010583\"，需新增 21+10/11 费率与绑卡配置，且存量客户宝付协议绑卡在中金商户下不可用（绑卡与支付必须同渠道同商户，协议号按渠道隔离），需求未说明宝付是否停用、存量客户如何重新签约；若口径是\"仅中金通道（二维码及其扣款）切换、宝付照旧\"，则\"扣款100%清分至嘉泰保理\"对宝付扣款不成立。请回复一个明确口径：宝付扣款是否退役，存量绑卡迁移/双通道并行方案。",
+  "evidence" : "已查需求原文与附件摘要（仅提中金商户切换、无宝付及绑卡迁移表述）；assets-payment dbscript/DML/V3_hengchang_250521_dml.sql（恒昌 9800005 生产 bind/pay/remit 全套配置在宝付 channel 15）；assets-saps dbscript/DML/V18_payment_share_type_hc_20260515.sql 与 dbscript/DML/2026/V1_jd_pay_switch_202606290003_dml.sql §2.3（恒昌 shareAccountInfo 仅 channel 15、clearingMode=30，注释\"恒昌 9800005 PRD-HC-001 宝付线上目前对账单清分\"）；assets-saps docs/plan/feature/qr_repayment_202610230003/261120-测试用例.md F1（channel_fee_config 9800005 仅 subMode=16 一条中金费率）、F4（\"bind/pay 指向同一商户，避免协议支付跨商户\"）；assets-payment 全部 DML/docs/sql 无恒昌中金扣款（21+10/11）配置脚本。上述证据仍无法唯一确定宝付通道及存量绑卡的处置口径。",
+  "status" : "RESPONDED",
+  "responseText" : "宝付渠道已经不能用了，仅中金渠道需要处理",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-20T14:44:43.544818"
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "与在途需求 202610230003（恒昌二维码扫码还款）的商户切换目标与清分基线冲突",
+  "description" : "202610230003 的上线阻塞项 A7/F4 原计划\"上线前切换并回归\"到恒昌专属中金商户 M1000305（当前测试环境临时走 010583 嘉泰商户），其已通过的测试基线为三方分账（ZJF000029/HZF000055/GLF000003 按固定比例、clearingMode=10）。本需求把商户正式定为嘉泰保理中金商户 010583 并将清分改为 100% 归嘉泰保理，直接推翻 A7 的切换目标并使 A2/B2/F3 的清分测试基线失效。两个需求改动同一批配置（channel_pay_config 商户、shareAccountInfo[\"21\"]、商户 sharingEnabled），若 202610230003 按原方案先上线再执行本需求，会产生二次切换、二次回归；需两个需求统一口径、合并安排上线与回归。",
+  "evidence" : "assets-saps/docs/plan/feature/qr_repayment_202610230003/261120-测试用例.md：A7（\"核对 M1000305 pay 商户为恒昌专属商户…上线阻塞项\"）、§七风险移交（\"恒昌专属商户（A7/F4）：当前测试走 010583 嘉泰商户，上线前切换并回归\"）、A2/B2（三方分账固定比例、SplitType=30）、F3（shareAccountInfo[\"21\"] 含三分账方 clearingMode=10）、F4/F5。",
+  "status" : "ACKNOWLEDGED",
+  "responseText" : "先处理该需求，后续再处理其他续期",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-23T13:22:09.879509"
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "嘉泰保理中金商户 010583 及分账能力依赖 ca-assets 之外的系统，超出需求声明的涉及系统范围",
+  "description" : "商户号 010583、结算标识 0006 与聚合分账门禁（商户 sharingEnabled、交易方式配置）实际落点在 xxt-pay 与 intf-paychannel（业务线全局系统，本次授权代码范围之外），assets-payment 侧只经 channel_pay_config 指向 xxt-pay 内部地址上送 merchantNo/asinfo。测试环境已用 010583 验证出码与分账，但生产上线要求 xxt-pay 生产侧 010583 商户、结算标识 0006、恒昌应用交易方式与分账配置同步就绪且 intf-paychannel 部署版本满足门禁；需求\"涉及系统\"仅写了创新保理资产管理系统，该跨系统依赖未纳入交付范围，缺失会导致上线后报\"渠道配置信息加载异常\"或分账指令被门禁拦截。",
+  "evidence" : "业务线上下文 involvedSystems/globalSystems（全局系统含 xxt-pay、xxt-pay-gateway、intf-paychannel）；assets-payment docs/sql/V8_cpc_merchant_setup_202606020007_dml.sql（中金 channel_url 指向 xxt-pay-internal.thchengtay.com，member_id/terminal_id 为 xxt-pay 侧商户编码）；qr_repayment 261120-测试用例.md F2/F5 与 §七（\"聚合分账门禁版本：测试环境 intf-paychannel 版本旧于仓库，上线版本需按门禁逻辑配 sharingEnabled\"、A6 \"resv_three 为空报 303002 渠道配置信息加载异常\"）。",
+  "status" : "ACKNOWLEDGED",
+  "responseText" : "会一起改动",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-23T13:22:34.930212"
+}, {
+  "index" : 2,
+  "itemType" : "RISK",
+  "title" : "恒昌 statement_project_config 中合作方（HZF000055）收款账户为空，新增合作方服务费对账单将无收款账号",
+  "description" : "本需求要复用中恒已落地的合作方服务费对账单（StatementTypeEnum.PARTNER_SERVICE_FEE，资方→合作方方向、明细取 statement_project_config 中 PARTNER 交易方收款账户）。恒昌项目 PRJ-HC-001 的 statement_project_config 中 PARTNER（HZF000055 恒昌众鼎融资租赁有限公司）银行账户字段在初始脚本中全部为空，后续脚本未补；中恒同功能上线时该问题被明确列为\"上线前人工补充，否则合作方服务费对账单明细没有收款账号\"。恒昌若不补充账户，新增的对账单生成后无法结算/打款。",
+  "evidence" : "assets-saps dbscript/DML/V8_hengchang_20250526.sql 末段 statement_project_config（PRJ-HC-001，HZF000055 的 accountBankChCn/accountNameCh/accountNumCh/accountBankColCn 等均为空串）；对照 assets-saps dbscript/DML/2026/V7_zh_penalty_split_202610270001_dml.sql 第4节（PRJ-ZH-001 PARTNER 账户为空需上线前人工补充，否则\"合作方服务费对账单明细将没有收款账号\"）；dbscript 全量检索确认无后续脚本更新 PRJ-HC-001 的 statement_project_config。",
+  "status" : "PENDING",
+  "responseText" : null,
+  "respondedBy" : null,
+  "respondedAt" : null
+} ]
+```
+
+
+
+### 临时分析 · 回复需求澄清项 · 需求 286
+
+<!-- analysis-record:bbcceadb15d34a0e6d00bf0983b921397aa87d08bfd684c74abbd6838153bd68 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：59
+- 记录时间：2026-11-23T13:22:51.411941
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/嘉泰租赁资产保理/中恒信合乘用车保理项目/2026/202611170005/历史版本/684f9c63-e8f0-4774-8810-3e787cbbf557/source.md>)
+
+```json
+[ {
+  "index" : 0,
+  "itemType" : "QUESTION",
+  "title" : "恒昌存量宝付（channel 15）扣款通道与存量绑卡的处置口径",
+  "description" : "需求只写了\"原恒昌中金商户切换为嘉泰保理中金商户（010583/0006）\"并要求扣款资金100%清分至嘉泰保理，但已查证恒昌生产线上扣款当前跑在宝付渠道且为转付对账单清分（非实时清分），中金渠道在恒昌应用下目前仅配了二维码（subMode=16）费率：若口径是\"全部扣款切到中金010583\"，需新增 21+10/11 费率与绑卡配置，且存量客户宝付协议绑卡在中金商户下不可用（绑卡与支付必须同渠道同商户，协议号按渠道隔离），需求未说明宝付是否停用、存量客户如何重新签约；若口径是\"仅中金通道（二维码及其扣款）切换、宝付照旧\"，则\"扣款100%清分至嘉泰保理\"对宝付扣款不成立。请回复一个明确口径：宝付扣款是否退役，存量绑卡迁移/双通道并行方案。",
+  "evidence" : "已查需求原文与附件摘要（仅提中金商户切换、无宝付及绑卡迁移表述）；assets-payment dbscript/DML/V3_hengchang_250521_dml.sql（恒昌 9800005 生产 bind/pay/remit 全套配置在宝付 channel 15）；assets-saps dbscript/DML/V18_payment_share_type_hc_20260515.sql 与 dbscript/DML/2026/V1_jd_pay_switch_202606290003_dml.sql §2.3（恒昌 shareAccountInfo 仅 channel 15、clearingMode=30，注释\"恒昌 9800005 PRD-HC-001 宝付线上目前对账单清分\"）；assets-saps docs/plan/feature/qr_repayment_202610230003/261120-测试用例.md F1（channel_fee_config 9800005 仅 subMode=16 一条中金费率）、F4（\"bind/pay 指向同一商户，避免协议支付跨商户\"）；assets-payment 全部 DML/docs/sql 无恒昌中金扣款（21+10/11）配置脚本。上述证据仍无法唯一确定宝付通道及存量绑卡的处置口径。",
+  "status" : "RESPONDED",
+  "responseText" : "宝付渠道已经不能用了，仅中金渠道需要处理",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-20T14:44:43.544818"
+}, {
+  "index" : 0,
+  "itemType" : "RISK",
+  "title" : "与在途需求 202610230003（恒昌二维码扫码还款）的商户切换目标与清分基线冲突",
+  "description" : "202610230003 的上线阻塞项 A7/F4 原计划\"上线前切换并回归\"到恒昌专属中金商户 M1000305（当前测试环境临时走 010583 嘉泰商户），其已通过的测试基线为三方分账（ZJF000029/HZF000055/GLF000003 按固定比例、clearingMode=10）。本需求把商户正式定为嘉泰保理中金商户 010583 并将清分改为 100% 归嘉泰保理，直接推翻 A7 的切换目标并使 A2/B2/F3 的清分测试基线失效。两个需求改动同一批配置（channel_pay_config 商户、shareAccountInfo[\"21\"]、商户 sharingEnabled），若 202610230003 按原方案先上线再执行本需求，会产生二次切换、二次回归；需两个需求统一口径、合并安排上线与回归。",
+  "evidence" : "assets-saps/docs/plan/feature/qr_repayment_202610230003/261120-测试用例.md：A7（\"核对 M1000305 pay 商户为恒昌专属商户…上线阻塞项\"）、§七风险移交（\"恒昌专属商户（A7/F4）：当前测试走 010583 嘉泰商户，上线前切换并回归\"）、A2/B2（三方分账固定比例、SplitType=30）、F3（shareAccountInfo[\"21\"] 含三分账方 clearingMode=10）、F4/F5。",
+  "status" : "ACKNOWLEDGED",
+  "responseText" : "先处理该需求，后续再处理其他续期",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-23T13:22:09.879509"
+}, {
+  "index" : 1,
+  "itemType" : "RISK",
+  "title" : "嘉泰保理中金商户 010583 及分账能力依赖 ca-assets 之外的系统，超出需求声明的涉及系统范围",
+  "description" : "商户号 010583、结算标识 0006 与聚合分账门禁（商户 sharingEnabled、交易方式配置）实际落点在 xxt-pay 与 intf-paychannel（业务线全局系统，本次授权代码范围之外），assets-payment 侧只经 channel_pay_config 指向 xxt-pay 内部地址上送 merchantNo/asinfo。测试环境已用 010583 验证出码与分账，但生产上线要求 xxt-pay 生产侧 010583 商户、结算标识 0006、恒昌应用交易方式与分账配置同步就绪且 intf-paychannel 部署版本满足门禁；需求\"涉及系统\"仅写了创新保理资产管理系统，该跨系统依赖未纳入交付范围，缺失会导致上线后报\"渠道配置信息加载异常\"或分账指令被门禁拦截。",
+  "evidence" : "业务线上下文 involvedSystems/globalSystems（全局系统含 xxt-pay、xxt-pay-gateway、intf-paychannel）；assets-payment docs/sql/V8_cpc_merchant_setup_202606020007_dml.sql（中金 channel_url 指向 xxt-pay-internal.thchengtay.com，member_id/terminal_id 为 xxt-pay 侧商户编码）；qr_repayment 261120-测试用例.md F2/F5 与 §七（\"聚合分账门禁版本：测试环境 intf-paychannel 版本旧于仓库，上线版本需按门禁逻辑配 sharingEnabled\"、A6 \"resv_three 为空报 303002 渠道配置信息加载异常\"）。",
+  "status" : "ACKNOWLEDGED",
+  "responseText" : "会一起改动",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-23T13:22:34.930212"
+}, {
+  "index" : 2,
+  "itemType" : "RISK",
+  "title" : "恒昌 statement_project_config 中合作方（HZF000055）收款账户为空，新增合作方服务费对账单将无收款账号",
+  "description" : "本需求要复用中恒已落地的合作方服务费对账单（StatementTypeEnum.PARTNER_SERVICE_FEE，资方→合作方方向、明细取 statement_project_config 中 PARTNER 交易方收款账户）。恒昌项目 PRJ-HC-001 的 statement_project_config 中 PARTNER（HZF000055 恒昌众鼎融资租赁有限公司）银行账户字段在初始脚本中全部为空，后续脚本未补；中恒同功能上线时该问题被明确列为\"上线前人工补充，否则合作方服务费对账单明细没有收款账号\"。恒昌若不补充账户，新增的对账单生成后无法结算/打款。",
+  "evidence" : "assets-saps dbscript/DML/V8_hengchang_20250526.sql 末段 statement_project_config（PRJ-HC-001，HZF000055 的 accountBankChCn/accountNameCh/accountNumCh/accountBankColCn 等均为空串）；对照 assets-saps dbscript/DML/2026/V7_zh_penalty_split_202610270001_dml.sql 第4节（PRJ-ZH-001 PARTNER 账户为空需上线前人工补充，否则\"合作方服务费对账单明细将没有收款账号\"）；dbscript 全量检索确认无后续脚本更新 PRJ-HC-001 的 statement_project_config。",
+  "status" : "ACKNOWLEDGED",
+  "responseText" : "人工核销，无需配置线上收款账户",
+  "respondedBy" : "admin",
+  "respondedAt" : "2026-11-23T13:22:51.350278"
+} ]
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 275
+
+<!-- analysis-record:f4b553e11b607c213b6763180f7f766919097a82af700d7ac021b0b64a009357 -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：134
+- 记录时间：2026-11-24T14:20:25.907576
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/BL000008/BL000008/2026/2026110600006/历史版本/36fa40da-f3ab-41fc-aa4c-5dc869bfc4b5/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "BL000008",
+  "projectId" : null,
+  "projectName" : null,
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/BL000008/BL000008/2026/2026110600006/历史版本/36fa40da-f3ab-41fc-aa4c-5dc869bfc4b5/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "因目前嘉泰直租模式下新增服务费，申请在资金方平台【资产转让单】点击【资产转让】按钮的弹窗界面新增字段“服务费”，由人工填写（保留两位小数）；点击【确定】生成资产转让单后，单据及【查看详情】页面均新增“服务费”字段，取弹窗填写值。同时新增服务费科目。",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "shihao" ],
+  "workItems" : [ {
+    "title" : "资产转让单新增服务费",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "lease-admin", "lease-finance" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "shihao",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  } ],
+  "totalEstimatedEffort" : "8h",
+  "developmentEstimatedEffort" : "4h",
+  "testingEstimatedEffort" : "4h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "RESERVED",
+  "zentaoSyncMessage" : "禅道同步接口已预留，当前不会调用禅道。",
+  "generatedAt" : "2026-11-24T14:20:25.177571",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null,
+  "zentaoSyncedTaskIds" : null
+}
+```
+
+
+
+### 临时分析 · 调整研发任务 · 需求 275
+
+<!-- analysis-record:7969088f9bd4033c9cfef8fe307493b781d0e34b829413c299d7e243ead9544e -->
+
+- 状态：待确认／过程记录，不代表正式审批
+- 分析 ID：134
+- 记录时间：2026-11-24T14:20:32.939156
+- 操作者：admin
+- 来源：[来源版本](</Users/aslight/IDEAWorkspace/workhub-server/docs/requirement-sources/BL000008/BL000008/2026/2026110600006/历史版本/36fa40da-f3ab-41fc-aa4c-5dc869bfc4b5/source.md>)
+
+```json
+{
+  "status" : "DRAFT",
+  "businessLine" : "BL000008",
+  "projectId" : null,
+  "projectName" : null,
+  "repositoryUrl" : null,
+  "requirementRawPath" : "requirement-sources/BL000008/BL000008/2026/2026110600006/历史版本/36fa40da-f3ab-41fc-aa4c-5dc869bfc4b5/source.md",
+  "requirementWikiPath" : null,
+  "requirementWikiUrl" : null,
+  "summary" : "因目前嘉泰直租模式下新增服务费，申请在资金方平台【资产转让单】点击【资产转让】按钮的弹窗界面新增字段“服务费”，由人工填写（保留两位小数）；点击【确定】生成资产转让单后，单据及【查看详情】页面均新增“服务费”字段，取弹窗填写值。同时新增服务费科目。",
+  "requirementChangePoints" : [ ],
+  "impactedModules" : [ ],
+  "risks" : [ ],
+  "questions" : [ ],
+  "developerPool" : [ "shihao" ],
+  "workItems" : [ {
+    "title" : "资产转让单新增服务费",
+    "description" : null,
+    "requirementChangePoint" : null,
+    "taskType" : "CODE_CHANGE",
+    "targetResources" : [ ],
+    "changePoints" : [ ],
+    "systemTags" : [ "lease-admin", "lease-finance" ],
+    "evidenceRefs" : [ ],
+    "confidence" : "MEDIUM",
+    "moduleName" : null,
+    "relatedFiles" : [ ],
+    "estimatedEffort" : "4h",
+    "ownerUserName" : "shihao",
+    "priority" : null,
+    "plannedStartDate" : null,
+    "plannedEndDate" : null,
+    "dependency" : null,
+    "risk" : null,
+    "zentaoTaskId" : null,
+    "zentaoTaskUrl" : null
+  } ],
+  "totalEstimatedEffort" : "8h",
+  "developmentEstimatedEffort" : "4h",
+  "testingEstimatedEffort" : "4h",
+  "plannedDueDate" : null,
+  "plannedTestingStartDate" : null,
+  "plannedTestingEndDate" : null,
+  "plannedReleaseDate" : null,
+  "zentaoSyncStatus" : "FAILED",
+  "zentaoSyncMessage" : "禅道任务同步：0 新建、0 更新、0 取消、1 失败（迭代 880）。失败明细：资产转让单新增服务费：任务评估失败，请查看后端日志",
+  "generatedAt" : "2026-11-24T14:20:25.177571",
+  "generator" : "manual",
+  "plannedDevelopmentStartDate" : null,
+  "sddDocuments" : null,
+  "zentaoSyncedTaskIds" : null
+}
+```
+
+
 ## 2026-10-30 物流平台叉车智能柜中间件升级方案整理
 
 - 根据用户两份消费分期参考文件，核对 WorkHub 业务线映射与三个 GitLab 组的远程 master，整理[三条业务线升级方案](requirements/业务线/BL000006-物流平台/REQ-9b086f9b-2e40-4ec6-b822-df8acd2ab6ba-物流平台叉车智能柜Nacos和XXLJOB升级方案整理/README.md)，需求编码 REQ-9b086f9b-2e40-4ec6-b822-df8acd2ab6ba。
@@ -5273,3 +7547,88 @@ WARN "Agent scheduled task was not enqueued. taskId=12bd560d, errorType=IllegalA
 ### 2026-11-15 补充｜数字员工弹框统一支持点击空白关闭（用户确认）
 
 AgentWorkbenchView 两处 el-dialog（任务列表、任务与运行）原显式 `:close-on-click-modal="false"` 已移除，回归 Element Plus 默认（true）；三个 el-drawer（Agent 配置、分派任务、调整周期）默认本就为 true。vue-tsc 0 错误、dist 已重建。弹框关闭不销毁内容，未发送的补充指令等输入保留。
+
+### 2026-11-16 智能柜30笔未结清账单补齐SQL交付
+
+用户确认仅30笔未结清账单同时补齐对客逾期天数和罚息，已结清不动，要求一键SQL。生产只读复核每笔无还款、日费率0.001，合计2630个缺失计费日、696.29元（17笔151.90元、13笔544.39元）。已准备事务保护、原值与版本校验、整批幂等的一键补齐和回滚SQL，9项本地MySQL 8.4.10隔离验证通过；生产MySQL 8.0.28，生产尚未执行。脚本限定2026-11-16快照，跨日需重新核查。
+
+[脚本与验证](业务线/BL000005-智能柜/需求迭代/REQ-3f92412a-828c-4774-8277-606dbb632cae-30笔未结清账单逾期天数及罚息补齐/tasks.md)。
+
+### 2026-11-16 智能柜补齐SQL按用户要求简化
+
+用户明确只要普通UPDATE和INSERT，已生成同需求目录“简单补齐.sql”，移除存储过程和DDL。30笔/2630条/696.29元不变；原值漂移逐账单跳过，客户端遇SQL错误须停止并ROLLBACK，完整重复执行不重复收费。7项本地MySQL验证通过，生产未执行。
+
+### 2026-11-16 智能柜补齐SQL改为每账单独立一组
+
+用户要求一个账单一组、全部单表UPDATE/INSERT。交付“按账单分组补齐.sql”：30组，每组2条直接UPDATE+1条INSERT VALUES，无跨表条件。金额696.29元、2630条记录不变。本地逐组验证通过；默认不自动提交，须核对每组1/1/N后COMMIT，异常ROLLBACK，不可重复提交。生产未执行。
+
+### 2026-11-16 12:31 · 智能柜30笔逾期天数及罚息补齐验收通过
+
+用户已执行SQL，助手只读核验30笔账单全部通过：新增2630条逐日计费记录、696.29元；天数、科目、主表金额逐笔一致，缺失、重复、金额差异均0。样本BFX2409191504350007恢复607天，罚息余额297.43元，账单余额783.54元。验证范围为这30笔，无生产写入操作。
+
+
+## 2026-11-16 智能柜已结清漏计补齐与减免方案准备
+
+用户要求已结清按未结清形式补数据，并以减免结算消除新增应收。核实14笔有效已结清账单缺15个计费日，生产日费率0.001、基数101/20101/20102，补计及全额减免11.09元。已准备每账单一组7条单表DML、核验和回退草案；本地验证通过，生产交付前45项只读检查通过。完整规格待用户统一确认，生产未执行。
+
+目录：docs/业务线/BL000005-智能柜/需求迭代/REQ-9ac32f0f-ac9c-4bd1-9d7e-fd3741aac1fe-14笔已结清账单补计罚息并减免结算。
+
+
+## 2026-11-16 智能柜已结清减免补录业务时间v2
+
+按用户要求，新减免订单的业务时间和完成时间、交易业务日期对齐各账单原结清时间；结算/账务时间原已对齐。创建/修改/操作时间保留实际补录时间及补录标记，逐日计费日期仍为缺失日。范围14笔、15日、补计并减免11.09元不变，SQL单表结构不变。本地隔离时间和金额验证通过；生产未执行。原方案v1已保留。
+
+
+## 2026-11-16 已结清补计减免生产验收受阻
+
+用户报告已执行v2补齐SQL。WorkHub只读通道连续查询在自身资源配置库McpResourceMapper.findAll阶段无法获取JDBC连接，未读到账单结果，暂不能确认生产修复成功或异常。已记录证据，停止重复请求；待通道恢复核验7表、14账单/15日/11.09元和时间。未执行生产写入。
+
+
+## 2026-11-16 已结清补计减免生产验收通过
+
+2026-11-16 14:58连接恢复后重新读取生产7表，14笔对客天数、罚息、减免流水及原结清时间全部通过；新增15条计费11.09元，四层减免各14条11.09元；未付均0，原现金付款不变，无漏写或重复。本次只读，无生产修改。前次连接故障已解除。
+
+证据目录：docs/业务线/BL000005-智能柜/需求迭代/REQ-9ac32f0f-ac9c-4bd1-9d7e-fd3741aac1fe-14笔已结清账单补计罚息并减免结算。
+
+
+## 2026-11-16 三笔特殊账单调查及修复草案
+
+三笔特殊情况已查明：BFX2407261209050001按实际入账计费口径保留0天0元；BFX2409191504350003保留222天/108.78元（实收51.04、减免57.74），按未计费日期将展期12修正11；BFX2505081709160010历史18天75.57元已归零转租金，拟补记18条计费和等额减免，现金4582.50及未付0不变。已准备两组单表SQL，本地验证和10项生产前置只读检查通过，生产未执行。
+
+目录：docs/业务线/BL000005-智能柜/需求迭代/REQ-6f9b0b1c-15e2-4845-a286-4774e0515799-三笔特殊账单逾期与罚息核查修正。
+
+
+## 2026-11-16 用户排除第三笔特殊账单修复
+
+用户明确BFX2505081709160010已有历史处理，保留现状、不再修复。已从当前正向/回退SQL移除该笔全部写入，撤销75.57元补计减免方案，旧合并版本归档弃用。当前仅保留BFX2409191504350003展期12改11的单表UPDATE草案；生产未执行。
+
+
+## 2026-11-16 账务监测FunctionCall化实施完成
+
+REQ-67108299 实施完成：账务监测执行统一走 FunctionCallService（func_call_sql 模板 + 审计），新增 SAPS_BILL_CHAIN 规则包（叉车/智能柜 14 条规则、29 条 OPS_ACC_* 种子），迁移清空 10 条旧配置写入叉车/智能柜 2 条并开启每日对账。db-prod 双 schema 58 条渲染 SQL 全部实跑通过；发现 statement_pay_detail 无 is_reverse 列已修正；ol_saps 交叉规则发现 3 笔订单缴费单结算与账单结算各差 1000 元（WARN 级，待业务确认是否异步时差）。账务相关 31 项单测通过。部署后需触发一次手动对账并核对 sys_job_config 的 OPS_ACCOUNTING_RECONCILE。
+
+
+## 2026-11-16 巡检CLI格式校正60秒取消定位与修复（REQ-98a19dce）
+
+用户报消费分期巡检失败：FORMATTING 阶段 workspace/generateText 报 -32603 Model request was cancelled。库里统计 11-14~11-16 四个业务线 9 次失败全部 60–62s、成功 14 次 20–52s，整齐 60 秒线且与 WorkHub 配置（1800s）无关。逆向 zcode.cjs 0.17.1：generateWorkspaceTextImpl 在调用方不传 abortSignal 时挂 AbortSignal.timeout(60000)（常量 Goi=6e4，无配置口，取消不可重试）；RPC 层 params 带 operationId 才走可显式取消通道（无超时）。本地按 WorkHub 同样私有目录/环境复现对照：不带 operationId 60.8s 被取消（CLI 日志 durationMs=60001 reason=cancelled），带 operationId 75.6s 完整成功；curl 直连先行通网关非流式 180s 返回 200，排除服务端。修复：ZCodeTaskConversation 的 wh-format-result 请求加 operationId（wh-format-result-{inputId}），时限回归平台预算。过程细节见需求目录 docs/业务线/BL000012-工作台/需求迭代/REQ-98a19dce-f751-4bde-a19e-7e6b2c841e62-ZCode终稿格式校正60秒取消修复/。复现脚本 /tmp/fmt-repro/repro.mjs（临时，重启即失）。
+
+## 2026-11-17 业务线归档迁移到 agents-playbook
+
+按用户要求将非 WorkHub 自身的业务线归档迁出 docs：BL000001~BL000011 与支付中台（共 12 个目录）以 git mv 迁到仓库根 `agents-playbook/`，归档指引与已确认评估索引随迁为 `agents-playbook/AGENTS.md`、`agents-playbook/index.md`；`docs/业务线/` 仅保留 `BL000012-工作台/`。代码同步按业务线编码分流：`RepositoryDocumentPaths.wikiArchiveRoot`（BL000012 → docs/业务线，其余 → 仓库根 agents-playbook）、`ProjectKnowledgeBaseService` 归档与索引写入改用 location.wikiRoot（wikiRelativePath 改为仓库根相对）、`DevelopmentPlanFolderService`、`McpRuntimeService.businessLineWikiRoot`、`McpResourceService` 的 requirementWikiPathPattern 与 wikiPublishRule 文案。原始材料仍在 `docs/requirement-sources/`，过程记录仍在 `docs/notes.md`。现行文档内部链接批量改写 157 个文件（`docs/业务线/{迁移目录}` → `agents-playbook/{迁移目录}`，含绝对路径形式）；`历史版本/` 快照与历史日志原文按原字节保留。测试：受影响 9 个测试类 127 用例全绿；全量 1215 用例仅 BusinessLogSearchServiceTest 1 例环境性错误（ELK 范围配置缺失，与本次无关）；顺手修正 KnowledgeArchiveWorkflowTest 一处 HEAD 上已失效的旧断言（4412e13 改映射未同步测试）。迁移前非 WorkHub 材料的旧位置 `docs/业务线/` 可按 git 历史定位。
+
+## 2026-11-17 业务线归档迁入独立仓库 agents-playbook
+
+修正早前方案：agents-playbook 是工作区独立 git 仓库（/Users/aslight/IDEAWorkspace/agents-playbook，远端 engineering/agents-playbook.git），非本仓库内目录。WorkHub 仓库内暂存的 agents-playbook/ 迁移全部撤销，12 个业务线目录按双轨并入该仓库：未重叠的 BL000003/000007/000008/000009/000010 整体移入其 docs/业务线/；重叠 6 条（BL000001/2/4/5/6/11，该仓库已有 AGENTS/架构设计/产品要素/系统实现/需求 结构）并入同名目录——现状.md、需求迭代/ 等移入，迭代日志.md 以「## 2026-11-17 工作台归档迁入」分节原文追加（对方表格格式不动）；支付中台并入其 docs/支付中台/；已确认评估索引迁为其 docs/业务线/index.md。本仓库 docs/业务线/ 仅剩 BL000012-工作台/ 与重写的 AGENTS.md（双归档根指引），文档以 staged 删除记录迁出。代码同步：RepositoryDocumentPaths 新增 playbookPath 配置（默认取本仓库同级 agents-playbook 仓库），非 BL000012 业务线的研发评估自动归档与索引写入 agents-playbook 仓库 docs/业务线/{编码}-{名称}/需求迭代/；MCP knowledgeCatalog 新增 projectPlaybookPath，businessLineWikiRoot、requirementWikiPathPattern、wikiPublishRule 同步。迁移文件仅修正指向两仓库的路径，历史版本/ 快照按原字节保留；agents-playbook 仓库内新文件保持未跟踪、迭代日志追加不覆盖其未提交改动，由其自行评审提交。受影响 9 个测试类 127 用例全绿；两仓库互链与跨仓库代码引用验证 0 缺失。
+
+## 2026-11-18 账务监测场景化优化（REQ-d227e09d）
+
+按用户要求下线扫表对账：删除 AccountingReconcileExecutor/AccountingRuleCatalog/AccountingReconcileJob 与 29 条 OPS_ACC_* 种子（库内模板 V20261118_210000 停用留档，run/result/evidence 历史保留），AccountingExecutionEvidenceService 摘除 capture 后保留为共享读取设施（Agent 巡检/系统预警在用，勿删整类）。监测改为场景维度：ops_account_monitor_config 复用原表 ALTER（避免新表自增 ID 与历史 run 悬空 monitor_config_id 撞号、Agent 读链路 join 不动），配置=场景类型×预期/核对时间×应发起笔数来源（func_call_sql 编码或固定值）×实际/成功 SQL 编码×容差×告警开关；AccountingScenarioCheckExecutor 三段式核对（按时执行/应发起 vs 实际/实际 vs 成功）计数走 FunctionCallService（逐条审计），差异按容差判级、alert_enabled 时推 WeCom。WorkhubJob 新增 defaultEnabled()，OPS_ACCOUNTING_SCENARIO_CHECK（每 10 分钟扫描到期配置）种子与配置行双重默认停用，旧 OPS_ACCOUNTING_RECONCILE 行删除。代扣场景占位模板 3 条 enabled=0（OPS-SCN-WITHHOLD），口径待业务确认后页面启用；前端三文件场景化重构。账务/调度 64 用例全绿、前端 vue-tsc+build 通过；BusinessLogSearchServiceTest（ELK 范围）与 TeamAliasRecoveryStaticTest（缺回滚文档）为存量失败与本需求无关。注意：迁移含 MySQL 多操作 ALTER（DROP KEY/ADD UNIQUE KEY），H2 不执行该文件，部署需真实 MySQL；执行器传参约定 :checkDate/:startDateTime/:endExclusiveDateTime。
+
+
+## 2026-11-20 14:13｜202611190001 TEST 强制回购黑盒实测
+
+按用户明确授权，对测试 amp-saps 10.10.116.32:8235 的 /api/mandatory/buyback 发起 6 次实际 POST（三项目各两次），均返回 code=900000、success=false 与项目“暂不允许强制回购”。测试窗口新增回购对账单及所选单据回购明细为 0。批量回购、补跑、自动强制回购、代偿未实测；日志补证受限（TEST 无 ELK 范围、服务器无 python3）。详情见 [黑盒测试记录](../agents-playbook/docs/业务线/BL000004-消费分期/需求/202611190001-即科医美、商品业务（通汇诚泰）回购功能调整1119/20261120-黑盒测试记录.md)。
+
+## 2026-11-20 14:28｜202611190001 补测发现数组回购绕过
+
+用户指出覆盖不全后，TEST XXL-JOB 任务 9 限定三项目各一笔申请单，实际生成代偿单 id 6784/6785/6786，日志 6912/6915/6916 均成功；JK-D 同参重跑日志 6917 未重复出单。随后数组入参 `applicationNos=[JK026072714343944]` 实际返回成功并生成回购单 FHGA26112014280800011（id 6787，25 条明细），12 期账单变为待回购。根因：CapitalProviderController 把 null 单值先加入列表，导致数组未进入排除校验。首轮单值拦截结论不能覆盖数组入口；整项验收不通过。已保留现场及请求/任务/数据库证据，未修改配置/代码、未支付审批或清理数据。日批、指定项目补跑、自动回购开启、规则阈值及对照项目等仍未完整覆盖，详见同一黑盒测试记录和 tasks.md。

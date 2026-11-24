@@ -340,7 +340,7 @@ public class AutonomyCaseService {
         var actor = access.actor(user); actor.require("autonomy:case:view"); actor.require("agent:view");
         var agent = agents.findAgent(id); access.requireAgent(actor, agent);
         var configuration = json.readValue(agent.configurationJson(), AgentConfiguration.class);
-        if (!configuration.scopes().contains(scope)) throw new AccessDeniedException("问题超出该 Agent 当前授权范围");
+        if (!configuration.allowsScope(scope)) throw new AccessDeniedException("问题超出该 Agent 当前授权范围");
     }
     private void scope(AgentToolContext context, String line, String environment, String source) {
         access.requireScope(context, new AgentScope(line, environment));

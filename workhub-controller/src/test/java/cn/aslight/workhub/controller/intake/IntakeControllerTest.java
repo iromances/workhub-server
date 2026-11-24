@@ -265,6 +265,7 @@ class IntakeControllerTest {
                         "SUCCEEDED",
                         "待整理",
                         null,
+                        null,
                         2L
                 )
         )));

@@ -29,6 +29,7 @@ public interface IntakeMapper {
             raw_content,
             development_owner_user_name,
             development_standard,
+            ai_agent_id,
             CASE WHEN JSON_VALID(structured_data_json) THEN JSON_SET(JSON_REMOVE(structured_data_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE structured_data_json END AS structured_data_json,
             CASE WHEN JSON_VALID(ai_draft_json) THEN JSON_SET(JSON_REMOVE(ai_draft_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE ai_draft_json END AS ai_draft_json,
             intake_status,
@@ -105,9 +106,9 @@ public interface IntakeMapper {
     String LIST_ORDER_BY = """
             ORDER BY CASE TRIM(demand_status)
             WHEN '待澄清' THEN 0 WHEN '待处理' THEN 1 WHEN '处理中' THEN 2 WHEN '待评估' THEN 3
-            WHEN '待排期' THEN 4 WHEN '待设计' THEN 5 WHEN '开发中' THEN 6 WHEN '测试中' THEN 7
-            WHEN '待验收' THEN 8 WHEN '待上线' THEN 9 WHEN '已收录' THEN 10 WHEN '已暂停' THEN 11
-            WHEN '已完成' THEN 12 WHEN '终止关闭' THEN 13 ELSE 14 END,
+            WHEN '待排期' THEN 4 WHEN '待设计' THEN 5 WHEN '开发中' THEN 6 WHEN '开发完成' THEN 7
+            WHEN '测试中' THEN 8 WHEN '待验收' THEN 9 WHEN '待上线' THEN 10 WHEN '已收录' THEN 11
+            WHEN '已暂停' THEN 12 WHEN '已完成' THEN 13 WHEN '终止关闭' THEN 14 ELSE 15 END,
             CASE TRIM(priority) WHEN '高' THEN 0 WHEN '中' THEN 1 WHEN '低' THEN 2 ELSE 3 END,
             received_at DESC, id DESC
             """;
@@ -185,6 +186,8 @@ public interface IntakeMapper {
                    received_at,
                    raw_content,
                    development_owner_user_name,
+                   development_standard,
+                   ai_agent_id,
                    CASE WHEN JSON_VALID(structured_data_json) THEN JSON_SET(JSON_REMOVE(structured_data_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE structured_data_json END AS structured_data_json,
                    CASE WHEN JSON_VALID(ai_draft_json) THEN JSON_SET(JSON_REMOVE(ai_draft_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE ai_draft_json END AS ai_draft_json,
                    intake_status,
@@ -279,6 +282,8 @@ public interface IntakeMapper {
                    received_at,
                    raw_content,
                    development_owner_user_name,
+                   development_standard,
+                   ai_agent_id,
                    CASE WHEN JSON_VALID(structured_data_json) THEN JSON_SET(JSON_REMOVE(structured_data_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE structured_data_json END AS structured_data_json,
                    CASE WHEN JSON_VALID(ai_draft_json) THEN JSON_SET(JSON_REMOVE(ai_draft_json, '$.businessLine'), '$.businessLineCode', business_line_code, '$.businessLine', (SELECT bl.business_line_name FROM pm_business_line bl WHERE CAST(bl.business_line_code AS BINARY) = CAST(pm_intake_record.business_line_code AS BINARY) LIMIT 1)) ELSE ai_draft_json END AS ai_draft_json,
                    intake_status,
@@ -352,6 +357,7 @@ public interface IntakeMapper {
                 raw_content,
                 development_owner_user_name,
                 development_standard,
+                ai_agent_id,
                 structured_data_json,
                 ai_draft_json,
                 intake_status,
@@ -406,6 +412,7 @@ public interface IntakeMapper {
                 #{rawContent},
                 #{developmentOwnerUserName},
                 #{developmentStandard},
+                #{aiAgentId},
                 CASE WHEN JSON_VALID(#{structuredDataJson}) THEN JSON_REMOVE(#{structuredDataJson}, '$.businessLine') ELSE #{structuredDataJson} END,
                 CASE WHEN JSON_VALID(#{aiDraftJson}) THEN JSON_REMOVE(#{aiDraftJson}, '$.businessLine') ELSE #{aiDraftJson} END,
                 #{intakeStatus},
@@ -558,6 +565,14 @@ public interface IntakeMapper {
             WHERE id = #{id}
             """)
     int updateFormalFields(IntakeRecordEntity entity);
+
+    @Update("""
+            UPDATE pm_intake_record
+            SET ai_agent_id = #{aiAgentId},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id} AND deleted = 0
+            """)
+    int updateAiAgent(@Param("id") Long id, @Param("aiAgentId") String aiAgentId);
 
     @Update("""
             UPDATE pm_intake_record

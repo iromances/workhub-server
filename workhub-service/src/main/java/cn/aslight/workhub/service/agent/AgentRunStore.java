@@ -25,6 +25,9 @@ import java.util.UUID;
 public class AgentRunStore {
     public static final int LEASE_SECONDS = 60;
     private static final Set<String> END_STATES = Set.of("COMPLETED", "FAILED", "CANCELLED", "WAITING_INPUT", "WAITING_RESOURCE");
+    private AgentReportService reports;
+    @Autowired
+    public void setReports(AgentReportService reports) { this.reports = reports; }
     private final AgentMapper mapper;
     private final ObjectMapper json;
     private final AgentAccessService access;
@@ -49,19 +52,14 @@ public class AgentRunStore {
     }
 
     @Transactional
-    public AgentRunEntity claim(int globalLimit) {
+    public AgentRunEntity claim() {
         mapper.lockDispatcher();
-        if (globalLimit < 1 || globalLimit > 32) throw new IllegalArgumentException("运行并发上限应为 1 到 32");
         var now = now();
-        if (mapper.countOwnedRuns(null, now) >= globalLimit) return null;
         for (String id : mapper.findQueuedRunIds()) {
             var initial = mapper.findRun(id);
             var agent = mapper.lockAgent(initial.agentId());
             var run = mapper.lockRun(id);
             if (agent == null || !agent.enabled() || !"QUEUED".equals(run.status()) || run.ownerToken() != null || run.externalHandle() != null) continue;
-            var current = json.readValue(agent.configurationJson(), AgentConfiguration.class);
-            int limit = Math.min(current.maxConcurrentRuns(), context(run).configuration().maxConcurrentRuns());
-            if (mapper.countOwnedRuns(agent.id(), now) >= limit) continue;
             String token = UUID.randomUUID().toString();
             changed(mapper.claimRun(id, token, now.plusSeconds(LEASE_SECONDS), now));
             append(id, "claim:" + token, "RUNNING", Map.of("recoveredStepCount", run.stepCount(), "elapsedMillis", run.elapsedMillis()));
@@ -79,7 +77,8 @@ public class AgentRunStore {
     public AgentToolContext context(AgentRunEntity run) {
         return new AgentToolContext(run.id(), run.taskId(), run.agentId(), run.requestedBy(), run.ownerToken(),
                 json.readValue(run.configurationJson(), AgentConfiguration.class),
-                json.readValue(run.specificationJson(), AgentTaskSpecification.class));
+                // 运行上下文进入提示词，webhook 地址以"已配置"标记脱敏（REQ-2020a468）
+                AgentWorkbenchService.maskWebhook(json.readValue(run.specificationJson(), AgentTaskSpecification.class)));
     }
 
     public List<AgentEventEntity> events(String runId) { return mapper.listEvents(runId); }
@@ -105,6 +104,16 @@ public class AgentRunStore {
             window.put("rule", "只分析 from（含）之后至 to 新增或变化的数据；数据查询必须带时间条件，窗口外数据只作背景不改结论");
         }
         return window;
+    }
+
+    /** 与场景提交共用事务锁，租约变化不能穿过提交边界。 */
+    @Transactional
+    public AgentToolContext lockActiveContext(String runId, String owner) {
+        var run = owned(mapper.lockRun(runId), owner, true);
+        requireBudget(run);
+        access.requireRunAuthorization(context(run));
+        requireProvider(run);
+        return context(run);
     }
 
     public AgentToolContext contextForOwner(String runId, String owner) {
@@ -229,13 +238,20 @@ public class AgentRunStore {
             append(runId, attempt + ":handled", "INPUT_CHANGED", Map.of("message", "原 CLI 已停止，将携带新指令和既有工具回执重新规划"));
             return false;
         } else if (!payload.has("exitCode") || payload.path("exitCode").asInt(-1) != 0 || !result.isObject()
-                || !Set.of("RESULT", "NEEDS_INPUT").contains(result.path("type").asText()) || result.path("summary").asText().isBlank()) {
+                || !Set.of("RESULT", "NEEDS_INPUT").contains(result.path("type").asText()) || AgentReportContract.summary(result).isBlank()) {
             finish(runId, owner, "FAILED", null, "CLI 已确认停止，但没有有效最终结果；已有工具回执保留，请核对后重试");
         } else if (hasNewInputSince(runId, attempt + ":request")) {
             append(runId, attempt + ":handled", "INPUT_CHANGED", Map.of("message", "已收到新指令，将依据已有工具结果继续规划"));
             return false;
         } else {
-            finish(runId, owner, "RESULT".equals(result.path("type").asText()) ? "COMPLETED" : "WAITING_INPUT", result.path("summary").asText(), null);
+            AgentReportContract.validate(result);
+            if (AgentReportContract.isV2(result) && !get(runId).cancelRequested()) {
+                if (reports == null) throw new IllegalStateException("结构化报告存储不可用");
+                var raw = mapper.listEvents(runId).reversed().stream()
+                        .filter(e -> Set.of("CLI_RAW_RESULT", "CLI_FORMAT_RECOVERY").contains(e.kind())).findFirst().orElse(saved);
+                reports.save(get(runId), data.sanitizeReport(result), raw.id());
+            }
+            finish(runId, owner, "RESULT".equals(result.path("type").asText()) ? "COMPLETED" : "WAITING_INPUT", AgentReportContract.summary(result), null);
         }
         append(runId, attempt + ":handled", "STEP_COMPLETED", Map.of("source", "CLI_RESULT"));
         return true;
@@ -243,8 +259,19 @@ public class AgentRunStore {
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void finishDecision(String runId, String owner, String modelRequestKey, String status, String result) {
-        owned(mapper.lockRun(runId), owner, true);
+        finishDecision(runId, owner, modelRequestKey, status, result, null);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void finishDecision(String runId, String owner, String modelRequestKey, String status, String result, JsonNode structured) {
+        var run = owned(mapper.lockRun(runId), owner, true);
         requireUnchangedInput(runId, modelRequestKey);
+        if (structured != null && !structured.isNull() && !run.cancelRequested()) {
+            AgentReportContract.validate(structured);
+            var raw = mapper.listEvents(runId).reversed().stream().filter(e -> "API_RAW_RESULT".equals(e.kind())).findFirst().orElseThrow();
+            reports.save(run, data.sanitizeReport(structured), raw.id());
+            append(runId, "report:api-result", "STRUCTURED_RESULT", Map.of("result", structured));
+        }
         finish(runId, owner, status, result, null);
     }
 
@@ -266,7 +293,7 @@ public class AgentRunStore {
             changed(mapper.heartbeat(runId, owner, now().plusSeconds(LEASE_SECONDS), Math.max(elapsed, run.elapsedMillis()), now()));
         }
         String actual = run.cancelRequested() ? "CANCELLED" : status;
-        String safeResult = result == null ? null : data.sanitize(result).asText();
+        String safeResult = result == null ? null : data.sanitizeReport(result).asText();
         String safeError = error == null ? null : data.sanitize(error).asText();
         if ("COMPLETED".equals(status) && !run.cancelRequested()) {
             if (safeResult == null || safeResult.isBlank()) throw new IllegalArgumentException("完成任务必须提供实际产物");
@@ -381,7 +408,7 @@ public class AgentRunStore {
 
     private void appendReceipt(String runId, String key, String kind, Object payload) {
         var prior = mapper.findEventByKey(runId, key);
-        if (prior != null && (!kind.equals(prior.kind()) || !json.readTree(prior.payloadJson()).equals(json.readTree(json.writeValueAsString(data.sanitize(payload)))))) {
+        if (prior != null && (!kind.equals(prior.kind()) || !json.readTree(prior.payloadJson()).equals(json.readTree(json.writeValueAsString(eventPayload(kind, payload)))))) {
             throw new IllegalArgumentException("同一调用的回执内容不一致，原回执不可改写");
         }
         append(runId, key, kind, payload);
@@ -413,7 +440,29 @@ public class AgentRunStore {
     private void append(String runId, String key, String kind, Object payload) {
         if (mapper.findEventByKey(runId, key) != null) return;
         mapper.insertEvent(new AgentEventEntity(UUID.randomUUID().toString(), runId, key, mapper.nextEventOrdinal(runId),
-                kind, json.writeValueAsString(data.sanitize(payload)), "agent-runtime", now()));
+                kind, json.writeValueAsString(eventPayload(kind, payload)), "agent-runtime", now()));
+    }
+
+    private JsonNode eventPayload(String kind, Object payload) {
+        return Set.of("CLI_RAW_RESULT", "CLI_FORMAT_RECOVERY", "CLI_RESULT", "API_RAW_RESULT", "MODEL_RESPONSE", "STRUCTURED_RESULT", "COMPLETED", "WAITING_INPUT").contains(kind)
+                ? data.sanitizeReport(payload) : data.sanitize(payload);
+    }
+
+    /** 新指令使旧原文失效；恢复绝不能把旧结论当作新任务结果。 */
+    public String recoverableNativeResult(String runId) {
+        var raw = recoverableNativeEvent(mapper.listEvents(runId), json);
+        return raw == null ? null : json.readTree(raw.payloadJson()).path("text").asText(null);
+    }
+
+    static cn.aslight.workhub.model.agent.AgentEventEntity recoverableNativeEvent(
+            List<cn.aslight.workhub.model.agent.AgentEventEntity> events, ObjectMapper json) {
+        var raw = events.stream().filter(e -> Set.of("CLI_RAW_RESULT", "CLI_FORMAT_RECOVERY").contains(e.kind()))
+                .reduce((a, b) -> b).orElse(null);
+        if (raw == null) return null;
+        // 原文保存前也可能已收到新指令，必须对照业务调用的输入快照，而非原文落盘时间。
+        long inputOrdinal = "CLI_RAW_RESULT".equals(raw.kind())
+                ? json.readTree(raw.payloadJson()).path("inputThroughOrdinal").asLong(raw.ordinal()) : raw.ordinal();
+        return events.stream().anyMatch(e -> "HUMAN_INPUT".equals(e.kind()) && e.ordinal() > inputOrdinal) ? null : raw;
     }
 
     private LocalDateTime now() { return LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC); }

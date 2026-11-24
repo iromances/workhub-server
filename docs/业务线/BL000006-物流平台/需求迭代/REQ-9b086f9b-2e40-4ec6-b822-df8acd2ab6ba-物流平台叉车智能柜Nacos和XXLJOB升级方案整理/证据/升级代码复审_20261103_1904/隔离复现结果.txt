@@ -1,5 +1,0 @@
-CONFIRMED parameter-loss: context=["APPLICATION-ONLY-ONE"], methodArg=null, filterEnabled=false
-CONFIRMED failure-misreport: actual CRM directReturn=500, schedulerContext=200
-CONFIRMED debug-zero-arg: data=null, exception=wrong number of arguments
-CONFIRMED debug-zero-arg: data=object, exception=wrong number of arguments
-PASS: all isolated regression probes reproduced; no application startup or network calls

@@ -3,6 +3,7 @@ package cn.aslight.workhub.service.intake;
 import cn.aslight.workhub.dao.intake.DevelopmentAnalysisMapper;
 import cn.aslight.workhub.dao.intake.IntakeMapper;
 import cn.aslight.workhub.dao.intake.IntakeSubmitTestReviewMapper;
+import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisDraft;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeStageActionRequest;
@@ -10,6 +11,7 @@ import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeSubmitTestConfirmRequest;
 import cn.aslight.workhub.model.intake.IntakeSubmitTestReviewEntity;
 import cn.aslight.workhub.model.intake.IntakeSubmitTestReviewResponse;
+import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.service.agent.AgentJenkinsClient;
 import cn.aslight.workhub.service.ai.AiGatewayClient;
 import cn.aslight.workhub.service.ai.AiGatewayRequest;
@@ -31,7 +33,7 @@ import java.util.Objects;
 
 /**
  * 提测 AI 审核与提测执行：审核不通过停留开发中，人工确认可强制提测；
- * 确认提测后创建禅道测试单并触发所选测试环境的 Jenkins 构建，全部成功才推进测试中。
+ * 确认提测后按需创建禅道测试单并触发所选测试环境的 Jenkins 构建，全部成功才推进测试中。
  */
 @Service
 public class IntakeSubmitTestReviewService {
@@ -78,6 +80,7 @@ public class IntakeSubmitTestReviewService {
 
     private final IntakeMapper intakeMapper;
     private final IntakeSubmitTestReviewMapper reviewMapper;
+    private final BusinessLineMapper businessLineMapper;
     private final DevelopmentAnalysisMapper developmentAnalysisMapper;
     private final AiGatewayClient aiGatewayClient;
     private final ZentaoClient zentaoClient;
@@ -86,9 +89,14 @@ public class IntakeSubmitTestReviewService {
     private final ObjectMapper objectMapper;
     private final org.springframework.core.task.TaskExecutor taskExecutor;
     private final IntakeService intakeService;
+    private IntakeTestDeploymentService testDeployments;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setTestDeployments(IntakeTestDeploymentService service) { this.testDeployments = service; }
 
     public IntakeSubmitTestReviewService(IntakeMapper intakeMapper,
                                          IntakeSubmitTestReviewMapper reviewMapper,
+                                         BusinessLineMapper businessLineMapper,
                                          DevelopmentAnalysisMapper developmentAnalysisMapper,
                                          AiGatewayClient aiGatewayClient,
                                          ZentaoClient zentaoClient,
@@ -99,6 +107,7 @@ public class IntakeSubmitTestReviewService {
                                          IntakeService intakeService) {
         this.intakeMapper = intakeMapper;
         this.reviewMapper = reviewMapper;
+        this.businessLineMapper = businessLineMapper;
         this.developmentAnalysisMapper = developmentAnalysisMapper;
         this.aiGatewayClient = aiGatewayClient;
         this.zentaoClient = zentaoClient;
@@ -120,7 +129,7 @@ public class IntakeSubmitTestReviewService {
     public IntakeSubmitTestReviewResponse startReview(Long intakeId, String operatorUserName) {
         IntakeRecordEntity intake = requireExisting(intakeId);
         requireDevelopmentRequirement(intake);
-        requireInDevelopment(intake);
+        requireCanSubmitTesting(intake);
         IntakeSubmitTestReviewEntity existing = reviewMapper.findByIntakeId(intakeId);
         if (existing != null && (STATUS_PENDING.equals(existing.getReviewStatus()) || STATUS_RUNNING.equals(existing.getReviewStatus()))) {
             return toResponse(existing);
@@ -146,9 +155,11 @@ public class IntakeSubmitTestReviewService {
     }
 
     /**
-     * 确认提测：AI 审核与 Jenkins 构建均可选（skipAiReview/triggerJenkins，缺省为先审后提并触发构建）；
-     * 禅道测试单始终创建且 owner 取必选的测试负责人（testOwnerUserName），
-     * 所选外部动作全部成功才推进阶段到测试中，任一失败明确报错并停留开发中。
+     * 确认提测：AI 审核、禅道测试单与 Jenkins 构建均可选（skipAiReview/createZentaoTestTask/triggerJenkins，
+     * 缺省为先审后提、创建测试单并触发构建）；
+     * 测试环境（environmentCode）与测试负责人（testOwnerUserName）始终必填，
+     * 环境须为业务线支持的非生产环境，触发构建时还须与所选测试发布绑定环境一致；
+     * 所选外部动作全部成功才推进阶段到测试中，任一失败明确报错并保留原开发阶段。
      */
     @Transactional
     public IntakeSubmitTestReviewResponse confirmAndSubmit(Long intakeId,
@@ -156,16 +167,14 @@ public class IntakeSubmitTestReviewService {
                                                            String operatorUserName) {
         IntakeRecordEntity intake = requireExisting(intakeId);
         requireDevelopmentRequirement(intake);
-        requireInDevelopment(intake);
+        requireCanSubmitTesting(intake);
         boolean triggerJenkins = !Boolean.FALSE.equals(request.getTriggerJenkins());
-        String environment = null;
-        if (triggerJenkins) {
-            environment = request.getEnvironmentCode() == null || request.getEnvironmentCode().isBlank()
-                    ? null : request.getEnvironmentCode().trim().toUpperCase();
-            if (environment == null) {
-                throw new IllegalArgumentException("请选择测试环境后再确认提测");
-            }
+        String environment = request.getEnvironmentCode() == null || request.getEnvironmentCode().isBlank()
+                ? null : request.getEnvironmentCode().trim().toUpperCase();
+        if (environment == null) {
+            throw new IllegalArgumentException("请选择测试环境后再确认提测");
         }
+        requireSupportedEnvironment(intake, environment);
         boolean skipAiReview = Boolean.TRUE.equals(request.getSkipAiReview());
         IntakeSubmitTestReviewEntity entity = reviewMapper.findByIntakeId(intakeId);
         if (skipAiReview) {
@@ -197,21 +206,37 @@ public class IntakeSubmitTestReviewService {
         if (testOwnerUserName == null) {
             throw new IllegalArgumentException("请选择测试负责人后再确认提测");
         }
-        ZentaoClient.ZentaoTestTask testTask = zentaoClient.createTestTask(
-                "测试单：" + firstNonBlank(intake.getRequirementName(), intake.getApprovalTitle(), "需求-" + intakeId),
-                testOwnerUserName,
-                intake.getBusinessLineCode(),
-                intake.getDevelopmentBranchName(),
-                intake.getZentaoUrl());
-        entity.setZentaoTestTaskNo(testTask.taskNo());
-        entity.setZentaoTestTaskUrl(testTask.url());
-
         if (triggerJenkins) {
-            JenkinsSubmission submission = triggerJenkins(environment, trimToNull(request.getJenkinsJobName()), readDraft(intakeId));
-            entity.setJenkinsEnvironmentCode(environment);
-            entity.setJenkinsBuildNumber(submission.buildNumber());
-            entity.setJenkinsBuildUrl(submission.buildUrl());
-            entity.setJenkinsBuildStatus(submission.state());
+            var binding = testDeployments.validateRequest(intakeId, request.getTestDeployment());
+            String bindingEnvironment = binding.environmentCode() == null ? null : binding.environmentCode().trim().toUpperCase();
+            if (!environment.equals(bindingEnvironment))
+                throw new IllegalArgumentException("测试环境与所选测试发布目标不符");
+            if (trimToNull(request.getJenkinsJobName()) != null && !binding.jobName().equals(request.getJenkinsJobName()))
+                throw new IllegalArgumentException("Jenkins Job 与测试绑定不符");
+        }
+        boolean createZentaoTestTask = !Boolean.FALSE.equals(request.getCreateZentaoTestTask());
+        if (createZentaoTestTask) {
+            ZentaoClient.ZentaoTestTask testTask = zentaoClient.createTestTask(
+                    "测试单：" + firstNonBlank(intake.getRequirementName(), intake.getApprovalTitle(), "需求-" + intakeId),
+                    testOwnerUserName,
+                    intake.getBusinessLineCode(),
+                    intake.getDevelopmentBranchName(),
+                    intake.getZentaoUrl());
+            entity.setZentaoTestTaskNo(testTask.taskNo());
+            entity.setZentaoTestTaskUrl(testTask.url());
+        } else {
+            // 回滚后重提可能残留上次回执，不提单时显式清空
+            entity.setZentaoTestTaskNo(null);
+            entity.setZentaoTestTaskUrl(null);
+        }
+
+        // 提测确认环境无论是否触发构建均记录回执；构建号与构建地址仅触发构建时重置
+        entity.setJenkinsEnvironmentCode(environment);
+        if (triggerJenkins) {
+            testDeployments.submit(intakeId, request.getTestDeployment(), operatorUserName);
+            entity.setJenkinsBuildNumber(null);
+            entity.setJenkinsBuildUrl(null);
+            entity.setJenkinsBuildStatus("PENDING");
         }
         entity.setUpdatedBy(operatorUserName);
         reviewMapper.updateByIntakeId(entity);
@@ -296,47 +321,6 @@ public class IntakeSubmitTestReviewService {
         return builder.toString();
     }
 
-    private JenkinsSubmission triggerJenkins(String environmentCode, String preferredJobName, DevelopmentAnalysisDraft draft) {
-        String baseUrl = requireConfig(CONFIG_KEY_JENKINS_BASE_URL, "Jenkins 地址未配置（intake.submitTest.jenkinsBaseUrl）");
-        String userName = requireConfig(CONFIG_KEY_JENKINS_USER, "Jenkins 用户未配置（intake.submitTest.jenkinsUserName）");
-        String apiToken = requireConfig(CONFIG_KEY_JENKINS_TOKEN, "Jenkins API Token 未配置（intake.submitTest.jenkinsApiToken）");
-        String jobName = resolveJobName(environmentCode, preferredJobName, draft);
-        List<String> segments = new ArrayList<>();
-        segments.add(jobName);
-        AgentJenkinsClient.Target target = new AgentJenkinsClient.Target(
-                URI.create(baseUrl.endsWith("/") ? baseUrl : baseUrl + "/"), segments, userName, apiToken);
-        long queueId = jenkinsClient.submit(target, Map.of());
-        AgentJenkinsClient.QueueState queue = jenkinsClient.queue(target, queueId, Map.of());
-        if ("STARTED".equals(queue.state()) && queue.buildNumber() != null) {
-            return new JenkinsSubmission("STARTED", jobName, queue.buildNumber(),
-                    target.jobUri(queue.buildNumber() + "/").toString());
-        }
-        return new JenkinsSubmission(queue.state(), jobName, null,
-                target.instanceUri("queue/item/" + queueId + "/").toString());
-    }
-
-    /**
-     * Job 名解析：显式指定优先；否则按环境前缀（jenkinsJobPrefix.{ENV}）+ 首个任务系统拼接。
-     */
-    private String resolveJobName(String environmentCode, String preferredJobName, DevelopmentAnalysisDraft draft) {
-        if (preferredJobName != null) {
-            return preferredJobName;
-        }
-        String prefix = trimToNull(sysConfigService.findPlainValue(CONFIG_GROUP, CONFIG_KEY_JENKINS_JOB_PREFIX_PREFIX + environmentCode));
-        String systemTag = draft == null || draft.workItems() == null || draft.workItems().isEmpty()
-                ? null
-                : draft.workItems().stream()
-                        .map(item -> item.systemTags() == null ? null : item.systemTags().isEmpty() ? null : item.systemTags().getFirst())
-                        .filter(Objects::nonNull)
-                        .findFirst()
-                        .orElse(null);
-        if (prefix != null && systemTag != null) {
-            return prefix + "-" + systemTag;
-        }
-        throw new IllegalArgumentException("无法确定 Jenkins Job：请显式选择 Job，或配置 intake.submitTest.jenkinsJobPrefix."
-                + environmentCode + " 并确保任务拆解包含涉及系统");
-    }
-
     private DevelopmentAnalysisDraft readDraft(Long intakeId) {
         var analysis = developmentAnalysisMapper.findLatestByIntakeId(intakeId);
         if (analysis == null || analysis.getDraftJson() == null || analysis.getDraftJson().isBlank()) {
@@ -402,9 +386,32 @@ public class IntakeSubmitTestReviewService {
         }
     }
 
-    private void requireInDevelopment(IntakeRecordEntity intake) {
-        if (!"开发中".equals(trimToNull(intake.getDemandStatus()))) {
-            throw new IllegalArgumentException("仅开发中需求允许提交测试");
+    private void requireCanSubmitTesting(IntakeRecordEntity intake) {
+        IntakeDemandStatusRules.resolveNextStatus(intake.getDemandStatus(), intake.getRequirementType(),
+                IntakeDemandStatusRules.ACTION_SUBMIT_TESTING);
+    }
+
+    /** 提测环境须为业务线已支持的非生产环境；业务线未配置支持环境时回退仅允许 TEST。 */
+    private void requireSupportedEnvironment(IntakeRecordEntity intake, String environment) {
+        if ("PROD".equals(environment)) {
+            throw new IllegalArgumentException("提测不允许选择生产环境");
+        }
+        BusinessLineEntity line = businessLineMapper.findByCode(intake.getBusinessLineCode());
+        java.util.Set<String> supported = new java.util.LinkedHashSet<>();
+        if (line != null && trimToNull(line.getSupportedEnvironments()) != null) {
+            for (String value : line.getSupportedEnvironments().split(",")) {
+                String env = trimToNull(value);
+                if (env != null) {
+                    supported.add(env.toUpperCase());
+                }
+            }
+        }
+        supported.remove("PROD");
+        if (supported.isEmpty()) {
+            supported.add("TEST");
+        }
+        if (!supported.contains(environment)) {
+            throw new IllegalArgumentException("测试环境须为业务线支持的环境：" + String.join("、", supported));
         }
     }
 

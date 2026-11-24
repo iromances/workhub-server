@@ -36,7 +36,8 @@ public record IntakeDetailResponse(Long id,
                                    Long convertedWorkItemId,
                                    LocalDateTime createdAt,
                                    LocalDateTime updatedAt,
-                                   IntakeProcessInfoResponse processInfo) {
+                                   IntakeProcessInfoResponse processInfo,
+                                   String aiAgentId) {
 
     public IntakeDetailResponse(Long id,
                                    String sourceType,
@@ -64,7 +65,7 @@ public record IntakeDetailResponse(Long id,
                                    Long convertedWorkItemId,
                                    LocalDateTime createdAt,
                                    LocalDateTime updatedAt) {
-        this(id, sourceType, sourceChannel, externalMessageId, senderName, developmentOwnerUserName, null, receivedAt, demandStatus, pausePreviousDemandStatus, pauseReason, pauseDate, rawContent, structuredData, involvedSystems, relatedWorkItems, histories, status, enrichmentStatus, enrichmentErrorSummary, enrichmentUpdatedAt, aiDraft, attachments, todos, convertedWorkItemId, createdAt, updatedAt, null);
+        this(id, sourceType, sourceChannel, externalMessageId, senderName, developmentOwnerUserName, null, receivedAt, demandStatus, pausePreviousDemandStatus, pauseReason, pauseDate, rawContent, structuredData, involvedSystems, relatedWorkItems, histories, status, enrichmentStatus, enrichmentErrorSummary, enrichmentUpdatedAt, aiDraft, attachments, todos, convertedWorkItemId, createdAt, updatedAt, null, null);
     }
 
     public IntakeDetailResponse(Long id,
@@ -118,6 +119,7 @@ public record IntakeDetailResponse(Long id,
                 convertedWorkItemId,
                 createdAt,
                 updatedAt,
+                null,
                 null
         );
     }
@@ -172,6 +174,7 @@ public record IntakeDetailResponse(Long id,
                 convertedWorkItemId,
                 createdAt,
                 updatedAt,
+                null,
                 null
         );
     }
@@ -225,6 +228,7 @@ public record IntakeDetailResponse(Long id,
                 convertedWorkItemId,
                 createdAt,
                 updatedAt,
+                null,
                 null
         );
     }

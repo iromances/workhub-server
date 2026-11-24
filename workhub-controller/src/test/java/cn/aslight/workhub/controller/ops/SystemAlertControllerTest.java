@@ -8,7 +8,6 @@ import cn.aslight.workhub.model.ops.SystemAlertDeleteByMessageRequest;
 import cn.aslight.workhub.model.ops.SystemAlertEventBatchDeleteResponse;
 import cn.aslight.workhub.model.ops.SystemAlertEventResponse;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemResponse;
-import cn.aslight.workhub.model.ops.SystemAlertSubsystemSummaryResponse;
 import cn.aslight.workhub.service.ops.SystemAlertService;
 import cn.aslight.workhub.service.ops.SystemAlertCleanupTaskService;
 import org.junit.jupiter.api.Test;
@@ -39,8 +38,6 @@ class SystemAlertControllerTest {
                         List.of(new SystemAlertSubsystemResponse(1L, "保费分期", "prod", "资产支付", "asset-payment",
                                 List.of("asset-payment-*", "asset-payment-history-*"), true, null,
                                 LocalDateTime.of(2026, 6, 4, 8, 0), LocalDateTime.of(2026, 6, 4, 8, 0))),
-                        List.of(new SystemAlertSubsystemSummaryResponse("保费分期", "prod", "资产支付", "asset-payment", 2,
-                                LocalDateTime.of(2026, 6, 4, 9, 50))),
                         List.of(new SystemAlertEventResponse(11L, "保费分期", "prod", "资产支付", "asset-payment", "ERROR",
                                 "SYSTEM_ERROR", "NullPointerException", "支付回调失败", "java.lang.NullPointerException", "空指针",
                                 "trace-1", "req-1", LocalDateTime.of(2026, 6, 4, 9, 50), "LOCAL"))
@@ -61,7 +58,6 @@ class SystemAlertControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.totalCount").value(2))
                 .andExpect(jsonPath("$.data.subsystems[0].subsystemName").value("资产支付"))
-                .andExpect(jsonPath("$.data.summaries[0].errorCount").value(2))
                 .andExpect(jsonPath("$.data.events[0].eventCategory").value("SYSTEM_ERROR"))
                 .andExpect(jsonPath("$.data.events[0].message").value("支付回调失败"));
     }

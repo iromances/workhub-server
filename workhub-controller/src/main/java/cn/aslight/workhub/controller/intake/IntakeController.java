@@ -13,6 +13,7 @@ import cn.aslight.workhub.model.intake.IntakeSubmitTestConfirmRequest;
 import cn.aslight.workhub.model.intake.IntakeSubmitTestReviewResponse;
 import cn.aslight.workhub.model.intake.IntakeBoardResponse;
 import cn.aslight.workhub.model.intake.IntakeBusinessLineUpdateRequest;
+import cn.aslight.workhub.model.intake.IntakeAiAgentUpdateRequest;
 import cn.aslight.workhub.model.intake.IntakeDashboardResponse;
 import cn.aslight.workhub.model.intake.IntakeDevelopmentBranchRequest;
 import cn.aslight.workhub.model.intake.IntakeClarificationAnalysisResponse;
@@ -475,7 +476,7 @@ public class IntakeController {
     }
 
     /**
-     * 重试失败的 AI 分支开发。
+     * 重试失败或尚未创建任务的待执行 AI 分支开发。
      *
      * @param id 待整理记录 ID
      * @param authentication 当前认证信息
@@ -554,6 +555,15 @@ public class IntakeController {
      * @param authentication 当前认证信息
      * @return 更新后的需求详情
      */
+    /** 设置或清除需求的开发数字员工（AI 分支开发执行者）。 */
+    @PostMapping("/{id}/ai-agent")
+    @PreAuthorize("hasAuthority('intake:metadata:update') or hasAuthority('intake:record:update')")
+    public ApiResponse<IntakeDetailResponse> updateAiAgent(@PathVariable Long id,
+                                                           @Valid @RequestBody IntakeAiAgentUpdateRequest request,
+                                                           Authentication authentication) {
+        return ApiResponse.success(intakeService.updateAiAgent(id, request, authentication.getName()));
+    }
+
     @PostMapping("/{id}/business-line")
     @PreAuthorize("hasAuthority('intake:metadata:update') or hasAuthority('intake:record:update')")
     public ApiResponse<IntakeDetailResponse> updateBusinessLine(@PathVariable Long id,

@@ -6,7 +6,6 @@ import cn.aslight.workhub.model.ops.SystemAlertCleanupEventReference;
 import cn.aslight.workhub.model.ops.SystemAlertNotificationCandidate;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemEntity;
 import cn.aslight.workhub.model.ops.SystemAlertSubsystemIndexPatternEntity;
-import cn.aslight.workhub.model.ops.SystemAlertSubsystemSummaryResponse;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
@@ -192,62 +191,6 @@ public interface SystemAlertMapper {
                     @Param("messageKeyword") String messageKeyword,
                     @Param("startTime") LocalDateTime startTime,
                     @Param("endTime") LocalDateTime endTime);
-
-    @Select("""
-            <script>
-            SELECT e.business_line_code AS businessLineCode,
-                   e.environment_code AS environmentCode,
-                   COALESCE(s.subsystem_name, e.subsystem_name) AS subsystemName,
-                   e.service_name AS serviceName,
-                   COUNT(1) AS errorCount,
-                   MAX(e.occurred_at) AS latestOccurredAt
-            FROM ops_system_alert_event e
-            LEFT JOIN ops_system_alert_subsystem s
-              ON s.business_line_code = e.business_line_code
-             AND s.environment_code = e.environment_code
-             AND s.service_name = e.service_name
-            WHERE 1 = 1
-            <if test="businessLineCode != null and businessLineCode != ''">
-              AND e.business_line_code = #{businessLineCode}
-            </if>
-            <if test="environmentCode != null and environmentCode != ''">
-              AND e.environment_code = #{environmentCode}
-            </if>
-            <if test="serviceName != null and serviceName != ''">
-              AND e.service_name = #{serviceName}
-            </if>
-            <if test="level != null and level != ''">
-              AND e.log_level = #{level}
-            </if>
-            <if test="eventCategory != null and eventCategory != ''">
-              AND e.event_category = #{eventCategory}
-            </if>
-            <if test="messageKeyword != null and messageKeyword != ''">
-              AND COALESCE(NULLIF(e.message, ''), NULLIF(e.title, ''), e.error_type, '')
-                  LIKE CONCAT('%', #{messageKeyword}, '%')
-            </if>
-            <if test="startTime != null">
-              AND e.occurred_at &gt;= #{startTime}
-            </if>
-            <if test="endTime != null">
-              AND e.occurred_at &lt;= #{endTime}
-            </if>
-            GROUP BY e.business_line_code,
-                     e.environment_code,
-                     COALESCE(s.subsystem_name, e.subsystem_name),
-                     e.service_name
-            ORDER BY errorCount DESC, latestOccurredAt DESC
-            LIMIT 50
-            </script>
-            """)
-    List<SystemAlertSubsystemSummaryResponse> summarizeEvents(@Param("businessLineCode") String businessLineCode,
-                                                              @Param("environmentCode") String environmentCode,
-                                                              @Param("serviceName") String serviceName,
-                                                              @Param("level") String level,
-                                                              @Param("eventCategory") String eventCategory,
-                                                              @Param("messageKeyword") String messageKeyword,
-                                                              @Param("startTime") LocalDateTime startTime,
-                                                              @Param("endTime") LocalDateTime endTime);
 
     @Select("""
             <script>

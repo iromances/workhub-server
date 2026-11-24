@@ -21,7 +21,21 @@ public record AiGatewayRequest(String useCaseCode,
                                String reasoningLevelOverride,
                                String speedModeOverride,
                                Integer timeoutSecondsOverride,
-                               String schemaClasspathOverride) {
+                               String schemaClasspathOverride,
+                               AiResultRecovery resultRecovery) {
+
+    public AiGatewayRequest(String useCaseCode, Map<String, Object> variables, Path workingDirectory,
+                            List<String> allowedDirectories, List<String> imagePaths, String outputSchema,
+                            Long providerConfigIdOverride, String modelOverride, String reasoningLevelOverride,
+                            String speedModeOverride, Integer timeoutSecondsOverride, String schemaClasspathOverride) {
+        this(useCaseCode, variables, workingDirectory, allowedDirectories, imagePaths, outputSchema,
+                providerConfigIdOverride, modelOverride, reasoningLevelOverride, speedModeOverride, timeoutSecondsOverride, schemaClasspathOverride, null);
+    }
+
+    public AiGatewayRequest withResultRecovery(AiResultRecovery recovery) {
+        return new AiGatewayRequest(useCaseCode, variables, workingDirectory, allowedDirectories, imagePaths, outputSchema,
+                providerConfigIdOverride, modelOverride, reasoningLevelOverride, speedModeOverride, timeoutSecondsOverride, schemaClasspathOverride, recovery);
+    }
 
     public AiGatewayRequest {
         variables = variables == null ? Map.of() : Map.copyOf(new LinkedHashMap<>(variables));

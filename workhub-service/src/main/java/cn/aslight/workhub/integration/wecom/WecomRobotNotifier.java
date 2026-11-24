@@ -113,6 +113,11 @@ public class WecomRobotNotifier {
         sendMarkdown("due-" + candidate.id(), content);
     }
 
+    /** 通用 markdown 通知入口（运维监测告警等场景复用）；webhook 未配置时安全跳过。 */
+    public void sendMarkdownMessage(String bizKey, String content) {
+        sendMarkdown(bizKey, content);
+    }
+
     private void sendMarkdown(String bizKey, String content) {
         if (!wecomRobotProperties.isEnabled() || isBlank(wecomRobotProperties.getWebhook())) {
             log.info("Skip WeCom robot notify because webhook is disabled. bizKey={}", bizKey);

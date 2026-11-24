@@ -1,9 +1,0 @@
-{
-  "sha": "0a46480b6e8d816236b13de8e38f6a617913dac4",
-  "modernJobs": "29/29",
-  "scheduledParameter": "ProductChangeExecuteJob.java:45-46 无参 + getJobParam，已修正",
-  "failureFeedback": "PushPersonVehicleOrderBatchJob.java:28-36 无参 + handleFail，已修正",
-  "manualArity": "xxlJobController.java:44-47 按参数个数反射，旧 wrong number of arguments 已修正",
-  "remaining": "xxlJobController.java:42-49 创建 paramStr 后无参分支不传递它，也未设置/恢复 XxlJobContext；ProductChangeExecuteJob 读取不到手工 data，筛选条件可能丢失；同时手工接口未映射 handleFail 到响应",
-  "verification": "本地缓存官方 XXL 2.5.0 隔离验证：无上下文反射参数为 null；设置上下文后参数可读，handleFail 将结果设为500。未调用真实业务方法。"
-}

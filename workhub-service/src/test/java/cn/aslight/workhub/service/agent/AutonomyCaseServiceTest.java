@@ -68,12 +68,15 @@ class AutonomyCaseServiceTest {
         jdbc.execute("CREATE TABLE sys_role(id BIGINT PRIMARY KEY,role_code VARCHAR(100))");
         jdbc.execute("CREATE TABLE sys_role_permission(role_id BIGINT,permission_code VARCHAR(100),UNIQUE(role_id,permission_code))");
         jdbc.update("INSERT INTO sys_role VALUES (1,'SUPER_ADMIN')");
+        jdbc.execute("CREATE TABLE dict(id BIGINT AUTO_INCREMENT PRIMARY KEY, dict_type VARCHAR(64), dict_desc VARCHAR(128), enum_code VARCHAR(128), enum_desc VARCHAR(256), parent_code VARCHAR(128), root_code VARCHAR(128), sort_order INT DEFAULT 0, create_time DATETIME DEFAULT CURRENT_TIMESTAMP, create_by VARCHAR(64), modify_time DATETIME, delete_time DATETIME, delete_by VARCHAR(64), is_delete TINYINT DEFAULT 0, version INT DEFAULT 0, remark VARCHAR(512))");
+        jdbc.update("INSERT INTO dict(dict_type,enum_code,enum_desc) VALUES ('agentPosition','OPS','运维')");
         for (String file : List.of("V20261104_014200__add_agent_workbench.sql", "V20261104_035107__add_agent_observations_and_cases.sql", "V20261104_174329__add_autonomy_case_resolution.sql",
                 "V20261104_103540__add_autonomy_bug_links.sql")) {
             ScriptUtils.executeSqlScript(keepAlive, new FileSystemResource("../workhub-bootstrap/src/main/resources/db/schema/mysql/" + file));
         }
         var configuration = new Configuration(); configuration.setMapUnderscoreToCamelCase(true);
         configuration.addMapper(AgentMapper.class); configuration.addMapper(AutonomyMapper.class);
+        configuration.addMapper(cn.aslight.workhub.dao.system.DictMapper.class);
         var factory = new SqlSessionFactoryBean(); factory.setDataSource(source); factory.setConfiguration(configuration);
         var sessions = new SqlSessionTemplate(factory.getObject()); agents = sessions.getMapper(AgentMapper.class); mapper = sessions.getMapper(AutonomyMapper.class);
         transactions = new TransactionInterceptor(); transactions.setTransactionManager(new DataSourceTransactionManager(source));
@@ -96,8 +99,12 @@ class AutonomyCaseServiceTest {
         observations = proxy(new AgentObservationService(mapper, agents, runs, access, json, data));
         validation = Validation.buildDefaultValidatorFactory();
         cases = proxy(new AutonomyCaseService(mapper, agents, runs, access, new AutonomyEvidence(json), data, json, validation.getValidator(), mock(AgentMonitorReadMapper.class)));
-        workbench = proxy(new AgentWorkbenchService(agents, access, providers, json, clock));
-        var config = new AgentConfiguration("巡检 Agent", "主动巡检", 1L, "fixture-model", List.of(scope), 200, 3600, 8);
+        var cryptoProperties = new cn.aslight.workhub.config.PaymentProperties();
+        cryptoProperties.setMasterKey("test-master-key");
+        workbench = proxy(new AgentWorkbenchService(agents, access, providers,
+                new cn.aslight.workhub.service.system.DictService(sessions.getMapper(cn.aslight.workhub.dao.system.DictMapper.class)),
+                new cn.aslight.workhub.service.payment.PaymentCryptoService(cryptoProperties), json, clock));
+        var config = new AgentConfiguration("巡检 Agent","OPS", "主动巡检", 1L, "fixture-model", List.of(scope), 200, 3600, 8);
         agent = workbench.create(new AgentSaveRequest(null, config), "owner"); agent = workbench.setEnabled(agent.id(), agent.version(), true, "owner");
     }
     @AfterEach void close() throws Exception { if (validation != null) validation.close(); if (keepAlive != null) keepAlive.close(); }
@@ -347,7 +354,7 @@ class AutonomyCaseServiceTest {
         var specification = new AgentTaskSpecification("巡检", "固定样本", "输出问题和分析", List.of("REPORT"), List.of(scope));
         workbench.createTask(agent.id(), new AgentTaskCreateRequest(UUID.randomUUID().toString(), specification,
                 new AgentScheduleRequest(null, "MANUAL", null, "Asia/Shanghai", "RUN_ONCE", false), true), "owner");
-        var run = runs.claim(8); assertNotNull(run); return runs.context(run);
+        var run = runs.claim(); assertNotNull(run); return runs.context(run);
     }
     private int count(String table) { return jdbc.queryForObject("SELECT COUNT(*) FROM " + table, Integer.class); }
     @SuppressWarnings("unchecked") private <T> T proxy(T target) {

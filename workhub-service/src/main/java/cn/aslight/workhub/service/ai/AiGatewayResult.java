@@ -8,7 +8,16 @@ public record AiGatewayResult(boolean succeeded,
                               String failureSummary,
                               String providerCode,
                               String model,
-                              long durationMs) {
+                              long durationMs,
+                              @com.fasterxml.jackson.annotation.JsonIgnore Throwable failureCause) {
+
+    public AiGatewayResult(boolean succeeded, String output, String failureSummary, String providerCode, String model, long durationMs) {
+        this(succeeded, output, failureSummary, providerCode, model, durationMs, null);
+    }
+
+    public static AiGatewayResult failed(String summary, String providerCode, String model, long durationMs, Throwable cause) {
+        return new AiGatewayResult(false, null, summary, providerCode, model, durationMs, cause);
+    }
 
     public static AiGatewayResult succeeded(String output,
                                             String providerCode,

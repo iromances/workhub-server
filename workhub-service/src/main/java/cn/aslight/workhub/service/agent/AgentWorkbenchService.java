@@ -2,7 +2,10 @@ package cn.aslight.workhub.service.agent;
 
 import cn.aslight.workhub.dao.agent.AgentMapper;
 import cn.aslight.workhub.model.agent.*;
+import cn.aslight.workhub.model.system.DictQueryRequest;
 import cn.aslight.workhub.service.ai.AiProviderConfigService;
+import cn.aslight.workhub.service.payment.PaymentCryptoService;
+import cn.aslight.workhub.service.system.DictService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,29 +21,41 @@ import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
 @Service
 public class AgentWorkbenchService {
     private static final Set<String> TERMINAL = Set.of("COMPLETED", "FAILED", "CANCELLED");
+    /** 数字员工岗位字典类型；选项由迁移种子维护。 */
+    static final String POSITION_DICT_TYPE = "agentPosition";
+    /** 任务规格 webhookUrl 的密文标识前缀（REQ-2020a468）。 */
+    static final String WEBHOOK_CIPHER_PREFIX = "enc:";
+    private AgentReportService reports;
+    @Autowired
+    public void setReports(AgentReportService reports) { this.reports = reports; }
     private final AgentMapper mapper;
     private final AgentAccessService access;
     private final AiProviderConfigService providers;
+    private final DictService dicts;
+    private final PaymentCryptoService crypto;
     private final ObjectMapper json;
     private final Clock clock;
 
     @Autowired
     public AgentWorkbenchService(AgentMapper mapper, AgentAccessService access, AiProviderConfigService providers,
-                                 ObjectMapper json) {
-        this(mapper, access, providers, json, Clock.systemUTC());
+                                 DictService dicts, PaymentCryptoService crypto, ObjectMapper json) {
+        this(mapper, access, providers, dicts, crypto, json, Clock.systemUTC());
     }
 
     AgentWorkbenchService(AgentMapper mapper, AgentAccessService access, AiProviderConfigService providers,
-                           ObjectMapper json, Clock clock) {
+                           DictService dicts, PaymentCryptoService crypto, ObjectMapper json, Clock clock) {
         this.mapper = mapper;
         this.access = access;
         this.providers = providers;
+        this.dicts = dicts;
+        this.crypto = crypto;
         this.json = json;
         this.clock = clock;
     }
@@ -131,11 +146,12 @@ public class AgentWorkbenchService {
         validateTask(request.specification(), configuration(agent.configurationJson()), actor);
         AgentSchedule.validate(request.schedule());
         var schedule = request.schedule();
-        var task = new AgentTaskEntity(id(), agentId, request.requestKey(), hash, encode(request.specification()),
+        var task = new AgentTaskEntity(id(), agentId, request.requestKey(), hash, encodeForStorage(request.specification()),
                 actor.name(), schedule.mode(), schedule.cronExpression(), schedule.zoneId(), schedule.misfirePolicy(),
                 schedule.enabled(), AgentSchedule.next(schedule, clock.instant()), 0, now(), now());
         mapper.insertTask(task);
-        audit("TASK", task.id(), "CREATE", actor.name(), request);
+        audit("TASK", task.id(), "CREATE", actor.name(), Map.of("requestKey", request.requestKey(),
+                "specification", maskWebhook(request.specification()), "runImmediately", request.runImmediately()));
         if (request.runImmediately()) enqueue(task, agent, "initial:" + request.requestKey(), actor.name());
         return response(task);
     }
@@ -187,10 +203,11 @@ public class AgentWorkbenchService {
         validateTask(request.specification(), configuration(agent.configurationJson()), actor);
         if (request.schedule() != null) AgentSchedule.validate(request.schedule());
         var nextRunAt = request.schedule() == null ? null : AgentSchedule.next(request.schedule(), clock.instant());
-        checkChanged(mapper.updateTaskSpecification(task.id(), task.version(), encode(request.specification()),
+        checkChanged(mapper.updateTaskSpecification(task.id(), task.version(), encodeForStorage(request.specification()),
                 request.schedule(), nextRunAt, now()));
+        var maskedSpec = maskWebhook(request.specification());
         audit("TASK", taskId, "UPDATE_SPEC", actor.name(),
-                request.schedule() == null ? request.specification() : Map.of("specification", request.specification(), "schedule", request.schedule()));
+                request.schedule() == null ? maskedSpec : Map.of("specification", maskedSpec, "schedule", request.schedule()));
         return response(mapper.findTask(taskId));
     }
 
@@ -213,6 +230,10 @@ public class AgentWorkbenchService {
         var spec = specification(task.specificationJson());
         audit("TASK", taskId, "DELETE", actor.name(), Map.of("objective", spec.objective(), "requestKey", task.requestKey(),
                 "deletedRuns", mapper.countRuns(taskId), "deletedEvents", counts.events(), "deletedArtifacts", counts.artifacts()));
+        if (reports != null) {
+            int deletedReportRows = reports.deleteTask(taskId);
+            audit("TASK", taskId, "DELETE_REPORT", actor.name(), Map.of("deletedReportRows", deletedReportRows));
+        }
         mapper.deleteArtifactsByTask(taskId);
         mapper.deleteEventsByTask(taskId);
         mapper.deleteRunsByTask(taskId);
@@ -238,6 +259,10 @@ public class AgentWorkbenchService {
         audit("AGENT", id, "DELETE", actor.name(), Map.of("name", agent.name(),
                 "deletedTasks", mapper.countTasks(id), "deletedRuns", mapper.countRunsByAgent(id),
                 "deletedEvents", counts.events(), "deletedArtifacts", counts.artifacts()));
+        if (reports != null) {
+            int deletedReportRows = reports.deleteAgent(id);
+            audit("AGENT", id, "DELETE_REPORT", actor.name(), Map.of("deletedReportRows", deletedReportRows));
+        }
         mapper.deleteArtifactsByAgent(id);
         mapper.deleteEventsByAgent(id);
         mapper.deleteRunsByAgent(id);
@@ -287,11 +312,21 @@ public class AgentWorkbenchService {
                 mapper.listRuns(taskId, offset(page, size), size).stream().map(this::response).toList());
     }
 
+    public Map<String, Object> report(String agentId, String runId, String user) {
+        var actor = access.actor(user);
+        actor.require("agent:task:view");
+        var run = mapper.findRun(runId);
+        if (run == null || !agentId.equals(run.agentId())) throw new IllegalArgumentException("运行不存在");
+        task(run.taskId(), user);
+        var report = reports.read(runId);
+        return report == null ? Map.of("available", false) : Map.of("available", true, "report", report);
+    }
+
     public AgentRunDetailResponse runDetail(String taskId, String runId, String user) {
         task(taskId, user);
         var run = requireRun(taskId, runId, false);
         return new AgentRunDetailResponse(response(run), configuration(run.configurationJson()),
-                specification(run.specificationJson()), json.readValue(run.providerBindingJson(), AgentProviderBinding.class), mapper.listEvents(runId), mapper.listArtifacts(runId));
+                revealWebhook(specification(run.specificationJson())), json.readValue(run.providerBindingJson(), AgentProviderBinding.class), mapper.listEvents(runId), mapper.listArtifacts(runId));
     }
 
     @Transactional
@@ -326,6 +361,16 @@ public class AgentWorkbenchService {
         if (!Set.of("FAILED", "CANCELLED", "WAITING_RESOURCE").contains(previous.status())) throw new IllegalArgumentException("当前状态不能重试，请补充指令或等待执行结束");
         var next = enqueue(task, agent, key, actor.name());
         event(next.id(), "retry-origin", "RETRY", Map.of("previousRunId", runId), actor.name());
+        // 只有原任务和模型配置完全相同才恢复原文；授权仍由新运行准入检查。
+        if (Objects.equals(previous.specificationJson(), next.specificationJson())
+                && Objects.equals(previous.configurationJson(), next.configurationJson())
+                && "FAILED".equals(previous.status())) {
+            var events = mapper.listEvents(runId);
+            var raw = AgentRunStore.recoverableNativeEvent(events, json);
+            if (raw != null) {
+                event(next.id(), "format-recovery", "CLI_FORMAT_RECOVERY", json.readTree(raw.payloadJson()), actor.name());
+            }
+        }
         audit("RUN", runId, "RETRY", actor.name(), Map.of("newRunId", next.id()));
         return response(next);
     }
@@ -372,7 +417,8 @@ public class AgentWorkbenchService {
         if (mapper.countPendingRuns(agent.id()) >= 100) throw new IllegalStateException("Agent 待执行任务达到上限");
         var provider = providers.getEnabledById(configuration.providerConfigId());
         String model = configuration.model() == null || configuration.model().isBlank() ? provider.getDefaultModel() : configuration.model();
-        var snapshot = new AgentConfiguration(configuration.name(), configuration.instructions(), configuration.providerConfigId(), model,
+        var snapshot = new AgentConfiguration(configuration.name(), configuration.position(), configuration.instructions(),
+                configuration.providerConfigId(), model,
                 configuration.scopes(), configuration.maxSteps(), configuration.maxRunSeconds(), configuration.maxConcurrentRuns());
         var run = new AgentRunEntity(id(), task.id(), agent.id(), triggerKey, task.requestedBy(),
                 encode(snapshot), task.specificationJson(), encode(AgentProviderBinding.from(provider)), "QUEUED", 0, 0, false,
@@ -398,6 +444,10 @@ public class AgentWorkbenchService {
         audit("RUN", runId, "DELETE", actor.name(), Map.of("reason",
                 run.ownerToken() != null ? "清理待核对运行并释放并发额度" : "删除运行记录",
                 "unresolvedHandle", run.externalHandle() != null));
+        if (reports != null) {
+            int deletedReportRows = reports.deleteRun(runId);
+            audit("RUN", runId, "DELETE_REPORT", actor.name(), Map.of("deletedReportRows", deletedReportRows));
+        }
         mapper.deleteArtifactsByRun(runId);
         mapper.deleteEventsByRun(runId);
         checkChanged(mapper.deleteRunById(runId, run.version()));
@@ -406,11 +456,43 @@ public class AgentWorkbenchService {
     private void validateConfiguration(AgentConfiguration configuration, AgentAccessService.Actor actor) {
         providers.requireExisting(configuration.providerConfigId());
         access.validateScopes(configuration.scopes());
+        requirePosition(configuration.position());
+    }
+
+    /** 需求确认设计前的只读准入检查；实际创建任务时仍复核最新授权。 */
+    public void requireAssignable(String agentId, List<AgentScope> scopes, String user) {
+        var actor = access.actor(user);
+        actor.require("agent:task:assign");
+        var agent = mapper.findAgent(agentId);
+        if (agent == null) throw new IllegalArgumentException("所选数字员工不存在，请重新选择");
+        access.requireAgent(actor, agent);
+        if (!agent.enabled()) throw new IllegalArgumentException("所选数字员工已停用，请选择可用的数字员工");
+        var configuration = configuration(agent.configurationJson());
+        if (scopes.stream().anyMatch(scope -> !configuration.allowsScope(scope)))
+            throw new IllegalArgumentException("所选数字员工没有该需求业务线或环境的授权，请选择已授权的数字员工");
+        access.validateScopes(scopes);
+        requireProviderEnabled(configuration);
+    }
+
+    /** 岗位必填且须为字典 agentPosition 启用项；存量配置仅编辑保存时触发。 */
+    private void requirePosition(String position) {
+        if (position == null || position.isBlank()) {
+            throw new IllegalArgumentException("请选择岗位");
+        }
+        var query = new DictQueryRequest();
+        query.setDictType(POSITION_DICT_TYPE);
+        query.setEnumCodeList(List.of(position.trim()));
+        if (dicts.query(query).isEmpty()) {
+            throw new IllegalArgumentException("岗位不存在或已停用，请重新选择");
+        }
     }
 
     private void validateTask(AgentTaskSpecification task, AgentConfiguration configuration, AgentAccessService.Actor actor) {
         task.validateCompletionTargets();
-        if (!configuration.scopes().containsAll(task.scopes())) {
+        if ("EXECUTE_CONFIGURED".equals(task.monitorMode())
+                && !actor.has("ops:accounting:run") && !actor.has("ops:accounting:manage"))
+            throw new org.springframework.security.access.AccessDeniedException("缺少业务监测执行权限");
+        if (task.scopes().stream().anyMatch(scope -> !configuration.allowsScope(scope))) {
             throw new IllegalArgumentException("任务范围超出 Agent 的授权配置");
         }
         access.validateScopes(task.scopes());
@@ -450,7 +532,7 @@ public class AgentWorkbenchService {
     }
 
     private AgentTaskResponse response(AgentTaskEntity entity) {
-        return new AgentTaskResponse(entity.id(), entity.agentId(), specification(entity.specificationJson()),
+        return new AgentTaskResponse(entity.id(), entity.agentId(), revealWebhook(specification(entity.specificationJson())),
                 entity.requestedBy(), schedule(entity), entity.nextRunAt(), entity.version(), entity.createdAt(), entity.updatedAt());
     }
 
@@ -467,6 +549,32 @@ public class AgentWorkbenchService {
 
     private AgentConfiguration configuration(String value) { return json.readValue(value, AgentConfiguration.class); }
     private AgentTaskSpecification specification(String value) { return json.readValue(value, AgentTaskSpecification.class); }
+
+    /** 任务规格落库前加密 webhookUrl（AES，enc: 前缀）；其余字段原样。 */
+    private String encodeForStorage(AgentTaskSpecification spec) {
+        return encode(withWebhook(spec, encryptWebhook(spec)));
+    }
+
+    private String encryptWebhook(AgentTaskSpecification spec) {
+        return spec.webhookUrl() == null ? null : WEBHOOK_CIPHER_PREFIX + crypto.encrypt(spec.webhookUrl());
+    }
+
+    /** 任务/运行详情回显与预警发送前的明文还原；非密文值原样返回。 */
+    AgentTaskSpecification revealWebhook(AgentTaskSpecification spec) {
+        String webhookUrl = spec.webhookUrl();
+        if (webhookUrl == null || !webhookUrl.startsWith(WEBHOOK_CIPHER_PREFIX)) return spec;
+        return withWebhook(spec, crypto.decrypt(webhookUrl.substring(WEBHOOK_CIPHER_PREFIX.length())));
+    }
+
+    /** 审计与提示词载荷脱敏：地址仅保留"已配置"标记，不落密文与明文。 */
+    static AgentTaskSpecification maskWebhook(AgentTaskSpecification spec) {
+        return spec.webhookUrl() == null ? spec : withWebhook(spec, "configured");
+    }
+
+    private static AgentTaskSpecification withWebhook(AgentTaskSpecification spec, String webhookUrl) {
+        return new AgentTaskSpecification(spec.objective(), spec.context(), spec.acceptanceCriteria(),
+                spec.expectedArtifacts(), spec.scopes(), spec.completionTargets(), spec.analysisScope(), webhookUrl, spec.monitorMode(), spec.monitorConfigIds(), spec.monitorCheckDate());
+    }
     private String encode(Object value) { return json.writeValueAsString(value); }
     private LocalDateTime now() { return LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC); }
     private static String id() { return UUID.randomUUID().toString(); }

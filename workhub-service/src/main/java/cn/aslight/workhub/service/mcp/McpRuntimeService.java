@@ -16,6 +16,7 @@ import cn.aslight.workhub.service.attachment.AttachmentService;
 import cn.aslight.workhub.service.attachment.AttachmentTextExtractionService;
 import cn.aslight.workhub.service.intake.GitlabRepositoryService;
 import cn.aslight.workhub.service.intake.IntakeService;
+import cn.aslight.workhub.service.intake.RepositoryDocumentPaths;
 import cn.aslight.workhub.service.ops.BusinessLogSearchService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -695,10 +697,23 @@ public class McpRuntimeService {
         Map<String, Object> context = new LinkedHashMap<>(catalog.knowledge());
         Object documentPath = context.get("projectDocumentPath");
         if (documentPath != null) {
-            context.put("businessLineWikiRoot", documentPath + "/业务线/" + businessLineDirSegment(businessLine));
+            // WorkHub 平台（BL000012）归档在 docs/业务线，其余业务线归档在 agents-playbook 仓库 docs/业务线
+            context.put("businessLineWikiRoot", businessLineWikiRoot(Path.of(documentPath.toString()), context, businessLine));
             context.put("businessLineRawRoot", documentPath + "/requirement-sources/" + firstNonBlank(businessLine.code(), businessLine.name()));
         }
         return context;
+    }
+
+    private String businessLineWikiRoot(Path documentsRoot, Map<String, Object> context, McpResourceCatalog.BusinessLine businessLine) {
+        String segment = businessLineDirSegment(businessLine);
+        if (RepositoryDocumentPaths.WORKHUB_BUSINESS_LINE_CODE.equals(firstNonBlank(businessLine.code(), null))) {
+            return documentsRoot.resolve(RepositoryDocumentPaths.BUSINESS_LINES).resolve(segment).toString();
+        }
+        Object playbookPath = context.get("projectPlaybookPath");
+        Path root = playbookPath != null ? Path.of(playbookPath.toString())
+                : documentsRoot.getParent().resolve(RepositoryDocumentPaths.PLAYBOOK)
+                        .resolve("docs").resolve(RepositoryDocumentPaths.BUSINESS_LINES);
+        return root.resolve(segment).toString();
     }
 
     /** 业务线文档目录统一为 {业务线编码}-{业务线名称}；无编码或编码与名称相同时退回名称。 */

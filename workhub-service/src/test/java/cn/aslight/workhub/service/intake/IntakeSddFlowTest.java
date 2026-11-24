@@ -7,11 +7,14 @@ import cn.aslight.workhub.dao.intake.IntakeSubmitTestReviewMapper;
 import cn.aslight.workhub.dao.intake.IntakeStructuredFieldMapper;
 import cn.aslight.workhub.dao.intake.IntakeTodoMapper;
 import cn.aslight.workhub.dao.intake.IntakeWorkItemRelationMapper;
+import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.dao.system.UserMapper;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeSubmitTestConfirmRequest;
 import cn.aslight.workhub.model.intake.IntakeSubmitTestReviewEntity;
+import cn.aslight.workhub.model.intake.IntakeTestDeployment;
 import cn.aslight.workhub.model.intake.IntakeUploadRequest;
+import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.model.system.UserOptionResponse;
 import cn.aslight.workhub.service.agent.AgentJenkinsClient;
 import cn.aslight.workhub.service.ai.AiGatewayClient;
@@ -19,6 +22,8 @@ import cn.aslight.workhub.service.attachment.AttachmentService;
 import cn.aslight.workhub.service.system.SysConfigService;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -123,10 +128,16 @@ class IntakeSddFlowTest {
     }
 
     @Test
-    void readSddProcessSpec_shouldFailWithoutVaultAndReadConfiguredFile() throws Exception {
+    void readSddProcessSpec_shouldPreferRepositoryDocsThenVaultConfig() throws Exception {
         SysConfigService sysConfigService = mock(SysConfigService.class);
         ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(
                 sysConfigService, null, new ObjectMapper(), mock(PlatformTransactionManager.class));
+
+        Path repository = Files.createDirectories(tempDir.resolve("repo"));
+        Files.createDirectories(repository.resolve("workhub-service"));
+        Files.createDirectories(repository.resolve("workhub-bootstrap"));
+        Files.writeString(repository.resolve("pom.xml"), "<project/>");
+        when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
 
         when(sysConfigService.findPlainValue("knowledge.project", "vaultPath")).thenReturn(null);
         IllegalStateException missing = assertThrows(IllegalStateException.class, service::readSddProcessSpec);
@@ -134,13 +145,18 @@ class IntakeSddFlowTest {
 
         Path vault = Files.createDirectories(tempDir.resolve("vault"));
         Path spec = Files.createDirectories(vault.resolve("schema/研发/SDD")).resolve("流程.md");
-        Files.writeString(spec, "# SDD 流程\n规范内容");
+        Files.writeString(spec, "# SDD 流程\n知识库规范内容");
         when(sysConfigService.findPlainValue("knowledge.project", "vaultPath")).thenReturn(vault.toString());
 
-        assertEquals("# SDD 流程\n规范内容", service.readSddProcessSpec());
+        assertEquals("# SDD 流程\n知识库规范内容", service.readSddProcessSpec());
 
         when(sysConfigService.findPlainValue("knowledge.project", "sddProcessPath")).thenReturn("../outside.md");
         assertThrows(IllegalStateException.class, service::readSddProcessSpec);
+
+        Path repositorySpec = Files.createDirectories(repository.resolve("docs").resolve("研发规范/SDD")).resolve("流程.md");
+        Files.writeString(repositorySpec, "# SDD 流程\n仓库规范内容");
+        when(sysConfigService.findPlainValue("knowledge.project", "sddProcessPath")).thenReturn(null);
+        assertEquals("# SDD 流程\n仓库规范内容", service.readSddProcessSpec());
     }
 
     @Test
@@ -423,13 +439,15 @@ class IntakeSddFlowTest {
     private record StubRequest(String method, String path, String body) {
     }
 
-    @Test
-    void submitTestConfirm_shouldRequireCompletedReviewAndForceFlag() {
+    @ParameterizedTest
+    @ValueSource(strings = {"开发中", "开发完成"})
+    void submitTestConfirm_shouldRequireCompletedReviewAndForceFlag(String status) {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeSubmitTestReviewMapper reviewMapper = mock(IntakeSubmitTestReviewMapper.class);
         IntakeSubmitTestReviewService service = new IntakeSubmitTestReviewService(
                 intakeMapper,
                 reviewMapper,
+                mock(BusinessLineMapper.class),
                 mock(DevelopmentAnalysisMapper.class),
                 mock(AiGatewayClient.class),
                 mock(ZentaoClient.class),
@@ -441,7 +459,7 @@ class IntakeSddFlowTest {
         );
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(5L);
-        intake.setDemandStatus("开发中");
+        intake.setDemandStatus(status);
         intake.setRequirementType("研发需求");
         when(intakeMapper.findById(5L)).thenReturn(intake);
         when(reviewMapper.findByIntakeId(5L)).thenReturn(null);
@@ -463,8 +481,9 @@ class IntakeSddFlowTest {
         verify(reviewMapper, never()).insert(any());
     }
 
-    @Test
-    void submitTestConfirm_shouldAllowSkippingAiReviewAndJenkins() {
+    @ParameterizedTest
+    @ValueSource(strings = {"开发中", "开发完成"})
+    void submitTestConfirm_shouldAllowSkippingAiReviewAndJenkins(String status) {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeSubmitTestReviewMapper reviewMapper = mock(IntakeSubmitTestReviewMapper.class);
         ZentaoClient zentaoClient = mock(ZentaoClient.class);
@@ -473,6 +492,7 @@ class IntakeSddFlowTest {
         IntakeSubmitTestReviewService service = new IntakeSubmitTestReviewService(
                 intakeMapper,
                 reviewMapper,
+                mock(BusinessLineMapper.class),
                 mock(DevelopmentAnalysisMapper.class),
                 mock(AiGatewayClient.class),
                 zentaoClient,
@@ -484,7 +504,7 @@ class IntakeSddFlowTest {
         );
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(7L);
-        intake.setDemandStatus("开发中");
+        intake.setDemandStatus(status);
         intake.setRequirementType("研发需求");
         intake.setDevelopmentBranchName("feature/skip-flow");
         when(intakeMapper.findById(7L)).thenReturn(intake);
@@ -495,6 +515,7 @@ class IntakeSddFlowTest {
         IntakeSubmitTestConfirmRequest request = new IntakeSubmitTestConfirmRequest();
         request.setSkipAiReview(true);
         request.setTriggerJenkins(false);
+        request.setEnvironmentCode("TEST");
         request.setTestOwnerUserName(" tester ");
         service.confirmAndSubmit(7L, request, "admin");
 
@@ -508,6 +529,135 @@ class IntakeSddFlowTest {
     }
 
     @Test
+    void submitTestConfirm_shouldAllowSkippingZentaoTestTask() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeSubmitTestReviewMapper reviewMapper = mock(IntakeSubmitTestReviewMapper.class);
+        ZentaoClient zentaoClient = mock(ZentaoClient.class);
+        IntakeService intakeService = mock(IntakeService.class);
+        IntakeSubmitTestReviewService service = new IntakeSubmitTestReviewService(
+                intakeMapper,
+                reviewMapper,
+                mock(BusinessLineMapper.class),
+                mock(DevelopmentAnalysisMapper.class),
+                mock(AiGatewayClient.class),
+                zentaoClient,
+                mock(AgentJenkinsClient.class),
+                mock(SysConfigService.class),
+                new ObjectMapper(),
+                Runnable::run,
+                intakeService
+        );
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(13L);
+        intake.setDemandStatus("开发中");
+        intake.setRequirementType("研发需求");
+        intake.setDevelopmentBranchName("feature/skip-zentao");
+        when(intakeMapper.findById(13L)).thenReturn(intake);
+        // 回滚后重提：已有审核记录残留上次禅道回执，不提单时应被清空
+        IntakeSubmitTestReviewEntity existing = new IntakeSubmitTestReviewEntity();
+        existing.setIntakeId(13L);
+        existing.setReviewStatus("PASSED");
+        existing.setZentaoTestTaskNo("88");
+        existing.setZentaoTestTaskUrl("http://zentao/testtask-view-88.html");
+        when(reviewMapper.findByIntakeId(13L)).thenReturn(existing);
+
+        IntakeSubmitTestConfirmRequest request = new IntakeSubmitTestConfirmRequest();
+        request.setSkipAiReview(true);
+        request.setTriggerJenkins(false);
+        request.setEnvironmentCode("TEST");
+        request.setCreateZentaoTestTask(false);
+        request.setTestOwnerUserName("tester");
+        service.confirmAndSubmit(13L, request, "admin");
+
+        verify(zentaoClient, never()).createTestTask(any(), any(), any(), any(), any());
+        ArgumentCaptor<IntakeSubmitTestReviewEntity> captor = ArgumentCaptor.forClass(IntakeSubmitTestReviewEntity.class);
+        verify(reviewMapper).updateByIntakeId(captor.capture());
+        assertNull(captor.getValue().getZentaoTestTaskNo());
+        assertNull(captor.getValue().getZentaoTestTaskUrl());
+        verify(intakeService).advanceStage(eq(13L), any(), eq("admin"));
+    }
+
+    @Test
+    void submitTestConfirm_shouldStillRequireTestOwnerWhenSkippingZentaoTestTask() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeSubmitTestReviewMapper reviewMapper = mock(IntakeSubmitTestReviewMapper.class);
+        ZentaoClient zentaoClient = mock(ZentaoClient.class);
+        IntakeSubmitTestReviewService service = new IntakeSubmitTestReviewService(
+                intakeMapper,
+                reviewMapper,
+                mock(BusinessLineMapper.class),
+                mock(DevelopmentAnalysisMapper.class),
+                mock(AiGatewayClient.class),
+                zentaoClient,
+                mock(AgentJenkinsClient.class),
+                mock(SysConfigService.class),
+                new ObjectMapper(),
+                Runnable::run,
+                mock(IntakeService.class)
+        );
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(14L);
+        intake.setDemandStatus("开发中");
+        intake.setRequirementType("研发需求");
+        when(intakeMapper.findById(14L)).thenReturn(intake);
+        when(reviewMapper.findByIntakeId(14L)).thenReturn(null);
+
+        IntakeSubmitTestConfirmRequest request = new IntakeSubmitTestConfirmRequest();
+        request.setSkipAiReview(true);
+        request.setTriggerJenkins(false);
+        request.setEnvironmentCode("TEST");
+        request.setCreateZentaoTestTask(false);
+        IllegalArgumentException missing = assertThrows(IllegalArgumentException.class,
+                () -> service.confirmAndSubmit(14L, request, "admin"));
+        assertTrue(missing.getMessage().contains("测试负责人"));
+        verify(zentaoClient, never()).createTestTask(any(), any(), any(), any(), any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"开发中", "开发完成"})
+    void submitTestReview_shouldEnqueueForBothDevelopmentStages(String status) {
+        var intakeMapper = mock(IntakeMapper.class);
+        var reviews = mock(IntakeSubmitTestReviewMapper.class);
+        var executor = mock(org.springframework.core.task.TaskExecutor.class);
+        var service = new IntakeSubmitTestReviewService(intakeMapper, reviews, mock(BusinessLineMapper.class), mock(DevelopmentAnalysisMapper.class),
+                mock(AiGatewayClient.class), mock(ZentaoClient.class), mock(AgentJenkinsClient.class),
+                mock(SysConfigService.class), new ObjectMapper(), executor, mock(IntakeService.class));
+        var intake = new IntakeRecordEntity();
+        intake.setId(11L); intake.setRequirementType("研发需求"); intake.setDemandStatus(status);
+        when(intakeMapper.findById(11L)).thenReturn(intake);
+
+        service.startReview(11L, "admin");
+
+        var saved = ArgumentCaptor.forClass(IntakeSubmitTestReviewEntity.class);
+        verify(reviews).insert(saved.capture());
+        assertEquals("PENDING", saved.getValue().getReviewStatus());
+        verify(executor).execute(any());
+        assertEquals(status, intake.getDemandStatus());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"已收录", "待设计", "测试中", "待验收", "已完成", "已暂停"})
+    void submitTest_shouldRejectOtherStagesBeforeAnySideEffect(String status) {
+        var intakeMapper = mock(IntakeMapper.class);
+        var reviews = mock(IntakeSubmitTestReviewMapper.class);
+        var executor = mock(org.springframework.core.task.TaskExecutor.class);
+        var zentao = mock(ZentaoClient.class);
+        var jenkins = mock(AgentJenkinsClient.class);
+        var stages = mock(IntakeService.class);
+        var service = new IntakeSubmitTestReviewService(intakeMapper, reviews, mock(BusinessLineMapper.class), mock(DevelopmentAnalysisMapper.class),
+                mock(AiGatewayClient.class), zentao, jenkins, mock(SysConfigService.class), new ObjectMapper(), executor, stages);
+        var intake = new IntakeRecordEntity();
+        intake.setId(12L); intake.setRequirementType("研发需求"); intake.setDemandStatus(status);
+        when(intakeMapper.findById(12L)).thenReturn(intake);
+        var request = new IntakeSubmitTestConfirmRequest();
+        request.setSkipAiReview(true); request.setTriggerJenkins(false); request.setTestOwnerUserName("tester");
+
+        assertThrows(IllegalArgumentException.class, () -> service.startReview(12L, "admin"));
+        assertThrows(IllegalArgumentException.class, () -> service.confirmAndSubmit(12L, request, "admin"));
+        org.mockito.Mockito.verifyNoInteractions(reviews, executor, zentao, jenkins, stages);
+    }
+
+    @Test
     void submitTestConfirm_shouldAllowSkipWhileReviewRunning() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeSubmitTestReviewMapper reviewMapper = mock(IntakeSubmitTestReviewMapper.class);
@@ -516,6 +666,7 @@ class IntakeSddFlowTest {
         IntakeSubmitTestReviewService service = new IntakeSubmitTestReviewService(
                 intakeMapper,
                 reviewMapper,
+                mock(BusinessLineMapper.class),
                 mock(DevelopmentAnalysisMapper.class),
                 mock(AiGatewayClient.class),
                 zentaoClient,
@@ -541,6 +692,7 @@ class IntakeSddFlowTest {
         IntakeSubmitTestConfirmRequest request = new IntakeSubmitTestConfirmRequest();
         request.setSkipAiReview(true);
         request.setTriggerJenkins(false);
+        request.setEnvironmentCode("TEST");
         request.setTestOwnerUserName("tester");
         service.confirmAndSubmit(8L, request, "admin");
 
@@ -561,6 +713,7 @@ class IntakeSddFlowTest {
         IntakeSubmitTestReviewService service = new IntakeSubmitTestReviewService(
                 intakeMapper,
                 reviewMapper,
+                mock(BusinessLineMapper.class),
                 mock(DevelopmentAnalysisMapper.class),
                 mock(AiGatewayClient.class),
                 zentaoClient,
@@ -580,6 +733,7 @@ class IntakeSddFlowTest {
         IntakeSubmitTestConfirmRequest request = new IntakeSubmitTestConfirmRequest();
         request.setSkipAiReview(true);
         request.setTriggerJenkins(false);
+        request.setEnvironmentCode("TEST");
         IllegalArgumentException missingOwner = assertThrows(IllegalArgumentException.class,
                 () -> service.confirmAndSubmit(10L, request, "admin"));
         assertTrue(missingOwner.getMessage().contains("请选择测试负责人"));
@@ -588,11 +742,12 @@ class IntakeSddFlowTest {
     }
 
     @Test
-    void submitTestConfirm_shouldRequireEnvironmentWhenTriggeringJenkins() {
+    void submitTestConfirm_shouldRequireEnvironmentEvenWithoutJenkins() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeSubmitTestReviewService service = new IntakeSubmitTestReviewService(
                 intakeMapper,
                 mock(IntakeSubmitTestReviewMapper.class),
+                mock(BusinessLineMapper.class),
                 mock(DevelopmentAnalysisMapper.class),
                 mock(AiGatewayClient.class),
                 mock(ZentaoClient.class),
@@ -608,9 +763,148 @@ class IntakeSddFlowTest {
         intake.setRequirementType("研发需求");
         when(intakeMapper.findById(9L)).thenReturn(intake);
         IntakeSubmitTestConfirmRequest request = new IntakeSubmitTestConfirmRequest();
+        request.setSkipAiReview(true);
+        request.setTriggerJenkins(false);
+        request.setTestOwnerUserName("tester");
 
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
                 () -> service.confirmAndSubmit(9L, request, "admin"));
         assertTrue(error.getMessage().contains("请选择测试环境"));
+    }
+
+    @Test
+    void submitTestConfirm_shouldRejectProductionAndUnsupportedEnvironment() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
+        IntakeSubmitTestReviewService service = new IntakeSubmitTestReviewService(
+                intakeMapper,
+                mock(IntakeSubmitTestReviewMapper.class),
+                businessLineMapper,
+                mock(DevelopmentAnalysisMapper.class),
+                mock(AiGatewayClient.class),
+                mock(ZentaoClient.class),
+                mock(AgentJenkinsClient.class),
+                mock(SysConfigService.class),
+                new ObjectMapper(),
+                Runnable::run,
+                mock(IntakeService.class)
+        );
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(15L);
+        intake.setDemandStatus("开发中");
+        intake.setRequirementType("研发需求");
+        intake.setBusinessLineCode("BL000011");
+        when(intakeMapper.findById(15L)).thenReturn(intake);
+        BusinessLineEntity line = new BusinessLineEntity();
+        line.setBusinessLineCode("BL000011");
+        line.setSupportedEnvironments("TEST,PROD");
+        when(businessLineMapper.findByCode("BL000011")).thenReturn(line);
+
+        IntakeSubmitTestConfirmRequest prodRequest = new IntakeSubmitTestConfirmRequest();
+        prodRequest.setSkipAiReview(true);
+        prodRequest.setTriggerJenkins(false);
+        prodRequest.setEnvironmentCode("PROD");
+        prodRequest.setTestOwnerUserName("tester");
+        IllegalArgumentException prodError = assertThrows(IllegalArgumentException.class,
+                () -> service.confirmAndSubmit(15L, prodRequest, "admin"));
+        assertTrue(prodError.getMessage().contains("提测不允许选择生产环境"));
+
+        IntakeSubmitTestConfirmRequest unsupportedRequest = new IntakeSubmitTestConfirmRequest();
+        unsupportedRequest.setSkipAiReview(true);
+        unsupportedRequest.setTriggerJenkins(false);
+        unsupportedRequest.setEnvironmentCode("SIT");
+        unsupportedRequest.setTestOwnerUserName("tester");
+        IllegalArgumentException unsupportedError = assertThrows(IllegalArgumentException.class,
+                () -> service.confirmAndSubmit(15L, unsupportedRequest, "admin"));
+        assertTrue(unsupportedError.getMessage().contains("测试环境须为业务线支持的环境"));
+    }
+
+    @Test
+    void submitTestConfirm_shouldRequireEnvironmentMatchingDeploymentBinding() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
+        IntakeTestDeploymentService deployments = mock(IntakeTestDeploymentService.class);
+        IntakeSubmitTestReviewService service = new IntakeSubmitTestReviewService(
+                intakeMapper,
+                mock(IntakeSubmitTestReviewMapper.class),
+                businessLineMapper,
+                mock(DevelopmentAnalysisMapper.class),
+                mock(AiGatewayClient.class),
+                mock(ZentaoClient.class),
+                mock(AgentJenkinsClient.class),
+                mock(SysConfigService.class),
+                new ObjectMapper(),
+                Runnable::run,
+                mock(IntakeService.class)
+        );
+        service.setTestDeployments(deployments);
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(16L);
+        intake.setDemandStatus("开发中");
+        intake.setRequirementType("研发需求");
+        intake.setBusinessLineCode("BL000011");
+        when(intakeMapper.findById(16L)).thenReturn(intake);
+        BusinessLineEntity line = new BusinessLineEntity();
+        line.setBusinessLineCode("BL000011");
+        line.setSupportedEnvironments("TEST,SIT,PROD");
+        when(businessLineMapper.findByCode("BL000011")).thenReturn(line);
+        // 所选发布绑定为 TEST 环境，与确认时选择的 SIT 不一致
+        when(deployments.validateRequest(eq(16L), any())).thenReturn(new IntakeTestDeployment.Binding(
+                "test", "BL000011", "scs-saps", "scs/scs-saps", "jenkins", "http://jenkins/",
+                "test-scs-saps", "TEST", "test-scs-server", "10.10.116.43", "master", true));
+
+        IntakeSubmitTestConfirmRequest request = new IntakeSubmitTestConfirmRequest();
+        request.setSkipAiReview(true);
+        request.setEnvironmentCode("SIT");
+        request.setTestOwnerUserName("tester");
+        request.setTestDeployment(new IntakeTestDeployment.Request("test", List.of(16L), null));
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> service.confirmAndSubmit(16L, request, "admin"));
+        assertTrue(error.getMessage().contains("测试环境与所选测试发布目标不符"));
+        verify(deployments, never()).submit(any(), any(), any());
+    }
+
+    @Test
+    void submitTestConfirm_shouldRecordEnvironmentWithoutJenkins() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeSubmitTestReviewMapper reviewMapper = mock(IntakeSubmitTestReviewMapper.class);
+        BusinessLineMapper businessLineMapper = mock(BusinessLineMapper.class);
+        IntakeSubmitTestReviewService service = new IntakeSubmitTestReviewService(
+                intakeMapper,
+                reviewMapper,
+                businessLineMapper,
+                mock(DevelopmentAnalysisMapper.class),
+                mock(AiGatewayClient.class),
+                mock(ZentaoClient.class),
+                mock(AgentJenkinsClient.class),
+                mock(SysConfigService.class),
+                new ObjectMapper(),
+                Runnable::run,
+                mock(IntakeService.class)
+        );
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(17L);
+        intake.setDemandStatus("开发中");
+        intake.setRequirementType("研发需求");
+        intake.setBusinessLineCode("BL000011");
+        when(intakeMapper.findById(17L)).thenReturn(intake);
+        BusinessLineEntity line = new BusinessLineEntity();
+        line.setBusinessLineCode("BL000011");
+        line.setSupportedEnvironments("TEST,SIT,PROD");
+        when(businessLineMapper.findByCode("BL000011")).thenReturn(line);
+        when(reviewMapper.findByIntakeId(17L)).thenReturn(null);
+
+        IntakeSubmitTestConfirmRequest request = new IntakeSubmitTestConfirmRequest();
+        request.setSkipAiReview(true);
+        request.setTriggerJenkins(false);
+        request.setCreateZentaoTestTask(false);
+        request.setEnvironmentCode(" sit ");
+        request.setTestOwnerUserName("tester");
+        service.confirmAndSubmit(17L, request, "admin");
+
+        ArgumentCaptor<IntakeSubmitTestReviewEntity> captor = ArgumentCaptor.forClass(IntakeSubmitTestReviewEntity.class);
+        verify(reviewMapper).insert(captor.capture());
+        assertEquals("SIT", captor.getValue().getJenkinsEnvironmentCode());
+        assertNull(captor.getValue().getJenkinsBuildStatus());
     }
 }

@@ -236,7 +236,8 @@ public class XxlJobMonitorCollector {
         if (from.isAfter(to)) throw new IllegalArgumentException("开始日期不能晚于结束日期");
         int normalizedPage = normalizePage(page), size = normalizePageSize(pageSize);
         int offset = Math.multiplyExact(normalizedPage - 1, size);
-        String normalizedStatus = normalizeLogStatus(logStatus);
+        List<String> normalizedStatuses = normalizeLogStatuses(logStatus);
+        String normalizedStatus = String.join(",", normalizedStatuses);
         var definition = new cn.aslight.workhub.model.ops.XxlJobQueryEvidence.Definition(monitor.getId(), monitor.getMonitorType(),
                 monitor.getMonitorKey(), monitor.getBusinessLineCode(), monitor.getEnvironmentCode(), monitor.getXxlJobDatabaseName(),
                 trimToNull(monitor.getExecutorAppName()), Boolean.TRUE.equals(monitor.getEnabled()), from, to, trimToNull(author),
@@ -244,8 +245,8 @@ public class XxlJobMonitorCollector {
         String database = quoteDatabaseName(definition.databaseName());
         LocalDateTime staleCutoff = LocalDateTime.now().minusMinutes(normalizeStaleThresholdMinutes(monitor.getStaleThresholdMinutes()));
         String detailFilter = detailFilterSql(definition.author(), definition.executorFilter());
-        String statusFilter = logStatusFilterSql(normalizedStatus, staleCutoff);
-        String statisticsSql = logStatisticsSql(database, from, to, definition.configuredExecutors(), detailFilter, normalizedStatus, staleCutoff).sql();
+        String statusFilter = logStatusFilterSql(normalizedStatuses, staleCutoff);
+        String statisticsSql = logStatisticsSql(database, from, to, definition.configuredExecutors(), detailFilter, normalizedStatuses, staleCutoff).sql();
         String pageSql = failedJobsSql(database, from, to, definition.configuredExecutors(), detailFilter, statusFilter, size, offset).sql();
         // 一个 SELECT 内的统计与明细共享数据库读取视图，避免并发新增日志把旧计数配上新分页；组合语句审计编码为参与码连接。
         var statements = List.of(FunctionCallService.Statement.of("OPS_XXL_LOG_STATS+OPS_XXL_FAILED_PAGE",
@@ -277,10 +278,10 @@ public class XxlJobMonitorCollector {
                 AccountingExecutionEvidenceService.hash(json.writeValueAsString(definition)), batch.targetHash(),
                 statements.stream().map(FunctionCallService.Statement::sql).map(AccountingExecutionEvidenceService::hash).toList(), batch.startedAt(), batch.finishedAt(),
                 "Asia/Shanghai", total, activityCount, latest, normalizedPage == 1 && total == logs.size());
-        // REQ-a58c7e21：异常态筛选（ABNORMAL/STUCK/EXECUTION_FAILED）有结果按 ERROR；文案与行状态名对齐
-        boolean abnormalFilter = ABNORMAL_FILTER_STATUSES.contains(normalizedStatus);
-        String statusName = logStatusName(normalizedStatus);
-        String message = LOG_STATUS_ALL.equals(normalizedStatus)
+        // REQ-a58c7e21：异常态筛选（ABNORMAL/STUCK/EXECUTION_FAILED）有结果按 ERROR；文案与行状态名对齐；REQ-4a3634e6 多选按「、」连接
+        boolean abnormalFilter = normalizedStatuses.stream().anyMatch(ABNORMAL_FILTER_STATUSES::contains);
+        String statusName = logStatusesName(normalizedStatuses);
+        String message = isLogStatusAll(normalizedStatuses)
                 ? "XXL-JOB 区间日志数：" + total
                 : (total > 0 ? "XXL-JOB 区间" + statusName + "日志数：" + total : "XXL-JOB 区间内无" + statusName + "日志");
         return new XxlJobLogPageResponse(definition.monitorId(), definition.monitorKey(), definition.businessLineCode(), definition.environmentCode(),
@@ -291,10 +292,10 @@ public class XxlJobMonitorCollector {
 
     /** 匹配总数与全状态活动时间来自同一条 SQL，不能拼接不同时点的零失败和最新活动。 */
     private FunctionCallService.Statement logStatisticsSql(String database, LocalDate from, LocalDate to,
-                                                           String executors, String filter, String status,
+                                                           String executors, String filter, List<String> statuses,
                                                            LocalDateTime staleCutoff) {
-        String matching = LOG_STATUS_ALL.equals(status) ? "1"
-                : "CASE WHEN " + statusPredicate(status, staleCutoff) + " THEN 1 END";
+        String matching = isLogStatusAll(statuses) ? "1"
+                : "CASE WHEN " + statusPredicate(statuses, staleCutoff) + " THEN 1 END";
         return FunctionCallService.Statement.of("OPS_XXL_LOG_STATS", functionCallService.render(
                 "OPS_XXL_LOG_STATS", FunctionCallService.params(
                         "matching", matching,
@@ -477,11 +478,14 @@ public class XxlJobMonitorCollector {
     }
 
     private String logStatusFilterSql(String logStatus, LocalDateTime staleCutoff) {
-        String normalized = normalizeLogStatus(logStatus);
-        if (LOG_STATUS_ALL.equals(normalized)) {
+        return logStatusFilterSql(normalizeLogStatuses(logStatus), staleCutoff);
+    }
+
+    private String logStatusFilterSql(List<String> statuses, LocalDateTime staleCutoff) {
+        if (isLogStatusAll(statuses)) {
             return "";
         }
-        return "AND (" + statusPredicate(normalized, staleCutoff) + ")";
+        return "AND " + statusPredicate(statuses, staleCutoff);
     }
 
     /** 白名单五态异常谓词：调度失败、执行失败或超时卡死（见 REQ-3d8f2a71 design 第 1 节）。 */
@@ -494,8 +498,14 @@ public class XxlJobMonitorCollector {
                 .formatted(sqlLiteral(staleCutoff));
     }
 
-    /** REQ-a58c7e21：按筛选状态产出与行级 failureType 一致的谓词片段（STUCK∪EXECUTION_FAILED=ABNORMAL）。 */
-    private String statusPredicate(String normalizedStatus, LocalDateTime staleCutoff) {
+    /** REQ-a58c7e21：按筛选状态产出与行级 failureType 一致的谓词片段（STUCK∪EXECUTION_FAILED=ABNORMAL）；REQ-4a3634e6 多选 OR 连接。 */
+    private String statusPredicate(List<String> normalizedStatuses, LocalDateTime staleCutoff) {
+        return normalizedStatuses.stream()
+                .map(status -> singleStatusPredicate(status, staleCutoff))
+                .collect(Collectors.joining(" OR ", "(", ")"));
+    }
+
+    private String singleStatusPredicate(String normalizedStatus, LocalDateTime staleCutoff) {
         String cutoff = sqlLiteral(staleCutoff);
         return switch (normalizedStatus) {
             case LOG_STATUS_ABNORMAL -> abnormalPredicate(staleCutoff);
@@ -522,22 +532,48 @@ public class XxlJobMonitorCollector {
         };
     }
 
-    private String normalizeLogStatus(String logStatus) {
+    /** REQ-4a3634e6：多选中文名按白名单序以「、」连接。 */
+    private String logStatusesName(List<String> normalizedStatuses) {
+        return normalizedStatuses.stream().map(this::logStatusName).collect(Collectors.joining("、"));
+    }
+
+    private boolean isLogStatusAll(List<String> statuses) {
+        return statuses.size() == 1 && LOG_STATUS_ALL.equals(statuses.getFirst());
+    }
+
+    /** REQ-4a3634e6：逗号分隔多选归一——逐项白名单校验（FAILED 兼容归一 ABNORMAL），按白名单次序去重；含 ALL 归一为 [ALL]；空值沿用服务层默认 ABNORMAL。 */
+    private List<String> normalizeLogStatuses(String logStatus) {
         String normalized = trimToNull(logStatus);
         if (normalized == null) {
-            return LOG_STATUS_ABNORMAL;
+            return List.of(LOG_STATUS_ABNORMAL);
         }
-        String upper = normalized.toUpperCase(Locale.ROOT);
-        if (LOG_STATUS_ALL.equals(upper) || LOG_STATUS_ABNORMAL.equals(upper) || LOG_STATUS_SUCCESS.equals(upper)
-                || LOG_STATUS_RUNNING.equals(upper) || LOG_STATUS_STUCK.equals(upper)
-                || LOG_STATUS_EXECUTION_FAILED.equals(upper)) {
-            return upper;
+        Set<String> statuses = new LinkedHashSet<>();
+        for (String item : normalized.split(",")) {
+            String upper = trimToNull(item);
+            if (upper == null) {
+                continue;
+            }
+            upper = upper.toUpperCase(Locale.ROOT);
+            if (LOG_STATUS_FAILED.equals(upper)) {
+                upper = LOG_STATUS_ABNORMAL;
+            }
+            if (!LOG_STATUS_ALL.equals(upper) && !LOG_STATUS_ABNORMAL.equals(upper) && !LOG_STATUS_SUCCESS.equals(upper)
+                    && !LOG_STATUS_RUNNING.equals(upper) && !LOG_STATUS_STUCK.equals(upper)
+                    && !LOG_STATUS_EXECUTION_FAILED.equals(upper)) {
+                throw new IllegalArgumentException(
+                        "XXL-JOB 日志状态只支持 ALL、ABNORMAL、SUCCESS、RUNNING、STUCK 或 EXECUTION_FAILED，多选用逗号分隔");
+            }
+            statuses.add(upper);
         }
-        if (LOG_STATUS_FAILED.equals(upper)) {
-            return LOG_STATUS_ABNORMAL;
+        if (statuses.contains(LOG_STATUS_ALL)) {
+            return List.of(LOG_STATUS_ALL);
         }
-        throw new IllegalArgumentException(
-                "XXL-JOB 日志状态只支持 ALL、ABNORMAL、SUCCESS、RUNNING、STUCK 或 EXECUTION_FAILED");
+        if (statuses.isEmpty()) {
+            return List.of(LOG_STATUS_ABNORMAL);
+        }
+        List<String> whitelistOrder = List.of(LOG_STATUS_ABNORMAL, LOG_STATUS_SUCCESS, LOG_STATUS_RUNNING,
+                LOG_STATUS_STUCK, LOG_STATUS_EXECUTION_FAILED);
+        return whitelistOrder.stream().filter(statuses::contains).toList();
     }
 
     private int normalizeStaleThresholdMinutes(Integer staleThresholdMinutes) {

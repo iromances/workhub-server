@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>业务需求 - 后台原型</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: "PingFang SC", "Microsoft YaHei", Arial, sans-serif; background: #f0f2f5; padding: 40px; }
+.page-title { font-size: 22px; font-weight: 600; color: #1a1a1a; text-align: center; margin-bottom: 4px; }
+.page-sub { font-size: 13px; color: #666; text-align: center; margin-bottom: 32px; }
+.proto-card { background: #fff; border-radius: 8px; margin-bottom: 32px; overflow: hidden; }
+.proto-header { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; font-size: 14px; font-weight: 600; color: #1a1a1a; }
+.proto-body { padding: 20px; }
+.toolbar { display: flex; gap: 12px; padding: 16px 20px; background: #fff; border-bottom: 1px solid #f0f0f0; flex-wrap: wrap; align-items: center; }
+.toolbar select { border: 1px solid #d9d9d9; border-radius: 6px; padding: 6px 12px; font-size: 13px; color: #1a1a1a; background: #fff; outline: none; }
+.toolbar .search-box { display: flex; align-items: center; gap: 8px; border: 1px solid #d9d9d9; border-radius: 6px; padding: 6px 12px; background: #fff; }
+.toolbar .search-box input { border: none; outline: none; font-size: 13px; color: #1a1a1a; width: 100%; }
+.toolbar .search-box input::placeholder { color: #bfbfbf; }
+.toolbar .search-box label { font-size: 12px; color: #999; white-space: nowrap; }
+.toolbar .btn { padding: 6px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid #d9d9d9; background: #fff; color: #1a1a1a; }
+.toolbar .btn.primary { background: #1677ff; color: #fff; border-color: #1677ff; }
+.toolbar .btn.warning { background: #fa8c16; color: #fff; border-color: #fa8c16; }
+.toolbar .btn.success { background: #52c41a; color: #fff; border-color: #52c41a; }
+.toolbar .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { background: #fafafa; padding: 10px 12px; text-align: left; font-weight: 600; color: #1a1a1a; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+tbody td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; color: #1a1a1a; vertical-align: middle; }
+tbody tr:hover { background: #fafafa; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.tag-blue { background: #e6f4ff; color: #1677ff; }
+.tag-orange { background: #fff7e6; color: #fa8c16; border: 1px solid #ffd591; }
+.tag-green { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+.tag-gray { background: #f5f5f5; color: #666; }
+.pagination { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: #fff; border-top: 1px solid #f0f0f0; }
+.pagination .info { font-size: 12px; color: #999; }
+.pagination .pages { display: flex; gap: 4px; align-items: center; }
+.pagination .pages button { width: 32px; height: 32px; border: 1px solid #d9d9d9; background: #fff; border-radius: 4px; font-size: 13px; cursor: pointer; color: #666; }
+.pagination .pages button.active { background: #1677ff; color: #fff; border-color: #1677ff; }
+.pagination .pages button.disabled { color: #d9d9d9; cursor: not-allowed; }
+.checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: #1677ff; }
+.remark-code { font-family: monospace; background: #f5f5f5; padding: 1px 4px; border-radius: 3px; font-size: 12px; color: #1677ff; border: 1px solid #e8e8e8; }
+
+/* 弹窗 */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.modal { background: #fff; border-radius: 8px; width: 560px; max-height: 88vh; display: flex; flex-direction: column; }
+.modal-header { padding: 14px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.modal-header h3 { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+.modal-header .close { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; font-size: 18px; }
+.modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+.modal-footer { padding: 14px 20px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
+.modal-footer button { padding: 8px 20px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid #d9d9d9; background: #fff; color: #1a1a1a; }
+.modal-footer button.primary { background: #1677ff; color: #fff; border-color: #1677ff; }
+.form-item { margin-bottom: 14px; }
+.form-item label { display: block; font-size: 12px; color: #666; margin-bottom: 6px; }
+.form-item label span { color: #ff4d4f; margin-left: 2px; }
+.form-item textarea { width: 100%; border: 1px solid #d9d9d9; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #1a1a1a; resize: vertical; min-height: 80px; outline: none; }
+.form-item textarea:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-item .view-value { padding: 8px 0; font-size: 13px; color: #1a1a1a; border-bottom: 1px solid #f0f0f0; }
+.form-section { background: #fafafa; border-radius: 6px; padding: 12px 14px; margin-bottom: 14px; }
+.form-section-title { font-size: 12px; color: #999; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<div class="page-title">业务需求</div>
+<div class="page-sub">后台菜单 · 业务需求承接管理</div>
+
+<!-- 列表 -->
+<div class="proto-card">
+  <div class="toolbar">
+    <div class="search-box"><label>业务需求申请单号</label><input type="text" placeholder="请输入"></div>
+    <div class="search-box"><label>客户姓名</label><input type="text" placeholder="请输入"></div>
+    <div class="search-box"><label>客户所属单位</label><input type="text" placeholder="请输入"></div>
+    <div class="search-box"><label>联系电话</label><input type="text" placeholder="请输入"></div>
+    <select><option>全部状态</option><option>待处理</option><option>处理中</option><option>已完结</option></select>
+    <div class="search-box" style="max-width:180px;"><label>业务需求承接人</label><input type="text" placeholder="支持模糊查询"></div>
+    <button class="btn primary">查询</button>
+    <button class="btn">重置</button>
+    <button class="btn primary" onclick="openNew()">+ 新增业务需求</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th><input type="checkbox" class="checkbox"></th>
+        <th>业务需求申请单号</th>
+        <th>业务需求内容</th>
+        <th>客户姓名</th>
+        <th>客户所属单位</th>
+        <th>联系电话</th>
+        <th>状态</th>
+        <th>业务需求承接人</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input type="checkbox" class="checkbox"></td>
+        <td><span class="remark-code">YWXQ-20260801-0001</span></td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">希望增加月账单自动推送功能，支持微信通知</td>
+        <td>王五</td>
+        <td>深圳市某某科技有限公司</td>
+        <td>13800138001</td>
+        <td><span class="tag tag-orange">待处理</span></td>
+        <td>张三</td>
+        <td><button class="btn primary" style="padding:4px 12px;font-size:12px;" onclick="openHandle()">需求处理</button></td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" class="checkbox"></td>
+        <td><span class="remark-code">YWXQ-20260801-0002</span></td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">批量导入设备时，提示字段格式错误位置不明确</td>
+        <td>赵六</td>
+        <td>广州某某贸易有限公司</td>
+        <td>13900139002</td>
+        <td><span class="tag tag-blue">处理中</span></td>
+        <td>李四</td>
+        <td><button class="btn primary" style="padding:4px 12px;font-size:12px;" onclick="openHandle()">需求处理</button></td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" class="checkbox"></td>
+        <td><span class="remark-code">YWXQ-20260801-0003</span></td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">系统登录支持人脸识别验证</td>
+        <td>钱七</td>
+        <td>北京某某网络科技有限公司</td>
+        <td>13700137003</td>
+        <td><span class="tag tag-green">已完结</span></td>
+        <td>—</td>
+        <td><button class="btn" style="padding:4px 12px;font-size:12px;" disabled>需求处理</button></td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" class="checkbox"></td>
+        <td><span class="remark-code">YWXQ-20260801-0004</span></td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">导出对账单时支持自定义列字段</td>
+        <td>孙八</td>
+        <td>上海某某实业有限公司</td>
+        <td>13600136004</td>
+        <td><span class="tag tag-orange">待处理</span></td>
+        <td>—</td>
+        <td><button class="btn primary" style="padding:4px 12px;font-size:12px;" onclick="openHandle()">需求处理</button></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    <div class="info">共 4 条，当前第 1 页</div>
+    <div class="pages">
+      <button class="disabled">&lt;</button>
+      <button class="active">1</button>
+      <button>2</button>
+      <button>3</button>
+      <button>…</button>
+      <button>10</button>
+      <button>&gt;</button>
+    </div>
+  </div>
+</div>
+
+<!-- 新增弹窗 -->
+<div class="modal-overlay" id="modalNew" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>新增业务需求</h3>
+      <div class="close" onclick="closeNew()">&times;</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-item">
+          <label>客户姓名 <span>*</span></label>
+          <textarea placeholder="请输入客户姓名"></textarea>
+        </div>
+        <div class="form-item">
+          <label>客户所属单位 <span>*</span></label>
+          <textarea placeholder="请输入客户所属单位"></textarea>
+        </div>
+      </div>
+      <div class="form-item">
+        <label>联系电话 <span>*</span></label>
+        <textarea placeholder="请输入联系电话"></textarea>
+      </div>
+      <div class="form-item" style="margin-bottom:0;">
+        <label>业务需求内容 <span>*</span></label>
+        <textarea placeholder="请详细描述业务需求"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button onclick="closeNew()">取消</button>
+      <button class="primary" onclick="closeNew()">提交</button>
+    </div>
+  </div>
+</div>
+
+<!-- 需求处理弹窗 -->
+<div class="modal-overlay" id="modalHandle" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>需求处理</h3>
+      <div class="close" onclick="closeHandle()">&times;</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-section">
+        <div class="form-section-title">基本信息</div>
+        <div class="form-row" style="gap:24px;">
+          <div class="form-item" style="margin-bottom:8px;">
+            <label>业务需求申请单号</label>
+            <div class="view-value">YWXQ-20260801-0001</div>
+          </div>
+          <div class="form-item" style="margin-bottom:8px;">
+            <label>客户姓名</label>
+            <div class="view-value">王五</div>
+          </div>
+        </div>
+        <div class="form-row" style="gap:24px;">
+          <div class="form-item" style="margin-bottom:8px;">
+            <label>客户所属单位</label>
+            <div class="view-value">深圳市某某科技有限公司</div>
+          </div>
+          <div class="form-item" style="margin-bottom:8px;">
+            <label>联系电话</label>
+            <div class="view-value">13800138001</div>
+          </div>
+        </div>
+        <div class="form-row" style="gap:24px;">
+          <div class="form-item" style="margin-bottom:8px;">
+            <label>当前状态</label>
+            <div class="view-value"><span class="tag tag-orange">待处理</span></div>
+          </div>
+          <div class="form-item" style="margin-bottom:8px;">
+            <label>业务需求承接人</label>
+            <div class="view-value">—</div>
+          </div>
+        </div>
+        <div class="form-item" style="margin-bottom:0;">
+          <label>业务需求内容</label>
+          <div class="view-value" style="border-bottom:none;">希望增加月账单自动推送功能，支持微信通知</div>
+        </div>
+      </div>
+      <div class="form-item">
+        <label>业务需求承接人</label>
+        <textarea placeholder="请填写承接人姓名（非必填）" style="min-height:52px;"></textarea>
+      </div>
+      <div class="form-item">
+        <label>处理状态 <span>*</span></label>
+        <div style="display:flex;gap:12px;margin-top:4px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+            <input type="radio" name="handleStatus" checked style="accent-color:#1677ff;"> <span class="tag tag-orange" style="padding:1px 6px;">处理中</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+            <input type="radio" name="handleStatus" style="accent-color:#1677ff;"> <span class="tag tag-green" style="padding:1px 6px;">已完结</span>
+          </label>
+        </div>
+      </div>
+      <div class="form-item" style="margin-bottom:0;">
+        <label>处理意见 <span>*</span></label>
+        <textarea placeholder="请填写处理意见或解决方案"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button onclick="closeHandle()">取消</button>
+      <button class="primary" onclick="closeHandle()">确认</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openNew() { document.getElementById('modalNew').style.display='flex'; }
+function closeNew() { document.getElementById('modalNew').style.display='none'; }
+function openHandle() { document.getElementById('modalHandle').style.display='flex'; }
+function closeHandle() { document.getElementById('modalHandle').style.display='none'; }
+document.querySelectorAll('.modal-overlay').forEach(function(el){
+  el.addEventListener('click', function(e){ if(e.target===el){ el.style.display='none'; } });
+});
+</script>
+
+</body>
+</html>

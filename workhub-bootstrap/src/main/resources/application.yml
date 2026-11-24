@@ -91,10 +91,6 @@ workhub:
       initial-lookback-minutes: ${WORKHUB_ELK_INITIAL_LOOKBACK_MINUTES:5}
       pit-keep-alive: ${WORKHUB_ELK_PIT_KEEP_ALIVE:1m}
       cron: "${WORKHUB_ELK_ALERT_CRON:0 * * * * *}"
-    accounting:
-      enabled: ${WORKHUB_ACCOUNTING_SCHEDULE_ENABLED:false}
-      cron: "${WORKHUB_ACCOUNTING_SCHEDULE_CRON:0 30 6 * * *}"
-      zone: ${WORKHUB_ACCOUNTING_SCHEDULE_ZONE:Asia/Shanghai}
   jwt:
     secret: workhub-dev-secret-workhub-dev-secret
     expiration-minutes: 720

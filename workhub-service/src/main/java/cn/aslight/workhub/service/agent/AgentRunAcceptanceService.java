@@ -25,16 +25,20 @@ public class AgentRunAcceptanceService {
     private final AgentBuildTestEvidence testEvidence;
     private final ObjectMapper json;
     private final Clock clock;
+    private final AgentNativeDeliveryService nativeDelivery;
 
     @Autowired
     public AgentRunAcceptanceService(AgentMapper agents, AgentChangeMapper changes, AgentDeliveryMapper deliveries,
-                                     ObjectProvider<AgentChangeService> changeService, AgentBuildTestEvidence testEvidence, AgentAccessService access, ObjectMapper json) {
-        this(agents, changes, deliveries, changeService, testEvidence, access, json, Clock.systemUTC());
+                                     ObjectProvider<AgentChangeService> changeService, AgentBuildTestEvidence testEvidence, AgentAccessService access, ObjectMapper json,
+                                     AgentNativeDeliveryService nativeDelivery) {
+        this(agents, changes, deliveries, changeService, testEvidence, access, json, Clock.systemUTC(), nativeDelivery);
     }
     AgentRunAcceptanceService(AgentMapper agents, AgentChangeMapper changes, AgentDeliveryMapper deliveries,
-                              ObjectProvider<AgentChangeService> changeService, AgentBuildTestEvidence testEvidence, AgentAccessService access, ObjectMapper json, Clock clock) {
+                              ObjectProvider<AgentChangeService> changeService, AgentBuildTestEvidence testEvidence, AgentAccessService access, ObjectMapper json, Clock clock,
+                              AgentNativeDeliveryService nativeDelivery) {
         this.agents = agents; this.changes = changes; this.deliveries = deliveries; this.changeService = changeService;
         this.access = access; this.json = json; this.clock = clock; this.testEvidence = testEvidence;
+        this.nativeDelivery = nativeDelivery;
     }
 
     @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
@@ -104,6 +108,8 @@ public class AgentRunAcceptanceService {
     private AgentRunAcceptance.Item code(AgentRunEntity run, String user, boolean persist) {
         try {
             access.actor(user).require("agent:code:use");
+            var nativeEvidence = nativeDelivery.check(run);
+            if (nativeEvidence != null) return nativeEvidence;
             var latest = changes.list(run.id(), 0, 1);
             if (latest.isEmpty()) return item("CHANGE_SET", "MISSING", "尚未取得本次运行的代码交付清单");
             var entity = latest.getFirst();

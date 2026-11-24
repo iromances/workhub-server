@@ -15,6 +15,16 @@ import java.util.List;
  */
 @Mapper
 public interface DevelopmentAnalysisMapper {
+    @Select("SELECT raw_output FROM pm_intake_development_analysis WHERE intake_id=#{intakeId} AND input_fingerprint=#{fingerprint} AND analysis_status='FAILED' AND recovery_pending=1 AND raw_output IS NOT NULL AND id=(SELECT MAX(id) FROM pm_intake_development_analysis WHERE intake_id=#{intakeId} AND input_fingerprint=#{fingerprint}) LIMIT 1")
+    String findRecoverableOutput(Long intakeId, String fingerprint);
+
+    @Update("UPDATE pm_intake_development_analysis SET raw_output=#{output}, input_fingerprint=#{fingerprint}, recovery_pending=1 WHERE id=#{id} AND analysis_status='RUNNING'")
+    int saveRawOutput(Long id, String fingerprint, String output);
+
+    @Update("UPDATE pm_intake_development_analysis SET recovery_pending=0 WHERE id=#{id} AND analysis_status='RUNNING'")
+    int completeRawFormatting(Long id);
+
+
 
     /** 正式发布在独立事务中锁定当前分析，避免迟到回调覆盖新的人工修改。 */
     @Select("SELECT id FROM pm_intake_development_analysis WHERE id = #{id} FOR UPDATE")
@@ -22,7 +32,7 @@ public interface DevelopmentAnalysisMapper {
 
     @Select("""
             SELECT a.id, a.intake_id, a.project_id, a.business_line_code, bl.business_line_name AS business_line,
-                   a.repository_url, a.analysis_status, a.analysis_message,
+                   a.repository_url, a.analysis_status, a.analysis_message, a.error_stack,
                    a.started_at, a.finished_at,
                    CASE WHEN JSON_VALID(a.draft_json) THEN JSON_SET(JSON_REMOVE(a.draft_json, '$.businessLine'), '$.businessLineCode', a.business_line_code, '$.businessLine', bl.business_line_name) ELSE a.draft_json END AS draft_json,
                    a.zentao_sync_status, a.zentao_sync_message, a.created_by, a.updated_by, a.created_at, a.updated_at
@@ -35,7 +45,7 @@ public interface DevelopmentAnalysisMapper {
 
     @Select("""
             SELECT a.id, a.intake_id, a.project_id, a.business_line_code, bl.business_line_name AS business_line,
-                   a.repository_url, a.analysis_status, a.analysis_message,
+                   a.repository_url, a.analysis_status, a.analysis_message, a.error_stack,
                    a.started_at, a.finished_at,
                    CASE WHEN JSON_VALID(a.draft_json) THEN JSON_SET(JSON_REMOVE(a.draft_json, '$.businessLine'), '$.businessLineCode', a.business_line_code, '$.businessLine', bl.business_line_name) ELSE a.draft_json END AS draft_json,
                    a.zentao_sync_status, a.zentao_sync_message, a.created_by, a.updated_by, a.created_at, a.updated_at
@@ -50,7 +60,7 @@ public interface DevelopmentAnalysisMapper {
 
     @Select("""
             SELECT a.id, a.intake_id, a.project_id, a.business_line_code, bl.business_line_name AS business_line,
-                   a.repository_url, a.analysis_status, a.analysis_message,
+                   a.repository_url, a.analysis_status, a.analysis_message, a.error_stack,
                    a.started_at, a.finished_at,
                    CASE WHEN JSON_VALID(a.draft_json) THEN JSON_SET(JSON_REMOVE(a.draft_json, '$.businessLine'), '$.businessLineCode', a.business_line_code, '$.businessLine', bl.business_line_name) ELSE a.draft_json END AS draft_json,
                    a.zentao_sync_status, a.zentao_sync_message, a.created_by, a.updated_by, a.created_at, a.updated_at
@@ -95,6 +105,7 @@ public interface DevelopmentAnalysisMapper {
                 repository_url = #{repositoryUrl},
                 analysis_status = #{analysisStatus},
                 analysis_message = #{analysisMessage},
+                error_stack = #{errorStack},
                 started_at = CASE WHEN #{analysisStatus} = 'RUNNING' AND started_at IS NULL THEN CURRENT_TIMESTAMP ELSE started_at END,
                 finished_at = CASE WHEN #{analysisStatus} IN ('DRAFT', 'CONFIRMED', 'FAILED') AND finished_at IS NULL THEN CURRENT_TIMESTAMP ELSE finished_at END,
                 draft_json = CASE WHEN JSON_VALID(#{draftJson}) THEN JSON_REMOVE(#{draftJson}, '$.businessLine') ELSE #{draftJson} END,
@@ -113,6 +124,7 @@ public interface DevelopmentAnalysisMapper {
                 repository_url = #{repositoryUrl},
                 analysis_status = #{analysisStatus},
                 analysis_message = #{analysisMessage},
+                error_stack = #{errorStack},
                 started_at = CASE WHEN #{analysisStatus} = 'RUNNING' AND started_at IS NULL THEN CURRENT_TIMESTAMP ELSE started_at END,
                 finished_at = CASE WHEN #{analysisStatus} IN ('DRAFT', 'CONFIRMED', 'FAILED') AND finished_at IS NULL THEN CURRENT_TIMESTAMP ELSE finished_at END,
                 draft_json = CASE WHEN JSON_VALID(#{draftJson}) THEN JSON_REMOVE(#{draftJson}, '$.businessLine') ELSE #{draftJson} END,

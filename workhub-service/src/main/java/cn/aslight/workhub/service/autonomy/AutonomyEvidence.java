@@ -67,7 +67,7 @@ public class AutonomyEvidence {
             case "MONITORING_GAP" -> require(Set.of("DISABLED", "NEVER_RUN", "UNAVAILABLE", "FUTURE_TIMESTAMP").contains(state), "该记录不支持监测覆盖问题");
             case "EXECUTION_FAILURE" -> require("ERROR".equals(item.path("status").asText()) && "HAS_RESULT".equals(state), "该监测记录不是实际执行异常");
             case "STALE_DATA" -> stale(observation, occurred, threshold);
-            default -> throw new IllegalArgumentException("业务监测汇总不能证明该问题类型，请继续读取失败详情");
+            default -> throw new IllegalArgumentException("服务监测汇总不能证明该问题类型，请继续读取失败详情");
         }
         // dataAgeSeconds 随每次查询改变，不参与来源版本。
         var version = item.deepCopy();

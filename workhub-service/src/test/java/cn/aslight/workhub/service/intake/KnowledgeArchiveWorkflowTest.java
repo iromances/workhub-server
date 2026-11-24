@@ -58,11 +58,12 @@ class KnowledgeArchiveWorkflowTest {
         when(analyses.updateStatus(eq(9L), anyString(), any(), any(), any(), any()))
                 .thenAnswer(call -> { saved.setAnalysisStatus(call.getArgument(1)); return 1; });
         when(archive.publishConfirmedAnalysis(any(), any(), any(), eq(9L), any(), any(), any()))
-                .thenReturn(new ProjectKnowledgeBaseService.RequirementKnowledgeLocation(Path.of("/vault"), Path.of("/vault/raw/source.md"),
+                .thenReturn(new ProjectKnowledgeBaseService.RequirementKnowledgeLocation(Path.of("/vault"), Path.of("/vault/wiki"),
+                        Path.of("/vault/raw/source.md"),
                         Path.of("/vault/wiki/研发评估.md"), "raw/source.md", "wiki/研发评估.md", "obsidian://confirmed"));
         service = new DevelopmentAnalysisService(intakes, histories, analyses, mock(ProjectMapper.class),
                 mock(ProjectInvolvedSystemMapper.class), mock(UserMapper.class), mock(GitlabRepositoryService.class),
-                archive, ai, workItems, ignored -> { }, json);
+                archive, ai, workItems, ignored -> { }, json, org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
     }
 
     @Test
@@ -74,7 +75,7 @@ class KnowledgeArchiveWorkflowTest {
         saved.setDraftJson(original);
         var response = service.detail(5L);
         assertEquals("requirement-sources/测试/历史版本/run1/source.md", response.draft().requirementRawPath());
-        assertEquals("requirements/测试/研发评估.md", response.draft().requirementWikiPath());
+        assertEquals("业务线/测试/研发评估.md", response.draft().requirementWikiPath());
         assertNull(response.draft().requirementWikiUrl());
         assertEquals(original, saved.getDraftJson());
         verify(analyses, never()).update(any());

@@ -79,7 +79,7 @@ class AgentBuildTestDispatcherTest {
         jenkins = new AgentJenkinsPolicy(configs, json); configure("https://jenkins.example.invalid/", List.of(job("test", scope, Map.of("server", "SERVER_SHA"))));
         policy = new AgentBuildTestPolicy(jenkins); evidence = new AgentBuildTestEvidence(tests, agents, policy, jenkins, json, clock);
         var task = new AgentTaskSpecification("修复问题", "", "实际测试", List.of("TEST_REPORT"), List.of(scope));
-        var config = new AgentConfiguration("Agent", "repair", 1L, "fixture", task.scopes(), 50, 600, 1);
+        var config = new AgentConfiguration("Agent","OPS", "repair", 1L, "fixture", task.scopes(), 50, 600, 1);
         context = new AgentToolContext("run", "task", "agent", "owner", "runtime-owner", config, task);
         agents.insertRun(new AgentRunEntity("run", "task", "agent", "manual", "owner", json.writeValueAsString(config), json.writeValueAsString(task), "{}",
                 "WAITING_INPUT", 1, 0, false, null, null, null, null, null, 0, now(), now()));

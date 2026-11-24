@@ -25,24 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /** CLI 接收完整任务并原生规划，经平台标准 MCP 使用 WorkHub 能力（AI 按职责描述自行选择）。平台只记录事实和生命周期。 */
 @Component
 public class AgentNativeCliAdapter implements AgentExecutionAdapter {
-    private static final String RESULT_SCHEMA = """
-            {"type":"object","additionalProperties":false,"required":["type","summary"],"properties":{
-              "type":{"type":"string","enum":["RESULT","NEEDS_INPUT"]},"summary":{"type":"string","maxLength":16000},
-              "problems":{"type":"array","maxItems":50,"items":{"type":"object","additionalProperties":false,
-                "required":["domain","signature","title","severity"],
-                "properties":{
-                  "domain":{"type":"string","enum":["SYSTEM_ALERT","BUSINESS_MONITOR","ACCOUNTING"]},
-                  "signature":{"type":"string","maxLength":200},"title":{"type":"string","maxLength":500},
-                  "severity":{"type":"string","enum":["P0","P1","P2"]},
-                  "evidence":{"type":"string","maxLength":1000},"window":{"type":"string","maxLength":100},
-                  "analysis":{"type":"object","additionalProperties":false,
-                    "properties":{
-                      "codeLocation":{"type":"string","maxLength":2000},"repro":{"type":"string","maxLength":2000},
-                      "rootCause":{"type":"string","maxLength":4000},"impactVerification":{"type":"string","maxLength":2000},
-                      "fixDirection":{"type":"string","maxLength":2000},
-                      "repos":{"type":"array","maxItems":10,"items":{"type":"object","additionalProperties":false,
-                        "properties":{"system":{"type":"string","maxLength":100},"repository":{"type":"string","maxLength":200},"path":{"type":"string","maxLength":500}}}}}}}}}}}}
-            """;
+    private static final String RESULT_SCHEMA = AgentReportContract.SCHEMA;
     private final AgentRunStore store;
     private final AgentToolData data;
     private final AiProviderConfigService providers;
@@ -55,6 +38,7 @@ public class AgentNativeCliAdapter implements AgentExecutionAdapter {
     private final String environmentAccessToken;
     private final String serverPort;
     private final String cliMcpEndpoint;
+    private final AgentNativeDeliveryService nativeDelivery;
 
     public AgentNativeCliAdapter(AgentRunStore store, AgentToolData data,
                                   AiProviderConfigService providers, AiUseCaseConfigService aiUseCaseConfigService,
@@ -63,7 +47,8 @@ public class AgentNativeCliAdapter implements AgentExecutionAdapter {
                                   McpProperties mcpProperties,
                                   @Value("${WORKHUB_MCP_ACCESS_TOKEN:}") String environmentAccessToken,
                                   @Value("${server.port:8080}") String serverPort,
-                                  @Value("${workhub.agent.cli-mcp-endpoint:}") String cliMcpEndpoint) {
+                                  @Value("${workhub.agent.cli-mcp-endpoint:}") String cliMcpEndpoint,
+                                  AgentNativeDeliveryService nativeDelivery) {
         this.store = store;
         this.data = data;
         this.providers = providers;
@@ -76,6 +61,7 @@ public class AgentNativeCliAdapter implements AgentExecutionAdapter {
         this.environmentAccessToken = environmentAccessToken;
         this.serverPort = serverPort;
         this.cliMcpEndpoint = cliMcpEndpoint;
+        this.nativeDelivery = nativeDelivery;
     }
 
     private String mcpAccessToken() {
@@ -127,9 +113,10 @@ public class AgentNativeCliAdapter implements AgentExecutionAdapter {
                 Files.writeString(schema, RESULT_SCHEMA, StandardCharsets.UTF_8);
                 var context = store.context(store.get(runId));
                 var promptEvents = store.events(runId);
+                String recoveredResult = store.recoverableNativeResult(runId);
                 String prompt;
                 try {
-                    prompt = prompt(context, promptEvents);
+                    prompt = recoveredResult == null ? prompt(context, promptEvents) : "仅恢复已保存结果";
                 } catch (RuntimeException ex) {
                     String reason = ex.getMessage() == null || ex.getMessage().isBlank() ? ex.getClass().getSimpleName() : ex.getMessage();
                     store.finish(runId, owner, "FAILED", null, "AI 任务配置不可用 " + AiUseCaseDefinitions.AGENT_CLI_STEP + "：" + reason);
@@ -143,6 +130,8 @@ public class AgentNativeCliAdapter implements AgentExecutionAdapter {
                 String mcpUrl = mcpUrl();
                 var launch = protocol.prepare(provider, context.configuration().model(), directory, schema, output, mcpUrl,
                         StringUtils.hasText(accessToken) ? accessToken : null, prompt);
+                launch.conversation().resultRecovery(recoveredResult, original ->
+                        store.record(runId, owner, attempt + ":raw", "CLI_RAW_RESULT", Map.of("text", original, "inputThroughOrdinal", promptEvents.isEmpty() ? 0L : promptEvents.getLast().ordinal())));
                 store.beginNative(runId, owner, attempt, InetAddress.getLocalHost().getHostName(), promptEvents.isEmpty() ? 0L : promptEvents.getLast().ordinal());
                 intentSaved = true;
                 process = launch.builder().start();
@@ -176,13 +165,22 @@ public class AgentNativeCliAdapter implements AgentExecutionAdapter {
                 if (!processConfirmedStopped || reader.isAlive() || writer.isAlive()) throw new IllegalStateException("CLI 的停止结果尚未确认");
                 if (readerFailure.get() != null) throw new IllegalStateException("CLI 未返回有效协议结果：" + readerFailure.get().getMessage(), readerFailure.get());
                 if (process.exitValue() != 0) throw new IllegalStateException("CLI 执行失败，退出码 " + process.exitValue());
-                if (!Files.isRegularFile(output, LinkOption.NOFOLLOW_LINKS) || Files.size(output) > 24000) throw new IllegalStateException("CLI 未返回有界的最终产物");
+                if (!Files.isRegularFile(output, LinkOption.NOFOLLOW_LINKS)) throw new IllegalStateException("CLI 未返回最终产物");
                 JsonNode result;
-                try { result = json.reader().with(tools.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS).readTree(Files.readString(output)); }
+                try {
+                    String original = Files.readString(output);
+                    if (store.events(runId).stream().noneMatch(e -> (attempt + ":raw").equals(e.eventKey())))
+                        store.record(runId, owner, attempt + ":file-raw", "CLI_RAW_RESULT", Map.of("text", original, "inputThroughOrdinal", promptEvents.isEmpty() ? 0L : promptEvents.getLast().ordinal()));
+                    result = AgentReportContract.extract(original);
+                    AgentReportContract.validate(result);
+                }
                 catch (tools.jackson.core.JacksonException ex) { throw new IllegalArgumentException("CLI 最终结果不是有效 JSON；未确认任务完成，请查看执行记录", ex); }
-                if (!result.isObject() || result.size() > 3 || !Set.of("RESULT", "NEEDS_INPUT").contains(result.path("type").asText())
-                        || !result.path("summary").isString() || result.path("summary").asText().isBlank() || result.path("summary").asText().length() > 16000) {
+                if (!result.isObject() || result.size() > 4 || !Set.of("RESULT", "NEEDS_INPUT").contains(result.path("type").asText())
+                        || AgentReportContract.summary(result).isBlank()) {
                     throw new IllegalArgumentException("CLI 最终结果格式无效");
+                }
+                if ("RESULT".equals(result.path("type").asText()) && result.has("deliveries")) {
+                    store.record(runId, owner, attempt + ":delivery", "NATIVE_CODE_DELIVERY", nativeDelivery.verify(context, result.path("deliveries")));
                 }
                 store.endNative(runId, owner, attempt, Map.of("exitCode", 0, "result", result, "processTreeStopped", true));
                 intentSaved = false;
@@ -217,8 +215,12 @@ public class AgentNativeCliAdapter implements AgentExecutionAdapter {
         variables.put("dataWindow", json.writeValueAsString(data.sanitize(store.dataWindow(context))));
         variables.put("platformGuide", platformGuide.guide(context));
         variables.put("trajectory", json.writeValueAsString(events.stream()
+                .filter(event -> !Set.of("CLI_RAW_RESULT", "CLI_FORMAT_RECOVERY").contains(event.kind()))
                 .map(event -> Map.of("kind", event.kind(), "payload", json.readTree(event.payloadJson()))).toList()));
-        return promptRenderer.render(config.getPromptTemplate(), variables, AiUseCaseDefinitions.require(AiUseCaseDefinitions.AGENT_CLI_STEP));
+        return promptRenderer.render(config.getPromptTemplate(), variables, AiUseCaseDefinitions.require(AiUseCaseDefinitions.AGENT_CLI_STEP))
+                + "\n" + AgentReportContract.PRESENTATION_GUIDE
+                + "\n如任务要求交付需求研发分支，最终 JSON 必须带 deliveries 数组，逐个列出全部已确认系统的 GitLab projectPath、branch、完整40位 commit；"
+                + "平台会独立回读远端核验，不接受仅在 summary 中声称已推送。自测结果与尚未执行的联调分别如实写入 report.checks 和 report.limitations。";
     }
 
     private void progress(String runId, String owner, String attempt, String message, AtomicInteger sequence) {

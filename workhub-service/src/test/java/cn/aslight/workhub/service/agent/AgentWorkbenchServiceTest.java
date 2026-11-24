@@ -45,6 +45,7 @@ class AgentWorkbenchServiceTest {
     private Connection keepAlive;
     private JdbcTemplate jdbc;
     private AgentMapper mapper;
+    private cn.aslight.workhub.service.system.DictService dicts;
     private AgentWorkbenchService service;
     private AgentAccessService access;
     private final Map<Long, List<String>> grants = new ConcurrentHashMap<>();
@@ -64,8 +65,11 @@ class AgentWorkbenchServiceTest {
         jdbc.execute("CREATE TABLE sys_role(id BIGINT PRIMARY KEY,role_code VARCHAR(100))");
         jdbc.execute("CREATE TABLE sys_role_permission(role_id BIGINT,permission_code VARCHAR(100),UNIQUE(role_id,permission_code))");
         jdbc.update("INSERT INTO sys_role VALUES (1,'SUPER_ADMIN')");
+        jdbc.execute("CREATE TABLE dict(id BIGINT AUTO_INCREMENT PRIMARY KEY, dict_type VARCHAR(64), dict_desc VARCHAR(128), enum_code VARCHAR(128), enum_desc VARCHAR(256), parent_code VARCHAR(128), root_code VARCHAR(128), sort_order INT DEFAULT 0, create_time DATETIME DEFAULT CURRENT_TIMESTAMP, create_by VARCHAR(64), modify_time DATETIME, delete_time DATETIME, delete_by VARCHAR(64), is_delete TINYINT DEFAULT 0, version INT DEFAULT 0, remark VARCHAR(512))");
+        jdbc.update("INSERT INTO dict(dict_type,enum_code,enum_desc) VALUES ('agentPosition','OPS','运维')");
         Path migration = Path.of("../workhub-bootstrap/src/main/resources/db/schema/mysql/V20261104_014200__add_agent_workbench.sql");
         ScriptUtils.executeSqlScript(keepAlive, new FileSystemResource(migration));
+        ScriptUtils.executeSqlScript(keepAlive, new FileSystemResource("../workhub-bootstrap/src/main/resources/db/schema/mysql/V20261122_150000__agent_structured_reports.sql"));
         // 删除前核对涉及的过程数据表；本测试只建最小结构供 COUNT 关联。
         for (String[] table : new String[][]{
                 {"pm_agent_observation", "id VARCHAR(36) PRIMARY KEY, run_id VARCHAR(36), agent_id VARCHAR(36)"},
@@ -81,10 +85,14 @@ class AgentWorkbenchServiceTest {
         var configuration = new Configuration();
         configuration.setMapUnderscoreToCamelCase(true);
         configuration.addMapper(AgentMapper.class);
+        configuration.addMapper(cn.aslight.workhub.dao.agent.AgentReportMapper.class);
+        configuration.addMapper(cn.aslight.workhub.dao.system.DictMapper.class);
         var factory = new SqlSessionFactoryBean();
         factory.setDataSource(dataSource);
         factory.setConfiguration(configuration);
-        mapper = new SqlSessionTemplate(factory.getObject()).getMapper(AgentMapper.class);
+        var sessions = new SqlSessionTemplate(factory.getObject());
+        mapper = sessions.getMapper(AgentMapper.class);
+        dicts = new cn.aslight.workhub.service.system.DictService(sessions.getMapper(cn.aslight.workhub.dao.system.DictMapper.class));
 
         var permissions = mock(PermissionContextService.class);
         when(permissions.requireActiveUser(anyString())).thenAnswer(invocation -> {
@@ -112,7 +120,10 @@ class AgentWorkbenchServiceTest {
         provider.setDefaultModel("configured-model");
         when(providers.requireExisting(1L)).thenReturn(provider);
         when(providers.getEnabledById(1L)).thenReturn(provider);
-        var target = new AgentWorkbenchService(mapper, access, providers, json, clock);
+        var cryptoProperties = new cn.aslight.workhub.config.PaymentProperties();
+        cryptoProperties.setMasterKey("test-master-key");
+        var target = new AgentWorkbenchService(mapper, access, providers, dicts,
+                new cn.aslight.workhub.service.payment.PaymentCryptoService(cryptoProperties), json, clock);
         var interceptor = new TransactionInterceptor();
         interceptor.setTransactionManager(new DataSourceTransactionManager(dataSource));
         interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
@@ -122,6 +133,10 @@ class AgentWorkbenchServiceTest {
         var storeProxy = new ProxyFactory(new AgentRunStore(mapper, json, access, new AgentToolData(json), providers, clock, AgentAcceptanceTestSupport.withoutCode(mapper, access, json, clock)));
         storeProxy.addAdvice(interceptor);
         store = (AgentRunStore) storeProxy.getProxy();
+        var reportProxy = new ProxyFactory(new AgentReportService(sessions.getMapper(cn.aslight.workhub.dao.agent.AgentReportMapper.class), json));
+        reportProxy.addAdvice(interceptor);
+        var reports = (AgentReportService) reportProxy.getProxy();
+        service.setReports(reports); store.setReports(reports);
         processes = mock(AgentCliProcessProbe.class);
         when(processes.observe(any(), any(), any())).thenReturn("REMOTE_HOST");
         var reconciliationProxy = new ProxyFactory(new AgentRunReconciliationService(mapper, access, store,
@@ -132,9 +147,21 @@ class AgentWorkbenchServiceTest {
         mcpStub = com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
         mcpStub.createContext("/api/mcp/runtime", exchange -> {
             try (exchange) {
+                if (!"POST".equals(exchange.getRequestMethod())) { exchange.sendResponseHeaders(405, -1); return; }
+                var request = json.readTree(exchange.getRequestBody().readNBytes(100000));
+                if (!request.has("id")) { exchange.sendResponseHeaders(202, -1); return; }
                 boolean authorized = ("Bearer test-mcp-token").equals(exchange.getRequestHeaders().getFirst("Authorization"));
+                Object result = switch (request.path("method").asText()) {
+                    case "initialize" -> Map.of("protocolVersion", "2025-11-25", "capabilities", Map.of("tools", Map.of()), "serverInfo", Map.of("name", "fixture", "version", "1"));
+                    case "tools/list" -> Map.of("tools", List.of(Map.of("name", "monitor_read", "description", "fixture", "inputSchema", Map.of("type", "object", "properties", Map.of()))));
+                    case "tools/call" -> Map.of("content", List.of(Map.of("type", "text", "text", "{\"dataState\":\"NEVER_RUN\",\"source\":\"platform-mcp-stub\"}")));
+                    case "ping" -> Map.of();
+                    default -> null;
+                };
                 String body = authorized
-                        ? "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"dataState\\\":\\\"NEVER_RUN\\\",\\\"source\\\":\\\"platform-mcp-stub\\\"}\"}]}}"
+                        ? json.writeValueAsString(result == null
+                            ? Map.of("jsonrpc", "2.0", "id", request.get("id"), "error", Map.of("code", -32601, "message", "Method not found"))
+                            : Map.of("jsonrpc", "2.0", "id", request.get("id"), "result", result))
                         : "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"unauthorized\"}}";
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
                 byte[] bytes = body.getBytes(java.nio.charset.StandardCharsets.UTF_8);
@@ -152,10 +179,44 @@ class AgentWorkbenchServiceTest {
     }
 
     @Test
+    void apiV2ReportIsPersistedWithoutLosingOriginal() throws Exception {
+        var run = inspectionRun(List.of("REPORT")); var claim=store.claim();
+        var gateway=mock(AiGatewayClient.class); var result=AgentReportContractTest.fixture();
+        when(gateway.executeAgentApi(any())).thenReturn(answer(result.toString()));
+        adapter(gateway).execute(run.id(),claim.ownerToken());
+        assertEquals("COMPLETED",store.get(run.id()).status());
+        assertEquals(true,service.report(run.agentId(),run.id(),"owner").get("available"));
+        assertTrue(mapper.listEvents(run.id()).stream().anyMatch(e -> "API_RAW_RESULT".equals(e.kind()) && e.payloadJson().contains("schemaVersion")));
+        verify(gateway,times(1)).executeAgentApi(any());
+    }
+
+    @Test
+    void structuredReportCompletionIsAtomicAuthorizedAndImmutable() throws Exception {
+        var run = inspectionRun(List.of("REPORT")); var claim = store.claim();
+        var result = AgentReportContractTest.fixture();
+        store.beginNative(run.id(), claim.ownerToken(), "cli:structured", "fixture");
+        store.record(run.id(), claim.ownerToken(), "cli:structured:raw", "CLI_RAW_RESULT", Map.of("text", result.toString()));
+        store.endNative(run.id(), claim.ownerToken(), "cli:structured", Map.of("exitCode",0,"result",result,"processTreeStopped",true));
+        jdbc.execute("ALTER TABLE pm_agent_report_action ADD CONSTRAINT test_rollback CHECK (ordinal < 0)");
+        assertThrows(RuntimeException.class, () -> store.finishSavedNative(run.id(),claim.ownerToken()));
+        assertEquals("RUNNING",store.get(run.id()).status());
+        assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM pm_agent_report",Integer.class));
+        assertNull(mapper.findEventByKey(run.id(),"cli:structured:handled"));
+        jdbc.execute("ALTER TABLE pm_agent_report_action DROP CONSTRAINT test_rollback");
+        assertTrue(store.finishSavedNative(run.id(),claim.ownerToken()));
+        assertEquals("COMPLETED",store.get(run.id()).status());
+        assertEquals(true,service.report(run.agentId(),run.id(),"owner").get("available"));
+        assertThrows(IllegalArgumentException.class,()->service.report("other-agent",run.id(),"owner"));
+        assertThrows(AccessDeniedException.class,()->service.report(run.agentId(),run.id(),"other"));
+        var done=store.get(run.id()); service.deleteRun(done.taskId(),done.id(),done.version(),"owner");
+        for(String suffix:new String[]{"","_check","_finding","_evidence","_action"}) assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM pm_agent_report"+suffix,Integer.class));
+    }
+
+    @Test
     void completionTargetIsExplicitAndFrozenWithTaskAndRun() {
         var agent=enabledAgent(); var prod=new AgentScope("BL000012","PROD");
         var original=agent.configuration();
-        var configured=service.update(agent.id(),new AgentSaveRequest(agent.version(),new AgentConfiguration(original.name(),original.instructions(),
+        var configured=service.update(agent.id(),new AgentSaveRequest(agent.version(),new AgentConfiguration(original.name(),"OPS",original.instructions(),
                 original.providerConfigId(),original.model(),List.of(testScope,prod),original.maxSteps(),original.maxRunSeconds(),original.maxConcurrentRuns())),"owner");
         var spec=new AgentTaskSpecification("修复并发布","","测试环境通过",List.of("DEPLOYMENT","VERIFICATION"),List.of(testScope,prod),List.of(testScope));
         var task=service.createTask(agent.id(),new AgentTaskCreateRequest("target",spec,manual(),true),"owner");
@@ -196,14 +257,14 @@ class AgentWorkbenchServiceTest {
         assertThrows(IllegalArgumentException.class,()->service.run(task.id(),new AgentRunRequest("legacy-start",task.version()),"owner"));
         var check=AgentAcceptanceTestSupport.withoutCode(mapper,access,json,clock).preview(task.id(),run.id(),"owner");
         assertFalse(check.satisfied());assertTrue(check.items().stream().allMatch(item->"BLOCKED".equals(item.status())));
-        var claim=store.claim(4);store.finish(run.id(),claim.ownerToken(),"COMPLETED","声称完成",null);
+        var claim=store.claim();store.finish(run.id(),claim.ownerToken(),"COMPLETED","声称完成",null);
         assertEquals("WAITING_INPUT",store.get(run.id()).status());
     }
 
     @Test
     void completionTargetsRemainSeparateFromArtifactEvidence() {
         var agent=enabledAgent();var prod=new AgentScope("BL000012","PROD");var original=agent.configuration();
-        service.update(agent.id(),new AgentSaveRequest(agent.version(),new AgentConfiguration(original.name(),original.instructions(),original.providerConfigId(),
+        service.update(agent.id(),new AgentSaveRequest(agent.version(),new AgentConfiguration(original.name(),"OPS",original.instructions(),original.providerConfigId(),
                 original.model(),List.of(testScope,prod),original.maxSteps(),original.maxRunSeconds(),original.maxConcurrentRuns())),"owner");
         var spec=new AgentTaskSpecification("发布及复查","","逐环境通过",List.of("DEPLOYMENT","VERIFICATION"),List.of(testScope,prod),List.of(testScope,prod));
         var task=service.createTask(agent.id(),new AgentTaskCreateRequest("both-targets",spec,manual(),true),"owner");
@@ -295,6 +356,25 @@ class AgentWorkbenchServiceTest {
     }
 
     @Test
+    void emptyAgentScopeAllowsAssignmentAndExecutionWithinTaskScope() {
+        var agent = enabledAgent();
+        var unrestricted = service.update(agent.id(), new AgentSaveRequest(agent.version(),
+                new AgentConfiguration("不限范围", "OPS", "巡检", 1L, "first-model", List.of(), 20, 60, 2)), "owner");
+        var spec = new AgentTaskSpecification("巡检", "", "返回证据", List.of("REPORT"), List.of(testScope));
+        var task = service.createTask(agent.id(), new AgentTaskCreateRequest("unrestricted", spec, manual(), false), "owner");
+        var context = new AgentToolContext("run", task.id(), agent.id(), "owner", unrestricted.configuration(), spec);
+
+        assertDoesNotThrow(() -> access.requireScope(context, testScope));
+        assertDoesNotThrow(() -> access.requireBusinessLine(context, testScope.businessLineCode()));
+        assertThrows(AccessDeniedException.class, () -> access.requireScope(context, new AgentScope("BL000012", "PROD")));
+
+        var unknown = new AgentTaskSpecification("巡检", "", "返回证据", List.of("REPORT"),
+                List.of(new AgentScope("BL999999", "TEST")));
+        assertThrows(IllegalArgumentException.class, () ->
+                service.createTask(agent.id(), new AgentTaskCreateRequest("unknown", unknown, manual(), false), "owner"));
+    }
+
+    @Test
     void oldSnapshotCannotKeepRevokedOperationOrScopePermissions() {
         var agent = enabledAgent();
         var spec = new AgentTaskSpecification("巡检", "", "返回证据", List.of("REPORT"), List.of(testScope));
@@ -303,7 +383,7 @@ class AgentWorkbenchServiceTest {
         grants.put(1L, List.of("agent:view", "agent:manage", "agent:task:assign", "agent:task:view", "agent:task:operate"));
         assertThrows(AccessDeniedException.class, () -> access.requireExecution(context, "monitor.read", Set.of("ops:monitor:view")));
         service.update(agent.id(), new AgentSaveRequest(agent.version(),
-                new AgentConfiguration("收窄", "检查", 1L, "first-model", List.of(), 20, 60, 2)), "owner");
+                new AgentConfiguration("收窄","OPS", "检查", 1L, "first-model", List.of(new AgentScope("BL000012", "PROD")), 20, 60, 2)), "owner");
         assertThrows(AccessDeniedException.class, () -> access.requireScope(context, testScope));
     }
 
@@ -365,12 +445,57 @@ class AgentWorkbenchServiceTest {
     }
 
     @Test
+    void positionIsRequiredAndMustExistInDictionary() {
+        var agent = enabledAgent();
+        var missing = new AgentConfiguration("无岗位", null, "职责", 1L, "model", List.of(), 20, 60, 1);
+        var ex = assertThrows(IllegalArgumentException.class, () -> service.create(new AgentSaveRequest(null, missing), "owner"));
+        assertEquals("请选择岗位", ex.getMessage());
+        var unknown = new AgentConfiguration("未知岗位", "NOT_IN_DICT", "职责", 1L, "model", List.of(), 20, 60, 1);
+        ex = assertThrows(IllegalArgumentException.class, () -> service.update(agent.id(), new AgentSaveRequest(agent.version(), unknown), "owner"));
+        assertEquals("岗位不存在或已停用，请重新选择", ex.getMessage());
+        // 存量配置（无岗位）读取不受影响，编辑保存时才被拦截
+        var legacy = new AgentConfiguration("存量员工", null, "旧职责", 1L, "model", List.of(), 20, 60, 1);
+        jdbc.update("INSERT INTO pm_agent_definition(id,name,configuration_json,enabled,owner_name,version,created_at,updated_at) VALUES (?,?,?,?,?,0,NOW(),NOW())",
+                "legacy-agent", "存量员工", json.writeValueAsString(legacy), true, "owner");
+        assertNull(service.detail("legacy-agent", "owner").configuration().position());
+        ex = assertThrows(IllegalArgumentException.class, () -> service.update("legacy-agent",
+                new AgentSaveRequest(0L, new AgentConfiguration("存量员工", null, "新职责", 1L, "model", List.of(), 20, 60, 1)), "owner"));
+        assertEquals("请选择岗位", ex.getMessage());
+    }
+
+    @Test
+    void taskWebhookUrlIsEncryptedAtRestAndRevealedOnDetail() {
+        var agent = enabledAgent();
+        var webhookUrl = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=task-token";
+        var spec = new AgentTaskSpecification("巡检", null, "报告", List.of("REPORT"), List.of(testScope), List.of(), "FULL", webhookUrl);
+        var task = service.createTask(agent.id(), new AgentTaskCreateRequest("webhook", spec, manual(), false), "owner");
+        String stored = jdbc.queryForObject("SELECT specification_json FROM pm_agent_task WHERE id=?", String.class, task.id());
+        org.junit.jupiter.api.Assertions.assertFalse(stored.contains("qyapi.weixin.qq.com"), "明文地址不得落库");
+        org.junit.jupiter.api.Assertions.assertTrue(stored.contains(AgentWorkbenchService.WEBHOOK_CIPHER_PREFIX), "应存密文");
+        assertEquals(webhookUrl, service.task(task.id(), "owner").specification().webhookUrl());
+    }
+
+    @Test
+    void blankObjectiveAndAcceptanceNormalizeToEmptyAndKeepDeleteAuditSafe() {
+        var agent = enabledAgent();
+        var task = service.createTask(agent.id(), new AgentTaskCreateRequest("blank-spec",
+                new AgentTaskSpecification("  ", null, null, List.of("REPORT"), List.of()), manual(), false), "owner");
+        assertEquals("", task.specification().objective());
+        assertEquals("", task.specification().acceptanceCriteria());
+        var updated = service.updateTask(task.id(), new AgentTaskUpdateRequest(task.version(),
+                new AgentTaskSpecification(null, "背景保留", "", List.of("REPORT"), List.of()), null), "owner");
+        assertEquals("", updated.specification().objective());
+        assertEquals("背景保留", updated.specification().context());
+        service.deleteTask(task.id(), updated.version(), "owner");
+    }
+
+    @Test
     void incrementalTasksReceivePlatformComputedDataWindow() {
         var agent = enabledAgent();
         var specification = new AgentTaskSpecification("整理我提供的资料", "输入文本", "返回分析报告", List.of("REPORT"), List.of(), List.of(), "INCREMENTAL");
         var task = service.createTask(agent.id(), new AgentTaskCreateRequest("incremental", specification, manual(), true), "owner");
         var first = service.runs(task.id(), "owner", 1, 20).items().getFirst();
-        var claim = store.claim(4);
+        var claim = store.claim();
         var gateway = mock(AiGatewayClient.class);
         List<String> prompts = new CopyOnWriteArrayList<>();
         when(gateway.executeAgentApi(any())).thenAnswer(invocation -> {
@@ -382,7 +507,7 @@ class AgentWorkbenchServiceTest {
         assertTrue(prompts.getFirst().contains("INCREMENTAL"));
         assertTrue(prompts.getFirst().contains("无上一轮基线"), prompts.getFirst());
         var second = service.run(first.taskId(), new AgentRunRequest("incremental-second", 0L), "owner");
-        var claim2 = store.claim(4);
+        var claim2 = store.claim();
         adapter(gateway).execute(second.id(), claim2.ownerToken());
         assertEquals("COMPLETED", store.get(second.id()).status());
         assertTrue(prompts.getLast().contains("2026-11-03T18:00"), prompts.getLast());
@@ -425,7 +550,7 @@ class AgentWorkbenchServiceTest {
         var agent = enabledAgent();
         var task = service.createTask(agent.id(), taskRequest("cleanup", true), "owner");
         var run = service.runs(task.id(), "owner", 1, 20).items().getFirst();
-        var claim = store.claim(4);
+        var claim = store.claim();
         store.finish(run.id(), claim.ownerToken(), "COMPLETED", "最终报告", null);
         jdbc.update("INSERT INTO pm_agent_observation(id,run_id) VALUES ('obs-1',?)", run.id());
         var process = assertThrows(IllegalArgumentException.class, () -> service.deleteTask(task.id(), task.version(), "owner"));
@@ -481,7 +606,7 @@ class AgentWorkbenchServiceTest {
         var agent = enabledAgent();
         var task = service.createTask(agent.id(), taskRequest("agent-cleanup", true), "owner");
         var run = service.runs(task.id(), "owner", 1, 20).items().getFirst();
-        var claim = store.claim(4);
+        var claim = store.claim();
         store.finish(run.id(), claim.ownerToken(), "COMPLETED", "最终报告", null);
         jdbc.update("INSERT INTO pm_agent_observation(id,run_id,agent_id) VALUES ('agent-obs-1',?,?)", run.id(), agent.id());
         var disabled = service.setEnabled(agent.id(), agent.version(), false, "owner");
@@ -512,33 +637,49 @@ class AgentWorkbenchServiceTest {
         assertEquals(1, service.list("owner", 1, 20).total());
     }
 
+    @Test
+    void designPreflightChecksAssignmentAccessScopeAndAvailabilityWithoutCreatingTasks() {
+        var agent = enabledAgent();
+        var scopes = List.of(new AgentScope("BL000012", "TEST"));
+        assertDoesNotThrow(() -> service.requireAssignable(agent.id(), scopes, "owner"));
+        assertThrows(AccessDeniedException.class, () -> service.requireAssignable(agent.id(), scopes, "outsider"));
+        assertThrows(IllegalArgumentException.class, () -> service.requireAssignable(agent.id(),
+                List.of(new AgentScope("BL000012", "PROD")), "owner"));
+        grants.put(1L, List.of("agent:view", "agent:manage"));
+        assertThrows(AccessDeniedException.class, () -> service.requireAssignable(agent.id(), scopes, "owner"));
+        grants.put(1L, List.of("agent:view", "agent:manage", "agent:task:assign"));
+        service.setEnabled(agent.id(), agent.version(), false, "owner");
+        assertThrows(IllegalArgumentException.class, () -> service.requireAssignable(agent.id(), scopes, "owner"));
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM pm_agent_task", Integer.class));
+    }
+
     private AgentDefinitionResponse enabledAgent() {
         var agent = service.create(new AgentSaveRequest(null, config("Agent", "first-model")), "owner");
         return service.setEnabled(agent.id(), agent.version(), true, "owner");
     }
 
     @Test
-    void concurrentWorkersRespectGlobalAndPerAgentLimits() throws Exception {
+    void concurrentWorkersClaimAllRunsExactlyOnceWithoutLegacyLimits() throws Exception {
         var agent = enabledAgent();
-        for (int i = 0; i < 6; i++) service.createTask(agent.id(), taskRequest("queued-" + i, true), "owner");
+        for (int i = 0; i < 40; i++) service.createTask(agent.id(), taskRequest("queued-" + i, true), "owner");
         try (var pool = Executors.newFixedThreadPool(6)) {
             List<Future<AgentRunEntity>> claims = new ArrayList<>();
-            for (int i = 0; i < 8; i++) claims.add(pool.submit(() -> store.claim(4)));
+            for (int i = 0; i < 48; i++) claims.add(pool.submit(() -> store.claim()));
             Set<String> ids = new HashSet<>();
-            for (var future : claims) { var claim = future.get(10, TimeUnit.SECONDS); if (claim != null) ids.add(claim.id()); }
-            assertEquals(2, ids.size());
+            for (var future : claims) { var claim = future.get(10, TimeUnit.SECONDS); if (claim != null) assertTrue(ids.add(claim.id()), "同一个运行不能被重复领取"); }
+            assertEquals(40, ids.size());
         }
-        assertEquals(2, mapper.countOwnedRuns(null, LocalDateTime.now(clock)));
+        assertEquals(40, mapper.countOwnedRuns(null, LocalDateTime.now(clock)));
         var another = enabledAgent();
         service.createTask(another.id(), taskRequest("another", true), "owner");
-        assertNotNull(store.claim(3));
-        assertNull(store.claim(3));
+        assertNotNull(store.claim());
+        assertNull(store.claim());
     }
 
     @Test
     void unresolvedExternalCallKeepsHandleWithoutBlockingNewDispatch() {
         var run = inspectionRun(List.of("REPORT"));
-        var claim = store.claim(4);
+        var claim = store.claim();
         store.beginModel(run.id(), claim.ownerToken(), Map.of("providerConfigId", 1));
         expire(run.id());
         store.recoverExpired(run.id());
@@ -547,7 +688,7 @@ class AgentWorkbenchServiceTest {
         assertNotNull(unresolved.externalHandle());
         // 失联恢复后的残留 owner（租约已过期）不再占用并发额度，避免巡检等周期任务被永久堵死
         assertEquals(0, mapper.countOwnedRuns(null, LocalDateTime.now(clock)));
-        assertNull(store.claim(4));
+        assertNull(store.claim());
         var cancelled = service.cancel(run.taskId(), run.id(), unresolved.version(), "owner");
         assertEquals("CANCELLING", cancelled.status());
         assertNotNull(store.get(run.id()).externalHandle());
@@ -559,7 +700,7 @@ class AgentWorkbenchServiceTest {
         var specification = new AgentTaskSpecification("主动巡检", "", "返回证据", List.of("REPORT"), List.of(testScope));
         var first = service.createTask(agent.id(), new AgentTaskCreateRequest(UUID.randomUUID().toString(), specification, manual(), true), "owner");
         var stale = mapper.findRun(service.runs(first.id(), "owner", 1, 20).items().getFirst().id());
-        var claim = store.claim(4);
+        var claim = store.claim();
         store.beginModel(stale.id(), claim.ownerToken(), Map.of());
         expire(stale.id());
         store.recoverExpired(stale.id());
@@ -567,19 +708,19 @@ class AgentWorkbenchServiceTest {
         // 单 agent 并发压到 1：若按 owner_token 计数（旧口径），过期租约的残留会永久堵死该 agent 后续轮次
         var view = service.detail(agent.id(), "owner");
         var original = view.configuration();
-        service.update(agent.id(), new AgentSaveRequest(view.version(), new AgentConfiguration(original.name(), original.instructions(),
+        service.update(agent.id(), new AgentSaveRequest(view.version(), new AgentConfiguration(original.name(),"OPS", original.instructions(),
                 original.providerConfigId(), original.model(), original.scopes(), original.maxSteps(), original.maxRunSeconds(), 1)), "owner");
         var second = service.createTask(agent.id(), new AgentTaskCreateRequest(UUID.randomUUID().toString(), specification, manual(), true), "owner");
         var queued = mapper.findRun(service.runs(second.id(), "owner", 1, 20).items().getFirst().id());
         assertEquals("QUEUED", queued.status());
-        var next = store.claim(4);
+        var next = store.claim();
         assertNotNull(next);
         assertEquals(queued.id(), next.id());
     }
 
     @Test
     void lateModelReceiptIsImmutableAndRecoveryConsumesItWithoutCallingModelAgain() throws Exception {
-        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim();
         int step = store.beginModel(run.id(), old.ownerToken(), Map.of());
         expire(run.id()); store.recoverExpired(run.id());
         long version = store.get(run.id()).version();
@@ -597,7 +738,7 @@ class AgentWorkbenchServiceTest {
             a.get(5, TimeUnit.SECONDS); b.get(5, TimeUnit.SECONDS);
         }
         assertEquals("QUEUED", store.get(run.id()).status()); assertEquals(0, mapper.countOwnedRuns(null, LocalDateTime.now(clock)));
-        var next = store.claim(4); var gateway = mock(AiGatewayClient.class);
+        var next = store.claim(); var gateway = mock(AiGatewayClient.class);
         assertThrows(AgentRunStore.LeaseLost.class, () -> store.endModel(run.id(), old.ownerToken(), step, receipt));
         adapter(gateway).execute(run.id(), next.ownerToken());
         verifyNoInteractions(gateway); assertEquals("COMPLETED", store.get(run.id()).status());
@@ -608,15 +749,15 @@ class AgentWorkbenchServiceTest {
     @Test
     void lateCliReceiptMustArriveBeforeReleasingTheRun() {
         providers.getEnabledById(1L).setChannelType("CLI");
-        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4); String attempt = "cli:late";
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim(); String attempt = "cli:late";
         store.beginNative(run.id(), old.ownerToken(), attempt, "fixture-host");
         expire(run.id()); store.recoverExpired(run.id());
         assertEquals("WAITING_RESOURCE", store.get(run.id()).status()); assertNotNull(store.get(run.id()).externalHandle());
-        assertNull(store.claim(4)); assertEquals(0, mapper.countOwnedRuns(null, LocalDateTime.now(clock)));
+        assertNull(store.claim()); assertEquals(0, mapper.countOwnedRuns(null, LocalDateTime.now(clock)));
         store.endNative(run.id(), old.ownerToken(), attempt, nativeResult("RESULT", "已查询的报告"));
         store.recoverExpired(run.id());
         assertEquals("QUEUED", store.get(run.id()).status()); assertNull(store.get(run.id()).externalHandle());
-        var next = store.claim(4); var protocol = mock(AgentCliProtocol.class);
+        var next = store.claim(); var protocol = mock(AgentCliProtocol.class);
         nativeAdapter(protocol).execute(run.id(), next.ownerToken());
         verifyNoInteractions(protocol); assertEquals("COMPLETED", store.get(run.id()).status());
     }
@@ -624,7 +765,7 @@ class AgentWorkbenchServiceTest {
     @Test
     void cliReceiptWithoutProcessTreeStopProofCannotReleaseTheRun() {
         providers.getEnabledById(1L).setChannelType("CLI");
-        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim();
         store.beginNative(run.id(), old.ownerToken(), "cli:unknown", "fixture-host");
         store.nativeStarted(run.id(), old.ownerToken(), "cli:unknown", Long.MAX_VALUE, "2026-11-03T18:00:00Z");
         expire(run.id()); store.recoverExpired(run.id()); long version = store.get(run.id()).version();
@@ -636,22 +777,22 @@ class AgentWorkbenchServiceTest {
 
     @Test
     void cancellationAcceptsLateProofButNeverResumesTheCancelledTask() {
-        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim();
         int step = store.beginModel(run.id(), old.ownerToken(), Map.of());
         expire(run.id()); service.cancel(run.taskId(), run.id(), store.get(run.id()).version(), "owner");
         store.endModel(run.id(), old.ownerToken(), step, Map.of("succeeded", false, "error", "cancelled response"));
         store.recoverExpired(run.id());
         assertEquals("CANCELLED", store.get(run.id()).status()); assertNull(store.get(run.id()).externalHandle());
-        assertEquals(0, mapper.countOwnedRuns(null, LocalDateTime.now(clock))); assertNull(store.claim(4));
+        assertEquals(0, mapper.countOwnedRuns(null, LocalDateTime.now(clock))); assertNull(store.claim());
     }
 
     @Test
     void savedCliResultAndConsumptionMarkerCommitTogether() {
         providers.getEnabledById(1L).setChannelType("CLI");
-        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim();
         store.beginNative(run.id(), old.ownerToken(), "cli:atomic", "fixture-host");
         store.endNative(run.id(), old.ownerToken(), "cli:atomic", nativeResult("RESULT", "已完成的原生报告"));
-        expire(run.id()); store.recoverExpired(run.id()); var next = store.claim(4);
+        expire(run.id()); store.recoverExpired(run.id()); var next = store.claim();
         jdbc.execute("ALTER TABLE pm_agent_event ADD CONSTRAINT fail_consumption CHECK(event_key <> 'cli:atomic:handled')");
         assertThrows(RuntimeException.class, () -> store.finishSavedNative(run.id(), next.ownerToken()));
         assertEquals("RUNNING", store.get(run.id()).status()); assertTrue(mapper.listArtifacts(run.id()).isEmpty());
@@ -666,10 +807,10 @@ class AgentWorkbenchServiceTest {
     @Test
     void stoppedCliWithoutResultDoesNotRestartAutomatically() {
         providers.getEnabledById(1L).setChannelType("CLI");
-        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim();
         store.beginNative(run.id(), old.ownerToken(), "cli:stopped", "fixture-host"); expire(run.id());
         store.endNative(run.id(), old.ownerToken(), "cli:stopped", Map.of("processTreeStopped", true, "resultAvailable", false));
-        store.recoverExpired(run.id()); var next = store.claim(4); var protocol = mock(AgentCliProtocol.class);
+        store.recoverExpired(run.id()); var next = store.claim(); var protocol = mock(AgentCliProtocol.class);
         nativeAdapter(protocol).execute(run.id(), next.ownerToken());
         verifyNoInteractions(protocol); assertEquals("FAILED", store.get(run.id()).status()); assertTrue(mapper.listArtifacts(run.id()).isEmpty());
     }
@@ -677,14 +818,14 @@ class AgentWorkbenchServiceTest {
     @Test
     void nativeCliStepFailsRunWithSceneCodeWhenPromptConfigMissing() throws Exception {
         providers.getEnabledById(1L).setChannelType("CLI");
-        var run = inspectionRun(List.of("REPORT")); var next = store.claim(4);
+        var run = inspectionRun(List.of("REPORT")); var next = store.claim();
         var protocol = mock(AgentCliProtocol.class);
         when(protocol.supports(any())).thenReturn(true);
         var properties = new cn.aslight.workhub.config.McpProperties();
         properties.setAccessToken("test-mcp-token");
         new AgentNativeCliAdapter(store, new AgentToolData(json), providers,
                 cn.aslight.workhub.service.ai.TestPromptTemplates.missingConfigService(), promptRenderer(), platformGuide(),
-                List.of(protocol), json, properties, "", "8080", mcpStubUrl()).execute(run.id(), next.ownerToken());
+                List.of(protocol), json, properties, "", "8080", mcpStubUrl(), mock(AgentNativeDeliveryService.class)).execute(run.id(), next.ownerToken());
         assertEquals("FAILED", store.get(run.id()).status());
         var finish = store.event(run.id(), "finish:" + next.ownerToken());
         assertTrue(finish.payloadJson().contains("agent.cli.step"), finish.payloadJson());
@@ -693,7 +834,7 @@ class AgentWorkbenchServiceTest {
 
     @Test
     void newInputIsCheckedInsideModelAndFinishTransactions() {
-        var run = inspectionRun(List.of("REPORT")); var claim = store.claim(4);
+        var run = inspectionRun(List.of("REPORT")); var claim = store.claim();
         long watermark = store.events(run.id()).getLast().ordinal();
         service.message(run.taskId(), new AgentMessageRequest(run.id(), "before-start", store.get(run.id()).version(), "改为只做报告"), "owner");
         assertThrows(AgentRunStore.InputChanged.class, () -> store.beginModel(run.id(), claim.ownerToken(), Map.of(), watermark));
@@ -713,14 +854,14 @@ class AgentWorkbenchServiceTest {
     @Test
     void humanReplyContinuesAfterWaitingDecisionRatherThanRepeatingOldQuestion() {
         var run = inspectionRun(List.of("REPORT"));
-        var claim = store.claim(4);
+        var claim = store.claim();
         var gateway = mock(AiGatewayClient.class);
         when(gateway.executeAgentApi(any())).thenReturn(answer("{\"type\":\"NEEDS_INPUT\",\"plan\":\"等待业务口径\",\"summary\":\"请补充口径\"}"),
                 answer("{\"type\":\"RESULT\",\"plan\":\"完成\",\"summary\":\"已按补充口径整理\"}"));
         adapter(gateway).execute(run.id(), claim.ownerToken());
         assertEquals("WAITING_INPUT", store.get(run.id()).status());
         service.message(run.taskId(), new AgentMessageRequest(run.id(), "reply", store.get(run.id()).version(), "仅根据提供资料整理"), "owner");
-        var resumed = store.claim(4);
+        var resumed = store.claim();
         adapter(gateway).execute(run.id(), resumed.ownerToken());
         assertEquals("COMPLETED", store.get(run.id()).status());
         verify(gateway, times(2)).executeAgentApi(any());
@@ -729,7 +870,7 @@ class AgentWorkbenchServiceTest {
     @Test
     void modelReportCannotClaimCodeAndActualTestArtifactsExist() {
         var run = inspectionRun(List.of("REPORT", "CHANGE_SET", "TEST_REPORT"));
-        var claim = store.claim(4);
+        var claim = store.claim();
         var gateway = mock(AiGatewayClient.class);
         when(gateway.executeAgentApi(any())).thenReturn(answer("{\"type\":\"RESULT\",\"plan\":\"完成\",\"summary\":\"声称已经编码并测试\"}"));
         adapter(gateway).execute(run.id(), claim.ownerToken());
@@ -741,7 +882,7 @@ class AgentWorkbenchServiceTest {
     void savedNativeResultUsesSameArtifactAcceptanceGate() {
         providers.getEnabledById(1L).setChannelType("CLI");
         var run = inspectionRun(List.of("REPORT", "CHANGE_SET", "TEST_REPORT"));
-        var claim = store.claim(4);
+        var claim = store.claim();
         store.beginNative(run.id(), claim.ownerToken(), "cli:acceptance", "fixture-host");
         store.endNative(run.id(), claim.ownerToken(), "cli:acceptance", nativeResult("RESULT", "声称代码测试全部完成"));
         assertTrue(store.finishSavedNative(run.id(), claim.ownerToken()));
@@ -757,7 +898,7 @@ class AgentWorkbenchServiceTest {
     @Test
     void malformedModelOutputHasBoundedCorrectionAndCannotExecuteHiddenTools() {
         var run = inspectionRun(List.of("REPORT"));
-        var claim = store.claim(4);
+        var claim = store.claim();
         var gateway = mock(AiGatewayClient.class);
         when(gateway.executeAgentApi(any())).thenReturn(answer("{\"type\":\"RESULT\",\"plan\":\"完成\",\"summary\":\"报告\"} {\"tool\":\"shell\"}"));
         adapter(gateway).execute(run.id(), claim.ownerToken());
@@ -768,13 +909,13 @@ class AgentWorkbenchServiceTest {
     @Test
     void cancellationAndBudgetAreCheckedBeforeNextExternalAction() {
         var run = inspectionRun(List.of("REPORT"));
-        var claim = store.claim(4);
+        var claim = store.claim();
         service.cancel(run.taskId(), run.id(), claim.version(), "owner");
         assertThrows(AgentRunStore.StopRequested.class, () -> store.beginModel(run.id(), claim.ownerToken(), Map.of()));
         store.finish(run.id(), claim.ownerToken(), "FAILED", null, "stopped");
         assertEquals("CANCELLED", store.get(run.id()).status());
         var second = inspectionRun(List.of("REPORT"));
-        var secondClaim = store.claim(4);
+        var secondClaim = store.claim();
         store.heartbeat(second.id(), secondClaim.ownerToken(), 60001);
         assertThrows(AgentRunStore.BudgetExceeded.class, () -> store.beginModel(second.id(), secondClaim.ownerToken(), Map.of()));
     }
@@ -797,7 +938,7 @@ class AgentWorkbenchServiceTest {
         var agent = enabledAgent();
         var task = service.createTask(agent.id(), taskRequest("guide", true), "owner");
         var run = service.runs(task.id(), "owner", 1, 20).items().getFirst();
-        var claim = store.claim(4);
+        var claim = store.claim();
         var gateway = mock(AiGatewayClient.class);
         List<String> prompts = new CopyOnWriteArrayList<>();
         when(gateway.executeAgentApi(any())).thenAnswer(invocation -> {
@@ -812,9 +953,27 @@ class AgentWorkbenchServiceTest {
         var fallbackAdapter = new AgentApiExecutionAdapter(store, new AgentToolData(json), gateway, promptTemplates(),
                 promptRenderer(), new AgentPlatformGuide(configs), json);
         var second = service.run(task.id(), new AgentRunRequest("guide-second", 0L), "owner");
-        var claim2 = store.claim(4);
+        var claim2 = store.claim();
         fallbackAdapter.execute(second.id(), claim2.ownerToken());
         assertTrue(prompts.getLast().contains("未配置平台数据指南"));
+    }
+
+    @Test
+    void apiPromptRequiresEli5SummaryReport() {
+        var agent = enabledAgent();
+        var task = service.createTask(agent.id(), taskRequest("eli5", true), "owner");
+        var run = service.runs(task.id(), "owner", 1, 20).items().getFirst();
+        var claim = store.claim();
+        var gateway = mock(AiGatewayClient.class);
+        List<String> prompts = new CopyOnWriteArrayList<>();
+        when(gateway.executeAgentApi(any())).thenAnswer(invocation -> {
+            prompts.add(((cn.aslight.workhub.service.ai.AiAgentApiRequest) invocation.getArgument(0)).prompt());
+            return answer("{\"type\":\"RESULT\",\"plan\":\"完成\",\"summary\":\"报告\"}");
+        });
+        adapter(gateway).execute(run.id(), claim.ownerToken());
+        assertEquals("COMPLETED", store.get(run.id()).status());
+        assertTrue(prompts.getFirst().contains("ELI5"));
+        assertTrue(prompts.getFirst().contains("先说结论"));
     }
 
     private AgentApiExecutionAdapter adapter(AiGatewayClient gateway) {
@@ -833,7 +992,7 @@ class AgentWorkbenchServiceTest {
     void nativeCliUsesWholeTaskAndRealProcessWithPlatformMcpWithoutModelStepProtocol() {
         providers.getEnabledById(1L).setChannelType("CLI");
         var run = inspectionRun(List.of("REPORT"));
-        var claim = store.claim(4);
+        var claim = store.claim();
         nativeAdapter("normal").execute(run.id(), claim.ownerToken());
         assertEquals("COMPLETED", store.get(run.id()).status());
         assertNull(store.get(run.id()).externalHandle());
@@ -843,7 +1002,7 @@ class AgentWorkbenchServiceTest {
 
     @Test
     @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "workhub.test.zcode.command", matches = ".+")
-    void installedZcodeCompletesTaskWithPlatformMcpAllowlist(@org.junit.jupiter.api.io.TempDir Path directory) throws Exception {
+    void installedZcodeCompletesTaskWithNativeToolsAndPlatformMcp(@org.junit.jupiter.api.io.TempDir Path directory) throws Exception {
         var server = com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 8);
         var requests = new CopyOnWriteArrayList<JsonNode>();
         var failure = new java.util.concurrent.atomic.AtomicReference<Throwable>();
@@ -855,7 +1014,9 @@ class AgentWorkbenchServiceTest {
                     requests.add(request);
                     assertEquals("glm-4.6", request.path("model").asText());
                     assertTrue(request.path("messages").toString().contains("主动巡检"));
-                    var delta = Map.of("role", "assistant", "content", "{\"type\":\"RESULT\",\"summary\":\"按职责描述整理的巡检报告\"}");
+                    var reportResult = AgentReportContractTest.fixture();
+                    ((tools.jackson.databind.node.ObjectNode)reportResult.path("report")).put("conclusion", "按职责描述整理的巡检报告");
+                    var delta = Map.of("role", "assistant", "content", reportResult.toString());
                     exchange.getResponseHeaders().set("Content-Type", "text/event-stream");
                     exchange.sendResponseHeaders(200, 0);
                     for (var chunk : List.of(Map.of("index", 0, "delta", delta), Map.of("index", 0, "delta", Map.of(), "finish_reason", "stop"))) {
@@ -885,20 +1046,29 @@ class AgentWorkbenchServiceTest {
             service.setEnabled(agent.id(), agent.version(), true, "owner");
             var specification = new AgentTaskSpecification("主动巡检", "", "返回证据", List.of("REPORT"), List.of(testScope));
             var task = service.createTask(agent.id(), new AgentTaskCreateRequest("zcode-actual", specification, manual(), true), "owner");
-            var claim = store.claim(4);
-            var runtime = mock(cn.aslight.workhub.service.mcp.McpRuntimeService.class);
-            when(runtime.toolNames()).thenReturn(List.of("list_mcp_targets", "run_readonly_query"));
+            var claim = store.claim();
             var properties = new cn.aslight.workhub.config.McpProperties();
             properties.setAccessToken("test-mcp-token");
             var adapter = new AgentNativeCliAdapter(store, new AgentToolData(json), providers,
                     promptTemplates(), promptRenderer(), platformGuide(),
-                    List.of(new ZCodeAgentCliProtocol(new cn.aslight.workhub.service.ai.ZCodeCliClient(json), runtime)),
-                    json, properties, "", "8080", mcpStubUrl());
+                    List.of(new ZCodeAgentCliProtocol(new cn.aslight.workhub.service.ai.ZCodeCliClient(json) {
+                        @Override public cn.aslight.workhub.service.ai.CliTaskLaunch prepareAgent(AiProviderConfigEntity p, String model, String reasoning, Path dir, Path output,
+                                String prompt, String url, String token, String schema) throws java.io.IOException {
+                            var launch = super.prepareAgent(p, model, reasoning, dir, output, prompt, url, token, schema);
+                            Path home = java.nio.file.Files.createDirectories(dir.resolve("fixture-home"));
+                            Path config = java.nio.file.Files.createDirectories(home.resolve(".zcode/cli")).resolve("config.json");
+                            java.nio.file.Files.writeString(config, "{\"features\":{\"memory\":false},\"memory\":{\"use\":false}}");
+                            launch.builder().environment().put("HOME", home.toString());
+                            launch.builder().environment().put("ZCODE_DATA_BASE_DIR", home.toString());
+                            return launch;
+                        }
+                    })),
+                    json, properties, "", "8080", mcpStubUrl(), mock(AgentNativeDeliveryService.class));
             adapter.execute(claim.id(), claim.ownerToken());
             assertNull(failure.get(), () -> "本机模型桩失败：" + failure.get());
             var detail = service.runDetail(task.id(), claim.id(), "owner");
             assertEquals("COMPLETED", detail.run().status());
-            assertEquals(1, requests.size());
+            assertEquals(1, requests.size(), "隔离原生记忆后，报告不应产生额外整理请求");
             assertNull(store.get(claim.id()).externalHandle());
             assertEquals(1, mapper.listArtifacts(claim.id()).size());
             assertTrue(mapper.listArtifacts(claim.id()).getFirst().payloadJson().contains("按职责描述整理的巡检报告"));
@@ -909,7 +1079,7 @@ class AgentWorkbenchServiceTest {
     void cancellingNativeCliStopsActualProcessBeforeClaimingCancellationComplete() throws Exception {
         providers.getEnabledById(1L).setChannelType("CLI");
         var run = inspectionRun(List.of("REPORT"));
-        var claim = store.claim(4);
+        var claim = store.claim();
         try (var pool = Executors.newVirtualThreadPerTaskExecutor()) {
             var running = pool.submit(() -> nativeAdapter("hang").execute(run.id(), claim.ownerToken()));
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
@@ -935,7 +1105,7 @@ class AgentWorkbenchServiceTest {
     @Test
     void inputArrivingDuringModelCallInvalidatesItsOldFinalAnswer() {
         var run = inspectionRun(List.of("REPORT"));
-        var claim = store.claim(4);
+        var claim = store.claim();
         var gateway = mock(AiGatewayClient.class);
         var calls = new AtomicInteger();
         when(gateway.executeAgentApi(any())).thenAnswer(invocation -> {
@@ -954,7 +1124,7 @@ class AgentWorkbenchServiceTest {
     @Test
     void cliIsStoppedBeforeReplanningWithNewInstructions() throws Exception {
         providers.getEnabledById(1L).setChannelType("CLI");
-        var run = inspectionRun(List.of("REPORT")); var claim = store.claim(4); var attempts = new AtomicInteger();
+        var run = inspectionRun(List.of("REPORT")); var claim = store.claim(); var attempts = new AtomicInteger();
         try (var pool = Executors.newVirtualThreadPerTaskExecutor()) {
             var running = pool.submit(() -> nativeAdapter(() -> attempts.incrementAndGet() == 1 ? "hang" : "expect-new-input").execute(run.id(), claim.ownerToken()));
             JsonNode handle = null; long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
@@ -977,13 +1147,13 @@ class AgentWorkbenchServiceTest {
     @Test
     void recoveredCliQuestionIsConsumedOnceAndHumanReplyStartsTheNextTask() {
         providers.getEnabledById(1L).setChannelType("CLI");
-        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim();
         store.beginNative(run.id(), old.ownerToken(), "cli:question", "fixture-host");
         store.endNative(run.id(), old.ownerToken(), "cli:question", nativeResult("NEEDS_INPUT", "请补充时间窗口"));
-        expire(run.id()); store.recoverExpired(run.id()); var next = store.claim(4);
+        expire(run.id()); store.recoverExpired(run.id()); var next = store.claim();
         assertTrue(store.finishSavedNative(run.id(), next.ownerToken())); assertEquals("WAITING_INPUT", store.get(run.id()).status());
         service.message(run.taskId(), new AgentMessageRequest(run.id(), "answer-question", store.get(run.id()).version(), "查询最近一小时"), "owner");
-        var resumed = store.claim(4); nativeAdapter("normal").execute(run.id(), resumed.ownerToken());
+        var resumed = store.claim(); nativeAdapter("normal").execute(run.id(), resumed.ownerToken());
         assertEquals("COMPLETED", store.get(run.id()).status());
         assertEquals(2, store.events(run.id()).stream().filter(event -> "CLI_REQUEST".equals(event.kind())).count());
     }
@@ -1017,14 +1187,14 @@ class AgentWorkbenchServiceTest {
         var properties = new cn.aslight.workhub.config.McpProperties();
         properties.setAccessToken("test-mcp-token");
         return new AgentNativeCliAdapter(store, new AgentToolData(json), providers, promptTemplates(), promptRenderer(), platformGuide(),
-                List.of(protocol), json, properties, "", "8080", mcpStubUrl());
+                List.of(protocol), json, properties, "", "8080", mcpStubUrl(), mock(AgentNativeDeliveryService.class));
     }
 
     private AiGatewayResult answer(String output) { return AiGatewayResult.succeeded(output, "configured", "first-model", 10); }
     @Test
     void changingProviderChannelOrVersionCannotSilentlySwitchAnExistingTaskToCli() {
         var run = inspectionRun(List.of("REPORT"));
-        var claim = store.claim(4);
+        var claim = store.claim();
         providers.getEnabledById(1L).setChannelType("CLI");
         assertThrows(IllegalStateException.class, () -> store.requireActive(run.id(), claim.ownerToken()));
         providers.getEnabledById(1L).setChannelType("API");
@@ -1055,6 +1225,49 @@ class AgentWorkbenchServiceTest {
     }
 
     @Test
+    void largeNativeReportAndRecoveryEvidenceSurviveStorageWithoutTruncation() {
+        var run = inspectionRun(List.of("REPORT"));
+        var claim = store.claim();
+        String summary = "这是完整报告，保留所有事实。".repeat(12000);
+        String original = json.writeValueAsString(Map.of("type", "RESULT", "summary", summary));
+        store.beginNative(run.id(), claim.ownerToken(), "cli:large", "fixture-host");
+        store.record(run.id(), claim.ownerToken(), "cli:large:raw", "CLI_RAW_RESULT", Map.of("text", original));
+        assertEquals(original, store.recoverableNativeResult(run.id()));
+        store.endNative(run.id(), claim.ownerToken(), "cli:large", nativeResult("RESULT", summary));
+        assertTrue(store.finishSavedNative(run.id(), claim.ownerToken()));
+        assertEquals(summary, store.get(run.id()).resultText());
+        assertEquals(summary, json.readTree(mapper.findEventByKey(run.id(), "cli:large:result").payloadJson()).path("result").path("summary").asText());
+    }
+
+    @Test
+    void retryCarriesSavedOriginalOnceAndDoesNotUseChangedInstructions() {
+        var run = inspectionRun(List.of("REPORT"));
+        var claim = store.claim();
+        String original = "完整原文".repeat(16000);
+        store.beginNative(run.id(), claim.ownerToken(), "cli:format", "fixture-host");
+        store.record(run.id(), claim.ownerToken(), "cli:format:raw", "CLI_RAW_RESULT", Map.of("text", original));
+        store.endNative(run.id(), claim.ownerToken(), "cli:format", Map.of("processTreeStopped", true, "resultAvailable", false));
+        store.finish(run.id(), claim.ownerToken(), "FAILED", null, "结果整理失败");
+        var failed = store.get(run.id());
+        var request = new AgentRunRequest("format-only", failed.version());
+        var next = service.retry(run.taskId(), run.id(), request, "owner");
+        assertEquals(original, store.recoverableNativeResult(next.id()));
+        assertEquals(next.id(), service.retry(run.taskId(), run.id(), request, "owner").id());
+        assertEquals(1, mapper.listEvents(next.id()).stream().filter(e -> "CLI_FORMAT_RECOVERY".equals(e.kind())).count());
+        jdbc.update("INSERT INTO pm_agent_event(id,run_id,event_key,ordinal,kind,payload_json,actor,created_at) VALUES (?,?,?,?,?,?,?,?)",
+                UUID.randomUUID().toString(), next.id(), "new-instruction", 999, "HUMAN_INPUT", "{}", "owner", LocalDateTime.now(clock));
+        assertNull(store.recoverableNativeResult(next.id()));
+    }
+
+    @Test
+    void inputArrivingBeforeRawPersistenceInvalidatesRecovery() {
+        var events = List.of(
+                new AgentEventEntity("i", "r", "input", 2L, "HUMAN_INPUT", "{}", "owner", LocalDateTime.now(clock)),
+                new AgentEventEntity("s", "r", "raw", 3L, "CLI_RAW_RESULT", json.writeValueAsString(Map.of("text", "旧结果", "inputThroughOrdinal", 1)), "runtime", LocalDateTime.now(clock)));
+        assertNull(AgentRunStore.recoverableNativeEvent(events, json));
+    }
+
+    @Test
     void retryCannotDuplicateUnreconciledExternalWork() {
         var agent = enabledAgent();
         var task = service.createTask(agent.id(), taskRequest("retry-unknown", true), "owner");
@@ -1080,7 +1293,7 @@ class AgentWorkbenchServiceTest {
         assertNull(store.event(run.id(), "step:1:tool:result"));
         assertTrue(mapper.listArtifacts(run.id()).isEmpty());
         assertEquals("MANUAL_RECONCILIATION_HANDLED", store.event(run.id(), "step:1:handled").kind());
-        var next = store.claim(4);
+        var next = store.claim();
         var gateway = mock(AiGatewayClient.class);
         when(gateway.executeAgentApi(any())).thenAnswer(invocation -> {
             String prompt = ((cn.aslight.workhub.service.ai.AiAgentApiRequest) invocation.getArgument(0)).prompt();
@@ -1110,7 +1323,7 @@ class AgentWorkbenchServiceTest {
 
     @Test
     void manualReconciliationRefusesActiveLeaseWrongTaskAndUnauthorizedActor() {
-        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim();
         store.beginModel(run.id(), old.ownerToken(), Map.of());
         var live = reconciliation.preview(run.taskId(), run.id(), "owner");
         assertFalse(live.canReconcile());
@@ -1162,7 +1375,7 @@ class AgentWorkbenchServiceTest {
             result = futures.getFirst().get(5, TimeUnit.SECONDS);
             for (var future : futures) assertEquals(result, future.get(5, TimeUnit.SECONDS));
         }
-        store.claim(4);
+        store.claim();
         assertEquals(result, reconciliation.reconcile(run.taskId(), run.id(), request, "owner"));
         assertEquals(1, store.events(run.id()).stream().filter(event -> "MANUAL_RECONCILIATION".equals(event.kind())).count());
         assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM pm_agent_audit WHERE action='MANUAL_RECONCILIATION'", Integer.class));
@@ -1198,7 +1411,7 @@ class AgentWorkbenchServiceTest {
         assertEquals("CANCELLED", reconciliation.reconcile(run.taskId(), run.id(), resolution(view, "cancel-final", "CANCEL"), "owner").status());
         assertTrue(store.get(run.id()).cancelRequested());
         assertEquals(0, mapper.countOwnedRuns(null, LocalDateTime.now(clock)));
-        assertNull(store.claim(4));
+        assertNull(store.claim());
     }
 
     @Test
@@ -1211,8 +1424,8 @@ class AgentWorkbenchServiceTest {
         assertThrows(IllegalStateException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(changed, "provider-change", "RESUME"), "owner"));
         provider.setChannelType("API");
         var agent = service.detail(run.agentId(), "owner");
-        service.update(agent.id(), new AgentSaveRequest(agent.version(), new AgentConfiguration("变更范围", "巡检", 1L,
-                "first-model", List.of(), 20, 60, 2)), "owner");
+        service.update(agent.id(), new AgentSaveRequest(agent.version(), new AgentConfiguration("变更范围","OPS", "巡检", 1L,
+                "first-model", List.of(new AgentScope("BL000012", "PROD")), 20, 60, 2)), "owner");
         var scopeChanged = reconciliation.preview(run.taskId(), run.id(), "owner");
         assertThrows(AccessDeniedException.class, () -> reconciliation.reconcile(run.taskId(), run.id(), resolution(scopeChanged, "scope-change", "RESUME"), "owner"));
         agent = service.detail(run.agentId(), "owner");
@@ -1227,7 +1440,7 @@ class AgentWorkbenchServiceTest {
     @Test
     void cliRequiresExactChecksAndCannotClaimAStartedCliWasNeverStarted() {
         providers.getEnabledById(1L).setChannelType("CLI");
-        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim();
         store.beginNative(run.id(), old.ownerToken(), "cli:manual", "fixture-host");
         store.nativeStarted(run.id(), old.ownerToken(), "cli:manual", 789, "2026-11-03T17:59:50Z");
         expire(run.id()); store.recoverExpired(run.id());
@@ -1250,7 +1463,7 @@ class AgentWorkbenchServiceTest {
     @Test
     void liveCliBlocksReconciliationEvenWhenLeaseExpiredAndFormWasAlreadyRead() {
         providers.getEnabledById(1L).setChannelType("CLI");
-        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim();
         store.beginNative(run.id(), old.ownerToken(), "cli:alive", "fixture-host");
         expire(run.id()); store.recoverExpired(run.id());
         var view = reconciliation.preview(run.taskId(), run.id(), "owner");
@@ -1367,14 +1580,14 @@ class AgentWorkbenchServiceTest {
     }
 
     private AgentRunEntity unknownApi() {
-        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim();
         store.beginModel(run.id(), old.ownerToken(), Map.of());
         expire(run.id()); store.recoverExpired(run.id());
         return store.get(run.id());
     }
 
     private AgentRunEntity unknownTool() {
-        var run = inspectionRun(List.of("REPORT")); var old = store.claim(4);
+        var run = inspectionRun(List.of("REPORT")); var old = store.claim();
         int step = store.beginModel(run.id(), old.ownerToken(), Map.of());
         store.endModel(run.id(), old.ownerToken(), step, Map.of("succeeded", true));
         // 历史运行可能仍持有工具调用句柄；对账按原样识别 TOOL 句柄而不重放调用。
@@ -1397,7 +1610,7 @@ class AgentWorkbenchServiceTest {
     private void expire(String runId) { jdbc.update("UPDATE pm_agent_run SET lease_until='2026-11-03 17:59:00' WHERE id=?", runId); }
 
     private AgentConfiguration config(String name, String model) {
-        return new AgentConfiguration(name, "按分派目标执行", 1L, model, List.of(testScope), 20, 60, 2);
+        return new AgentConfiguration(name,"OPS", "按分派目标执行", 1L, model, List.of(testScope), 20, 60, 2);
     }
 
     private AgentTaskCreateRequest taskRequest(String key, boolean immediate) {

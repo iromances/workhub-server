@@ -8,7 +8,8 @@ import java.util.List;
  * REQ-9f3c2a84：Function Call 场景 SQL 种子。模板文本取自改造前 XxlJobMonitorCollector /
  * MqMonitorCollector 的在用 SQL 文本块（%n$s/%n$d 逐位替换为 :name 命名参数，MQ 分支保持
  * stripTrailing 语义）；由 FuncCallSchemaInitializer 幂等回写，页面维护后以库内定义优先。
- * 本文件由生成脚本产出，请勿手改模板内容；新增场景请走页面登记或补充种子后重新校验等价性。
+ * REQ-d227e09d：账务扫表对账下线，OPS_ACC_* 29 条种子移除（库内模板由迁移停用留档），
+ * 账务场景计数 SQL 改经页面登记（占位模板见 V20261118_210000 迁移）。
  */
 public final class FuncCallSqlSeeds {
 

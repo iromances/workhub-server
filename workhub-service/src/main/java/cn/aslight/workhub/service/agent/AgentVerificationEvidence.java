@@ -76,7 +76,7 @@ public class AgentVerificationEvidence {
             switch (check.toolCode()) {
                 case "monitor.business.status" -> {
                     sourceKey += ":" + positive(selected, "id");
-                    // 现有业务监测结果没有固定的执行范围；updatedAt 在每次采集时也变化，不能冒充配置版本。
+                    // 现有服务监测结果没有固定的执行范围；updatedAt 在每次采集时也变化，不能冒充配置版本。
                     problems.add("EXECUTION_SCOPE_UNVERIFIED");
                     if (!selected.path("enabled").asBoolean() || !"HAS_RESULT".equals(selected.path("dataState").asText())
                             || !"XXL_JOB".equals(selected.path("type").asText())) problems.add("MONITOR_NOT_EVALUATED");
@@ -143,7 +143,7 @@ public class AgentVerificationEvidence {
                                 || definition.monitorId() != selected.path("id").asLong()
                                 || !definition.businessLineCode().equals(selected.path("businessLineCode").asText())
                                 || !definition.environmentCode().equals(selected.path("environmentCode").asText()))
-                            throw new IllegalArgumentException("业务监测执行凭据的来源、范围或摘要不一致");
+                            throw new IllegalArgumentException("服务监测执行凭据的来源、范围或摘要不一致");
                         if (!definition.enabled() || !"XXL_JOB".equals(definition.monitorType())) problems.add("MONITOR_NOT_EVALUATED");
                         if (proof.startedAt() == null || proof.finishedAt() == null || proof.startedAt().isBefore(deployedAt)
                                 || proof.finishedAt().isBefore(proof.startedAt()) || proof.finishedAt().isAfter(observedAt))

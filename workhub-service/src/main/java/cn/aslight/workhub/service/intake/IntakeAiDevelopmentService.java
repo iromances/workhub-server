@@ -19,13 +19,15 @@ import cn.aslight.workhub.service.system.SysConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -53,7 +55,8 @@ public class IntakeAiDevelopmentService {
     private final AgentWorkbenchService agentWorkbenchService;
     private final SysConfigService sysConfigService;
     private final ObjectMapper objectMapper;
-    private final org.springframework.core.task.TaskExecutor taskExecutor;
+    private final TaskExecutor taskExecutor;
+    private final TransactionTemplate transaction;
 
     public IntakeAiDevelopmentService(IntakeMapper intakeMapper,
                                       IntakeAiDevelopmentMapper aiDevelopmentMapper,
@@ -62,7 +65,8 @@ public class IntakeAiDevelopmentService {
                                       AgentWorkbenchService agentWorkbenchService,
                                       SysConfigService sysConfigService,
                                       ObjectMapper objectMapper,
-                                      @Qualifier("workhubTaskExecutor") org.springframework.core.task.TaskExecutor taskExecutor) {
+                                      @Qualifier("workhubTaskExecutor") TaskExecutor taskExecutor,
+                                      PlatformTransactionManager transactionManager) {
         this.intakeMapper = intakeMapper;
         this.aiDevelopmentMapper = aiDevelopmentMapper;
         this.developmentAnalysisMapper = developmentAnalysisMapper;
@@ -71,56 +75,16 @@ public class IntakeAiDevelopmentService {
         this.sysConfigService = sysConfigService;
         this.objectMapper = objectMapper;
         this.taskExecutor = taskExecutor;
+        this.transaction = new TransactionTemplate(transactionManager);
+        this.transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
-    /**
-     * 设计完成后在事务提交后触发；阶段推进失败不影响已提交的阶段状态。
-     */
+    /** 设计完成已提交，另开事务保存执行状态，提交后再交给后台线程。 */
     public void triggerAfterDesignConfirmed(Long intakeId, String operatorUserName) {
-        log.info("AI development trigger received after design confirmed. intakeId={}, operator={}", intakeId, operatorUserName);
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    schedule(intakeId, operatorUserName);
-                }
-            });
-        } else {
-            schedule(intakeId, operatorUserName);
-        }
-    }
-
-    public IntakeAiDevelopmentResponse detail(Long intakeId) {
-        IntakeAiDevelopmentEntity entity = aiDevelopmentMapper.findByIntakeId(intakeId);
-        return entity == null ? null : toResponse(entity);
-    }
-
-    /**
-     * 失败后人工重试：沿用同一需求与配置重新发起 Agent 任务。
-     */
-    public IntakeAiDevelopmentResponse retry(Long intakeId, String operatorUserName) {
-        IntakeAiDevelopmentEntity entity = aiDevelopmentMapper.findByIntakeId(intakeId);
-        if (entity == null) {
-            throw new IllegalArgumentException("当前需求尚未触发 AI 开发");
-        }
-        if (!STATUS_FAILED.equals(entity.getExecutionStatus())) {
-            throw new IllegalArgumentException("仅失败的 AI 开发允许重试");
-        }
-        entity.setExecutionStatus(STATUS_PENDING);
-        entity.setExecutionMessage(null);
-        entity.setUpdatedBy(operatorUserName);
-        aiDevelopmentMapper.updateByIntakeId(entity);
-        taskExecutor.execute(() -> start(intakeId, operatorUserName));
-        return detail(intakeId);
-    }
-
-    private void schedule(Long intakeId, String operatorUserName) {
-        try {
-            // 表按 intake_id 唯一：再次触发（如阶段回退后重新设计完成）时重置原记录
-            IntakeAiDevelopmentEntity existing = aiDevelopmentMapper.findByIntakeId(intakeId);
-            log.info("AI development scheduling. intakeId={}, existing={}", intakeId, existing != null ? existing.getExecutionStatus() : "none");
-            if (existing == null) {
-                IntakeAiDevelopmentEntity entity = new IntakeAiDevelopmentEntity();
+        transaction.executeWithoutResult(status -> {
+            IntakeAiDevelopmentEntity entity = aiDevelopmentMapper.lockByIntakeId(intakeId);
+            if (entity == null) {
+                entity = new IntakeAiDevelopmentEntity();
                 entity.setIntakeId(intakeId);
                 entity.setRequestKey("intake-dev-" + intakeId);
                 entity.setExecutionStatus(STATUS_PENDING);
@@ -128,77 +92,139 @@ public class IntakeAiDevelopmentService {
                 entity.setUpdatedBy(operatorUserName);
                 aiDevelopmentMapper.insert(entity);
             } else {
-                existing.setDevelopmentBranch(null);
-                existing.setAgentId(null);
-                existing.setAgentTaskId(null);
-                existing.setExecutionStatus(STATUS_PENDING);
-                existing.setExecutionMessage(null);
-                existing.setUpdatedBy(operatorUserName);
-                aiDevelopmentMapper.updateByIntakeId(existing);
+                entity.setDevelopmentBranch(null);
+                entity.setAgentId(null);
+                entity.setAgentTaskId(null);
+                resetPending(entity, operatorUserName);
             }
+        });
+        submit(intakeId, operatorUserName);
+    }
+
+    public IntakeAiDevelopmentResponse detail(Long intakeId) {
+        IntakeAiDevelopmentEntity entity = aiDevelopmentMapper.findByIntakeId(intakeId);
+        return entity == null ? null : toResponse(entity);
+    }
+
+    public void validateBeforeDesignConfirmed(Long intakeId, String user) {
+        var intake = intakeMapper.findById(intakeId);
+        if (intake == null) throw new IllegalArgumentException("需求不存在");
+        String agentId = firstNonBlank(trimToNull(intake.getAiAgentId()),
+                trimToNull(sysConfigService.findPlainValue(CONFIG_GROUP, CONFIG_KEY_AGENT_ID)));
+        if (agentId == null) throw new IllegalArgumentException("还没有指定负责开发的数字员工，请先选择数字员工再确认设计完成");
+        String environment = firstNonBlank(trimToNull(sysConfigService.findPlainValue(CONFIG_GROUP, CONFIG_KEY_ENVIRONMENT_CODE)), "TEST");
+        agentWorkbenchService.requireAssignable(agentId, List.of(new AgentScope(requireBusinessLineCode(intake), environment)), user);
+    }
+
+    /** 失败或待执行且无关联任务时，可在开发中直接重试。 */
+    public IntakeAiDevelopmentResponse retry(Long intakeId, String operatorUserName) {
+        transaction.executeWithoutResult(status -> {
+            requireDevelopmentIntake(intakeId);
+            IntakeAiDevelopmentEntity entity = aiDevelopmentMapper.lockByIntakeId(intakeId);
+            if (entity == null) {
+                throw new IllegalArgumentException("当前需求尚未触发 AI 开发");
+            }
+            if (STATUS_FAILED.equals(entity.getExecutionStatus())) {
+                resetPending(entity, operatorUserName);
+            } else if (!STATUS_PENDING.equals(entity.getExecutionStatus()) || entity.getAgentTaskId() != null) {
+                throw new IllegalArgumentException("仅失败或尚未创建任务的待执行记录允许重试");
+            }
+        });
+        submit(intakeId, operatorUserName);
+        return detail(intakeId);
+    }
+
+    private void resetPending(IntakeAiDevelopmentEntity entity, String operatorUserName) {
+        entity.setExecutionStatus(STATUS_PENDING);
+        entity.setExecutionMessage(null);
+        entity.setUpdatedBy(operatorUserName);
+        aiDevelopmentMapper.updateByIntakeId(entity);
+    }
+
+    private void submit(Long intakeId, String operatorUserName) {
+        try {
             taskExecutor.execute(() -> start(intakeId, operatorUserName));
-        } catch (Exception ex) {
-            log.warn("AI development scheduling failed for intake {}", intakeId, ex);
+        } catch (TaskRejectedException ex) {
+            markFailed(intakeId, operatorUserName, "后台任务队列暂不可用，请重试", ex);
         }
     }
 
     private void start(Long intakeId, String operatorUserName) {
-        IntakeAiDevelopmentEntity entity = aiDevelopmentMapper.findByIntakeId(intakeId);
-        if (entity == null || !STATUS_PENDING.equals(entity.getExecutionStatus())) {
-            return;
-        }
         try {
-            IntakeRecordEntity intake = intakeMapper.findById(intakeId);
-            if (intake == null) {
-                throw new IllegalArgumentException("需求不存在：" + intakeId);
-            }
-            String branch = trimToNull(intake.getDevelopmentBranchName());
-            if (branch == null) {
-                throw new IllegalArgumentException("需求未设置研发分支，无法启动 AI 开发");
-            }
-            DevelopmentAnalysisDraft draft = readConfirmedDraft(intakeId);
-            if (draft == null || draft.workItems() == null || draft.workItems().isEmpty()) {
-                throw new IllegalArgumentException("需求没有已确认的任务拆解，无法启动 AI 开发");
-            }
-            String agentId = trimToNull(sysConfigService.findPlainValue(CONFIG_GROUP, CONFIG_KEY_AGENT_ID));
-            if (agentId == null) {
-                throw new IllegalArgumentException("未配置 AI 开发 Agent（系统配置 intake.aiDevelopment.agentId）");
-            }
-            String environmentCode = firstNonBlank(
-                    trimToNull(sysConfigService.findPlainValue(CONFIG_GROUP, CONFIG_KEY_ENVIRONMENT_CODE)), "TEST");
-
-            AgentTaskSpecification specification = new AgentTaskSpecification(
-                    "按已确认任务拆解在研发分支 " + branch + " 完成需求开发",
-                    buildContext(intake, draft, branch),
-                    "全部任务项完成开发并自测通过，代码交付到研发分支 " + branch,
-                    List.of("CHANGE_SET"),
-                    List.of(new AgentScope(requireBusinessLineCode(intake), environmentCode))
-            );
-            AgentTaskCreateRequest request = new AgentTaskCreateRequest(
-                    "intake-dev-" + intakeId,
-                    specification,
-                    new AgentScheduleRequest(0L, "MANUAL", null, ZoneId.systemDefault().getId(), "SKIP", true),
-                    true
-            );
-            AgentTaskResponse task = agentWorkbenchService.createTask(agentId, request, operatorUserName);
-
-            entity.setDevelopmentBranch(branch);
-            entity.setAgentId(agentId);
-            entity.setAgentTaskId(task.id());
-            entity.setExecutionStatus(STATUS_SUCCEEDED);
-            entity.setExecutionMessage("已创建并启动 Agent 开发任务");
-            entity.setUpdatedBy(operatorUserName);
-            aiDevelopmentMapper.updateByIntakeId(entity);
-            log.info("AI development agent task started. intakeId={}, agentTaskId={}, branch={}", intakeId, task.id(), branch);
+            transaction.executeWithoutResult(status -> startLocked(intakeId, operatorUserName));
         } catch (Exception ex) {
             String message = ex.getMessage() == null || ex.getMessage().isBlank()
                     ? ex.getClass().getSimpleName() : ex.getMessage();
-            log.warn("AI development start failed for intake {}", intakeId, ex);
-            entity.setExecutionStatus(STATUS_FAILED);
-            entity.setExecutionMessage(message.length() > 500 ? message.substring(0, 500) : message);
-            entity.setUpdatedBy(operatorUserName);
-            aiDevelopmentMapper.updateByIntakeId(entity);
+            markFailed(intakeId, operatorUserName, message, ex);
         }
+    }
+
+    private void markFailed(Long intakeId, String operatorUserName, String message, Exception ex) {
+        log.warn("AI development start failed for intake {}", intakeId, ex);
+        String summary = message.length() > 500 ? message.substring(0, 500) : message;
+        transaction.executeWithoutResult(status -> aiDevelopmentMapper.failPending(intakeId, summary, operatorUserName));
+    }
+
+    private IntakeRecordEntity requireDevelopmentIntake(Long intakeId) {
+        IntakeRecordEntity intake = intakeMapper.findById(intakeId);
+        if (intake == null) {
+            throw new IllegalArgumentException("需求不存在：" + intakeId);
+        }
+        if (!IntakeDemandStatusRules.IN_DEVELOPMENT.equals(IntakeDemandStatusRules.resolve(intake, readStructuredDataOrNull(intake)))) {
+            throw new IllegalArgumentException("仅开发中的需求可以启动 AI 开发");
+        }
+        return intake;
+    }
+
+    private void startLocked(Long intakeId, String operatorUserName) {
+        IntakeAiDevelopmentEntity entity = aiDevelopmentMapper.lockByIntakeId(intakeId);
+        if (entity == null || !STATUS_PENDING.equals(entity.getExecutionStatus())) {
+            return;
+        }
+        IntakeRecordEntity intake = requireDevelopmentIntake(intakeId);
+        String branch = trimToNull(intake.getDevelopmentBranchName());
+        if (branch == null) {
+            throw new IllegalArgumentException("需求未设置研发分支，无法启动 AI 开发");
+        }
+        DevelopmentAnalysisDraft draft = readConfirmedDraft(intakeId);
+        if (draft == null || draft.workItems() == null || draft.workItems().isEmpty()) {
+            throw new IllegalArgumentException("需求没有已确认的任务拆解，无法启动 AI 开发");
+        }
+        // 需求录入时选择的数字员工优先；未选择回退系统配置 intake.aiDevelopment.agentId
+        String agentId = firstNonBlank(
+                trimToNull(intake.getAiAgentId()),
+                trimToNull(sysConfigService.findPlainValue(CONFIG_GROUP, CONFIG_KEY_AGENT_ID)));
+        log.info("AI development start preconditions. intakeId={}, branch={}, agentId={}, fromIntake={}",
+                intakeId, branch, agentId, trimToNull(intake.getAiAgentId()) != null);
+        if (agentId == null) {
+            throw new IllegalArgumentException("未选择 AI 开发数字员工，且系统未配置默认（intake.aiDevelopment.agentId）");
+        }
+        String environmentCode = firstNonBlank(
+                trimToNull(sysConfigService.findPlainValue(CONFIG_GROUP, CONFIG_KEY_ENVIRONMENT_CODE)), "TEST");
+
+        AgentTaskSpecification specification = new AgentTaskSpecification(
+                "按已确认任务拆解在研发分支 " + branch + " 完成需求开发",
+                buildContext(intake, draft, branch),
+                "全部任务项完成开发并自测通过，代码交付到研发分支 " + branch,
+                List.of("CHANGE_SET"),
+                List.of(new AgentScope(requireBusinessLineCode(intake), environmentCode))
+        );
+        AgentTaskCreateRequest request = new AgentTaskCreateRequest(
+                entity.getRequestKey(),
+                specification,
+                new AgentScheduleRequest(null, "MANUAL", null, ZoneId.systemDefault().getId(), "SKIP", false),
+                true
+        );
+        AgentTaskResponse task = agentWorkbenchService.createTask(agentId, request, operatorUserName);
+
+        entity.setDevelopmentBranch(branch);
+        entity.setAgentId(agentId);
+        entity.setAgentTaskId(task.id());
+        entity.setExecutionStatus(STATUS_SUCCEEDED);
+        entity.setExecutionMessage("已创建并启动 Agent 开发任务");
+        entity.setUpdatedBy(operatorUserName);
+        aiDevelopmentMapper.updateByIntakeId(entity);
+        log.info("AI development agent task started. intakeId={}, agentTaskId={}, branch={}", intakeId, task.id(), branch);
     }
 
     private String buildContext(IntakeRecordEntity intake, DevelopmentAnalysisDraft draft, String branch) {
@@ -279,14 +305,23 @@ public class IntakeAiDevelopmentService {
         Long intakeId = ((Number) target.get("intakeId")).longValue();
         Object runStatusValue = target.get("latestRunStatus");
         String runStatus = runStatusValue == null ? null : String.valueOf(runStatusValue);
-        if (!"COMPLETED".equals(runStatus) && !"FAILED".equals(runStatus) && !"CANCELLED".equals(runStatus)) {
-            return; // 尚无运行或仍在执行
-        }
+        if (runStatus == null) return;
         IntakeAiDevelopmentEntity entity = aiDevelopmentMapper.findByIntakeId(intakeId);
-        if (entity == null || !STATUS_SUCCEEDED.equals(entity.getExecutionStatus())) {
+        if (entity == null || !java.util.Objects.equals(entity.getAgentTaskId(), target.get("agentTaskId"))) return;
+        boolean recovered = STATUS_FAILED.equals(entity.getExecutionStatus())
+                && !"FAILED".equals(runStatus) && !"CANCELLED".equals(runStatus);
+        if (!STATUS_SUCCEEDED.equals(entity.getExecutionStatus()) && !recovered) {
             return; // 状态已被人工重试等改变，交由下一轮
         }
         entity.setUpdatedBy("system");
+        if (!"COMPLETED".equals(runStatus) && !"FAILED".equals(runStatus) && !"CANCELLED".equals(runStatus)) {
+            if (recovered) {
+                entity.setExecutionStatus(STATUS_SUCCEEDED);
+                entity.setExecutionMessage("Agent 任务已重试，等待执行完成");
+                aiDevelopmentMapper.updateByIntakeId(entity);
+            }
+            return;
+        }
         if ("COMPLETED".equals(runStatus)) {
             entity.setExecutionStatus(STATUS_COMPLETED);
             entity.setExecutionMessage("AI 自测完成，代码已交付研发分支 " + entity.getDevelopmentBranch());
