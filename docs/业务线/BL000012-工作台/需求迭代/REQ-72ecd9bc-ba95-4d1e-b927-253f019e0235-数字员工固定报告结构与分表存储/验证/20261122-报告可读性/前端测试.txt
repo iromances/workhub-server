@@ -1,0 +1,148 @@
+TAP version 13
+# Subtest: formats report headings, emphasis, lists, tables, quotes and code without losing text
+ok 1 - formats report headings, emphasis, lists, tables, quotes and code without losing text
+  ---
+  duration_ms: 8.487875
+  type: 'test'
+  ...
+# Subtest: escapes raw HTML and attributes and blocks executable and local links
+ok 2 - escapes raw HTML and attributes and blocks executable and local links
+  ---
+  duration_ms: 1.409583
+  type: 'test'
+  ...
+# Subtest: does not parse markdown inside a fence; an unclosed fence remains code
+ok 3 - does not parse markdown inside a fence; an unclosed fence remains code
+  ---
+  duration_ms: 1.489708
+  type: 'test'
+  ...
+# Subtest: extracts the complete explicit conclusion without rewriting contradictory business evidence
+ok 4 - extracts the complete explicit conclusion without rewriting contradictory business evidence
+  ---
+  duration_ms: 3.329834
+  type: 'test'
+  ...
+# Subtest: works for other employees and preserves units, window and unavailable values
+ok 5 - works for other employees and preserves units, window and unavailable values
+  ---
+  duration_ms: 0.594833
+  type: 'test'
+  ...
+# Subtest: does not infer metrics or a healthy status from arbitrary prose or dates
+ok 6 - does not infer metrics or a healthy status from arbitrary prose or dates
+  ---
+  duration_ms: 0.417542
+  type: 'test'
+  ...
+# Subtest: older single-paragraph reports gain sections and explicit measure excerpts without changing identifiers
+ok 7 - older single-paragraph reports gain sections and explicit measure excerpts without changing identifiers
+  ---
+  duration_ms: 0.74625
+  type: 'test'
+  ...
+# Subtest: unstructured report excerpt is bounded and the complete report remains available
+ok 8 - unstructured report excerpt is bounded and the complete report remains available
+  ---
+  duration_ms: 0.874125
+  type: 'test'
+  ...
+# Subtest: cabinet bullet report promotes inline conclusion and long numbered section labels
+ok 9 - cabinet bullet report promotes inline conclusion and long numbered section labels
+  ---
+  duration_ms: 1.806
+  type: 'test'
+  ...
+# Subtest: export shares overview and body rendering and escapes report metadata
+ok 10 - export shares overview and body rendering and escapes report metadata
+  ---
+  duration_ms: 1.791167
+  type: 'test'
+  ...
+# Subtest: history prefers a completed run initially and preserves explicit running selections
+ok 11 - history prefers a completed run initially and preserves explicit running selections
+  ---
+  duration_ms: 0.601542
+  type: 'test'
+  ...
+# Subtest: formal metrics keep failed and skipped rules distinct and never add amounts
+ok 12 - formal metrics keep failed and skipped rules distinct and never add amounts
+  ---
+  duration_ms: 0.73875
+  type: 'test'
+  ...
+# Subtest: missing or malformed monitor evidence never means a clean run
+ok 13 - missing or malformed monitor evidence never means a clean run
+  ---
+  duration_ms: 0.132084
+  type: 'test'
+  ...
+# Subtest: current monitor report sections become headings without changing content
+ok 14 - current monitor report sections become headings without changing content
+  ---
+  duration_ms: 0.181333
+  type: 'test'
+  ...
+# Subtest: fixed sections show checks findings linked evidence actions and scope
+ok 15 - fixed sections show checks findings linked evidence actions and scope
+  ---
+  duration_ms: 4.770916
+  type: 'test'
+  ...
+# Subtest: export and page render identical complete report, including long evidence
+ok 16 - export and page render identical complete report, including long evidence
+  ---
+  duration_ms: 347.313833
+  type: 'test'
+  ...
+# Subtest: all generated content is escaped including titles evidence and table cells
+ok 17 - all generated content is escaped including titles evidence and table cells
+  ---
+  duration_ms: 1.352083
+  type: 'test'
+  ...
+# Subtest: empty unknown report does not claim all checks passed
+ok 18 - empty unknown report does not claim all checks passed
+  ---
+  duration_ms: 0.719958
+  type: 'test'
+  ...
+# Subtest: FULL requires explicit report evidence; partial and missing dates stay distinct
+ok 19 - FULL requires explicit report evidence; partial and missing dates stay distinct
+  ---
+  duration_ms: 0.739583
+  type: 'test'
+  ...
+# Subtest: business names and status counts are shared by page and export
+ok 20 - business names and status counts are shared by page and export
+  ---
+  duration_ms: 1.254917
+  type: 'test'
+  ...
+# Subtest: narrative examples and enumerations become distinct complete items
+ok 21 - narrative examples and enumerations become distinct complete items
+  ---
+  duration_ms: 0.600584
+  type: 'test'
+  ...
+# Subtest: quoted SQL logs URLs decimals times and bracketed caveats remain intact
+ok 22 - quoted SQL logs URLs decimals times and bracketed caveats remain intact
+  ---
+  duration_ms: 0.620917
+  type: 'test'
+  ...
+# Subtest: narrative fields throughout report are formatted without executing markup
+ok 23 - narrative fields throughout report are formatted without executing markup
+  ---
+  duration_ms: 1.41225
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1137.117917

@@ -1,0 +1,22 @@
+{
+  "flywayVersion" : "11.14.1",
+  "database" : "workhub",
+  "warnings" : [ ],
+  "operation" : "validate",
+  "errorDetails" : {
+    "errorCode" : "VALIDATE_ERROR",
+    "errorMessage" : "Migrations have failed validation"
+  },
+  "invalidMigrations" : [ {
+    "version" : "20261119.170000",
+    "description" : "rename monitor display labels",
+    "filepath" : "/Users/aslight/IDEAWorkspace/workhub-server/workhub-bootstrap/target/classes/db/schema/mysql/V20261119_170000__rename_monitor_display_labels.sql",
+    "errorDetails" : {
+      "errorCode" : "RESOLVED_VERSIONED_MIGRATION_NOT_APPLIED",
+      "errorMessage" : "Detected resolved migration not applied to database: 20261119.170000.\nTo fix this error, either run migrate, or set -ignoreMigrationPatterns='*:pending'."
+    }
+  } ],
+  "validationSuccessful" : false,
+  "validateCount" : 0,
+  "allErrorMessages" : "Detected resolved migration not applied to database: 20261119.170000.\nTo fix this error, either run migrate, or set -ignoreMigrationPatterns='*:pending'."
+}

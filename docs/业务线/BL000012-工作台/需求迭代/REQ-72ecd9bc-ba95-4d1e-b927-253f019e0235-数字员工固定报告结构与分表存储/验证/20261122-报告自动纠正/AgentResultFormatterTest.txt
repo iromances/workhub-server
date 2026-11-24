@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: cn.aslight.workhub.service.ai.AgentResultFormatterTest
+-------------------------------------------------------------------------------
+Tests run: 18, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.218 s -- in cn.aslight.workhub.service.ai.AgentResultFormatterTest

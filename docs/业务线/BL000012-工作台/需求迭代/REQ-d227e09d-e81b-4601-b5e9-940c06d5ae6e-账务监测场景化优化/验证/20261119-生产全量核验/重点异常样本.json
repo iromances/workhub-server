@@ -1,0 +1,807 @@
+[
+  {
+    "code": "ol_saps_order",
+    "rule": "REQUESTED_DETAILS",
+    "lo": 6,
+    "hi": 20005,
+    "sql": "WITH q AS (SELECT p.id,p.order_no AS business_key,p.status,p.sub_type,p.transaction_mode,p.pay_amount,p.transaction_amount,p.settle_amount,p.recharge_amount,p.discount_amount,(SELECT COUNT(*) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_n,(SELECT COALESCE(SUM(pay_amount),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_requested,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN transaction_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_actual,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN settle_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_settle,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN recharge_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_recharge,(SELECT COUNT(*) FROM ol_saps.customer_order d WHERE d.order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS duplicates FROM ol_saps.customer_order p WHERE p.id BETWEEN 6 AND 20005 AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (NULL IS NULL OR p.create_time>=NULL) AND (NULL IS NULL OR p.create_time<NULL)) SELECT id,business_key,status,sub_type,transaction_mode,pay_amount,transaction_amount,settle_amount,recharge_amount,discount_amount,detail_n,detail_requested,detail_actual,detail_settle,detail_recharge FROM q WHERE (sub_type NOT IN (3003,3004,3005) AND (NOT(pay_amount <=> detail_requested))) ORDER BY id LIMIT 20",
+    "result": {
+      "targetKey": "db-prod",
+      "sql": "WITH q AS (SELECT p.id,p.order_no AS business_key,p.status,p.sub_type,p.transaction_mode,p.pay_amount,p.transaction_amount,p.settle_amount,p.recharge_amount,p.discount_amount,(SELECT COUNT(*) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_n,(SELECT COALESCE(SUM(pay_amount),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_requested,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN transaction_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_actual,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN settle_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p",
+      "result": {
+        "dataMasked": true,
+        "truncatedByBytes": false,
+        "columns": [
+          "id",
+          "business_key",
+          "status",
+          "sub_type",
+          "transaction_mode",
+          "pay_amount",
+          "transaction_amount",
+          "settle_amount",
+          "recharge_amount",
+          "discount_amount",
+          "detail_n",
+          "detail_requested",
+          "detail_actual",
+          "detail_settle",
+          "detail_recharge"
+        ],
+        "rows": [
+          {
+            "id": 8,
+            "business_key": "240727172000000001",
+            "status": 4,
+            "sub_type": 2000,
+            "transaction_mode": 1,
+            "pay_amount": -2,
+            "transaction_amount": -1.99,
+            "settle_amount": -1.99,
+            "recharge_amount": 0,
+            "discount_amount": 0,
+            "detail_n": 1,
+            "detail_requested": -1.99,
+            "detail_actual": -1.99,
+            "detail_settle": -1.99,
+            "detail_recharge": 0
+          },
+          {
+            "id": 10,
+            "business_key": "240727172500000001",
+            "status": 4,
+            "sub_type": 2000,
+            "transaction_mode": 1,
+            "pay_amount": -2,
+            "transaction_amount": -1.99,
+            "settle_amount": -1.99,
+            "recharge_amount": 0,
+            "discount_amount": 0,
+            "detail_n": 1,
+            "detail_requested": -1.99,
+            "detail_actual": -1.99,
+            "detail_settle": -1.99,
+            "detail_recharge": 0
+          },
+          {
+            "id": 5869,
+            "business_key": "250527151450000001",
+            "status": 4,
+            "sub_type": 2000,
+            "transaction_mode": 1,
+            "pay_amount": -2.8,
+            "transaction_amount": -2.78,
+            "settle_amount": -2.78,
+            "recharge_amount": 0,
+            "discount_amount": 0,
+            "detail_n": 1,
+            "detail_requested": -2.78,
+            "detail_actual": -2.78,
+            "detail_settle": -2.78,
+            "detail_recharge": 0
+          }
+        ]
+      },
+      "profileKey": "readonly",
+      "dataMasked": true
+    }
+  },
+  {
+    "code": "ol_saps_order",
+    "rule": "REQUESTED_DETAILS",
+    "lo": 20006,
+    "hi": 40005,
+    "sql": "WITH q AS (SELECT p.id,p.order_no AS business_key,p.status,p.sub_type,p.transaction_mode,p.pay_amount,p.transaction_amount,p.settle_amount,p.recharge_amount,p.discount_amount,(SELECT COUNT(*) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_n,(SELECT COALESCE(SUM(pay_amount),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_requested,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN transaction_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_actual,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN settle_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_settle,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN recharge_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_recharge,(SELECT COUNT(*) FROM ol_saps.customer_order d WHERE d.order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS duplicates FROM ol_saps.customer_order p WHERE p.id BETWEEN 20006 AND 40005 AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (NULL IS NULL OR p.create_time>=NULL) AND (NULL IS NULL OR p.create_time<NULL)) SELECT id,business_key,status,sub_type,transaction_mode,pay_amount,transaction_amount,settle_amount,recharge_amount,discount_amount,detail_n,detail_requested,detail_actual,detail_settle,detail_recharge FROM q WHERE (sub_type NOT IN (3003,3004,3005) AND (NOT(pay_amount <=> detail_requested))) ORDER BY id LIMIT 20",
+    "result": {
+      "targetKey": "db-prod",
+      "sql": "WITH q AS (SELECT p.id,p.order_no AS business_key,p.status,p.sub_type,p.transaction_mode,p.pay_amount,p.transaction_amount,p.settle_amount,p.recharge_amount,p.discount_amount,(SELECT COUNT(*) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_n,(SELECT COALESCE(SUM(pay_amount),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_requested,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN transaction_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_actual,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN settle_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p",
+      "result": {
+        "dataMasked": true,
+        "truncatedByBytes": false,
+        "columns": [
+          "id",
+          "business_key",
+          "status",
+          "sub_type",
+          "transaction_mode",
+          "pay_amount",
+          "transaction_amount",
+          "settle_amount",
+          "recharge_amount",
+          "discount_amount",
+          "detail_n",
+          "detail_requested",
+          "detail_actual",
+          "detail_settle",
+          "detail_recharge"
+        ],
+        "rows": [
+          {
+            "id": 26326,
+            "business_key": "260209002430000001",
+            "status": 4,
+            "sub_type": 2000,
+            "transaction_mode": 1,
+            "pay_amount": 8.5,
+            "transaction_amount": 8.45,
+            "settle_amount": 8.45,
+            "recharge_amount": 0,
+            "discount_amount": 0,
+            "detail_n": 2,
+            "detail_requested": 8.45,
+            "detail_actual": 8.45,
+            "detail_settle": 8.45,
+            "detail_recharge": 0
+          },
+          {
+            "id": 26466,
+            "business_key": "260210000200000001",
+            "status": 4,
+            "sub_type": 2000,
+            "transaction_mode": 1,
+            "pay_amount": 33,
+            "transaction_amount": 32.8,
+            "settle_amount": 32.8,
+            "recharge_amount": 0,
+            "discount_amount": 0,
+            "detail_n": 2,
+            "detail_requested": 33.6,
+            "detail_actual": 32.8,
+            "detail_settle": 32.8,
+            "detail_recharge": 0
+          },
+          {
+            "id": 26612,
+            "business_key": "260211010520000001",
+            "status": 4,
+            "sub_type": 2000,
+            "transaction_mode": 1,
+            "pay_amount": 13,
+            "transaction_amount": 12.92,
+            "settle_amount": 12.92,
+            "recharge_amount": 0,
+            "discount_amount": 0,
+            "detail_n": 2,
+            "detail_requested": 13.42,
+            "detail_actual": 12.92,
+            "detail_settle": 12.92,
+            "detail_recharge": 0
+          },
+          {
+            "id": 26688,
+            "business_key": "260211155520000001",
+            "status": 4,
+            "sub_type": 2000,
+            "transaction_mode": 1,
+            "pay_amount": -2.49,
+            "transaction_amount": -2.48,
+            "settle_amount": -2.48,
+            "recharge_amount": 0,
+            "discount_amount": 0,
+            "detail_n": 1,
+            "detail_requested": -2.48,
+            "detail_actual": -2.48,
+            "detail_settle": -2.48,
+            "detail_recharge": 0
+          },
+          {
+            "id": 26758,
+            "business_key": "260212013000000001",
+            "status": 4,
+            "sub_type": 2000,
+            "transaction_mode": 1,
+            "pay_amount": 13,
+            "transaction_amount": 12.92,
+            "settle_amount": 12.92,
+            "recharge_amount": 0,
+            "discount_amount": 0,
+            "detail_n": 2,
+            "detail_requested": 13.2,
+            "detail_actual": 12.92,
+            "detail_settle": 12.92,
+            "detail_recharge": 0
+          },
+          {
+            "id": 29034,
+            "business_key": "260228122030000002",
+            "status": 4,
+            "sub_type": 2000,
+            "transaction_mode": 1,
+            "pay_amount": -2.49,
+            "transaction_amount": -2.48,
+            "settle_amount": -2.48,
+            "recharge_amount": 0,
+            "discount_amount": 0,
+            "detail_n": 1,
+            "detail_requested": -2.48,
+            "detail_actual": -2.48,
+            "detail_settle": -2.48,
+            "detail_recharge": 0
+          },
+          {
+            "id": 30982,
+            "business_key": "260309163030000001",
+            "status": 4,
+            "sub_type": 2000,
+            "transaction_mode": 1,
+            "pay_amount": -5.5,
+            "transaction_amount": -5.47,
+            "settle_amount": -5.47,
+            "recharge_amount": 0,
+            "discount_amount": 0,
+            "detail_n": 1,
+            "detail_requested": -5.47,
+            "detail_actual": -5.47,
+            "detail_settle": -5.47,
+            "detail_recharge": 0
+          }
+        ]
+      },
+      "profileKey": "readonly",
+      "dataMasked": true
+    }
+  },
+  {
+    "code": "ol_saps_order",
+    "rule": "SETTLE_DETAILS",
+    "lo": 820006,
+    "hi": 827836,
+    "sql": "WITH q AS (SELECT p.id,p.order_no AS business_key,p.status,p.sub_type,p.transaction_mode,p.pay_amount,p.transaction_amount,p.settle_amount,p.recharge_amount,p.discount_amount,(SELECT COUNT(*) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_n,(SELECT COALESCE(SUM(pay_amount),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_requested,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN transaction_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_actual,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN settle_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_settle,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN recharge_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_recharge,(SELECT COUNT(*) FROM ol_saps.customer_order d WHERE d.order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS duplicates FROM ol_saps.customer_order p WHERE p.id BETWEEN 820006 AND 827836 AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (NULL IS NULL OR p.create_time>=NULL) AND (NULL IS NULL OR p.create_time<NULL)) SELECT id,business_key,status,sub_type,transaction_mode,pay_amount,transaction_amount,settle_amount,recharge_amount,discount_amount,detail_n,detail_requested,detail_actual,detail_settle,detail_recharge FROM q WHERE (status=4 AND sub_type IN (2000,2001,2002,2100,3006) AND NOT(settle_amount <=> detail_settle)) ORDER BY id LIMIT 20",
+    "result": {
+      "targetKey": "db-prod",
+      "sql": "WITH q AS (SELECT p.id,p.order_no AS business_key,p.status,p.sub_type,p.transaction_mode,p.pay_amount,p.transaction_amount,p.settle_amount,p.recharge_amount,p.discount_amount,(SELECT COUNT(*) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_n,(SELECT COALESCE(SUM(pay_amount),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_requested,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN transaction_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_actual,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN settle_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p",
+      "result": {
+        "dataMasked": true,
+        "truncatedByBytes": false,
+        "columns": [
+          "id",
+          "business_key",
+          "status",
+          "sub_type",
+          "transaction_mode",
+          "pay_amount",
+          "transaction_amount",
+          "settle_amount",
+          "recharge_amount",
+          "discount_amount",
+          "detail_n",
+          "detail_requested",
+          "detail_actual",
+          "detail_settle",
+          "detail_recharge"
+        ],
+        "rows": [
+          {
+            "id": 826760,
+            "business_key": "JF261119101308000001",
+            "status": 4,
+            "sub_type": 2100,
+            "transaction_mode": 3,
+            "pay_amount": 48000,
+            "transaction_amount": 48000,
+            "settle_amount": 96000,
+            "recharge_amount": 0,
+            "discount_amount": 0,
+            "detail_n": 1,
+            "detail_requested": 48000,
+            "detail_actual": 48000,
+            "detail_settle": 48000,
+            "detail_recharge": 0
+          },
+          {
+            "id": 826761,
+            "business_key": "JF261119101330000001",
+            "status": 4,
+            "sub_type": 2100,
+            "transaction_mode": 3,
+            "pay_amount": 27000,
+            "transaction_amount": 27000,
+            "settle_amount": 54000,
+            "recharge_amount": 0,
+            "discount_amount": 0,
+            "detail_n": 1,
+            "detail_requested": 27000,
+            "detail_actual": 27000,
+            "detail_settle": 27000,
+            "detail_recharge": 0
+          },
+          {
+            "id": 826762,
+            "business_key": "JF261119101340000001",
+            "status": 4,
+            "sub_type": 2100,
+            "transaction_mode": 3,
+            "pay_amount": 27000,
+            "transaction_amount": 27000,
+            "settle_amount": 54000,
+            "recharge_amount": 0,
+            "discount_amount": 0,
+            "detail_n": 1,
+            "detail_requested": 27000,
+            "detail_actual": 27000,
+            "detail_settle": 27000,
+            "detail_recharge": 0
+          },
+          {
+            "id": 826763,
+            "business_key": "JF261119101344000001",
+            "status": 4,
+            "sub_type": 2100,
+            "transaction_mode": 3,
+            "pay_amount": 48000,
+            "transaction_amount": 48000,
+            "settle_amount": 96000,
+            "recharge_amount": 0,
+            "discount_amount": 0,
+            "detail_n": 1,
+            "detail_requested": 48000,
+            "detail_actual": 48000,
+            "detail_settle": 48000,
+            "detail_recharge": 0
+          }
+        ]
+      },
+      "profileKey": "readonly",
+      "dataMasked": true
+    }
+  },
+  {
+    "code": "ol_order_payable",
+    "rule": "PAID_STATUS",
+    "lo": 1,
+    "hi": 3551,
+    "sql": "WITH q AS (SELECT p.id,p.order_no AS business_key,p.order_status,p.amount,p.paid_amount,p.purchase_order_no,p.batch_no,(SELECT COALESCE(SUM(d.pay_amount),0) FROM ol_order.payment_order_paydetail d WHERE d.pay_order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_paid,(SELECT COUNT(*) FROM ol_order.payment_order d WHERE d.order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS duplicate_n,(SELECT COUNT(*) FROM ol_order.purchase_order d WHERE d.order_no=p.purchase_order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS source_n,(SELECT MIN(d.purchase_price) FROM ol_order.purchase_order d WHERE d.order_no=p.purchase_order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS source_amount FROM ol_order.payment_order p WHERE p.id BETWEEN 1 AND 3551 AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (NULL IS NULL OR p.create_time>=NULL) AND (NULL IS NULL OR p.create_time<NULL)) SELECT id,business_key,order_status,amount,paid_amount,detail_paid,purchase_order_no,batch_no,source_n,source_amount FROM q WHERE (order_status='paid' AND NOT(amount <=> paid_amount)) ORDER BY id LIMIT 20",
+    "result": {
+      "targetKey": "db-prod",
+      "sql": "WITH q AS (SELECT p.id,p.order_no AS business_key,p.order_status,p.amount,p.paid_amount,p.purchase_order_no,p.batch_no,(SELECT COALESCE(SUM(d.pay_amount),0) FROM ol_order.payment_order_paydetail d WHERE d.pay_order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_paid,(SELECT COUNT(*) FROM ol_order.payment_order d WHERE d.order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS duplicate_n,(SELECT COUNT(*) FROM ol_order.purchase_order d WHERE d.order_no=p.purchase_order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS source_n,(SELECT MIN(d.purchase_price) FROM ol_order.purchase_order d WHERE d.order_no=p.purchase_order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS source_amount FROM ol_order.payment_order p WHERE p.id BETWEEN 1 AND 3551 AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (NULL IS NULL OR p.create_time>=NULL) AND (NULL IS NULL OR p.create_time<NULL)) SELECT",
+      "result": {
+        "dataMasked": true,
+        "truncatedByBytes": false,
+        "columns": [
+          "id",
+          "business_key",
+          "order_status",
+          "amount",
+          "paid_amount",
+          "detail_paid",
+          "purchase_order_no",
+          "batch_no",
+          "source_n",
+          "source_amount"
+        ],
+        "rows": [
+          {
+            "id": 3525,
+            "business_key": "FK261118024",
+            "order_status": "paid",
+            "amount": 480000,
+            "paid_amount": 1500000,
+            "detail_paid": 1500000,
+            "purchase_order_no": "PO261116016",
+            "batch_no": "",
+            "source_n": 1,
+            "source_amount": 480000
+          },
+          {
+            "id": 3526,
+            "business_key": "FK261118025",
+            "order_status": "paid",
+            "amount": 270000,
+            "paid_amount": 1500000,
+            "detail_paid": 1500000,
+            "purchase_order_no": "PO261116005",
+            "batch_no": "",
+            "source_n": 1,
+            "source_amount": 270000
+          },
+          {
+            "id": 3527,
+            "business_key": "FK261118026",
+            "order_status": "paid",
+            "amount": 270000,
+            "paid_amount": 1500000,
+            "detail_paid": 1500000,
+            "purchase_order_no": "PO261116018",
+            "batch_no": "",
+            "source_n": 1,
+            "source_amount": 270000
+          },
+          {
+            "id": 3528,
+            "business_key": "FK261118027",
+            "order_status": "paid",
+            "amount": 480000,
+            "paid_amount": 1500000,
+            "detail_paid": 1500000,
+            "purchase_order_no": "PO261116014",
+            "batch_no": "",
+            "source_n": 1,
+            "source_amount": 480000
+          }
+        ]
+      },
+      "profileKey": "readonly",
+      "dataMasked": true
+    }
+  },
+  {
+    "code": "ol_order_slip_generation",
+    "rule": "GENERATION_AMOUNT",
+    "lo": 1,
+    "hi": 5533,
+    "sql": "WITH q AS (SELECT p.id,p.first_payment_slip_no AS business_key,p.first_payment_amount AS expected_amount,(SELECT COUNT(*) FROM ol_saps.payment_slip d WHERE d.serial_no=CONVERT(p.first_payment_slip_no USING utf8mb4) COLLATE utf8mb4_0900_ai_ci AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS generated_n,(SELECT SUM(d.total_amount) FROM ol_saps.payment_slip d WHERE d.serial_no=CONVERT(p.first_payment_slip_no USING utf8mb4) COLLATE utf8mb4_0900_ai_ci AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS generated_amount FROM ol_order.lease_apply p WHERE p.id BETWEEN 1 AND 5533 AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (NULL IS NULL OR p.create_time>=NULL) AND (NULL IS NULL OR p.create_time<NULL) AND p.first_payment_amount>0 AND p.service_status>=153) SELECT id,business_key,expected_amount,generated_n,generated_amount FROM q WHERE (generated_n>0 AND NOT(expected_amount <=> generated_amount)) ORDER BY id LIMIT 20",
+    "result": {
+      "targetKey": "db-prod",
+      "sql": "WITH q AS (SELECT p.id,p.first_payment_slip_no AS business_key,p.first_payment_amount AS expected_amount,(SELECT COUNT(*) FROM ol_saps.payment_slip d WHERE d.serial_no=CONVERT(p.first_payment_slip_no USING utf8mb4) COLLATE utf8mb4_0900_ai_ci AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS generated_n,(SELECT SUM(d.total_amount) FROM ol_saps.payment_slip d WHERE d.serial_no=CONVERT(p.first_payment_slip_no USING utf8mb4) COLLATE utf8mb4_0900_ai_ci AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS generated_amount FROM ol_order.lease_apply p WHERE p.id BETWEEN 1 AND 5533 AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (NULL IS NULL OR p.create_time>=NULL) AND (NULL IS NULL OR p.create_time<NULL) AND p.first_payment_amount>0 AND p.service_status>=153) SELECT id,business_key,expected_amount,generated_n,generated_amount FROM q WHERE (generated_n>0 AND NOT(expected_amount <=> generated_amount)) ORDER BY id LIMIT 20",
+      "result": {
+        "dataMasked": true,
+        "truncatedByBytes": false,
+        "columns": [
+          "id",
+          "business_key",
+          "expected_amount",
+          "generated_n",
+          "generated_amount"
+        ],
+        "rows": [
+          {
+            "id": 3126,
+            "business_key": "261113140809000001",
+            "expected_amount": 26842.5,
+            "generated_n": 1,
+            "generated_amount": 8947.5
+          },
+          {
+            "id": 3128,
+            "business_key": "261113140703000001",
+            "expected_amount": 26842.5,
+            "generated_n": 1,
+            "generated_amount": 8947.5
+          },
+          {
+            "id": 3131,
+            "business_key": "261113140610000002",
+            "expected_amount": 172800,
+            "generated_n": 1,
+            "generated_amount": 57600
+          },
+          {
+            "id": 3192,
+            "business_key": "261113140853000001",
+            "expected_amount": 121500,
+            "generated_n": 1,
+            "generated_amount": 40500
+          },
+          {
+            "id": 3517,
+            "business_key": "261113140954000001",
+            "expected_amount": 26842.5,
+            "generated_n": 1,
+            "generated_amount": 8947.5
+          },
+          {
+            "id": 3780,
+            "business_key": "261113141111000001",
+            "expected_amount": 53685,
+            "generated_n": 1,
+            "generated_amount": 17895
+          },
+          {
+            "id": 3867,
+            "business_key": "261113141732000001",
+            "expected_amount": 28632,
+            "generated_n": 1,
+            "generated_amount": 9544
+          },
+          {
+            "id": 4010,
+            "business_key": "261113115826000001",
+            "expected_amount": 72000,
+            "generated_n": 1,
+            "generated_amount": 24000
+          },
+          {
+            "id": 4011,
+            "business_key": "261113141629000001",
+            "expected_amount": 72000,
+            "generated_n": 1,
+            "generated_amount": 24000
+          },
+          {
+            "id": 4013,
+            "business_key": "261113140450000002",
+            "expected_amount": 121500,
+            "generated_n": 1,
+            "generated_amount": 40500
+          },
+          {
+            "id": 4014,
+            "business_key": "261113143839000001",
+            "expected_amount": 121500,
+            "generated_n": 1,
+            "generated_amount": 40500
+          },
+          {
+            "id": 4017,
+            "business_key": "261113141508000001",
+            "expected_amount": 53685,
+            "generated_n": 1,
+            "generated_amount": 17895
+          },
+          {
+            "id": 4400,
+            "business_key": "261113142121000001",
+            "expected_amount": 121500,
+            "generated_n": 1,
+            "generated_amount": 40500
+          },
+          {
+            "id": 4403,
+            "business_key": "261113141940000001",
+            "expected_amount": 162000,
+            "generated_n": 1,
+            "generated_amount": 54000
+          },
+          {
+            "id": 4500,
+            "business_key": "261113142531000001",
+            "expected_amount": 72000,
+            "generated_n": 1,
+            "generated_amount": 24000
+          },
+          {
+            "id": 4501,
+            "business_key": "261113142423000001",
+            "expected_amount": 108000,
+            "generated_n": 1,
+            "generated_amount": 36000
+          },
+          {
+            "id": 4502,
+            "business_key": "261116105800000001",
+            "expected_amount": 40500,
+            "generated_n": 1,
+            "generated_amount": 13500
+          },
+          {
+            "id": 4503,
+            "business_key": "261113120036000001",
+            "expected_amount": 81000,
+            "generated_n": 1,
+            "generated_amount": 27000
+          },
+          {
+            "id": 4504,
+            "business_key": "261113142337000001",
+            "expected_amount": 81000,
+            "generated_n": 1,
+            "generated_amount": 27000
+          },
+          {
+            "id": 4505,
+            "business_key": "261113142237000001",
+            "expected_amount": 81000,
+            "generated_n": 1,
+            "generated_amount": 27000
+          }
+        ]
+      },
+      "profileKey": "readonly",
+      "dataMasked": true
+    }
+  },
+  {
+    "code": "ol_saps_slip_settlement",
+    "rule": "MISSING_PARENT",
+    "lo": 1,
+    "hi": 3652,
+    "sql": "WITH q AS (SELECT p.id,p.serial_no AS business_key,p.payment_slip_no AS document_no,p.order_no,p.trans_no,p.pay_amount,p.is_reverse,(SELECT COALESCE(SUM(d.pay_amount),0) FROM ol_saps.payment_slip_pay_subject_detail d WHERE d.pay_detail_serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS subject_total,(SELECT COUNT(*) FROM ol_saps.payment_slip d WHERE d.serial_no=p.payment_slip_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS parent_n,(SELECT COUNT(*) FROM ol_saps.customer_order d WHERE d.order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS order_n,(SELECT COUNT(*) FROM ol_saps.customer_transaction d WHERE d.serial_no=p.trans_no AND d.order_no=p.order_no AND d.status=4 AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS transaction_n FROM ol_saps.payment_slip_pay_detail p WHERE p.id BETWEEN 1 AND 3652 AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (NULL IS NULL OR p.create_time>=NULL) AND (NULL IS NULL OR p.create_time<NULL)) SELECT id,business_key,document_no,order_no,trans_no,pay_amount,is_reverse,subject_total,parent_n,order_n,transaction_n FROM q WHERE (parent_n=0) ORDER BY id LIMIT 20",
+    "result": {
+      "targetKey": "db-prod",
+      "sql": "WITH q AS (SELECT p.id,p.serial_no AS business_key,p.payment_slip_no AS document_no,p.order_no,p.trans_no,p.pay_amount,p.is_reverse,(SELECT COALESCE(SUM(d.pay_amount),0) FROM ol_saps.payment_slip_pay_subject_detail d WHERE d.pay_detail_serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS subject_total,(SELECT COUNT(*) FROM ol_saps.payment_slip d WHERE d.serial_no=p.payment_slip_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS parent_n,(SELECT COUNT(*) FROM ol_saps.customer_order d WHERE d.order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS order_n,(SELECT COUNT(*) FROM ol_saps.customer_transaction d WHERE d.serial_no=p.trans_no AND d.order_no=p.order_no AND d.status=4 AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS transaction_n FROM ol_saps.payment_slip_pay_detail p WHERE p.id BETWEEN 1 AND 3652 AND COALESCE(p.is_del",
+      "result": {
+        "dataMasked": true,
+        "truncatedByBytes": false,
+        "columns": [
+          "id",
+          "business_key",
+          "document_no",
+          "order_no",
+          "trans_no",
+          "pay_amount",
+          "is_reverse",
+          "subject_total",
+          "parent_n",
+          "order_n",
+          "transaction_n"
+        ],
+        "rows": [
+          {
+            "id": 122,
+            "business_key": "PS260608131226000001",
+            "document_no": "260608125847000001",
+            "order_no": "CO260608131135000001",
+            "trans_no": "CT260608131135000001",
+            "pay_amount": 0.01,
+            "is_reverse": 0,
+            "subject_total": 0.01,
+            "parent_n": 0,
+            "order_n": 1,
+            "transaction_n": 1
+          },
+          {
+            "id": 123,
+            "business_key": "PS260608131834000001",
+            "document_no": "260608131523000001",
+            "order_no": "CO260608131833000001",
+            "trans_no": "CT260608131833000001",
+            "pay_amount": 0.01,
+            "is_reverse": 0,
+            "subject_total": 0.01,
+            "parent_n": 0,
+            "order_n": 1,
+            "transaction_n": 1
+          },
+          {
+            "id": 124,
+            "business_key": "PS260608133702000001",
+            "document_no": "260608132120000001",
+            "order_no": "CO260608133655000001",
+            "trans_no": "CT260608133655000001",
+            "pay_amount": 0.01,
+            "is_reverse": 0,
+            "subject_total": 0.01,
+            "parent_n": 0,
+            "order_n": 1,
+            "transaction_n": 1
+          },
+          {
+            "id": 126,
+            "business_key": "PS260610110455000001",
+            "document_no": "260610104908000001",
+            "order_no": "CO260610110446000001",
+            "trans_no": "CT260610110446000001",
+            "pay_amount": 0.01,
+            "is_reverse": 0,
+            "subject_total": 0.01,
+            "parent_n": 0,
+            "order_n": 1,
+            "transaction_n": 1
+          },
+          {
+            "id": 127,
+            "business_key": "PS260610142411000001",
+            "document_no": "260610142356000001",
+            "order_no": "CO260610142403000001",
+            "trans_no": "CT260610142403000001",
+            "pay_amount": 1120,
+            "is_reverse": 0,
+            "subject_total": 1120,
+            "parent_n": 0,
+            "order_n": 1,
+            "transaction_n": 1
+          },
+          {
+            "id": 128,
+            "business_key": "PS260610151231000001",
+            "document_no": "260610123803000001",
+            "order_no": "CO260610151221000001",
+            "trans_no": "CT260610151221000001",
+            "pay_amount": 0.01,
+            "is_reverse": 0,
+            "subject_total": 0.01,
+            "parent_n": 0,
+            "order_n": 1,
+            "transaction_n": 1
+          },
+          {
+            "id": 129,
+            "business_key": "PS260610151851000001",
+            "document_no": "260610151705000001",
+            "order_no": "CO260610151845000001",
+            "trans_no": "CT260610151845000001",
+            "pay_amount": 0.01,
+            "is_reverse": 0,
+            "subject_total": 0.01,
+            "parent_n": 0,
+            "order_n": 1,
+            "transaction_n": 1
+          },
+          {
+            "id": 130,
+            "business_key": "PS260610165812000001",
+            "document_no": "260610165756000001",
+            "order_no": "CO260610165805000001",
+            "trans_no": "CT260610165805000001",
+            "pay_amount": 1120,
+            "is_reverse": 0,
+            "subject_total": 1120,
+            "parent_n": 0,
+            "order_n": 1,
+            "transaction_n": 1
+          },
+          {
+            "id": 131,
+            "business_key": "PS260610170517000001",
+            "document_no": "260610170431000001",
+            "order_no": "CO260610170511000001",
+            "trans_no": "CT260610170511000001",
+            "pay_amount": 0.01,
+            "is_reverse": 0,
+            "subject_total": 0.01,
+            "parent_n": 0,
+            "order_n": 1,
+            "transaction_n": 1
+          },
+          {
+            "id": 137,
+            "business_key": "PS260615172425000001",
+            "document_no": "260615172313000001",
+            "order_no": "CO260615172417000001",
+            "trans_no": "CT260615172417000001",
+            "pay_amount": 0.01,
+            "is_reverse": 0,
+            "subject_total": 0.01,
+            "parent_n": 0,
+            "order_n": 1,
+            "transaction_n": 1
+          },
+          {
+            "id": 138,
+            "business_key": "PS260616111956000001",
+            "document_no": "260616111907000001",
+            "order_no": "CO260616111947000002",
+            "trans_no": "CT260616111947000002",
+            "pay_amount": 0.01,
+            "is_reverse": 0,
+            "subject_total": 0.01,
+            "parent_n": 0,
+            "order_n": 1,
+            "transaction_n": 1
+          },
+          {
+            "id": 139,
+            "business_key": "PS260616112923000001",
+            "document_no": "260616112627000001",
+            "order_no": "CO260616112916000001",
+            "trans_no": "CT260616112916000001",
+            "pay_amount": 0.01,
+            "is_reverse": 0,
+            "subject_total": 0.01,
+            "parent_n": 0,
+            "order_n": 1,
+            "transaction_n": 1
+          },
+          {
+            "id": 141,
+            "business_key": "PS260616130717000001",
+            "document_no": "260616115424000001",
+            "order_no": "CO260616130709000001",
+            "trans_no": "CT260616130709000001",
+            "pay_amount": 0.01,
+            "is_reverse": 0,
+            "subject_total": 0.01,
+            "parent_n": 0,
+            "order_n": 1,
+            "transaction_n": 1
+          },
+          {
+            "id": 142,
+            "business_key": "PS260616132130000001",
+            "document_no": "260616131800000001",
+            "order_no": "CO260616132123000001",
+            "trans_no": "CT260616132123000001",
+            "pay_amount": 0.01,
+            "is_reverse": 0,
+            "subject_total": 0.01,
+            "parent_n": 0,
+            "order_n": 1,
+            "transaction_n": 1
+          }
+        ]
+      },
+      "profileKey": "readonly",
+      "dataMasked": true
+    }
+  }
+]

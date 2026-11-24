@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"result\" : {\n    \"columns\" : [ \"id\", \"project_no\", \"statement_no\", \"statement_type\", \"create_time\", \"application_no\", \"detail_count\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"id\" : 6787,\n      \"project_no\" : \"XXT-PRJ-JK-D\",\n      \"statement_no\" : \"FHGA26112014280800011\",\n      \"statement_type\" : 2000,\n      \"create_time\" : \"2026-11-20T14:28:09\",\n      \"application_no\" : \"JK026072714343944\",\n      \"detail_count\" : 25\n    } ]\n  },\n  \"sql\" : \"SELECT s.id,s.project_no,s.statement_no,s.statement_type,s.create_time,r.application_no,COUNT(*) AS detail_count FROM amp_saps.statement_resource r JOIN amp_saps.statement s ON s.statement_no=r.statement_no WHERE r.application_no='***' AND s.statement_type=2000 GROUP BY s.id,s.project_no,s.statement_no,s.statement_type,s.create_time,r.application_no LIMIT 10\",\n  \"targetKey\" : \"bl000004-dev-db-10-10-116-32-3306\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\"\n}"
+    }
+  ]
+}

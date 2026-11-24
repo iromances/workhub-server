@@ -1,0 +1,33 @@
+import fs from 'node:fs/promises';
+import {Workbook,SpreadsheetFile} from '@oai/artifact-tool';
+const dir=new URL('.',import.meta.url).pathname;
+const {rows}=JSON.parse(await fs.readFile(dir+'all-data.json','utf8'));
+const w=Workbook.create();
+const s=w.worksheets.add('汇总与取数口径');
+const d=w.worksheets.add('扣款明细预览100笔');
+for(const sh of [s,d]){sh.showGridLines=false;sh.getRange(sh===s?'A1:F24':'A1:P101').format.font={name:'Arial',size:10};sh.getRange(sh===s?'A1:F24':'A1:P101').format.verticalAlignment='center';}
+s.getRange('A2').values=[['金豆子分账明细：完整汇总与100笔预览']];
+s.getRange('A2').format.font={size:14,bold:true};
+s.getRange('A4:B11').values=[['统计项目','全量核对结果'],['交易笔数',1147],['客户扣款金额（元）',700334.06],['待清分担保费（元）',18295.55],['待清分合作方费用（元）',131081.34],['扣款手续费：保理公司承担（元）',1614.61],['扣款手续费：担保公司承担（元）',41.39],['扣款手续费：合作方承担（元）',318.31]];
+s.getRange('A12').values=[['待清分合计（元）']];s.getRange('B12').formulas=[['=SUM(B7:B8)']];
+s.getRange('A14:B23').values=[['导出状态','仅含按扣款时间排序的前100笔，非完整1147笔明细'],['查询范围','消费分期生产；2026-09-29至2026-11-17（含首尾）'],['支付口径','全部支付方式：协议代扣816笔、微信JSAPI 308笔、微信扫码23笔；交易成功'],['项目口径','金豆子 HZF000137；项目 XXT-PRJ-JDZ-A'],['分账口径','理论 G0001/G0002/P0001，实际目标 C0001；share_user_type=2'],['金额口径','沿用参考表 order_amount 和 channel_fee；待清分金额未扣手续费'],['去重口径','每笔支付流水一行；多账单关联不重复累计；同笔放款信息已核验一致'],['数据来源','生产库 amp-db-prod/readonly，amp_payment及amp_saps；2026-11-18查询'],['姓名与到账说明','客户名称按接口脱敏保留；实际分账目标为系统记录，未核验银行到账'],['代码核对','amp-payment origin/master 9023fed224354d2a736593e3320bc0437406046e（本地引用）']];
+s.getRange('A4:B4').format={fill:'#24466B',font:{bold:true,color:'#FFFFFF'}};
+s.getRange('A12:B12').format={fill:'#E8EFF6',font:{bold:true}};
+s.getRange('B6:B12').setNumberFormat('#,##0.00');s.getRange('B5').setNumberFormat('#,##0');
+s.getRange('A14:B14').format={fill:'#FFF0CC',font:{bold:true,color:'#8A4B08'}};
+s.getRange('A1:A23').format.columnWidth=40;s.getRange('B1:B23').format.columnWidth=105;s.getRange('A4:B23').format.rowHeight=25;
+s.getRange('B14:B23').format.wrapText=true;s.getRange('A14:B23').format.rowHeight=34;
+const headers=['客户名称','项目编号','产品编号','支付渠道','放款单号','放款时间','扣款时间','实际扣款金额','待清分金额（担保费）','待清分金额（合作方费用）','扣款手续费（保理公司承担）','扣款手续费（担保公司承担）','扣款手续费（合作方承担）','支付流水号','支付方式','交易完成时间'];
+const keys=['customer_name','project_code','product_code','channel_id','loan_id','loan_time','transaction_time','transaction_amount','guarantee_amount','partner_amount','capital_fee','guarantee_fee','partner_fee','serial_no','transaction_mode','complete_time'];
+const matrix=rows.map(r=>keys.map((k,i)=>[5,6,15].includes(i)?(Date.parse(r[k]+'Z')/86400000+25569):i===14?({AGREEMENT_PAYMENT:'协议代扣',JSAPI:'微信JSAPI',SCAN_CODE:'微信扫码'}[r[k]]):r[k]));
+d.getRange('A1:P1').values=[headers];d.getRange('N2:N101').setNumberFormat('@');d.getRange('A2:P101').values=matrix;
+d.tables.add('A1:P101',true,'JindouziPreview');
+d.getRange('A1:P1').format={fill:'#24466B',font:{bold:true,color:'#FFFFFF'},wrapText:true,horizontalAlignment:'center',rowHeight:44};
+d.getRange('A2:P101').format.rowHeight=23;d.getRange('A1:A101').format.columnWidth=12;d.getRange('B1:C101').format.columnWidth=22;d.getRange('D1:D101').format.columnWidth=14;d.getRange('E1:E101').format.columnWidth=25;d.getRange('F1:G101').format.columnWidth=24;d.getRange('H1:M101').format.columnWidth=20;d.getRange('N1:N101').format.columnWidth=31;d.getRange('O1:O101').format.columnWidth=14;d.getRange('P1:P101').format.columnWidth=24;
+d.getRange('F2:G101').setNumberFormat('yyyy-mm-dd hh:mm:ss');d.getRange('P2:P101').setNumberFormat('yyyy-mm-dd hh:mm:ss');d.getRange('H2:M101').setNumberFormat('#,##0.00');d.freezePanes.freezeRows(1);d.freezePanes.freezeColumns(1);
+w.recalculate();
+console.log((await w.inspect({kind:'table',range:'汇总与取数口径!A4:B12',include:'values,formulas',tableMaxRows:10,tableMaxCols:2})).ndjson);
+console.log((await w.inspect({kind:'match',searchTerm:'#REF!|#DIV/0!|#VALUE!|#NAME\\?|#N/A|#NUM!',options:{useRegex:true,maxResults:20}})).ndjson);
+for(const [sheetName,range,name] of [['汇总与取数口径','A2:B23','summary'],['扣款明细预览100笔','A1:G8','preview'],['扣款明细预览100笔','H1:P8','preview_amounts']]){const b=await w.render({sheetName,range,scale:1,format:'png'});await fs.writeFile(dir+name+'.png',new Uint8Array(await b.arrayBuffer()));}
+await (await SpreadsheetFile.exportXlsx(w)).save(dir+'金豆子分账明细_20260929-20261117_汇总及100笔预览.xlsx');
+console.log(JSON.stringify({previewRows:rows.length,uniqueSerials:new Set(rows.map(r=>r.serial_no)).size,totalPending:s.getRange('B12').values}));

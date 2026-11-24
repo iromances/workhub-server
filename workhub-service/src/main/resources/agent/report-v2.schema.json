@@ -1,0 +1,456 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "enum": [
+        2
+      ]
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "RESULT",
+        "NEEDS_INPUT"
+      ]
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reportType": {
+          "type": "string",
+          "enum": [
+            "INSPECTION",
+            "CODE_REVIEW",
+            "GENERAL"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "conclusion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assessment": {
+          "type": "string",
+          "enum": [
+            "NORMAL",
+            "ISSUES_FOUND",
+            "INCONCLUSIVE"
+          ]
+        },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "businessLines": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "environments": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "window": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "to": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "basis": {
+                  "type": "string"
+                },
+                "from": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "from",
+                "to",
+                "basis"
+              ]
+            },
+            "repositories": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "branch": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "commit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "baseline": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "branch",
+                  "commit",
+                  "baseline"
+                ]
+              }
+            },
+            "included": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "excluded": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "businessLines",
+            "environments",
+            "window",
+            "repositories",
+            "included",
+            "excluded"
+          ]
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "category": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "outcome": {
+                "type": "string",
+                "enum": [
+                  "PASS",
+                  "FAIL",
+                  "PARTIAL",
+                  "NOT_VERIFIED",
+                  "NOT_APPLICABLE"
+                ]
+              },
+              "result": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "key",
+              "category",
+              "title",
+              "outcome",
+              "result"
+            ]
+          }
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "severity": {
+                "type": "string",
+                "enum": [
+                  "P0",
+                  "P1",
+                  "P2",
+                  "UNASSESSED"
+                ]
+              },
+              "verificationStatus": {
+                "type": "string",
+                "enum": [
+                  "VERIFIED",
+                  "INFERRED",
+                  "UNVERIFIED"
+                ]
+              },
+              "disposition": {
+                "type": "string",
+                "enum": [
+                  "OPEN",
+                  "PARTIAL",
+                  "RESOLVED",
+                  "UNKNOWN"
+                ]
+              },
+              "category": {
+                "type": "string"
+              },
+              "trigger": {
+                "type": "string"
+              },
+              "analysis": {
+                "type": "string"
+              },
+              "impact": {
+                "type": "string"
+              },
+              "recommendation": {
+                "type": "string"
+              },
+              "signature": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "domain": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "SYSTEM_ALERT",
+                  "BUSINESS_MONITOR",
+                  "ACCOUNTING",
+                  null
+                ]
+              }
+            },
+            "required": [
+              "key",
+              "title",
+              "severity",
+              "verificationStatus",
+              "disposition",
+              "category",
+              "trigger",
+              "analysis",
+              "impact",
+              "recommendation"
+            ]
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "targetType": {
+                "type": "string",
+                "enum": [
+                  "REPORT",
+                  "CHECK",
+                  "FINDING"
+                ]
+              },
+              "targetKey": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "CODE",
+                  "QUERY",
+                  "LOG",
+                  "TEST",
+                  "DOCUMENT",
+                  "OTHER"
+                ]
+              },
+              "source": {
+                "type": "string"
+              },
+              "locator": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "observedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "environment": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "verificationMethod": {
+                "type": "string"
+              },
+              "result": {
+                "type": "string"
+              },
+              "limitations": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "key",
+              "targetType",
+              "targetKey",
+              "type",
+              "source",
+              "locator",
+              "observedAt",
+              "environment",
+              "verificationMethod",
+              "result",
+              "limitations"
+            ]
+          }
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "findingKey": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "P0",
+                  "P1",
+                  "P2",
+                  "UNASSESSED"
+                ]
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "acceptanceCriteria": {
+                "type": "string"
+              },
+              "prerequisite": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "key",
+              "findingKey",
+              "priority",
+              "description",
+              "acceptanceCriteria",
+              "prerequisite"
+            ]
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "reportType",
+        "title",
+        "conclusion",
+        "assessment",
+        "scope",
+        "checks",
+        "findings",
+        "evidence",
+        "actions",
+        "limitations"
+      ]
+    },
+    "deliveries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "projectPath": {
+            "type": "string"
+          },
+          "branch": {
+            "type": "string"
+          },
+          "commit": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          }
+        },
+        "required": [
+          "projectPath",
+          "branch",
+          "commit"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "type",
+    "report"
+  ]
+}

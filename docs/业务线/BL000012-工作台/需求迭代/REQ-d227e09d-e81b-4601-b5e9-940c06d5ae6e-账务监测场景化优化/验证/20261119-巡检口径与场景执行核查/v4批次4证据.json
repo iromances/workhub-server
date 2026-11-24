@@ -1,0 +1,35 @@
+[
+  {
+    "status": "fulfilled",
+    "value": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"targetKey\" : \"bl000012-prod-db-10-10-116-32-3306\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\",\n  \"result\" : {\n    \"columns\" : [ \"status\", \"rules\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"status\" : \"PASS\",\n      \"rules\" : 52\n    }, {\n      \"status\" : \"SKIPPED\",\n      \"rules\" : 2\n    }, {\n      \"status\" : \"WARN\",\n      \"rules\" : 9\n    }, {\n      \"status\" : \"ERROR\",\n      \"rules\" : 4\n    } ]\n  },\n  \"sql\" : \"SELECT status,COUNT(*) AS rules FROM ops_account_reconcile_result WHERE run_id=4 GROUP BY status LIMIT 100\"\n}"
+        }
+      ]
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"targetKey\" : \"bl000012-prod-db-10-10-116-32-3306\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\",\n  \"result\" : {\n    \"columns\" : [ \"rule_code\", \"status\", \"anomaly_count\", \"difference_amount\", \"message\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"rule_code\" : \"ol_order_payable_PAID_STATUS\",\n      \"status\" : \"WARN\",\n      \"anomaly_count\" : 4,\n      \"difference_amount\" : 4500000.00,\n      \"message\" : \"检查 3558 条来源记录；高水位 3558，已完成至 3558；手工付款允许实付与应付不等，需核实付款依据\"\n    }, {\n      \"rule_code\" : \"ol_order_remit_REMIT_STATUS\",\n      \"status\" : \"WARN\",\n      \"anomaly_count\" : 29,\n      \"difference_amount\" : 132644.08,\n      \"message\" : \"检查 3273 条来源记录；高水位 3273，已完成至 3273；绝对差额按本规则统计；异常样本最多20条\"\n    }, {\n      \"rule_code\" : \"ol_saps_order_SETTLE_DETAILS\",\n      \"status\" : \"ERROR\",\n      \"anomaly_count\" : 4,\n      \"difference_amount\" : 150000.00,\n      \"message\" : \"检查 828187 条来源记录；高水位 829086，已完成至 829086；绝对差额按本规则统计；异常样本最多20条\"\n    }, {\n      \"rule_code\" : \"ol_saps_transaction_settlement_ORDER_MISSING\",\n      \"status\" : \"PASS\",\n      \"anomaly_count\" : 0,\n      \"difference_amount\" : 0.00,\n      \"message\" : \"检查 326968 条来源记录；高水位 828485，已完成至 828485；绝对差额按本规则统计；异常样本最多20条\"\n    }, {\n      \"rule_code\" : \"ol_saps_transaction_settlement_SETTLEMENT_AMOUNT\",\n      \"status\" : \"PASS\",\n      \"anomaly_count\" : 0,\n      \"difference_amount\" : 0.00,\n      \"message\" : \"检查 326968 条来源记录；高水位 828485，已完成至 828485；绝对差额按本规则统计；异常样本最多20条\"\n    } ]\n  },\n  \"sql\" : \"SELECT rule_code,status,anomaly_count,difference_amount,message FROM ops_account_reconcile_result WHERE run_id=4 AND rule_code IN ('***','***','***','***','***') LIMIT 100\"\n}"
+        }
+      ]
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\n  \"targetKey\" : \"bl000012-prod-db-10-10-116-32-3306\",\n  \"dataMasked\" : true,\n  \"profileKey\" : \"readonly\",\n  \"result\" : {\n    \"columns\" : [ \"status\", \"sql_count\", \"templates\" ],\n    \"truncatedByBytes\" : false,\n    \"dataMasked\" : true,\n    \"rows\" : [ {\n      \"status\" : \"SUCCESS\",\n      \"sql_count\" : 321,\n      \"templates\" : 40\n    } ]\n  },\n  \"sql\" : \"SELECT status,COUNT(*) AS sql_count,COUNT(DISTINCT sql_code) AS templates FROM func_call_sql_audit_log WHERE monitor_run_id=4 GROUP BY status LIMIT 100\"\n}"
+        }
+      ]
+    }
+  }
+]

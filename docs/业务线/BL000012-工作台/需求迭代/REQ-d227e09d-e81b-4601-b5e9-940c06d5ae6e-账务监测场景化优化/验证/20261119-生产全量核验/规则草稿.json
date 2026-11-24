@@ -1,0 +1,514 @@
+[
+  {
+    "code": "lease_saps_bill",
+    "table": "lease_saps.customer_bill",
+    "cte": "WITH q AS (SELECT p.id,p.bill_no AS business_key,p.tenant_code,p.total_amount,p.paid_amount,p.unpaid_amount,COALESCE(p.red_amount,0) AS red_amount,p.settlement_status AS status,(SELECT COUNT(*) FROM lease_saps.bill_fee_detail d WHERE d.bill_no=p.bill_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_n,(SELECT COALESCE(SUM(total_amount),0) FROM lease_saps.bill_fee_detail d WHERE d.bill_no=p.bill_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_total,(SELECT COALESCE(SUM(paid_amount),0) FROM lease_saps.bill_fee_detail d WHERE d.bill_no=p.bill_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_paid,(SELECT COALESCE(SUM(unpaid_amount),0) FROM lease_saps.bill_fee_detail d WHERE d.bill_no=p.bill_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_unpaid,(SELECT COALESCE(SUM(pay_amount),0) FROM lease_saps.customer_bill_pay_detail d WHERE d.bill_no=p.bill_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS pay_total,(SELECT COUNT(*) FROM lease_saps.customer_bill d WHERE d.bill_no=p.bill_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS duplicates FROM lease_saps.customer_bill p WHERE p.id BETWEEN :startId AND :endId AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (:startDateTime IS NULL OR p.create_time>=:startDateTime) AND (:endExclusiveDateTime IS NULL OR p.create_time<:endExclusiveDateTime))",
+    "checks": [
+      {
+        "id": "TOTAL_DETAILS",
+        "when": "NOT(total_amount <=> fee_total)",
+        "delta": "total_amount-fee_total"
+      },
+      {
+        "id": "MISSING_DETAILS",
+        "when": "total_amount<>0 AND fee_n=0",
+        "delta": "total_amount"
+      },
+      {
+        "id": "BALANCE",
+        "when": "total_amount IS NULL OR paid_amount IS NULL OR unpaid_amount IS NULL OR NOT(total_amount <=> paid_amount+unpaid_amount+red_amount)",
+        "delta": "total_amount-paid_amount-unpaid_amount-red_amount"
+      },
+      {
+        "id": "PAID_SETTLEMENT",
+        "when": "NOT(paid_amount <=> pay_total)",
+        "delta": "paid_amount-pay_total"
+      },
+      {
+        "id": "SETTLED_UNPAID",
+        "when": "status=1 AND (unpaid_amount IS NULL OR unpaid_amount<>0)",
+        "delta": "unpaid_amount"
+      },
+      {
+        "id": "DUPLICATE_KEY",
+        "when": "duplicates>1",
+        "delta": "0"
+      },
+      {
+        "id": "PAID_DETAILS",
+        "when": "NOT(paid_amount <=> fee_paid)",
+        "delta": "paid_amount-fee_paid"
+      },
+      {
+        "id": "UNPAID_DETAILS",
+        "when": "NOT(unpaid_amount <=> fee_unpaid)",
+        "delta": "unpaid_amount-fee_unpaid"
+      }
+    ],
+    "cols": "id,business_key,total_amount,paid_amount,unpaid_amount,red_amount,status,fee_n,fee_total,fee_paid,fee_unpaid,pay_total,duplicates"
+  },
+  {
+    "code": "lease_saps_slip",
+    "table": "lease_saps.payment_slip",
+    "cte": "WITH q AS (SELECT p.id,p.serial_no AS business_key,p.tenant_code,p.total_amount,p.paid_amount,p.unpaid_amount,0 AS red_amount,p.status AS status,(SELECT COUNT(*) FROM lease_saps.payment_slip_fee_detail d WHERE d.serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_n,(SELECT COALESCE(SUM(total_amount),0) FROM lease_saps.payment_slip_fee_detail d WHERE d.serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_total,(SELECT COALESCE(SUM(paid_amount),0) FROM lease_saps.payment_slip_fee_detail d WHERE d.serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_paid,(SELECT COALESCE(SUM(unpaid_amount),0) FROM lease_saps.payment_slip_fee_detail d WHERE d.serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_unpaid,(SELECT COALESCE(SUM(pay_amount),0) FROM lease_saps.payment_slip_pay_detail d WHERE d.payment_slip_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS pay_total,(SELECT COUNT(*) FROM lease_saps.payment_slip d WHERE d.serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS duplicates FROM lease_saps.payment_slip p WHERE p.id BETWEEN :startId AND :endId AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (:startDateTime IS NULL OR p.create_time>=:startDateTime) AND (:endExclusiveDateTime IS NULL OR p.create_time<:endExclusiveDateTime))",
+    "checks": [
+      {
+        "id": "TOTAL_DETAILS",
+        "when": "NOT(total_amount <=> fee_total)",
+        "delta": "total_amount-fee_total"
+      },
+      {
+        "id": "MISSING_DETAILS",
+        "when": "total_amount<>0 AND fee_n=0",
+        "delta": "total_amount"
+      },
+      {
+        "id": "BALANCE",
+        "when": "total_amount IS NULL OR paid_amount IS NULL OR unpaid_amount IS NULL OR NOT(total_amount <=> paid_amount+unpaid_amount+red_amount)",
+        "delta": "total_amount-paid_amount-unpaid_amount-red_amount"
+      },
+      {
+        "id": "PAID_SETTLEMENT",
+        "when": "NOT(paid_amount <=> pay_total)",
+        "delta": "paid_amount-pay_total"
+      },
+      {
+        "id": "SETTLED_UNPAID",
+        "when": "status=4 AND (unpaid_amount IS NULL OR unpaid_amount<>0)",
+        "delta": "unpaid_amount"
+      },
+      {
+        "id": "DUPLICATE_KEY",
+        "when": "duplicates>1",
+        "delta": "0"
+      },
+      {
+        "id": "PAID_DETAILS",
+        "when": "NOT(paid_amount <=> fee_paid)",
+        "delta": "paid_amount-fee_paid"
+      },
+      {
+        "id": "UNPAID_DETAILS",
+        "when": "NOT(unpaid_amount <=> fee_unpaid)",
+        "delta": "unpaid_amount-fee_unpaid"
+      }
+    ],
+    "cols": "id,business_key,total_amount,paid_amount,unpaid_amount,red_amount,status,fee_n,fee_total,fee_paid,fee_unpaid,pay_total,duplicates"
+  },
+  {
+    "code": "lease_saps_statement",
+    "table": "lease_saps.statement",
+    "cte": "WITH q AS (SELECT p.id,p.statement_no AS business_key,p.tenant_code,p.total_amount,p.paid_amount,p.unpaid_amount,COALESCE(p.red_amount,0) AS red_amount,p.status AS status,(SELECT COUNT(*) FROM lease_saps.statement_resource d WHERE d.statement_no=p.statement_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_n,(SELECT COALESCE(SUM(fee_amount),0) FROM lease_saps.statement_resource d WHERE d.statement_no=p.statement_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS resource_total,(SELECT COUNT(*) FROM lease_saps.statement_fee_detail d WHERE d.statement_no=p.statement_no AND d.is_delete=0 AND d.is_cancel=0) AS fee_detail_n,(SELECT COALESCE(SUM(total_amount),0) FROM lease_saps.statement_fee_detail d WHERE d.statement_no=p.statement_no AND d.is_delete=0 AND d.is_cancel=0) AS fee_detail_total,NULL AS fee_paid,NULL AS fee_unpaid,(SELECT COALESCE(SUM(trans_amount),0) FROM lease_saps.statement_pay_detail d WHERE d.statement_no=p.statement_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS pay_total,(SELECT COUNT(*) FROM lease_saps.statement d WHERE d.statement_no=p.statement_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS duplicates FROM lease_saps.statement p WHERE p.id BETWEEN :startId AND :endId AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (:startDateTime IS NULL OR p.create_time>=:startDateTime) AND (:endExclusiveDateTime IS NULL OR p.create_time<:endExclusiveDateTime))",
+    "checks": [
+      {
+        "id": "TOTAL_DETAILS",
+        "when": "NOT(total_amount <=> CASE WHEN fee_detail_n>0 THEN fee_detail_total ELSE resource_total END)",
+        "delta": "total_amount-CASE WHEN fee_detail_n>0 THEN fee_detail_total ELSE resource_total END"
+      },
+      {
+        "id": "MISSING_DETAILS",
+        "when": "total_amount<>0 AND fee_n=0",
+        "delta": "total_amount"
+      },
+      {
+        "id": "BALANCE",
+        "when": "total_amount IS NULL OR paid_amount IS NULL OR unpaid_amount IS NULL OR NOT(total_amount <=> paid_amount+unpaid_amount+red_amount)",
+        "delta": "total_amount-paid_amount-unpaid_amount-red_amount"
+      },
+      {
+        "id": "PAID_SETTLEMENT",
+        "when": "NOT(paid_amount <=> pay_total)",
+        "delta": "paid_amount-pay_total"
+      },
+      {
+        "id": "SETTLED_UNPAID",
+        "when": "status=1 AND (unpaid_amount IS NULL OR unpaid_amount<>0)",
+        "delta": "unpaid_amount"
+      },
+      {
+        "id": "DUPLICATE_KEY",
+        "when": "duplicates>1",
+        "delta": "0"
+      }
+    ],
+    "cols": "id,business_key,total_amount,paid_amount,unpaid_amount,red_amount,status,fee_n,resource_total,fee_detail_n,fee_detail_total,fee_paid,fee_unpaid,pay_total,duplicates"
+  },
+  {
+    "code": "ol_saps_bill",
+    "table": "ol_saps.customer_bill",
+    "cte": "WITH q AS (SELECT p.id,p.bill_no AS business_key,p.tenant_code,p.total_amount,p.paid_amount,p.unpaid_amount,COALESCE(p.red_amount,0) AS red_amount,p.settlement_status AS status,(SELECT COUNT(*) FROM ol_saps.bill_fee_detail d WHERE d.bill_no=p.bill_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_n,(SELECT COALESCE(SUM(total_amount),0) FROM ol_saps.bill_fee_detail d WHERE d.bill_no=p.bill_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_total,(SELECT COALESCE(SUM(paid_amount),0) FROM ol_saps.bill_fee_detail d WHERE d.bill_no=p.bill_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_paid,(SELECT COALESCE(SUM(unpaid_amount),0) FROM ol_saps.bill_fee_detail d WHERE d.bill_no=p.bill_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_unpaid,(SELECT COALESCE(SUM(pay_amount),0) FROM ol_saps.customer_bill_pay_detail d WHERE d.bill_no=p.bill_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS pay_total,(SELECT COUNT(*) FROM ol_saps.customer_bill d WHERE d.bill_no=p.bill_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS duplicates FROM ol_saps.customer_bill p WHERE p.id BETWEEN :startId AND :endId AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (:startDateTime IS NULL OR p.create_time>=:startDateTime) AND (:endExclusiveDateTime IS NULL OR p.create_time<:endExclusiveDateTime))",
+    "checks": [
+      {
+        "id": "TOTAL_DETAILS",
+        "when": "NOT(total_amount <=> fee_total)",
+        "delta": "total_amount-fee_total"
+      },
+      {
+        "id": "MISSING_DETAILS",
+        "when": "total_amount<>0 AND fee_n=0",
+        "delta": "total_amount"
+      },
+      {
+        "id": "BALANCE",
+        "when": "total_amount IS NULL OR paid_amount IS NULL OR unpaid_amount IS NULL OR NOT(total_amount <=> paid_amount+unpaid_amount+red_amount)",
+        "delta": "total_amount-paid_amount-unpaid_amount-red_amount"
+      },
+      {
+        "id": "PAID_SETTLEMENT",
+        "when": "NOT(paid_amount <=> pay_total)",
+        "delta": "paid_amount-pay_total"
+      },
+      {
+        "id": "SETTLED_UNPAID",
+        "when": "status=1 AND (unpaid_amount IS NULL OR unpaid_amount<>0)",
+        "delta": "unpaid_amount"
+      },
+      {
+        "id": "DUPLICATE_KEY",
+        "when": "duplicates>1",
+        "delta": "0"
+      },
+      {
+        "id": "PAID_DETAILS",
+        "when": "NOT(paid_amount <=> fee_paid)",
+        "delta": "paid_amount-fee_paid"
+      },
+      {
+        "id": "UNPAID_DETAILS",
+        "when": "NOT(unpaid_amount <=> fee_unpaid)",
+        "delta": "unpaid_amount-fee_unpaid"
+      }
+    ],
+    "cols": "id,business_key,total_amount,paid_amount,unpaid_amount,red_amount,status,fee_n,fee_total,fee_paid,fee_unpaid,pay_total,duplicates"
+  },
+  {
+    "code": "ol_saps_slip",
+    "table": "ol_saps.payment_slip",
+    "cte": "WITH q AS (SELECT p.id,p.serial_no AS business_key,p.tenant_code,p.total_amount,p.paid_amount,p.unpaid_amount,0 AS red_amount,p.status AS status,(SELECT COUNT(*) FROM ol_saps.payment_slip_fee_detail d WHERE d.serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_n,(SELECT COALESCE(SUM(total_amount),0) FROM ol_saps.payment_slip_fee_detail d WHERE d.serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_total,(SELECT COALESCE(SUM(paid_amount),0) FROM ol_saps.payment_slip_fee_detail d WHERE d.serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_paid,(SELECT COALESCE(SUM(unpaid_amount),0) FROM ol_saps.payment_slip_fee_detail d WHERE d.serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_unpaid,(SELECT COALESCE(SUM(pay_amount),0) FROM ol_saps.payment_slip_pay_detail d WHERE d.payment_slip_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS pay_total,(SELECT COUNT(*) FROM ol_saps.payment_slip d WHERE d.serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS duplicates FROM ol_saps.payment_slip p WHERE p.id BETWEEN :startId AND :endId AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (:startDateTime IS NULL OR p.create_time>=:startDateTime) AND (:endExclusiveDateTime IS NULL OR p.create_time<:endExclusiveDateTime))",
+    "checks": [
+      {
+        "id": "TOTAL_DETAILS",
+        "when": "NOT(total_amount <=> fee_total)",
+        "delta": "total_amount-fee_total"
+      },
+      {
+        "id": "MISSING_DETAILS",
+        "when": "total_amount<>0 AND fee_n=0",
+        "delta": "total_amount"
+      },
+      {
+        "id": "BALANCE",
+        "when": "total_amount IS NULL OR paid_amount IS NULL OR unpaid_amount IS NULL OR NOT(total_amount <=> paid_amount+unpaid_amount+red_amount)",
+        "delta": "total_amount-paid_amount-unpaid_amount-red_amount"
+      },
+      {
+        "id": "PAID_SETTLEMENT",
+        "when": "NOT(paid_amount <=> pay_total)",
+        "delta": "paid_amount-pay_total"
+      },
+      {
+        "id": "SETTLED_UNPAID",
+        "when": "status=4 AND (unpaid_amount IS NULL OR unpaid_amount<>0)",
+        "delta": "unpaid_amount"
+      },
+      {
+        "id": "DUPLICATE_KEY",
+        "when": "duplicates>1",
+        "delta": "0"
+      },
+      {
+        "id": "PAID_DETAILS",
+        "when": "NOT(paid_amount <=> fee_paid)",
+        "delta": "paid_amount-fee_paid"
+      },
+      {
+        "id": "UNPAID_DETAILS",
+        "when": "NOT(unpaid_amount <=> fee_unpaid)",
+        "delta": "unpaid_amount-fee_unpaid"
+      }
+    ],
+    "cols": "id,business_key,total_amount,paid_amount,unpaid_amount,red_amount,status,fee_n,fee_total,fee_paid,fee_unpaid,pay_total,duplicates"
+  },
+  {
+    "code": "ol_saps_statement",
+    "table": "ol_saps.statement",
+    "cte": "WITH q AS (SELECT p.id,p.statement_no AS business_key,p.tenant_code,p.total_amount,p.paid_amount,p.unpaid_amount,COALESCE(p.red_amount,0) AS red_amount,p.status AS status,(SELECT COUNT(*) FROM ol_saps.statement_resource d WHERE d.statement_no=p.statement_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS fee_n,(SELECT COALESCE(SUM(fee_amount),0) FROM ol_saps.statement_resource d WHERE d.statement_no=p.statement_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS resource_total,(SELECT COUNT(*) FROM ol_saps.statement_fee_detail d WHERE d.statement_no=p.statement_no AND d.is_delete=0 AND d.is_cancel=0) AS fee_detail_n,(SELECT COALESCE(SUM(total_amount),0) FROM ol_saps.statement_fee_detail d WHERE d.statement_no=p.statement_no AND d.is_delete=0 AND d.is_cancel=0) AS fee_detail_total,NULL AS fee_paid,NULL AS fee_unpaid,(SELECT COALESCE(SUM(trans_amount),0) FROM ol_saps.statement_pay_detail d WHERE d.statement_no=p.statement_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS pay_total,(SELECT COUNT(*) FROM ol_saps.statement d WHERE d.statement_no=p.statement_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS duplicates FROM ol_saps.statement p WHERE p.id BETWEEN :startId AND :endId AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (:startDateTime IS NULL OR p.create_time>=:startDateTime) AND (:endExclusiveDateTime IS NULL OR p.create_time<:endExclusiveDateTime))",
+    "checks": [
+      {
+        "id": "TOTAL_DETAILS",
+        "when": "NOT(total_amount <=> CASE WHEN fee_detail_n>0 THEN fee_detail_total ELSE resource_total END)",
+        "delta": "total_amount-CASE WHEN fee_detail_n>0 THEN fee_detail_total ELSE resource_total END"
+      },
+      {
+        "id": "MISSING_DETAILS",
+        "when": "total_amount<>0 AND fee_n=0",
+        "delta": "total_amount"
+      },
+      {
+        "id": "BALANCE",
+        "when": "total_amount IS NULL OR paid_amount IS NULL OR unpaid_amount IS NULL OR NOT(total_amount <=> paid_amount+unpaid_amount+red_amount)",
+        "delta": "total_amount-paid_amount-unpaid_amount-red_amount"
+      },
+      {
+        "id": "PAID_SETTLEMENT",
+        "when": "NOT(paid_amount <=> pay_total)",
+        "delta": "paid_amount-pay_total"
+      },
+      {
+        "id": "SETTLED_UNPAID",
+        "when": "status=1 AND (unpaid_amount IS NULL OR unpaid_amount<>0)",
+        "delta": "unpaid_amount"
+      },
+      {
+        "id": "DUPLICATE_KEY",
+        "when": "duplicates>1",
+        "delta": "0"
+      }
+    ],
+    "cols": "id,business_key,total_amount,paid_amount,unpaid_amount,red_amount,status,fee_n,resource_total,fee_detail_n,fee_detail_total,fee_paid,fee_unpaid,pay_total,duplicates"
+  },
+  {
+    "code": "lease_saps_order",
+    "table": "lease_saps.customer_order",
+    "cte": "WITH q AS (SELECT p.id,p.order_no AS business_key,p.status,p.sub_type,p.transaction_mode,p.pay_amount,p.transaction_amount,p.settle_amount,p.recharge_amount,p.discount_amount,(SELECT COUNT(*) FROM lease_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_n,(SELECT COALESCE(SUM(pay_amount),0) FROM lease_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_requested,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN transaction_amount ELSE 0 END),0) FROM lease_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_actual,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN settle_amount ELSE 0 END),0) FROM lease_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_settle,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN recharge_amount ELSE 0 END),0) FROM lease_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_recharge,(SELECT COUNT(*) FROM lease_saps.customer_order d WHERE d.order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS duplicates FROM lease_saps.customer_order p WHERE p.id BETWEEN :startId AND :endId AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (:startDateTime IS NULL OR p.create_time>=:startDateTime) AND (:endExclusiveDateTime IS NULL OR p.create_time<:endExclusiveDateTime))",
+    "checks": [
+      {
+        "id": "MISSING_TRANSACTION",
+        "when": "detail_n=0",
+        "delta": "pay_amount"
+      },
+      {
+        "id": "REQUESTED_DETAILS",
+        "when": "NOT(pay_amount <=> detail_requested)",
+        "delta": "pay_amount-detail_requested"
+      },
+      {
+        "id": "ACTUAL_DETAILS",
+        "when": "status=4 AND NOT(transaction_amount <=> detail_actual)",
+        "delta": "transaction_amount-detail_actual"
+      },
+      {
+        "id": "SETTLE_DETAILS",
+        "when": "status=4 AND sub_type IN (2000,2001,2002,2100,3006) AND NOT(settle_amount <=> detail_settle)",
+        "delta": "settle_amount-detail_settle"
+      },
+      {
+        "id": "RECHARGE_DETAILS",
+        "when": "status=4 AND sub_type IN (2000,2001,2002,2100,3006) AND NOT(recharge_amount <=> detail_recharge)",
+        "delta": "recharge_amount-detail_recharge"
+      },
+      {
+        "id": "DUPLICATE_KEY",
+        "when": "duplicates>1",
+        "delta": "0"
+      }
+    ],
+    "cols": "id,business_key,status,sub_type,transaction_mode,pay_amount,transaction_amount,settle_amount,recharge_amount,discount_amount,detail_n,detail_requested,detail_actual,detail_settle,detail_recharge"
+  },
+  {
+    "code": "ol_saps_order",
+    "table": "ol_saps.customer_order",
+    "cte": "WITH q AS (SELECT p.id,p.order_no AS business_key,p.status,p.sub_type,p.transaction_mode,p.pay_amount,p.transaction_amount,p.settle_amount,p.recharge_amount,p.discount_amount,(SELECT COUNT(*) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_n,(SELECT COALESCE(SUM(pay_amount),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_requested,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN transaction_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_actual,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN settle_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_settle,(SELECT COALESCE(SUM(CASE WHEN status=4 THEN recharge_amount ELSE 0 END),0) FROM ol_saps.customer_transaction d WHERE d.order_no=p.order_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_recharge,(SELECT COUNT(*) FROM ol_saps.customer_order d WHERE d.order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS duplicates FROM ol_saps.customer_order p WHERE p.id BETWEEN :startId AND :endId AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (:startDateTime IS NULL OR p.create_time>=:startDateTime) AND (:endExclusiveDateTime IS NULL OR p.create_time<:endExclusiveDateTime))",
+    "checks": [
+      {
+        "id": "MISSING_TRANSACTION",
+        "when": "detail_n=0",
+        "delta": "pay_amount"
+      },
+      {
+        "id": "REQUESTED_DETAILS",
+        "when": "NOT(pay_amount <=> detail_requested)",
+        "delta": "pay_amount-detail_requested"
+      },
+      {
+        "id": "ACTUAL_DETAILS",
+        "when": "status=4 AND NOT(transaction_amount <=> detail_actual)",
+        "delta": "transaction_amount-detail_actual"
+      },
+      {
+        "id": "SETTLE_DETAILS",
+        "when": "status=4 AND sub_type IN (2000,2001,2002,2100,3006) AND NOT(settle_amount <=> detail_settle)",
+        "delta": "settle_amount-detail_settle"
+      },
+      {
+        "id": "RECHARGE_DETAILS",
+        "when": "status=4 AND sub_type IN (2000,2001,2002,2100,3006) AND NOT(recharge_amount <=> detail_recharge)",
+        "delta": "recharge_amount-detail_recharge"
+      },
+      {
+        "id": "DUPLICATE_KEY",
+        "when": "duplicates>1",
+        "delta": "0"
+      }
+    ],
+    "cols": "id,business_key,status,sub_type,transaction_mode,pay_amount,transaction_amount,settle_amount,recharge_amount,discount_amount,detail_n,detail_requested,detail_actual,detail_settle,detail_recharge"
+  },
+  {
+    "code": "lease_saps_bill_settlement",
+    "table": "lease_saps.customer_bill_pay_detail",
+    "cte": "WITH q AS (SELECT p.id,p.serial_no AS business_key,p.bill_no AS document_no,p.order_no,p.trans_no,p.pay_amount,p.is_reverse,(SELECT COALESCE(SUM(d.paid_amount),0) FROM lease_saps.customer_bill_pay_subject_detail d WHERE d.pay_detail_serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS subject_total,(SELECT COUNT(*) FROM lease_saps.customer_bill d WHERE d.bill_no=p.bill_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS parent_n,(SELECT COUNT(*) FROM lease_saps.customer_order d WHERE d.order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS order_n,(SELECT COUNT(*) FROM lease_saps.customer_transaction d WHERE d.serial_no=p.trans_no AND d.order_no=p.order_no AND d.status=4 AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS transaction_n FROM lease_saps.customer_bill_pay_detail p WHERE p.id BETWEEN :startId AND :endId AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (:startDateTime IS NULL OR p.create_time>=:startDateTime) AND (:endExclusiveDateTime IS NULL OR p.create_time<:endExclusiveDateTime))",
+    "checks": [
+      {
+        "id": "SUBJECT_SUM",
+        "when": "NOT(pay_amount <=> subject_total)",
+        "delta": "pay_amount-subject_total"
+      },
+      {
+        "id": "MISSING_PARENT",
+        "when": "parent_n=0",
+        "delta": "pay_amount"
+      },
+      {
+        "id": "MISSING_ORDER",
+        "when": "order_n=0",
+        "delta": "pay_amount"
+      },
+      {
+        "id": "MISSING_SUCCESS_TRANSACTION",
+        "when": "transaction_n=0",
+        "delta": "pay_amount"
+      }
+    ],
+    "cols": "id,business_key,document_no,order_no,trans_no,pay_amount,is_reverse,subject_total,parent_n,order_n,transaction_n"
+  },
+  {
+    "code": "lease_saps_slip_settlement",
+    "table": "lease_saps.payment_slip_pay_detail",
+    "cte": "WITH q AS (SELECT p.id,p.serial_no AS business_key,p.payment_slip_no AS document_no,p.order_no,p.trans_no,p.pay_amount,p.is_reverse,(SELECT COALESCE(SUM(d.pay_amount),0) FROM lease_saps.payment_slip_pay_subject_detail d WHERE d.pay_detail_serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS subject_total,(SELECT COUNT(*) FROM lease_saps.payment_slip d WHERE d.serial_no=p.payment_slip_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS parent_n,(SELECT COUNT(*) FROM lease_saps.customer_order d WHERE d.order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS order_n,(SELECT COUNT(*) FROM lease_saps.customer_transaction d WHERE d.serial_no=p.trans_no AND d.order_no=p.order_no AND d.status=4 AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS transaction_n FROM lease_saps.payment_slip_pay_detail p WHERE p.id BETWEEN :startId AND :endId AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (:startDateTime IS NULL OR p.create_time>=:startDateTime) AND (:endExclusiveDateTime IS NULL OR p.create_time<:endExclusiveDateTime))",
+    "checks": [
+      {
+        "id": "SUBJECT_SUM",
+        "when": "NOT(pay_amount <=> subject_total)",
+        "delta": "pay_amount-subject_total"
+      },
+      {
+        "id": "MISSING_PARENT",
+        "when": "parent_n=0",
+        "delta": "pay_amount"
+      },
+      {
+        "id": "MISSING_ORDER",
+        "when": "order_n=0",
+        "delta": "pay_amount"
+      },
+      {
+        "id": "MISSING_SUCCESS_TRANSACTION",
+        "when": "transaction_n=0",
+        "delta": "pay_amount"
+      }
+    ],
+    "cols": "id,business_key,document_no,order_no,trans_no,pay_amount,is_reverse,subject_total,parent_n,order_n,transaction_n"
+  },
+  {
+    "code": "ol_saps_bill_settlement",
+    "table": "ol_saps.customer_bill_pay_detail",
+    "cte": "WITH q AS (SELECT p.id,p.serial_no AS business_key,p.bill_no AS document_no,p.order_no,p.trans_no,p.pay_amount,p.is_reverse,(SELECT COALESCE(SUM(d.paid_amount),0) FROM ol_saps.customer_bill_pay_subject_detail d WHERE d.pay_detail_serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS subject_total,(SELECT COUNT(*) FROM ol_saps.customer_bill d WHERE d.bill_no=p.bill_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS parent_n,(SELECT COUNT(*) FROM ol_saps.customer_order d WHERE d.order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS order_n,(SELECT COUNT(*) FROM ol_saps.customer_transaction d WHERE d.serial_no=p.trans_no AND d.order_no=p.order_no AND d.status=4 AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS transaction_n FROM ol_saps.customer_bill_pay_detail p WHERE p.id BETWEEN :startId AND :endId AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (:startDateTime IS NULL OR p.create_time>=:startDateTime) AND (:endExclusiveDateTime IS NULL OR p.create_time<:endExclusiveDateTime))",
+    "checks": [
+      {
+        "id": "SUBJECT_SUM",
+        "when": "NOT(pay_amount <=> subject_total)",
+        "delta": "pay_amount-subject_total"
+      },
+      {
+        "id": "MISSING_PARENT",
+        "when": "parent_n=0",
+        "delta": "pay_amount"
+      },
+      {
+        "id": "MISSING_ORDER",
+        "when": "order_n=0",
+        "delta": "pay_amount"
+      },
+      {
+        "id": "MISSING_SUCCESS_TRANSACTION",
+        "when": "transaction_n=0",
+        "delta": "pay_amount"
+      }
+    ],
+    "cols": "id,business_key,document_no,order_no,trans_no,pay_amount,is_reverse,subject_total,parent_n,order_n,transaction_n"
+  },
+  {
+    "code": "ol_saps_slip_settlement",
+    "table": "ol_saps.payment_slip_pay_detail",
+    "cte": "WITH q AS (SELECT p.id,p.serial_no AS business_key,p.payment_slip_no AS document_no,p.order_no,p.trans_no,p.pay_amount,p.is_reverse,(SELECT COALESCE(SUM(d.pay_amount),0) FROM ol_saps.payment_slip_pay_subject_detail d WHERE d.pay_detail_serial_no=p.serial_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS subject_total,(SELECT COUNT(*) FROM ol_saps.payment_slip d WHERE d.serial_no=p.payment_slip_no AND d.tenant_code <=> p.tenant_code AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS parent_n,(SELECT COUNT(*) FROM ol_saps.customer_order d WHERE d.order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS order_n,(SELECT COUNT(*) FROM ol_saps.customer_transaction d WHERE d.serial_no=p.trans_no AND d.order_no=p.order_no AND d.status=4 AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS transaction_n FROM ol_saps.payment_slip_pay_detail p WHERE p.id BETWEEN :startId AND :endId AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (:startDateTime IS NULL OR p.create_time>=:startDateTime) AND (:endExclusiveDateTime IS NULL OR p.create_time<:endExclusiveDateTime))",
+    "checks": [
+      {
+        "id": "SUBJECT_SUM",
+        "when": "NOT(pay_amount <=> subject_total)",
+        "delta": "pay_amount-subject_total"
+      },
+      {
+        "id": "MISSING_PARENT",
+        "when": "parent_n=0",
+        "delta": "pay_amount"
+      },
+      {
+        "id": "MISSING_ORDER",
+        "when": "order_n=0",
+        "delta": "pay_amount"
+      },
+      {
+        "id": "MISSING_SUCCESS_TRANSACTION",
+        "when": "transaction_n=0",
+        "delta": "pay_amount"
+      }
+    ],
+    "cols": "id,business_key,document_no,order_no,trans_no,pay_amount,is_reverse,subject_total,parent_n,order_n,transaction_n"
+  },
+  {
+    "code": "ol_order_payable",
+    "table": "ol_order.payment_order",
+    "cte": "WITH q AS (SELECT p.id,p.order_no AS business_key,p.order_status,p.amount,p.paid_amount,p.purchase_order_no,p.batch_no,(SELECT COALESCE(SUM(d.pay_amount),0) FROM ol_order.payment_order_paydetail d WHERE d.pay_order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS detail_paid,(SELECT COUNT(*) FROM ol_order.payment_order d WHERE d.order_no=p.order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS duplicate_n,(SELECT COUNT(*) FROM ol_order.purchase_order d WHERE d.order_no=p.purchase_order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS source_n,(SELECT MIN(d.purchase_price) FROM ol_order.purchase_order d WHERE d.order_no=p.purchase_order_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS source_amount FROM ol_order.payment_order p WHERE p.id BETWEEN :startId AND :endId AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (:startDateTime IS NULL OR p.create_time>=:startDateTime) AND (:endExclusiveDateTime IS NULL OR p.create_time<:endExclusiveDateTime))",
+    "checks": [
+      {
+        "id": "PAID_DETAIL",
+        "when": "NOT(paid_amount <=> detail_paid)",
+        "delta": "paid_amount-detail_paid"
+      },
+      {
+        "id": "PAID_STATUS",
+        "when": "order_status='paid' AND NOT(amount <=> paid_amount)",
+        "delta": "amount-paid_amount"
+      },
+      {
+        "id": "DUPLICATE_KEY",
+        "when": "duplicate_n>1",
+        "delta": "0"
+      },
+      {
+        "id": "SOURCE_MISSING",
+        "when": "source_n=0",
+        "delta": "amount"
+      },
+      {
+        "id": "SOURCE_AMOUNT",
+        "when": "COALESCE(batch_no,'')='' AND NOT(amount <=> source_amount)",
+        "delta": "amount-source_amount"
+      }
+    ],
+    "cols": "id,business_key,order_status,amount,paid_amount,detail_paid,purchase_order_no,batch_no,source_n,source_amount"
+  },
+  {
+    "code": "lease_finance_payable",
+    "table": "lease_finance.payment_order",
+    "cte": "WITH q AS (SELECT p.id,p.payment_no AS business_key,p.status,p.payment_result,p.amount,p.pay_amount,p.payment_serial_no,(SELECT COUNT(*) FROM lease_finance.payment_order d WHERE d.payment_no=p.payment_no AND COALESCE(d.is_delete,0)=0 AND COALESCE(d.is_cancel,0)=0) AS duplicate_n FROM lease_finance.payment_order p WHERE p.id BETWEEN :startId AND :endId AND COALESCE(p.is_delete,0)=0 AND COALESCE(p.is_cancel,0)=0 AND (:startDateTime IS NULL OR p.create_time>=:startDateTime) AND (:endExclusiveDateTime IS NULL OR p.create_time<:endExclusiveDateTime))",
+    "checks": [
+      {
+        "id": "PAID_STATUS",
+        "when": "status=40 AND NOT(amount <=> pay_amount)",
+        "delta": "amount-pay_amount"
+      },
+      {
+        "id": "DUPLICATE_KEY",
+        "when": "duplicate_n>1",
+        "delta": "0"
+      },
+      {
+        "id": "PAYMENT_STATE",
+        "when": "status=40 AND NOT(payment_result <=> 4)",
+        "delta": "0"
+      }
+    ],
+    "cols": "id,business_key,status,payment_result,amount,pay_amount,payment_serial_no,duplicate_n"
+  }
+]

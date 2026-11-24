@@ -1,0 +1,12 @@
+{
+  "time": "2026-11-20T14:28:07.329229+08:00",
+  "url": "http://10.10.116.32:8235/api/mandatory/buyback",
+  "request": {
+    "applicationNos": [
+      "JK026072714343944"
+    ]
+  },
+  "requestId": "wh-202611190001-array-D-1",
+  "httpStatus": 200,
+  "response": "{\"code\":\"200\",\"data\":null,\"message\":\"Success\",\"success\":true}"
+}

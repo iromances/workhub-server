@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 2,
+  "type": "RESULT",
+  "report": {
+    "reportType": "INSPECTION",
+    "title": "隔离测试",
+    "conclusion": "隔离测试",
+    "assessment": "ISSUES_FOUND",
+    "scope": {
+      "businessLines": [
+        "BL000005"
+      ],
+      "environments": [
+        "TEST"
+      ],
+      "window": {
+        "from": null,
+        "to": null,
+        "basis": "隔离样本"
+      },
+      "repositories": [],
+      "included": [],
+      "excluded": []
+    },
+    "checks": [
+      {
+        "key": "checks-1",
+        "category": "隔离测试",
+        "title": "隔离测试",
+        "outcome": "PASS",
+        "result": "隔离测试"
+      }
+    ],
+    "findings": [
+      {
+        "key": "findings-1",
+        "title": "隔离测试",
+        "severity": "P1",
+        "verificationStatus": "VERIFIED",
+        "disposition": "OPEN",
+        "category": "隔离测试",
+        "trigger": "隔离测试",
+        "analysis": "隔离测试",
+        "impact": "隔离测试",
+        "recommendation": "隔离测试",
+        "domain": "BUSINESS_MONITOR",
+        "signature": "fixture:one"
+      }
+    ],
+    "evidence": [
+      {
+        "key": "evidence-1",
+        "targetType": "FINDING",
+        "targetKey": "findings-1",
+        "type": "TEST",
+        "source": "隔离测试",
+        "locator": null,
+        "observedAt": null,
+        "environment": null,
+        "verificationMethod": "隔离测试",
+        "result": "隔离测试",
+        "limitations": "隔离测试"
+      }
+    ],
+    "actions": [
+      {
+        "key": "actions-1",
+        "findingKey": "findings-1",
+        "priority": "P0",
+        "description": "隔离测试",
+        "acceptanceCriteria": "隔离测试",
+        "prerequisite": "隔离测试"
+      }
+    ],
+    "limitations": []
+  }
+}
