@@ -4,6 +4,7 @@ import cn.aslight.workhub.model.intake.DevelopmentAnalysisDraft;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
+import cn.aslight.workhub.service.attachment.AttachmentService;
 import cn.aslight.workhub.service.system.SysConfigService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -16,9 +17,11 @@ import tools.jackson.databind.ObjectMapper;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -30,8 +33,9 @@ class KnowledgeArchiveIntegrationTest {
     @TempDir Path vault;
     @TempDir Path repository;
     private final ObjectMapper json = new ObjectMapper();
+    private final AttachmentService attachments = mock(AttachmentService.class);
 
-    private ProjectKnowledgeBaseService service() {
+    private SysConfigService config() {
         try { RepositoryDocumentPathsTest.repository(repository); }
         catch (Exception ex) { throw new IllegalStateException(ex); }
         SysConfigService config = mock(SysConfigService.class);
@@ -41,13 +45,32 @@ class KnowledgeArchiveIntegrationTest {
                 RepositoryDocumentPaths.CONFIG_KEY_REPOSITORY_PATH)).thenReturn(repository.toString());
         when(config.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP,
                 RepositoryDocumentPaths.CONFIG_KEY_PLAYBOOK_PATH)).thenReturn(repository.resolve("agents-playbook").toString());
+        return config;
+    }
+
+    private PlatformTransactionManager transactions() {
         PlatformTransactionManager transactions = mock(PlatformTransactionManager.class);
         when(transactions.getTransaction(any())).thenAnswer(ignored -> new SimpleTransactionStatus());
-        return new ProjectKnowledgeBaseService(config, mock(RequirementMaterialExportService.class), json, transactions);
+        return transactions;
+    }
+
+    private ProjectKnowledgeBaseService service() {
+        return new ProjectKnowledgeBaseService(config(), attachments, json, transactions());
     }
 
     private Path documents() throws Exception {
         return Files.createDirectories(repository.resolve("docs"));
+    }
+
+    /** 需求目录：协作业务线归档在 agents-playbook 仓库。 */
+    private Path requirementFolder() {
+        return service().resolveRequirementIterationLocation(input(), project(), 1L).wikiFolderPath();
+    }
+
+    /** 来源路径对应的版本目录，按归档代码使用的绝对路径形式给出。 */
+    private Path versionFolder(String source) {
+        return requirementFolder().resolve("原始材料").resolve("历史版本")
+                .resolve(repository.resolve(source).getParent().getFileName());
     }
 
     private IntakeStructuredData input() {
@@ -69,51 +92,130 @@ class KnowledgeArchiveIntegrationTest {
     }
 
     private DevelopmentAnalysisDraft draft(String source, String summary) {
-        return json.readValue(json.writeValueAsString(Map.of("status", "DRAFT", "summary", summary,
-                "requirementRawPath", source, "businessLine", "测试业务线", "workItems", List.of())), DevelopmentAnalysisDraft.class);
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("status", "DRAFT");
+        values.put("summary", summary);
+        values.put("requirementRawPath", source);
+        values.put("businessLine", "测试业务线");
+        values.put("workItems", List.of());
+        return json.readValue(json.writeValueAsString(values), DevelopmentAnalysisDraft.class);
     }
 
     @Test
-    void reevaluationKeepsImmutableInputsAndDoesNotCreateWikiMaterialCopies() throws Exception {
+    void inputVersionsAreImmutableAndUnchangedInputReusesTheLatestVersion() throws Exception {
         ProjectKnowledgeBaseService service = service();
         var first = service.upsertRequirementIterationNote(intake("来源 A"), input(), project());
         var second = service.upsertRequirementIterationNote(intake("来源 B"), input(), project());
         var third = service.upsertRequirementIterationNote(intake("来源 B"), input(), project());
+        assertTrue(first.written());
+        assertNull(first.failureReason());
         assertNotEquals(first.rawRelativePath(), second.rawRelativePath());
-        assertNotEquals(second.rawRelativePath(), third.rawRelativePath());
-        assertTrue(Files.readString(documents().resolve(first.rawRelativePath())).contains("来源 A"));
-        assertTrue(Files.readString(documents().resolve(second.rawRelativePath())).contains("来源 B"));
-        var manifest = json.readTree(Files.readString(documents().resolve(first.rawRelativePath()).getParent().resolve("manifest.json")));
-        assertEquals(KnowledgeArchiveFiles.digest(Files.readAllBytes(documents().resolve(first.rawRelativePath()))),
-                manifest.get("filesSha256").get("source.md").asText());
+        assertEquals(second.rawRelativePath(), third.rawRelativePath());
+        // 本测试把 agents-playbook 配在仓库目录内，相对路径因此不带 ../；生产布局为同级仓库
+        assertTrue(second.rawRelativePath().startsWith(
+                "agents-playbook/docs/业务线/测试业务线/需求/202610180001-归档测试/原始材料/历史版本/"), second.rawRelativePath());
+        assertTrue(Files.readString(repository.resolve(first.rawRelativePath())).contains("来源 A"));
+        assertTrue(Files.readString(repository.resolve(second.rawRelativePath())).contains("来源 B"));
+        assertFalse(Files.readString(repository.resolve(first.rawRelativePath())).contains("来源 B"));
+        Path materials = requirementFolder().resolve("原始材料");
+        assertEquals(Files.readString(repository.resolve(third.rawRelativePath())),
+                Files.readString(materials.resolve("source.md")));
+        try (var versions = Files.list(materials.resolve("历史版本"))) { assertEquals(2, versions.count()); }
         assertNull(second.wikiRelativePath());
-        assertFalse(Files.exists(documents().resolve("wiki")));
+        assertFalse(Files.exists(documents().resolve("requirement-sources")));
+        assertFalse(Files.exists(documents().resolve("notes.md")));
     }
 
     @Test
-    void concurrentNotesAppendPreservesThemesAndDeduplicatesCallbacks() throws Exception {
-        Files.writeString(documents().resolve("notes.md"), "# 工作笔记\n\n## 投资\n保留投资\n\n## 公司项目\n旧记录\n\n## 研发\n保留研发\n");
+    void promptContextKeepsRequirementContentAndReportsTheInputVersion() {
+        var note = service().upsertRequirementIterationNote(intake("需求原文"), input(), project());
+        String markdown = note.markdown();
+        assertTrue(markdown.startsWith("# 归档测试\n"));
+        assertTrue(markdown.contains("- **需求ID**：1\n"));
+        assertTrue(markdown.contains("- **审批编号**：202610180001\n"));
+        assertTrue(markdown.contains("- **业务线**：测试业务线\n"));
+        assertTrue(markdown.contains("- **项目**：测试项目\n"));
+        assertTrue(markdown.contains("## 原始内容\n\n```text\n需求原文\n```\n"));
+        assertTrue(markdown.contains("附件保存在数据库"));
+        assertEquals("项目文档原始材料版本：" + note.rawRelativePath() + "\n\n" + markdown, note.asPromptContext());
+    }
+
+    @Test
+    void concurrentArchivesOfTheSameInputShareOneVersion() throws Exception {
         ProjectKnowledgeBaseService service = service();
-        String source = service.upsertRequirementIterationNote(intake("原文"), input(), project()).rawRelativePath();
         var pool = Executors.newFixedThreadPool(6);
         try {
-            var jobs = new java.util.ArrayList<java.util.concurrent.Future<?>>();
-            for (long i = 0; i < 24; i++) {
-                long id = i;
-                jobs.add(pool.submit(() -> service.appendAnalysisNote(1L, id, "生成评估", Map.of("summary", "分析 " + id), source, "tester")));
+            var jobs = new java.util.ArrayList<Future<ProjectKnowledgeBaseService.RequirementKnowledgeNote>>();
+            for (int i = 0; i < 24; i++) {
+                jobs.add(pool.submit(() -> service.upsertRequirementIterationNote(intake("并发原文"), input(), project())));
             }
-            for (var job : jobs) { job.get(); }
+            String version = null;
+            for (var job : jobs) {
+                ProjectKnowledgeBaseService.RequirementKnowledgeNote note = job.get();
+                assertTrue(note.written());
+                if (version == null) { version = note.rawRelativePath(); }
+                assertEquals(version, note.rawRelativePath());
+            }
+            try (var files = Files.list(versionFolder(version))) { assertEquals(2, files.count()); }
         } finally {
             pool.shutdown();
             assertTrue(pool.awaitTermination(10, TimeUnit.SECONDS));
         }
-        service.appendAnalysisNote(1L, 0L, "生成评估", Map.of("summary", "分析 0"), source, "tester");
-        String notes = Files.readString(documents().resolve("notes.md"));
-        assertEquals(24, notes.split("<!-- analysis-record:", -1).length - 1);
-        assertTrue(notes.startsWith("# 工作笔记\n\n## 投资\n保留投资"));
-        assertTrue(notes.endsWith("\n## 研发\n保留研发\n"));
-        assertTrue(notes.contains("旧记录"));
-        assertFalse(Files.exists(documents().resolve("wiki")));
+    }
+
+    @Test
+    void inputVersionListsAttachmentDigestsWithoutCopyingAttachmentFiles() throws Exception {
+        when(attachments.listIntakeMaterialDigests(1L)).thenReturn(List.of(
+                new AttachmentService.AttachmentDigest(11L, "需求.docx", 2048L, "sha-11"),
+                new AttachmentService.AttachmentDigest(12L, "截图.png", 64L, null)));
+        var note = service().upsertRequirementIterationNote(intake("附件清单"), input(), project());
+        Path version = versionFolder(note.rawRelativePath());
+        Path source = version.resolve("source.md");
+        var manifest = json.readTree(Files.readString(version.resolve("manifest.json")));
+        assertEquals(1L, manifest.get("intakeId").asLong());
+        assertEquals(version.getFileName().toString(), manifest.get("versionId").asText());
+        assertEquals(KnowledgeArchiveFiles.digest(Files.readAllBytes(source)), manifest.get("sourceSha256").asText());
+        assertEquals("需求.docx", manifest.get("attachments").get(0).get("fileName").asText());
+        assertEquals(2048L, manifest.get("attachments").get(0).get("fileSize").asLong());
+        assertEquals("sha-11", manifest.get("attachments").get(0).get("fileSha256").asText());
+        assertEquals(12L, manifest.get("attachments").get(1).get("id").asLong());
+        assertTrue(manifest.get("attachments").get(1).get("fileSha256").isNull());
+        try (var files = Files.walk(version)) {
+            assertEquals(List.of("manifest.json", "source.md"),
+                    files.filter(Files::isRegularFile).map(path -> path.getFileName().toString()).sorted().toList());
+        }
+        try (var files = Files.walk(version.getParent().getParent())) {
+            assertFalse(files.anyMatch(path -> path.toString().endsWith(".docx")));
+        }
+    }
+
+    @Test
+    void changedInputOrAttachmentsCreateANewVersion() {
+        var first = new AttachmentService.AttachmentDigest(11L, "需求.docx", 2048L, "sha-11");
+        var second = new AttachmentService.AttachmentDigest(12L, "补充.pdf", 4096L, "sha-12");
+        when(attachments.listIntakeMaterialDigests(1L))
+                .thenReturn(List.of(first), List.of(first, second), List.of(first, second));
+        ProjectKnowledgeBaseService service = service();
+        var initial = service.upsertRequirementIterationNote(intake("原文"), input(), project());
+        var moreAttachments = service.upsertRequirementIterationNote(intake("原文"), input(), project());
+        var edited = service.upsertRequirementIterationNote(intake("修订原文"), input(), project());
+        assertNotEquals(initial.rawRelativePath(), moreAttachments.rawRelativePath());
+        assertNotEquals(moreAttachments.rawRelativePath(), edited.rawRelativePath());
+    }
+
+    @Test
+    void unavailableArchiveRootKeepsPromptMarkdownAndReportsFailure() throws Exception {
+        SysConfigService config = config();
+        when(config.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP,
+                RepositoryDocumentPaths.CONFIG_KEY_PLAYBOOK_PATH)).thenReturn(repository.resolve("docs/agents-playbook").toString());
+        var note = new ProjectKnowledgeBaseService(config, attachments, json, transactions())
+                .upsertRequirementIterationNote(intake("归档不可用"), input(), project());
+        assertFalse(note.written());
+        assertNull(note.rawRelativePath());
+        assertTrue(note.failureReason().contains("agents-playbook"));
+        assertTrue(note.markdown().contains("## 原始内容\n\n```text\n归档不可用\n```\n"));
+        assertEquals(note.markdown(), note.asPromptContext());
+        assertFalse(Files.exists(repository.resolve("docs/agents-playbook")));
     }
 
     @Test
@@ -123,6 +225,8 @@ class KnowledgeArchiveIntegrationTest {
         var location = service.publishConfirmedAnalysis(intake("原始需求"), input(), project(), 2L,
                 draft(source, "第一轮结论"), "reviewer", "2026-10-18T12:00:00");
         String first = Files.readString(location.wikiPath());
+        assertTrue(first.contains("- 来源版本：[来源版本](<" + versionFolder(source).resolve("source.md") + ">)"));
+        assertFalse(first.contains("临时分析"));
         service.publishConfirmedAnalysis(intake("原始需求"), input(), project(), 2L,
                 draft(source, "第一轮结论"), "reviewer", "2026-10-18T12:01:00");
         assertEquals(first, Files.readString(location.wikiPath()));
@@ -176,48 +280,40 @@ class KnowledgeArchiveIntegrationTest {
     }
 
     @Test
-    void linkedNotesAndEscapingSourcesCannotOverwriteOutsideFiles() throws Exception {
+    void linkedMaterialFoldersAndEscapingSourcesCannotTouchOutsideFiles() throws Exception {
+        Path outside = Files.createDirectory(vault.resolve("outside"));
+        Files.writeString(outside.resolve("保持原样.md"), "不得改写");
         ProjectKnowledgeBaseService service = service();
-        Path outside = Files.createTempFile("archive-outside-", ".md");
-        try {
-            Files.writeString(outside, "不得改写");
-            Files.createSymbolicLink(documents().resolve("notes.md"), outside);
-            assertThrows(IllegalStateException.class, () -> service.appendAnalysisNote(1L, 1L, "生成评估", Map.of(), null, "tester"));
-            assertEquals("不得改写", Files.readString(outside));
-            Files.delete(documents().resolve("notes.md"));
-            assertThrows(IllegalStateException.class, () -> service.appendAnalysisNote(1L, 1L, "生成评估", Map.of(), "../../outside.md", "tester"));
-            Files.writeString(documents().resolve("其他文件.md"), "不是来源");
-            assertThrows(IllegalStateException.class, () -> service.appendAnalysisNote(1L, 1L, "生成评估", Map.of(),
-                    "raw/公司项目/requirements/../../../其他文件.md", "tester"));
-        } finally {
-            Files.deleteIfExists(outside);
-        }
+        Path folder = requirementFolder();
+        Files.createDirectories(folder.getParent());
+        Files.createSymbolicLink(folder, outside);
+        var note = service.upsertRequirementIterationNote(intake("原文"), input(), project());
+        assertFalse(note.written());
+        assertNull(note.rawRelativePath());
+        assertTrue(note.failureReason().contains("符号链接"));
+        assertTrue(note.markdown().contains("原文"));
+        try (var files = Files.list(outside)) { assertEquals(1, files.count()); }
+        Files.delete(folder);
+        assertThrows(IllegalStateException.class, () -> service.publishConfirmedAnalysis(intake("原文"), input(), project(), 1L,
+                draft("raw/公司项目/requirements/../../../保持原样.md", "已确认"), "reviewer", "2026-10-30T12:00:00"));
+        assertEquals("不得改写", Files.readString(outside.resolve("保持原样.md")));
+        String unrecognized = Files.readString(service.publishConfirmedAnalysis(intake("原文"), input(), project(), 1L,
+                draft("../../保持原样.md", "无法识别的来源"), "reviewer", "2026-10-30T12:01:00").wikiPath());
+        assertTrue(unrecognized.contains("未留存（来源版本文件不存在：../../保持原样.md）"));
     }
 
     @Test
-    void clarificationReplyAndRetryReuseRecordedInputVersionWithoutDuplicateCallbacks() throws Exception {
-        ProjectKnowledgeBaseService service = service();
-        String source = service.upsertRequirementIterationNote(intake("澄清原文"), input(), project()).rawRelativePath();
-        service.appendAnalysisNote(1L, 7L, "生成需求澄清项", Map.of("question", "需要确认"), source, "tester");
-        service.appendAnalysisNote(1L, 7L, "回复需求澄清项", Map.of("response", "已经回复"), null, "tester");
-        service.appendAnalysisNote(1L, 7L, "回复需求澄清项", Map.of("response", "已经回复"), null, "tester");
-        String notes = Files.readString(documents().resolve("notes.md"));
-        assertEquals(2, notes.split("<!-- analysis-record:", -1).length - 1);
-        assertEquals(2, notes.split(java.util.regex.Pattern.quote("- 来源：[来源版本](<" + documents().resolve(source) + ">)"), -1).length - 1);
-        assertFalse(notes.contains("历史分析未记录输入版本"));
-    }
-
-    @Test
-    void missingApprovalNumbersUseIntakeIdsAndUnsafeSegmentsCannotEscape() throws Exception {
+    void missingApprovalNumbersUseIntakeIds() throws Exception {
         ProjectKnowledgeBaseService service = service();
         IntakeStructuredData noCode = json.readValue("{\"requirementName\":\"相同名称\"}", IntakeStructuredData.class);
         IntakeRecordEntity other = intake("第二个需求");
         other.setId(2L);
         var first = service.upsertRequirementIterationNote(intake("第一个需求"), noCode, project());
         var second = service.upsertRequirementIterationNote(other, noCode, project());
-        assertTrue(first.rawRelativePath().contains("INTAKE-1/"));
-        assertTrue(second.rawRelativePath().contains("INTAKE-2/"));
-        assertTrue(Files.readString(documents().resolve(first.rawRelativePath())).contains("第一个需求"));
+        assertTrue(first.rawRelativePath().contains("/需求/INTAKE-1-相同名称/原始材料/历史版本/"));
+        assertTrue(second.rawRelativePath().contains("/需求/INTAKE-2-相同名称/原始材料/历史版本/"));
+        assertTrue(Files.readString(repository.resolve(first.rawRelativePath())).contains("第一个需求"));
+        assertTrue(Files.readString(repository.resolve(second.rawRelativePath())).contains("第二个需求"));
     }
 
     @Test
@@ -226,12 +322,12 @@ class KnowledgeArchiveIntegrationTest {
         Files.writeString(vault.resolve("规范.md"), "通用研发规范");
         ProjectKnowledgeBaseService service = service();
         var source = service.upsertRequirementIterationNote(intake("材料"), input(), project());
-        service.appendAnalysisNote(1L, 9L, "生成研发评估", Map.of("summary", "过程记录"), source.rawRelativePath(), "tester");
         var report = service.publishConfirmedAnalysis(intake("材料"), input(), project(), 9L,
                 draft(source.rawRelativePath(), "确认结论"), "reviewer", "2026-10-30T12:00:00");
-        assertTrue(report.rawPath().startsWith(repository.resolve("docs/requirement-sources")));
+        assertTrue(report.rawPath().startsWith(report.wikiRoot()));
         assertTrue(report.wikiPath().startsWith(repository.resolve("agents-playbook/docs/业务线")));
-        assertTrue(Files.readString(documents().resolve("notes.md")).contains("过程记录"));
+        assertFalse(Files.exists(documents().resolve("requirement-sources")));
+        assertFalse(Files.exists(documents().resolve("notes.md")));
         assertNull(report.wikiObsidianUrl());
         assertEquals("知识库仅保留手工知识笔记", Files.readString(vault.resolve("notes.md")));
         assertEquals("通用研发规范", Files.readString(vault.resolve("规范.md")));
@@ -239,28 +335,23 @@ class KnowledgeArchiveIntegrationTest {
     }
 
     @Test
-    void migratedLegacySourcesAndBindingsSupportRetriesWithoutChangingSnapshots() throws Exception {
+    void legacySourcePathsResolveReadOnlyAndMissingFilesAreMarkedUnretained() throws Exception {
+        String legacy = "requirement-sources/测试业务线/测试项目/2026/202610180001/历史版本/old/source.md";
+        Path legacyFile = documents().resolve(legacy);
+        Files.createDirectories(legacyFile.getParent());
+        Files.writeString(legacyFile, "旧来源快照");
         ProjectKnowledgeBaseService service = service();
-        String current = service.upsertRequirementIterationNote(intake("旧来源原文"), input(), project()).rawRelativePath();
-        byte[] snapshot = Files.readAllBytes(documents().resolve(current));
-        String legacy = current.replace("requirement-sources/", "raw/公司项目/requirements/");
-        Path binding = documents().resolve("requirement-sources/.workhub-analysis-sources/1-7-clarification.txt");
-        Files.createDirectories(binding.getParent());
-        Files.writeString(binding, legacy);
-        service.appendAnalysisNote(1L, 7L, "回复需求澄清项", Map.of("response", "回答"), null, "tester");
-        service.appendAnalysisNote(1L, 7L, "回复需求澄清项", Map.of("response", "回答"), null, "tester");
-        assertEquals(1, Files.readString(documents().resolve("notes.md")).split("<!-- analysis-record:", -1).length - 1);
-        var location = service.publishConfirmedAnalysis(intake("材料"), input(), project(), 7L,
-                draft(legacy, "已确认"), "reviewer", "2026-10-30T12:00:00");
-        String report = Files.readString(location.wikiPath());
-        assertTrue(report.contains("[来源版本](<" + documents().resolve(current) + ">)"));
-        service.publishConfirmedAnalysis(intake("材料"), input(), project(), 7L,
-                draft(legacy, "已确认"), "reviewer", "2026-10-30T12:01:00");
-        assertEquals(report, Files.readString(location.wikiPath()));
-        assertArrayEquals(snapshot, Files.readAllBytes(documents().resolve(current)));
-        service.appendAnalysisNote(1L, 8L, "生成评估", Map.of(),
-                current.replace("requirement-sources/", "raw/requirements/"), "tester");
-        assertFalse(Files.exists(vault.resolve("raw")));
+        String migrated = Files.readString(service.publishConfirmedAnalysis(intake("材料"), input(), project(), 7L,
+                draft("raw/公司项目/requirements/测试业务线/测试项目/2026/202610180001/历史版本/old/source.md", "迁移前缀"),
+                "reviewer", "2026-10-30T12:01:00").wikiPath());
+        assertTrue(migrated.contains("- 来源版本：[来源版本](<" + legacyFile + ">)"));
+        String missing = Files.readString(service.publishConfirmedAnalysis(intake("材料"), input(), project(), 7L,
+                draft("requirement-sources/不存在/source.md", "来源缺失"), "reviewer", "2026-10-30T12:02:00").wikiPath());
+        assertTrue(missing.contains("未留存（来源版本文件不存在：requirement-sources/不存在/source.md）"));
+        String unrecorded = Files.readString(service.publishConfirmedAnalysis(intake("材料"), input(), project(), 7L,
+                draft(null, "未记录来源"), "reviewer", "2026-10-30T12:03:00").wikiPath());
+        assertTrue(unrecorded.contains("未留存（历史分析未记录输入版本"));
+        assertEquals("旧来源快照", Files.readString(legacyFile));
     }
 
     @Test

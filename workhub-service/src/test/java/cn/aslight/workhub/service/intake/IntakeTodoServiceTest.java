@@ -3,26 +3,33 @@ package cn.aslight.workhub.service.intake;
 import cn.aslight.workhub.dao.intake.IntakeHistoryMapper;
 import cn.aslight.workhub.dao.intake.IntakeMapper;
 import cn.aslight.workhub.dao.intake.IntakeTodoMapper;
+import cn.aslight.workhub.model.attachment.AttachmentResponse;
 import cn.aslight.workhub.model.intake.IntakeHistoryEntity;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeTodoCreateRequest;
 import cn.aslight.workhub.model.intake.IntakeTodoEntity;
 import cn.aslight.workhub.model.intake.IntakeTodoStatusRequest;
+import cn.aslight.workhub.model.intake.IntakeTodoResponse;
 import cn.aslight.workhub.model.intake.IntakeTodoUpdateRequest;
+import cn.aslight.workhub.service.attachment.AttachmentService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.doAnswer;
 
 class IntakeTodoServiceTest {
 
@@ -31,7 +38,7 @@ class IntakeTodoServiceTest {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeTodoMapper todoMapper = mock(IntakeTodoMapper.class);
         IntakeHistoryMapper historyMapper = mock(IntakeHistoryMapper.class);
-        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, historyMapper);
+        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, historyMapper, mock(AttachmentService.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(11L);
@@ -54,6 +61,7 @@ class IntakeTodoServiceTest {
 
         assertEquals("待处理", response.status());
         assertEquals("确认资方接口口径", response.title());
+        assertEquals(List.of(), response.screenshots());
         ArgumentCaptor<IntakeTodoEntity> todoCaptor = forClass(IntakeTodoEntity.class);
         verify(todoMapper).insert(todoCaptor.capture());
         assertEquals(11L, todoCaptor.getValue().getIntakeId());
@@ -64,10 +72,36 @@ class IntakeTodoServiceTest {
     }
 
     @Test
+    void list_shouldAttachScreenshotsToEachTodo() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeTodoMapper todoMapper = mock(IntakeTodoMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, mock(IntakeHistoryMapper.class), attachmentService);
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(21L);
+        when(intakeMapper.findById(21L)).thenReturn(intake);
+        when(todoMapper.findByIntakeId(21L)).thenReturn(List.of(
+                responseEntity(601L, "待处理", null),
+                responseEntity(602L, "待处理", null)
+        ));
+        when(attachmentService.mapTodoScreenshots(List.of(601L, 602L))).thenReturn(Map.of(
+                601L, List.of(screenshot(7001L, "first.png"), screenshot(7002L, "second.png"))
+        ));
+
+        List<IntakeTodoResponse> response = service.list(21L);
+
+        assertEquals(
+                List.of(7001L, 7002L),
+                response.get(0).screenshots().stream().map(AttachmentResponse::id).toList()
+        );
+        assertEquals(List.of(), response.get(1).screenshots());
+    }
+
+    @Test
     void updateStatus_shouldRequireResultWhenCompletingTodo() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeTodoMapper todoMapper = mock(IntakeTodoMapper.class);
-        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, mock(IntakeHistoryMapper.class));
+        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, mock(IntakeHistoryMapper.class), mock(AttachmentService.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(12L);
@@ -90,7 +124,7 @@ class IntakeTodoServiceTest {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeTodoMapper todoMapper = mock(IntakeTodoMapper.class);
         IntakeHistoryMapper historyMapper = mock(IntakeHistoryMapper.class);
-        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, historyMapper);
+        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, historyMapper, mock(AttachmentService.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(13L);
@@ -119,7 +153,7 @@ class IntakeTodoServiceTest {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeTodoMapper todoMapper = mock(IntakeTodoMapper.class);
         IntakeHistoryMapper historyMapper = mock(IntakeHistoryMapper.class);
-        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, historyMapper);
+        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, historyMapper, mock(AttachmentService.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(14L);
@@ -143,12 +177,115 @@ class IntakeTodoServiceTest {
     }
 
     @Test
+    void saveScreenshots_shouldRejectNonImageWithoutWriting() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeTodoMapper todoMapper = mock(IntakeTodoMapper.class);
+        IntakeHistoryMapper historyMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, historyMapper, attachmentService);
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(15L);
+        when(intakeMapper.findById(15L)).thenReturn(intake);
+        when(todoMapper.findById(501L)).thenReturn(ownedEntity(501L));
+        List<MultipartFile> files = List.of(
+                new MockMultipartFile("files", "error.png", "image/png", "png".getBytes()),
+                new MockMultipartFile("files", "notes.pdf", "application/pdf", "pdf".getBytes())
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.saveScreenshots(15L, 501L, files, List.of(), "admin")
+        );
+
+        assertEquals("截图仅支持图片文件：notes.pdf", exception.getMessage());
+        verify(attachmentService, never()).deleteTodoScreenshots(any(), any());
+        verify(attachmentService, never()).saveTodoScreenshots(any(), any());
+        verify(historyMapper, never()).insert(any());
+    }
+
+    @Test
+    void saveScreenshots_shouldRejectScreenshotNotBelongingToTodo() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeTodoMapper todoMapper = mock(IntakeTodoMapper.class);
+        IntakeHistoryMapper historyMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, historyMapper, attachmentService);
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(15L);
+        when(intakeMapper.findById(15L)).thenReturn(intake);
+        when(todoMapper.findById(501L)).thenReturn(ownedEntity(501L));
+        when(attachmentService.mapTodoScreenshots(List.of(501L))).thenReturn(Map.of(
+                501L, List.of(screenshot(7001L, "old.png"))
+        ));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.saveScreenshots(15L, 501L, List.of(), List.of(7999L), "admin")
+        );
+
+        assertEquals("截图不存在或不属于当前待办", exception.getMessage());
+        verify(attachmentService, never()).deleteTodoScreenshots(any(), any());
+        verify(attachmentService, never()).saveTodoScreenshots(any(), any());
+        verify(historyMapper, never()).insert(any());
+    }
+
+    @Test
+    void saveScreenshots_shouldDeleteRemovedAppendNewAndRecordHistory() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeTodoMapper todoMapper = mock(IntakeTodoMapper.class);
+        IntakeHistoryMapper historyMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, historyMapper, attachmentService);
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(15L);
+        when(intakeMapper.findById(15L)).thenReturn(intake);
+        when(todoMapper.findById(501L)).thenReturn(ownedEntity(501L));
+        when(attachmentService.mapTodoScreenshots(List.of(501L))).thenReturn(Map.of(
+                501L, List.of(screenshot(7001L, "old.png"))
+        ));
+        MockMultipartFile newFile = new MockMultipartFile("files", "new.png", "image/png", "new".getBytes());
+
+        service.saveScreenshots(15L, 501L, List.of(newFile), List.of(7001L), "admin");
+
+        verify(attachmentService).deleteTodoScreenshots(501L, List.of(7001L));
+        verify(attachmentService).saveTodoScreenshots(501L, List.of(newFile));
+        ArgumentCaptor<IntakeHistoryEntity> historyCaptor = forClass(IntakeHistoryEntity.class);
+        verify(historyMapper).insert(historyCaptor.capture());
+        assertEquals("更新需求待办截图", historyCaptor.getValue().getActionSummary());
+        assertEquals(
+                "待办标题：确认资方接口口径\n删除截图：old.png\n新增截图：new.png",
+                historyCaptor.getValue().getDetailText()
+        );
+    }
+
+    @Test
+    void saveScreenshots_shouldSkipWritesAndHistoryWhenNothingChanges() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeTodoMapper todoMapper = mock(IntakeTodoMapper.class);
+        IntakeHistoryMapper historyMapper = mock(IntakeHistoryMapper.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, historyMapper, attachmentService);
+        IntakeRecordEntity intake = new IntakeRecordEntity();
+        intake.setId(15L);
+        when(intakeMapper.findById(15L)).thenReturn(intake);
+        when(todoMapper.findById(501L)).thenReturn(ownedEntity(501L));
+
+        var response = service.saveScreenshots(15L, 501L, List.of(), List.of(), "admin");
+
+        assertEquals(501L, response.id());
+        assertEquals(List.of(), response.screenshots());
+        verify(attachmentService, never()).deleteTodoScreenshots(any(), any());
+        verify(attachmentService, never()).saveTodoScreenshots(any(), any());
+        verify(historyMapper, never()).insert(any());
+    }
+
+    @Test
     void delete_shouldRemoveTodoAndRecordHistory() {
         IntakeMapper intakeMapper = mock(IntakeMapper.class);
         IntakeTodoMapper todoMapper = mock(IntakeTodoMapper.class);
         IntakeHistoryMapper historyMapper = mock(IntakeHistoryMapper.class);
-        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, historyMapper);
-
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeTodoService service = new IntakeTodoService(intakeMapper, todoMapper, historyMapper, attachmentService);
         IntakeRecordEntity intake = new IntakeRecordEntity();
         intake.setId(15L);
         when(intakeMapper.findById(15L)).thenReturn(intake);
@@ -159,9 +296,28 @@ class IntakeTodoServiceTest {
         service.delete(15L, 501L, "admin");
 
         verify(todoMapper).deleteById(501L);
+        verify(attachmentService).deleteAllTodoScreenshots(501L);
         ArgumentCaptor<IntakeHistoryEntity> historyCaptor = forClass(IntakeHistoryEntity.class);
         verify(historyMapper).insert(historyCaptor.capture());
         assertEquals("删除需求待办", historyCaptor.getValue().getActionSummary());
+    }
+
+    private IntakeTodoEntity ownedEntity(Long id) {
+        IntakeTodoEntity entity = responseEntity(id, "待处理", null);
+        entity.setIntakeId(15L);
+        return entity;
+    }
+
+    private AttachmentResponse screenshot(Long id, String fileName) {
+        return new AttachmentResponse(
+                id,
+                "截图",
+                fileName,
+                "image/png",
+                "/api/attachments/" + id + "/download",
+                true,
+                LocalDateTime.of(2026, 6, 4, 10, 0)
+        );
     }
 
     private IntakeTodoEntity responseEntity(Long id, String status, String result) {

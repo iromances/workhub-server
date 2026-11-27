@@ -45,6 +45,19 @@ public class AgentController {
         return ApiResponse.success(service.detail(id, auth.getName()));
     }
 
+    @GetMapping("/{id}/duty-task")
+    @PreAuthorize("hasAuthority('agent:task:view')")
+    public ApiResponse<AgentTaskResponse> dutyTask(@PathVariable String id, Authentication auth) {
+        return ApiResponse.success(service.dutyTask(id, auth.getName()));
+    }
+
+    @GetMapping("/{id}/runs")
+    @PreAuthorize("hasAuthority('agent:task:view')")
+    public ApiResponse<AgentPage<AgentRunResponse>> runs(@PathVariable String id, Authentication auth,
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize) {
+        return ApiResponse.success(service.agentRuns(id, auth.getName(), page, pageSize));
+    }
+
     @PostMapping
     @PreAuthorize("hasAuthority('agent:manage')")
     public ApiResponse<AgentDefinitionResponse> create(@Valid @RequestBody AgentSaveRequest request, Authentication auth) {

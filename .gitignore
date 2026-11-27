@@ -11,5 +11,5 @@ config
 .workhub-secrets.properties
 __pycache__/
 *.pyc
-docs/.workhub-archive.lock
+.workhub-archive.lock
 .zcode

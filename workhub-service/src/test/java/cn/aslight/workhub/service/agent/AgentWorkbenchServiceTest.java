@@ -45,6 +45,8 @@ class AgentWorkbenchServiceTest {
     private Connection keepAlive;
     private JdbcTemplate jdbc;
     private AgentMapper mapper;
+    private BusinessLineMapper lines;
+    private BusinessLineEntity line;
     private cn.aslight.workhub.service.system.DictService dicts;
     private AgentWorkbenchService service;
     private AgentAccessService access;
@@ -111,6 +113,8 @@ class AgentWorkbenchServiceTest {
         line.setEnabled(true);
         line.setSupportedEnvironments("TEST,PROD");
         when(lines.findByCode("BL000012")).thenReturn(line);
+        this.lines = lines;
+        this.line = line;
         access = new AgentAccessService(permissions, lines, mapper, json);
         providers = mock(AiProviderConfigService.class);
         var provider = new AiProviderConfigEntity();
@@ -651,6 +655,132 @@ class AgentWorkbenchServiceTest {
         service.setEnabled(agent.id(), agent.version(), false, "owner");
         assertThrows(IllegalArgumentException.class, () -> service.requireAssignable(agent.id(), scopes, "owner"));
         assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM pm_agent_task", Integer.class));
+    }
+
+    @Test
+    void dutyTaskIsProvisionedOnceWithDefaultSpecificationAndRunsDirectly() {
+        var agent = enabledAgent();
+        var duty = service.dutyTask(agent.id(), "owner");
+        assertEquals(AgentWorkbenchService.DUTY_TASK_REQUEST_KEY, mapper.findTask(duty.id()).requestKey());
+        assertEquals("", duty.specification().objective());
+        assertEquals(List.of("REPORT"), duty.specification().expectedArtifacts());
+        // 员工已限定授权范围时，默认执行范围就是其授权范围
+        assertEquals(List.of(testScope), duty.specification().scopes());
+        assertEquals("FULL", duty.specification().analysisScope());
+        assertEquals("OBSERVE", duty.specification().monitorMode());
+        assertEquals("MANUAL", duty.schedule().mode());
+        assertEquals("owner", duty.requestedBy());
+        assertEquals(duty.id(), service.dutyTask(agent.id(), "owner").id());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM pm_agent_task", Integer.class));
+        var run = service.run(duty.id(), new AgentRunRequest("duty-first", duty.version()), "owner");
+        assertEquals(duty.id(), run.taskId());
+        assertEquals("", json.readValue(mapper.findRun(run.id()).specificationJson(), AgentTaskSpecification.class).objective());
+    }
+
+    @Test
+    void dutyTaskDefaultsToEveryEnabledScopeWhenEmployeeIsUnrestricted() {
+        var first = new BusinessLineEntity();
+        first.setBusinessLineCode("BL000001");
+        first.setEnabled(true);
+        first.setSupportedEnvironments(" PROD ");
+        var disabled = new BusinessLineEntity();
+        disabled.setBusinessLineCode("BL000009");
+        disabled.setEnabled(false);
+        disabled.setSupportedEnvironments("TEST");
+        when(lines.findAll(null)).thenReturn(List.of(line, first, disabled));
+        var unrestricted = new AgentConfiguration("不限范围", "OPS", "按职责执行", 1L, "first-model", List.of(), 20, 60, 2);
+        var agent = service.create(new AgentSaveRequest(null, unrestricted), "owner");
+        var duty = service.dutyTask(agent.id(), "owner");
+        assertEquals(List.of(new AgentScope("BL000012", "TEST"), new AgentScope("BL000012", "PROD"), new AgentScope("BL000001", "PROD")),
+                duty.specification().scopes());
+    }
+
+    @Test
+    void dutyTaskAdoptsTheMostRunManualTaskOnceAndLeavesSystemTasksAlone() {
+        var agent = enabledAgent();
+        var adopted = service.createTask(agent.id(), taskRequest("manual-a", true), "owner");
+        service.createTask(agent.id(), taskRequest("manual-b", true), "owner");
+        var intake = service.createTask(agent.id(), taskRequest("intake-dev-7", true), "owner");
+        var fix = service.createTask(agent.id(), taskRequest("fix-1", true), "owner");
+        service.run(adopted.id(), new AgentRunRequest("adopted-again", adopted.version()), "owner");
+        for (var task : List.of(intake, fix))
+            for (String key : new String[]{"more", "more-again"}) service.run(task.id(), new AgentRunRequest(key, task.version()), "owner");
+        assertEquals(2, mapper.countRuns(adopted.id()));
+        assertEquals(3, mapper.countRuns(intake.id()));
+        assertEquals(3, mapper.countRuns(fix.id()));
+
+        var duty = service.dutyTask(agent.id(), "owner");
+        assertEquals(adopted.id(), duty.id());
+        assertEquals(AgentWorkbenchService.DUTY_TASK_REQUEST_KEY, mapper.findTask(adopted.id()).requestKey());
+        assertNull(mapper.findTaskByKey(agent.id(), "manual-a"));
+        assertEquals("manual-b", mapper.findTaskByKey(agent.id(), "manual-b").requestKey());
+        assertEquals("intake-dev-7", mapper.findTask(intake.id()).requestKey());
+        assertEquals("fix-1", mapper.findTask(fix.id()).requestKey());
+        // 认领只改请求标识：规格、版本与运行都不动
+        assertEquals(adopted.specification(), duty.specification());
+        assertEquals(adopted.version(), duty.version());
+        assertEquals(duty.id(), service.dutyTask(agent.id(), "owner").id());
+        var audit = jdbc.queryForObject("SELECT payload_json FROM pm_agent_audit WHERE object_type='TASK' AND object_id=? AND action='ADOPT_DUTY'", String.class, adopted.id());
+        assertTrue(audit.contains("manual-a"));
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM pm_agent_audit WHERE action='ADOPT_DUTY'", Integer.class));
+    }
+
+    @Test
+    void dutyTaskAdoptionIsDeterministicWhenManualTasksTie() {
+        var agent = enabledAgent();
+        var first = service.createTask(agent.id(), taskRequest("tie-a", false), "owner");
+        var second = service.createTask(agent.id(), taskRequest("tie-b", false), "owner");
+        // 固定时钟下两条任务创建时间相同，取 ID 较小者
+        var expected = first.id().compareTo(second.id()) < 0 ? first.id() : second.id();
+        assertEquals(expected, service.dutyTask(agent.id(), "owner").id());
+        assertEquals(2, mapper.countTasks(agent.id()));
+    }
+
+    @Test
+    void dutyTaskForEmployeeWithOnlySystemTasksIsCreatedAlongsideThem() {
+        var agent = enabledAgent();
+        var intake = service.createTask(agent.id(), taskRequest("intake-dev-9", false), "owner");
+        var duty = service.dutyTask(agent.id(), "owner");
+        assertNotEquals(intake.id(), duty.id());
+        assertEquals("intake-dev-9", mapper.findTask(intake.id()).requestKey());
+        assertEquals("", duty.specification().objective());
+        assertEquals(2, mapper.countTasks(agent.id()));
+    }
+
+    @Test
+    void dutyTaskReservedKeyAndDeletionAreGuardedWhileAgentDeletionStillCascades() {
+        var agent = enabledAgent();
+        var duty = service.dutyTask(agent.id(), "owner");
+        var reserved = assertThrows(IllegalArgumentException.class, () -> service.createTask(agent.id(), taskRequest("duty", false), "owner"));
+        assertTrue(reserved.getMessage().contains("系统保留值"));
+        var guarded = assertThrows(IllegalArgumentException.class, () -> service.deleteTask(duty.id(), duty.version(), "owner"));
+        assertTrue(guarded.getMessage().contains("不能单独删除"));
+        assertNotNull(mapper.findTask(duty.id()));
+        var disabled = service.setEnabled(agent.id(), agent.version(), false, "owner");
+        service.deleteAgent(agent.id(), disabled.version(), "owner");
+        assertNull(mapper.findTask(duty.id()));
+    }
+
+    @Test
+    void agentRunsListEveryTaskOfTheEmployeeNewestFirstAndRespectOwnership() {
+        var agent = enabledAgent();
+        var manual = service.createTask(agent.id(), taskRequest("manual-a", true), "owner");
+        var intake = service.createTask(agent.id(), taskRequest("intake-dev-1", true), "owner");
+        var oldest = mapper.findRunByKey(manual.id(), "initial:manual-a");
+        var middle = mapper.findRunByKey(intake.id(), "initial:intake-dev-1");
+        var newest = service.run(manual.id(), new AgentRunRequest("later", manual.version()), "owner");
+        jdbc.update("UPDATE pm_agent_run SET created_at=? WHERE id=?", LocalDateTime.of(2026, 11, 3, 17, 0), oldest.id());
+        jdbc.update("UPDATE pm_agent_run SET created_at=? WHERE id=?", LocalDateTime.of(2026, 11, 3, 17, 10), middle.id());
+
+        var page = service.agentRuns(agent.id(), "owner", 1, 20);
+        assertEquals(3, page.total());
+        assertEquals(List.of(newest.id(), middle.id(), oldest.id()), page.items().stream().map(AgentRunResponse::id).toList());
+        assertEquals(2, service.agentRuns(agent.id(), "owner", 1, 2).items().size());
+        // 无归属且无管理权限的访问被拒绝，且不会借机补建职责执行任务
+        assertThrows(AccessDeniedException.class, () -> service.agentRuns(agent.id(), "other", 1, 20));
+        assertThrows(AccessDeniedException.class, () -> service.dutyTask(agent.id(), "other"));
+        assertEquals(2, mapper.countTasks(agent.id()));
+        assertThrows(IllegalArgumentException.class, () -> service.agentRuns("missing", "owner", 1, 20));
     }
 
     private AgentDefinitionResponse enabledAgent() {

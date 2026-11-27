@@ -58,6 +58,10 @@ public class IntakeStageActionRequest {
      */
     private Boolean aiClarificationEnabled;
     /**
+     * 设计完成后是否自动触发 AI 分支开发。仅设计完成动作且研发需求使用，未传时默认启用。
+     */
+    private Boolean aiDevelopmentEnabled;
+    /**
      * 需求关闭原因。
      */
     private String closeReason;
@@ -164,6 +168,14 @@ public class IntakeStageActionRequest {
 
     public void setAiClarificationEnabled(Boolean aiClarificationEnabled) {
         this.aiClarificationEnabled = aiClarificationEnabled;
+    }
+
+    public Boolean getAiDevelopmentEnabled() {
+        return aiDevelopmentEnabled;
+    }
+
+    public void setAiDevelopmentEnabled(Boolean aiDevelopmentEnabled) {
+        this.aiDevelopmentEnabled = aiDevelopmentEnabled;
     }
 
     public String getCloseReason() {

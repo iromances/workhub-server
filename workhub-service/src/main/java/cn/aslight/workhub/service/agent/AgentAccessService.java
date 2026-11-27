@@ -55,6 +55,15 @@ public class AgentAccessService {
         }
     }
 
+    /** 未限定范围的员工默认执行范围：全部启用业务线及其已配置环境，与 /api/agents/options 的 scopes 同口径。 */
+    public List<AgentScope> allEnabledScopes() {
+        return businessLines.findAll(null).stream().filter(line -> Boolean.TRUE.equals(line.getEnabled()))
+                .flatMap(line -> (line.getSupportedEnvironments() == null ? List.<String>of()
+                        : Arrays.stream(line.getSupportedEnvironments().split(",")).map(String::trim).filter(value -> !value.isEmpty()).toList())
+                        .stream().map(environmentCode -> new AgentScope(line.getBusinessLineCode(), environmentCode)))
+                .toList();
+    }
+
     /** 多步骤外部操作在每次写入前复核同一操作授权，不能只依赖入口时的权限。 */
     public void requireExecution(AgentToolContext context, String toolCode, Set<String> requiredPermissions) {
         requireRunAuthorization(context);

@@ -3,6 +3,7 @@ package cn.aslight.workhub.service.intake;
 import cn.aslight.workhub.dao.intake.IntakeHistoryMapper;
 import cn.aslight.workhub.dao.intake.IntakeMapper;
 import cn.aslight.workhub.dao.intake.IntakeTodoMapper;
+import cn.aslight.workhub.model.attachment.AttachmentResponse;
 import cn.aslight.workhub.model.intake.IntakeHistoryEntity;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeTodoCreateRequest;
@@ -10,11 +11,16 @@ import cn.aslight.workhub.model.intake.IntakeTodoEntity;
 import cn.aslight.workhub.model.intake.IntakeTodoResponse;
 import cn.aslight.workhub.model.intake.IntakeTodoStatusRequest;
 import cn.aslight.workhub.model.intake.IntakeTodoUpdateRequest;
+import cn.aslight.workhub.service.attachment.AttachmentService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -38,19 +44,24 @@ public class IntakeTodoService {
     private final IntakeMapper intakeMapper;
     private final IntakeTodoMapper intakeTodoMapper;
     private final IntakeHistoryMapper intakeHistoryMapper;
+    private final AttachmentService attachmentService;
 
     public IntakeTodoService(IntakeMapper intakeMapper,
                              IntakeTodoMapper intakeTodoMapper,
-                             IntakeHistoryMapper intakeHistoryMapper) {
+                             IntakeHistoryMapper intakeHistoryMapper,
+                             AttachmentService attachmentService) {
         this.intakeMapper = intakeMapper;
         this.intakeTodoMapper = intakeTodoMapper;
         this.intakeHistoryMapper = intakeHistoryMapper;
+        this.attachmentService = attachmentService;
     }
 
     public List<IntakeTodoResponse> list(Long intakeId) {
         requireIntake(intakeId);
-        return intakeTodoMapper.findByIntakeId(intakeId).stream()
-                .map(this::toResponse)
+        List<IntakeTodoEntity> todos = intakeTodoMapper.findByIntakeId(intakeId);
+        Map<Long, List<AttachmentResponse>> screenshots = mapScreenshots(todos);
+        return todos.stream()
+                .map(todo -> toResponse(todo, screenshots))
                 .toList();
     }
 
@@ -122,11 +133,48 @@ public class IntakeTodoService {
         return findCreatedOrUpdated(intakeId, todoId);
     }
 
+    /**
+     * 保存待办截图变更：删除指定截图并追加新截图，两步在同一事务内完成。
+     * 没有新增也没有删除时不写数据、不记历史。
+     */
+    @Transactional
+    public IntakeTodoResponse saveScreenshots(Long intakeId,
+                                              Long todoId,
+                                              List<MultipartFile> files,
+                                              List<Long> removedIds,
+                                              String operatorUserName) {
+        requireIntake(intakeId);
+        IntakeTodoEntity existing = requireTodo(intakeId, todoId);
+        List<MultipartFile> newFiles = pickImageFiles(files);
+        List<Long> removedScreenshotIds = removedIds == null
+                ? List.of()
+                : removedIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (newFiles.isEmpty() && removedScreenshotIds.isEmpty()) {
+            return findCreatedOrUpdated(intakeId, todoId);
+        }
+        List<AttachmentResponse> screenshots = todoScreenshots(todoId);
+        List<String> removedFileNames = new java.util.ArrayList<>();
+        for (Long removedId : removedScreenshotIds) {
+            removedFileNames.add(screenshots.stream()
+                    .filter(item -> removedId.equals(item.id()))
+                    .findFirst()
+                    .map(AttachmentResponse::fileName)
+                    .orElseThrow(() -> new IllegalArgumentException("截图不存在或不属于当前待办")));
+        }
+        if (!removedScreenshotIds.isEmpty()) {
+            attachmentService.deleteTodoScreenshots(todoId, removedScreenshotIds);
+        }
+        attachmentService.saveTodoScreenshots(todoId, newFiles);
+        recordHistory(intakeId, "更新需求待办截图", buildScreenshotHistory(existing, newFiles, removedFileNames), operatorUserName);
+        return findCreatedOrUpdated(intakeId, todoId);
+    }
+
     @Transactional
     public void delete(Long intakeId, Long todoId, String operatorUserName) {
         requireIntake(intakeId);
         IntakeTodoEntity existing = requireTodo(intakeId, todoId);
         intakeTodoMapper.deleteById(todoId);
+        attachmentService.deleteAllTodoScreenshots(todoId);
         recordHistory(intakeId, "删除需求待办", buildDeleteHistory(existing), operatorUserName);
     }
 
@@ -150,8 +198,35 @@ public class IntakeTodoService {
         return intakeTodoMapper.findByIntakeId(intakeId).stream()
                 .filter(item -> todoId.equals(item.getId()))
                 .findFirst()
-                .map(this::toResponse)
-                .orElseGet(() -> toResponse(requireTodo(intakeId, todoId)));
+                .map(item -> toResponse(item, todoScreenshots(todoId)))
+                .orElseGet(() -> toResponse(requireTodo(intakeId, todoId), todoScreenshots(todoId)));
+    }
+
+    /** 取出有内容的图片文件；待办截图只收图片。 */
+    private List<MultipartFile> pickImageFiles(List<MultipartFile> files) {
+        List<MultipartFile> imageFiles = new java.util.ArrayList<>();
+        if (files == null) {
+            return imageFiles;
+        }
+        for (MultipartFile file : files) {
+            if (file == null || file.isEmpty()) {
+                continue;
+            }
+            String contentType = trimToNull(file.getContentType());
+            if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
+                throw new IllegalArgumentException("截图仅支持图片文件：" + file.getOriginalFilename());
+            }
+            imageFiles.add(file);
+        }
+        return imageFiles;
+    }
+
+    private Map<Long, List<AttachmentResponse>> mapScreenshots(List<IntakeTodoEntity> todos) {
+        return attachmentService.mapTodoScreenshots(todos.stream().map(IntakeTodoEntity::getId).toList());
+    }
+
+    private List<AttachmentResponse> todoScreenshots(Long todoId) {
+        return attachmentService.mapTodoScreenshots(List.of(todoId)).getOrDefault(todoId, List.of());
     }
 
     private String requireAllowedStatus(String status) {
@@ -162,7 +237,11 @@ public class IntakeTodoService {
         return normalized;
     }
 
-    private IntakeTodoResponse toResponse(IntakeTodoEntity entity) {
+    private IntakeTodoResponse toResponse(IntakeTodoEntity entity, Map<Long, List<AttachmentResponse>> screenshots) {
+        return toResponse(entity, screenshots.getOrDefault(entity.getId(), List.of()));
+    }
+
+    private IntakeTodoResponse toResponse(IntakeTodoEntity entity, List<AttachmentResponse> screenshots) {
         return new IntakeTodoResponse(
                 entity.getId(),
                 entity.getIntakeId(),
@@ -174,7 +253,8 @@ public class IntakeTodoService {
                 entity.getCompletedAt(),
                 entity.getProcessResult(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
+                entity.getUpdatedAt(),
+                screenshots
         );
     }
 
@@ -203,6 +283,20 @@ public class IntakeTodoService {
         appendChange(changes, "处理结果", before.getProcessResult(), after.getProcessResult());
         appendChange(changes, "完成时间", formatTime(before.getCompletedAt()), formatTime(after.getCompletedAt()));
         return changes.isEmpty() ? "未发生字段变化" : String.join("\n", changes);
+    }
+
+    private String buildScreenshotHistory(IntakeTodoEntity todo,
+                                          List<MultipartFile> newFiles,
+                                          List<String> removedFileNames) {
+        List<String> details = new java.util.ArrayList<>();
+        details.add("待办标题：" + defaultHistoryValue(todo.getTitle()));
+        if (!removedFileNames.isEmpty()) {
+            details.add("删除截图：" + String.join("、", removedFileNames));
+        }
+        if (!newFiles.isEmpty()) {
+            details.add("新增截图：" + String.join("、", newFiles.stream().map(MultipartFile::getOriginalFilename).toList()));
+        }
+        return String.join("\n", details);
     }
 
     private String buildDeleteHistory(IntakeTodoEntity entity) {

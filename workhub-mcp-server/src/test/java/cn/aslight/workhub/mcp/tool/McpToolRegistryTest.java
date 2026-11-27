@@ -35,7 +35,7 @@ class McpToolRegistryTest {
                 mapper);
         JsonNode context = mapper.valueToTree(registry.call("get_knowledge_context", mapper.readTree("{\"businessLine\":\"BL000001\"}")));
         assertEquals("/knowledge", context.path("projectVaultPath").asText());
-        assertEquals("/workspace/workhub-server/docs/requirement-sources/BL000001", context.path("businessLineRawRoot").asText());
+        org.junit.jupiter.api.Assertions.assertFalse(context.has("businessLineRawRoot"));
         assertEquals("/workspace/workhub-server/docs/requirements/BL000001", context.path("businessLineWikiRoot").asText());
     }
 

@@ -20,8 +20,8 @@ class AgentResultFormatterTest {
         c.start(sent);
         return c;
     }
-    private void reply(ZCodeTaskConversation c, int attempt, String reason, String text) throws Exception {
-        c.accept(json.valueToTree(Map.of("id", "wh-agent-format-" + attempt, "result", Map.of("selection", model, "finishReason", reason, "text", text))));
+    private void reply(ZCodeTaskConversation c, String text) throws Exception {
+        NativeFormattingFixture.start(c::accept, sent).finish(text);
     }
 
     @Test void v2NormalPathExtractsReportAndNeverAsksModelToFormat() throws Exception {
@@ -76,17 +76,16 @@ class AgentResultFormatterTest {
                 cn.aslight.workhub.service.agent.AgentReportContract.SCHEMA, raw, sent);
         formatter.requireV2(true);
         formatter.start();
-        var request = json.readTree(sent.toString());
-        String prompt = request.path("params").path("messages").get(0).path("content").asText();
+        var turn = NativeFormattingFixture.start(formatter::accept, sent);
+        var request = NativeFormattingFixture.last(sent);
+        String prompt = request.path("params").path("content").asText();
         assertTrue(prompt.contains(path), prompt);
         assertTrue(prompt.contains(json.writeValueAsString(raw)));
-        assertTrue(request.path("params").path("tools").isEmpty());
         assertFalse(Files.exists(directory.resolve("result.json")));
         var corrected = json.readTree(v2Report());
         if (defect.equals("extra")) ((tools.jackson.databind.node.ObjectNode) corrected.path("report").path("evidence").get(0))
                 .put("limitations", "隔离测试；只检查24小时");
-        formatter.accept(json.valueToTree(Map.of("id", "wh-agent-format-1", "result", Map.of(
-                "selection", model, "finishReason", "stop", "text", json.writeValueAsString(corrected)))));
+        turn.finish(json.writeValueAsString(corrected));
         assertEquals(corrected, json.readTree(Files.readString(directory.resolve("result.json"))));
     }
 
@@ -96,13 +95,11 @@ class AgentResultFormatterTest {
         formatter.requireV2(true);
         formatter.start();
         String legacy = "{\"type\":\"RESULT\",\"summary\":\"已完成\"}";
-        formatter.accept(json.valueToTree(Map.of("id", "wh-agent-format-1", "result", Map.of(
-                "selection", model, "finishReason", "stop", "text", legacy))));
-        assertTrue(sent.toString().contains("schemaVersion"));
-        var failure = assertThrows(IllegalArgumentException.class, () -> formatter.accept(json.valueToTree(Map.of(
-                "id", "wh-agent-format-2", "result", Map.of("selection", model, "finishReason", "stop", "text", legacy)))));
+        NativeFormattingFixture.start(formatter::accept, sent).finish(legacy);
+        var second = NativeFormattingFixture.start(formatter::accept, sent);
+        var failure = assertThrows(IllegalArgumentException.class, () -> second.finish(legacy));
         assertTrue(failure.getMessage().contains("schemaVersion"));
-        assertEquals(2, sent.toString().lines().count());
+        assertEquals(2, sent.toString().lines().filter(line -> line.contains("session/send")).count());
         assertFalse(Files.exists(directory.resolve("result.json")));
     }
 
@@ -111,10 +108,9 @@ class AgentResultFormatterTest {
         var formatter = new AgentResultFormatter(json, directory, directory.resolve("result.json"), model,
                 cn.aslight.workhub.service.agent.AgentReportContract.SCHEMA, invalid, sent);
         formatter.start();
-        formatter.accept(json.valueToTree(Map.of("id", "wh-agent-format-1", "result", Map.of(
-                "selection", model, "finishReason", "stop", "text", "{\"type\":\"RESULT\",\"summary\":\"已完成\"}"))));
+        NativeFormattingFixture.start(formatter::accept, sent).finish("{\"type\":\"RESULT\",\"summary\":\"已完成\"}");
         assertFalse(Files.exists(directory.resolve("result.json")));
-        assertEquals(2, sent.toString().lines().count());
+        assertEquals("session/create", NativeFormattingFixture.last(sent).path("method").asText());
     }
 
     @Test void largeChineseReportAndFencesArePreservedWithoutModelCall() throws Exception {
@@ -130,38 +126,83 @@ class AgentResultFormatterTest {
         var saved = new ArrayList<String>();
         var c = recover("已经检查，缺少部分证据。", saved);
         assertEquals(List.of("已经检查，缺少部分证据。"), saved);
-        var request = json.readTree(sent.toString());
-        assertEquals("workspace/generateText", request.path("method").asText());
-        assertFalse(request.path("params").has("maxOutputTokens"));
-        assertEquals(0, request.path("params").path("tools").size());
-        assertTrue(request.toString().contains("ELI5"));
-        reply(c, 1, "stop", "{\"type\":\"NEEDS_INPUT\",\"summary\":\"还需要证据\"}");
-        assertFalse(sent.toString().contains("session/send"));
+        var turn = NativeFormattingFixture.start(c::accept, sent);
+        assertTrue(NativeFormattingFixture.last(sent).path("params").path("content").asText().contains("ELI5"));
+        assertFalse(Files.exists(directory.resolve("result.json")), "ACK 不能作为终态");
+        turn.finish("{\"type\":\"NEEDS_INPUT\",\"summary\":\"还需要证据\"}");
+        assertFalse(sent.toString().contains("不得重做的任务"));
         assertFalse(sent.toString().contains("mcp/list"));
     }
 
-    @Test void lengthContinuationPreservesAllCharacters() throws Exception {
+    @Test void nativeResultPreservesAllCharactersWithoutWorkhubTokenOrByteLimit() throws Exception {
         var c = recover("原始报告", new ArrayList<>());
-        reply(c, 1, "length", "{\"type\":\"RESULT\",\"summary\":\"第一段");
+        String text = json.writeValueAsString(Map.of("type", "RESULT", "summary", "完整事实".repeat(150000)));
+        NativeFormattingFixture.start(c::accept, sent).finish(text);
+        assertEquals(text, Files.readString(directory.resolve("result.json")));
+    }
+
+    @Test void nativeLengthEventsAccumulateOnlyCompletedMainTurnChunks() throws Exception {
+        var c = recover("原始报告", new ArrayList<>());
+        var turn = NativeFormattingFixture.start(c::accept, sent);
+        c.accept(turn.event("session.updated", 2, Map.of("querySource", "auxiliary", "stopReason", "length", "content", "忽略")));
+        c.accept(turn.event("session.updated", 3, Map.of("querySource", "main_turn", "stopReason", "length",
+                "content", "{\"type\":\"RESULT\",\"summary\":\"前半段", "toolCallCount", 0)));
+        c.accept(turn.event("session.updated", 4, Map.of("querySource", "main_turn", "stopReason", "stop",
+                "content", "后半段\"}", "toolCallCount", 0)));
+        c.accept(turn.event("turn.completed", 5, Map.of("inputId", turn.input(), "resultType", "success", "response", "后半段\"}")));
+        assertEquals("前半段后半段", json.readTree(Files.readString(directory.resolve("result.json"))).path("summary").asText());
+    }
+
+    @Test void exhaustedNativeLengthCannotBecomeSuccessfulArtifact() throws Exception {
+        var c = recover("原始报告", new ArrayList<>());
+        var turn = NativeFormattingFixture.start(c::accept, sent);
+        c.accept(turn.event("session.updated", 2, Map.of("querySource", "main_turn", "stopReason", "length", "content", "{}", "toolCallCount", 0)));
+        assertThrows(IllegalArgumentException.class, () -> c.accept(turn.event("turn.completed", 3,
+                Map.of("inputId", turn.input(), "resultType", "success", "response", "{}"))));
         assertFalse(Files.exists(directory.resolve("result.json")));
-        reply(c, 2, "stop", "第二段\"}");
-        assertEquals("第一段第二段", json.readTree(Files.readString(directory.resolve("result.json"))).path("summary").asText());
     }
 
     @Test void repeatedMalformedOutputFailsWithoutInventingSuccessOrReplayingTools() throws Exception {
         var c = recover("原始报告", new ArrayList<>());
-        reply(c, 1, "stop", "不是 JSON");
-        reply(c, 2, "stop", "{}");
-        assertThrows(IllegalArgumentException.class, () -> reply(c, 3, "length", ""));
+        reply(c, "不是 JSON");
+        reply(c, "{}");
+        assertThrows(IllegalArgumentException.class, () -> reply(c, ""));
         assertFalse(Files.exists(directory.resolve("result.json")));
-        assertEquals(3, sent.toString().lines().count());
+        assertEquals(3, sent.toString().lines().filter(line -> line.contains("session/send")).count());
     }
 
-    @Test void toolsAndWrongResponseIdentityAreRejected() throws Exception {
+    @Test void toolsWrongIdentityCancellationAndDuplicatesAreRejected() throws Exception {
         var c = recover("原始报告", new ArrayList<>());
-        assertThrows(IllegalArgumentException.class, () -> reply(c, 2, "stop", "{}"));
-        assertThrows(IllegalArgumentException.class, () -> c.accept(json.valueToTree(Map.of("id", "wh-agent-format-1", "result",
-                Map.of("selection", model, "finishReason", "stop", "text", "{}", "toolCalls", List.of(Map.of("name", "write")))))));
+        var turn = NativeFormattingFixture.start(c::accept, sent);
+        assertThrows(IllegalArgumentException.class, () -> c.accept(turn.event("tool.updated", 2,
+                Map.of("kind", "scheduled", "toolName", "Bash"))));
+        assertThrows(IllegalArgumentException.class, () -> c.accept(turn.event("turn.completed", 3,
+                Map.of("inputId", "wrong", "resultType", "success", "response", "{}"))));
+        assertThrows(IllegalArgumentException.class, () -> c.accept(turn.event("turn.completed", 4,
+                Map.of("inputId", turn.input(), "resultType", "cancelled", "response", "{}"))));
+        assertFalse(Files.exists(directory.resolve("result.json")));
+        c.accept(turn.event("turn.completed", 5, Map.of("inputId", turn.input(), "resultType", "success",
+                "response", "{\"type\":\"RESULT\",\"summary\":\"完成\"}")));
+        assertThrows(IllegalArgumentException.class, () -> c.accept(turn.event("turn.completed", 6,
+                Map.of("inputId", turn.input(), "resultType", "success", "response", "{}"))));
+    }
+
+    @Test void lateAckAndRuntimePreferencesRemainIsolatedDuringCorrection() throws Exception {
+        var c = recover("原始报告", new ArrayList<>());
+        var first = NativeFormattingFixture.start(c::accept, sent);
+        String oldSendId = NativeFormattingFixture.last(sent).path("id").asText();
+        first.finish("not json");
+        c.accept(json.valueToTree(Map.of("id", oldSendId, "result", Map.of("sessionId", first.session(), "accepted", true))));
+        var next = NativeFormattingFixture.start(c::accept, sent);
+        c.accept(json.valueToTree(Map.of("id", "preferences", "method", "session/requestRuntimePreferences")));
+        var preferences = NativeFormattingFixture.last(sent).path("result");
+        assertFalse(preferences.path("memoryEnabled").asBoolean());
+        assertFalse(preferences.path("nativeSearchEnhancementsEnabled").asBoolean());
+        assertFalse(preferences.path("subagentRuntimeConfigEnabled").asBoolean());
+        c.accept(json.valueToTree(Map.of("id", "permission", "method", "interaction/requestPermission")));
+        assertEquals(-32601, NativeFormattingFixture.last(sent).path("error").path("code").asInt());
+        next.finish("{\"type\":\"RESULT\",\"summary\":\"完整结果\"}");
+        assertEquals("完整结果", json.readTree(Files.readString(directory.resolve("result.json"))).path("summary").asText());
     }
 
     @Test void persistenceFailurePreventsFormattingRequest() {
@@ -171,7 +212,7 @@ class AgentResultFormatterTest {
         assertEquals(0, sent.size());
     }
 
-    @Test void normalRunUsesOnlyCatalogSupportedLowReasoningForFormatting() throws Exception {
+    @Test void normalRunPreservesConfiguredReasoningForNativeFormatting() throws Exception {
         var high = Map.<String, Object>of("providerId", "fixture", "modelId", "model", "options", Map.of("reasoningLevel", "high"));
         var c = ZCodeTaskConversation.agent(json, directory, directory.resolve("result.json"), "task", high, null, null, cn.aslight.workhub.service.agent.AgentReportContract.SCHEMA);
         var saved = new ArrayList<String>();
@@ -188,9 +229,9 @@ class AgentResultFormatterTest {
                     "type", seq == 1 ? "turn.started" : "turn.completed", "payload", Map.of("inputId", input, "resultType", "success", "response", "完整原始答复")))));
         }
         var request = json.readTree(sent.toString().lines().reduce((a, b) -> b).orElseThrow());
-        assertEquals("low", request.path("params").path("selection").path("options").path("reasoningLevel").asText());
+        assertEquals("high", request.path("params").path("model").path("options").path("reasoningLevel").asText());
         assertEquals(List.of("完整原始答复"), saved);
-        reply(c, 1, "stop", v2Report());
+        reply(c, v2Report());
     }
 
     @Test void protocolReaderAcceptsLargeAgentReportButStillRejectsIncompleteFrame() throws Exception {
@@ -198,7 +239,9 @@ class AgentResultFormatterTest {
         c.resultRecovery("需要整理", ignored -> { });
         c.start(sent);
         String result = json.writeValueAsString(Map.of("type", "RESULT", "summary", "中文事实".repeat(150000)));
-        String frame = json.writeValueAsString(Map.of("id", "wh-agent-format-1", "result", Map.of("selection", model, "finishReason", "stop", "text", result)));
+        var turn = NativeFormattingFixture.start(c::accept, sent);
+        String frame = json.writeValueAsString(turn.event("turn.completed", 2,
+                Map.of("inputId", turn.input(), "resultType", "success", "response", result)));
         ZCodeCliClient.readProtocol(new java.io.ByteArrayInputStream((frame + "\n").getBytes(java.nio.charset.StandardCharsets.UTF_8)), c, ignored -> { });
         assertEquals(result, Files.readString(directory.resolve("result.json")));
         assertThrows(java.io.IOException.class, () -> ZCodeCliClient.readProtocol(new java.io.ByteArrayInputStream(frame.getBytes(java.nio.charset.StandardCharsets.UTF_8)), c, ignored -> { }));

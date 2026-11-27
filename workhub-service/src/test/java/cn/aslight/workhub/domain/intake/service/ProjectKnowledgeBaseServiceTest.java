@@ -5,6 +5,7 @@ import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeStructuredField;
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
+import cn.aslight.workhub.service.attachment.AttachmentService;
 import cn.aslight.workhub.service.system.SysConfigService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -41,7 +42,7 @@ class ProjectKnowledgeBaseServiceTest {
                 .thenReturn(vault.toString());
         Path repository = RepositoryDocumentPathsTest.repository(tempDir.resolve("workhub-server"));
         when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
-        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
+        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(AttachmentService.class),
                 new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         String context = service.buildContext(structuredData(), project());
@@ -71,7 +72,7 @@ class ProjectKnowledgeBaseServiceTest {
                 .thenReturn(vault.toString());
         Path repository = RepositoryDocumentPathsTest.repository(tempDir.resolve("workhub-server"));
         when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
-        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
+        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(AttachmentService.class),
                 new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         String context = service.buildContext(quxuebeiStructuredData(), billingProject());
@@ -103,7 +104,7 @@ class ProjectKnowledgeBaseServiceTest {
                 .thenReturn(vault.toString());
         Path repository = RepositoryDocumentPathsTest.repository(tempDir.resolve("workhub-server"));
         when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
-        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
+        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(AttachmentService.class),
                 new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         String context = service.buildContext(premiumInstallmentStructuredData(), premiumInstallmentProject());
@@ -114,7 +115,7 @@ class ProjectKnowledgeBaseServiceTest {
     }
 
     @Test
-    void upsertRequirementIterationNote_shouldWriteMergedDemandMarkdownIntoProjectIterationFolder() throws Exception {
+    void upsertRequirementIterationNote_shouldWriteInputVersionIntoRequirementFolder() throws Exception {
         Path vault = tempDir.resolve("Requirement Vault");
 
         SysConfigService sysConfigService = mock(SysConfigService.class);
@@ -122,7 +123,7 @@ class ProjectKnowledgeBaseServiceTest {
                 .thenReturn(vault.toString());
         Path repository = RepositoryDocumentPathsTest.repository(tempDir.resolve("workhub-server"));
         when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
-        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
+        ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(AttachmentService.class),
                 new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
 
         IntakeRecordEntity intake = new IntakeRecordEntity();
@@ -134,11 +135,14 @@ class ProjectKnowledgeBaseServiceTest {
                 service.upsertRequirementIterationNote(intake, structuredData, billingProject());
 
         assertTrue(note.written());
-        assertTrue(note.rawRelativePath().contains("requirement-sources/账单管理/趣学呗/2026/202604220007/历史版本/"));
+        assertTrue(note.rawRelativePath().contains(
+                "/agents-playbook/docs/业务线/账单管理/需求/202604220007-趣学呗平台账户展示切换/原始材料/历史版本/"));
         org.junit.jupiter.api.Assertions.assertNull(note.wikiRelativePath());
         org.junit.jupiter.api.Assertions.assertNull(note.wikiObsidianUrl());
-        Path rawPath = repository.resolve("docs").resolve(note.rawRelativePath());
+        Path rawPath = repository.resolve(note.rawRelativePath());
         assertTrue(Files.exists(rawPath));
+        assertTrue(Files.exists(rawPath.getParent().resolve("manifest.json")));
+        assertFalse(Files.exists(repository.resolve("docs/requirement-sources")));
         assertFalse(Files.exists(vault.resolve("wiki")));
         String markdown = Files.readString(rawPath);
         assertTrue(markdown.contains("原始审批内容：趣学呗平台账户切换为新主体。"));

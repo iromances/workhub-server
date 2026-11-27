@@ -32,6 +32,8 @@ public class AgentWorkbenchService {
     static final String POSITION_DICT_TYPE = "agentPosition";
     /** 任务规格 webhookUrl 的密文标识前缀（REQ-2020a468）。 */
     static final String WEBHOOK_CIPHER_PREFIX = "enc:";
+    /** 职责执行任务的请求标识（系统保留值）：每个数字员工唯一，页面经它直接执行，不再先分派任务（REQ-7fecce00）。 */
+    static final String DUTY_TASK_REQUEST_KEY = "duty";
     private AgentReportService reports;
     @Autowired
     public void setReports(AgentReportService reports) { this.reports = reports; }
@@ -133,6 +135,8 @@ public class AgentWorkbenchService {
     public AgentTaskResponse createTask(String agentId, AgentTaskCreateRequest request, String user) {
         var actor = access.actor(user);
         actor.require("agent:task:assign");
+        if (DUTY_TASK_REQUEST_KEY.equals(request.requestKey()))
+            throw new IllegalArgumentException("请求标识为系统保留值，请更换");
         var agent = mapper.lockAgent(agentId);
         access.requireAgent(actor, agent);
         String hash = hash(encode(request));
@@ -171,6 +175,17 @@ public class AgentWorkbenchService {
         var task = requireTask(taskId);
         access.requireAgent(actor, mapper.findAgent(task.agentId()));
         return response(task);
+    }
+
+    /** 职责执行任务：每个数字员工唯一的常设执行配置，页面经它直接执行。缺失时在员工行锁内认领存量手工任务或按默认规格补建。 */
+    @Transactional
+    public AgentTaskResponse dutyTask(String agentId, String user) {
+        var actor = access.actor(user);
+        actor.require("agent:task:view");
+        var agent = mapper.findAgent(agentId);
+        access.requireAgent(actor, agent);
+        var task = mapper.findTaskByKey(agentId, DUTY_TASK_REQUEST_KEY);
+        return response(task == null ? provisionDutyTask(agent, actor.name()) : task);
     }
 
     @Transactional
@@ -221,6 +236,8 @@ public class AgentWorkbenchService {
         access.requireAgent(actor, agent);
         var task = mapper.lockTask(taskId);
         requireVersion(task.version(), expectedVersion);
+        if (DUTY_TASK_REQUEST_KEY.equals(task.requestKey()))
+            throw new IllegalArgumentException("职责执行任务随数字员工管理，不能单独删除");
         if (task.scheduleEnabled()) throw new IllegalArgumentException("周期任务须先暂停调度后再删除");
         if (mapper.countUnfinishedRuns(taskId) > 0)
             throw new IllegalArgumentException("任务存在未结束的运行（排队、执行中或待核对），请先取消并等待结束");
@@ -312,6 +329,16 @@ public class AgentWorkbenchService {
                 mapper.listRuns(taskId, offset(page, size), size).stream().map(this::response).toList());
     }
 
+    /** 员工全部历史运行（含需求开发、问题修复等系统任务的运行），按开始时间倒序。 */
+    public AgentPage<AgentRunResponse> agentRuns(String agentId, String user, int page, int pageSize) {
+        var actor = access.actor(user);
+        actor.require("agent:task:view");
+        access.requireAgent(actor, mapper.findAgent(agentId));
+        int size = pageSize(pageSize);
+        return new AgentPage<>(mapper.countRunsByAgent(agentId),
+                mapper.listRunsByAgent(agentId, offset(page, size), size).stream().map(this::response).toList());
+    }
+
     public Map<String, Object> report(String agentId, String runId, String user) {
         var actor = access.actor(user);
         actor.require("agent:task:view");
@@ -393,7 +420,7 @@ public class AgentWorkbenchService {
         }
         requireVersion(run.version(), request.expectedVersion());
         if (mapper.listEvents(run.id()).stream().filter(e -> "HUMAN_INPUT".equals(e.kind())).count() >= 100) {
-            throw new IllegalArgumentException("单次运行的补充指令已达上限，请分派后续任务");
+            throw new IllegalArgumentException("单次运行的补充指令已达上限，请开始新一轮运行");
         }
         // 外部执行句柄未对账完成时，回复不能隐式恢复或重复外部操作。
         if ("WAITING_INPUT".equals(run.status()) && run.externalHandle() != null) {
@@ -451,6 +478,33 @@ public class AgentWorkbenchService {
         mapper.deleteArtifactsByRun(runId);
         mapper.deleteEventsByRun(runId);
         checkChanged(mapper.deleteRunById(runId, run.version()));
+    }
+
+    /** 存量过渡，每个员工只执行一次：认领运行次数最多的手工分派任务；需求开发与问题修复任务不参与，无可认领任务时按默认规格新建。 */
+    private AgentTaskEntity provisionDutyTask(AgentDefinitionEntity initial, String actor) {
+        var agent = mapper.lockAgent(initial.id());
+        var task = mapper.findTaskByKey(agent.id(), DUTY_TASK_REQUEST_KEY);
+        if (task != null) return task;
+        var candidate = mapper.findDutyCandidate(agent.id());
+        if (candidate != null) {
+            checkChanged(mapper.updateTaskRequestKey(candidate.id(), DUTY_TASK_REQUEST_KEY));
+            audit("TASK", candidate.id(), "ADOPT_DUTY", actor, Map.of("previousRequestKey", candidate.requestKey()));
+            return mapper.findTaskByKey(agent.id(), DUTY_TASK_REQUEST_KEY);
+        }
+        var specification = defaultDutySpecification(configuration(agent.configurationJson()));
+        task = new AgentTaskEntity(id(), agent.id(), DUTY_TASK_REQUEST_KEY, hash(DUTY_TASK_REQUEST_KEY),
+                encode(specification), agent.ownerName(), "MANUAL", null, "Asia/Shanghai", "RUN_ONCE", false,
+                null, 0, now(), now());
+        mapper.insertTask(task);
+        audit("TASK", task.id(), "CREATE", actor, Map.of("requestKey", DUTY_TASK_REQUEST_KEY,
+                "specification", maskWebhook(specification), "runImmediately", false));
+        return task;
+    }
+
+    /** 默认常设配置：按员工职责执行并产出分析报告；范围取员工授权范围，未限定时为全部启用业务线及其环境。 */
+    private AgentTaskSpecification defaultDutySpecification(AgentConfiguration configuration) {
+        var scopes = configuration.scopes() == null || configuration.scopes().isEmpty() ? access.allEnabledScopes() : configuration.scopes();
+        return new AgentTaskSpecification("", null, "", List.of("REPORT"), scopes, List.of());
     }
 
     private void validateConfiguration(AgentConfiguration configuration, AgentAccessService.Actor actor) {

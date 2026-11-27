@@ -68,26 +68,15 @@ public class RequirementMaterialExportService {
         synchronized (locks[Math.floorMod(intakeId.hashCode(), locks.length)]) {
             // afterCommit 中不能沿用已提交事务的连接和快照。
             Path folder = readTransaction.execute(status -> folderSupplier.get());
-            return exportMaterials(intakeId, folder, null, null);
+            return exportMaterials(intakeId, folder);
         }
     }
 
-    /** 调用方持有知识库锁；原始附件归档保留旧字节版本。 */
-    Path synchronizeVersioned(Long intakeId, Path vault, Path folder, Path snapshotFolder) {
-        synchronized (locks[Math.floorMod(intakeId.hashCode(), locks.length)]) {
-            return exportMaterials(intakeId, folder, vault, snapshotFolder);
-        }
-    }
-
-    private Path exportMaterials(Long intakeId, Path folder, Path vault, Path snapshotFolder) {
+    private Path exportMaterials(Long intakeId, Path folder) {
         int written = 0;
         int skipped = 0;
         try {
-            if (vault == null) {
-                requireDirectory(folder);
-            } else {
-                KnowledgeArchiveFiles.directory(vault, folder);
-            }
+            requireDirectory(folder);
             var items = readTransaction.execute(status -> attachmentService.listIntakeAttachments(intakeId));
             for (AttachmentResponse item : items) {
                 if (!"截图".equals(item.category()) && !"附件".equals(item.category())) {
@@ -106,12 +95,7 @@ public class RequirementMaterialExportService {
                     throw new IllegalStateException("附件不是需求原始材料");
                 }
                 Path target = folder.resolve(item.id() + "-" + safeFileName(material.entity().getFileName()));
-                byte[] content = material.resource().getContentAsByteArray();
-                if (vault != null) {
-                    KnowledgeArchiveFiles.versionedWrite(vault, target, content);
-                    KnowledgeArchiveFiles.immutableWrite(vault, snapshotFolder.resolve(target.getFileName()), content);
-                    written++;
-                } else if (writeMaterial(target, content)) {
+                if (writeMaterial(target, material.resource().getContentAsByteArray())) {
                     written++;
                 } else {
                     skipped++;

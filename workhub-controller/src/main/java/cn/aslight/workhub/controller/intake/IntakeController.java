@@ -279,6 +279,27 @@ public class IntakeController {
     }
 
     /**
+     * 保存需求待办截图变更：删除指定截图并追加新截图。
+     *
+     * @param id 需求 ID
+     * @param todoId 待办 ID
+     * @param files 新增的截图，只接受图片
+     * @param removedIds 要删除的截图附件 ID，必须都属于该待办
+     * @param authentication 当前认证信息
+     * @return 更新后的待办
+     */
+    @PostMapping(value = "/{id}/todos/{todoId}/screenshots", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('intake:todo:manage')")
+    public ApiResponse<IntakeTodoResponse> saveTodoScreenshots(@PathVariable Long id,
+                                                               @PathVariable Long todoId,
+                                                               @RequestParam(name = "files", required = false) List<MultipartFile> files,
+                                                               @RequestParam(name = "removedIds", required = false) List<Long> removedIds,
+                                                               Authentication authentication) {
+        return ApiResponse.success(intakeTodoService.saveScreenshots(
+                id, todoId, files, removedIds, authentication.getName()));
+    }
+
+    /**
      * 删除需求待办。
      *
      * @param id 需求 ID
@@ -476,11 +497,11 @@ public class IntakeController {
     }
 
     /**
-     * 重试失败或尚未创建任务的待执行 AI 分支开发。
+     * 重试失败或尚未创建任务的待执行 AI 分支开发；开发中且无执行记录时视为手动首次启动。
      *
      * @param id 待整理记录 ID
      * @param authentication 当前认证信息
-     * @return 重试后的 AI 开发执行状态
+     * @return 重试或启动后的 AI 开发执行状态
      */
     @PostMapping("/{id}/ai-development/retry")
     @PreAuthorize("hasAuthority('intake:stage:operate')")

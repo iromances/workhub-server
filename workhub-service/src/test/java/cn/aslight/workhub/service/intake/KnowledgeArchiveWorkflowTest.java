@@ -104,7 +104,8 @@ class KnowledgeArchiveWorkflowTest {
         export.getValue().run();
         assertEquals(newer, saved.getDraftJson());
         verify(archive, never()).publishConfirmedAnalysis(any(), any(), any(), any(), any(), any(), any());
-        verify(archive).appendAnalysisNote(eq(5L), eq(9L), contains("迟到"), eq(draft), any(), eq("reviewer"));
+        verify(histories).insert(argThat(entry -> "分析归档成功".equals(entry.getActionSummary())
+                && entry.getDetailText().contains("旧回调未覆盖当前正式文档")));
         verify(analyses, never()).update(any());
     }
 
@@ -119,21 +120,18 @@ class KnowledgeArchiveWorkflowTest {
     }
 
     @Test
-    void retryOfUnconfirmedDraftOnlyAppendsNotes() {
-        service.retryKnowledgeArchive(5L, "operator");
-        verify(archive).appendAnalysisNote(eq(5L), eq(9L), eq("生成研发评估"), eq(draft), any(), eq("reviewer"));
+    void retryOfUnconfirmedDraftIsRejectedWithoutWritingFiles() {
+        assertThrows(IllegalArgumentException.class, () -> service.retryKnowledgeArchive(5L, "operator"));
         verify(archive, never()).publishConfirmedAnalysis(any(), any(), any(), any(), any(), any(), any());
+        verify(archive, never()).archiveAfterCommit(any(), any());
         verifyNoInteractions(ai, workItems);
     }
 
     @Test
-    void failedHistoricalPreservationStopsReevaluationBeforePreviousDraftIsCleared() {
-        doThrow(new IllegalStateException("notes 不可写")).when(archive)
-                .appendAnalysisNote(any(), any(), contains("重评前"), any(), any(), any());
-        assertThrows(IllegalStateException.class, () -> service.analyze(5L, "reviewer"));
+    void reevaluationKeepsPreviousResultRowAndNoLongerArchivesNotes() throws Exception {
+        service.analyze(5L, "reviewer");
+        verify(analyses).failInFlightByIntakeId(eq(5L), any(), eq("reviewer"));
         assertEquals("旧结论", json.readValue(saved.getDraftJson(), DevelopmentAnalysisDraft.class).summary());
-        verify(analyses, never()).updateExecutionState(any());
-        verify(analyses, never()).update(any());
-        verifyNoInteractions(ai, workItems);
+        verifyNoInteractions(archive, ai, workItems);
     }
 }

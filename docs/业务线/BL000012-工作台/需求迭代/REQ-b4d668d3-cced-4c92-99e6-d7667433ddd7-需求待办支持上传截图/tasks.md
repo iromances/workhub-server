@@ -1,0 +1,266 @@
+# Tasks：需求待办支持上传截图
+
+> SDD 流程的 Tasks 模板。任务来自本次 Design 和契约，可基于草案连续编写，完整规格统一确认后实施。状态不得凭 AI 自述改为“已完成”。
+
+## 1. 元信息
+
+- 需求名称与编码：需求待办支持上传截图（REQ-b4d668d3-cced-4c92-99e6-d7667433ddd7）
+- 涉及仓库与功能域：workhub-server 附件、待办、需求详情、Flyway 迁移；workhub-web 需求待办页签
+- 所属项目或业务线（适用时）：工作台（BL000012）
+- Proposal 版本：v1.0
+- Design/契约版本：v1.1（v1.0 确认后，实施中按走查结果修订交互细节，范围与验收不变，见 §3 T-06、T-07）
+- 研发分支：server `codex/development-20261122`；web `codex/development-20261122`
+- 任务计划状态：已确认并实施，验证完成，未提交、未部署；2026-11-27 用户重启本机实例，迁移已在生产库执行，登录后的真实功能核对未执行
+- 负责人：AI（ZCode）实施
+- 评审人：用户
+
+## 2. 任务总览与依赖
+
+| 任务 | 交付物 | 前置任务 | 可并行条件 | 对应设计/验收 | 状态 |
+| --- | --- | --- | --- | --- | --- |
+| T-01 | `pm_attachment` 联合索引迁移脚本 | 无 | 可与 T-02～T-07 并行 | design §3 数据库变更 / AC-07 | 已实施；临时 MySQL 与生产库（随本机重启）均执行成功 |
+| T-02 | 附件服务与映射支持待办截图 | 无 | 可与 T-01 并行 | design §2、§3 / AC-03、AC-07 | 已实施，测试通过 |
+| T-03 | 待办响应带 `screenshots` | T-02 | — | design §3 修改契约 / AC-07 | 已实施，测试通过 |
+| T-04 | 截图变更接口、删除级联与历史 | T-02 | — | design §2、§3、§4 / AC-03、AC-05、AC-06、AC-08 | 已实施，测试通过 |
+| T-05 | 前端类型、接口、路径与 helper | 无（按本规格契约） | 可与 T-01～T-04 并行 | design §2、§3 / AC-03 | 已实施，用例通过 |
+| T-06 | 待办弹框截图交互与保存编排 | T-05 | — | design §2 前端边界 / AC-01、AC-02、AC-03 | 已实施，页面走查通过 |
+| T-07 | 列表缩略图与预览切换 | T-05 | 可与 T-06 并行（同文件，顺序执行） | design §2 前端边界 / AC-04 | 已实施，页面走查通过 |
+| T-08 | 后端单测、前端构建与用例、页面走查 | T-01～T-07 | — | 全部 AC | 已执行；真实后端联调未执行 |
+| T-09 | 现状、迭代日志、测试用例文档 | T-08 | — | design §5 | 已更新 |
+
+执行顺序：T-01、T-02、T-05 相互独立，先做；随后 T-03、T-04（后端）与 T-06、T-07（前端）可并行；T-08、T-09 收尾。T-06 与 T-07 都修改 `IntakeListView.vue`，在同一工作区顺序执行，不并行写入。
+
+## 3. 任务明细
+
+### T-01：`pm_attachment` 联合索引迁移
+
+- 描述与目标：新增 Flyway 脚本 `V20261126_170000__add_pm_attachment_biz_index.sql`，为 `pm_attachment` 增加 `(biz_type, biz_id)` 普通索引。
+- 输入：design §3 数据库变更。
+- 输出：迁移脚本一个。
+- 前置依赖：无。
+- 允许修改范围：`workhub-bootstrap/src/main/resources/db/schema/mysql/` 下新增脚本。
+- 明确不修改范围：既有迁移脚本、`V1__init.sql`。
+
+验收条件：
+
+- [x] 条件 1：脚本命名符合 `validate-migration-naming`，版本号大于现有最新版本（原最新为 `V20261122_150000`）。
+- [x] 条件 2：脚本只包含一条加索引语句，不改动数据和既有列。
+- [x] 条件 3（T-08 补充）：执行计划命中新增索引。
+
+计划验证方式：脚本内容核对；真实 MySQL 上执行；`EXPLAIN`。
+
+状态及真实结果：已实施。脚本内容为 `ALTER TABLE pm_attachment ADD KEY idx_pm_attachment_biz_type_biz_id (biz_type, biz_id);`。2026-11-26 在一次性临时 MySQL 8.4.10 实例上（数据目录放在 `/tmp`，端口 33060，只监听本机，验证后已停库并删除）按仓库 `V1__init.sql` 的 `pm_attachment` 建表语句、`V20260901_182458` 迁移、本迁移依次执行成功，`information_schema.STATISTICS` 显示索引两列依次为 `biz_type`、`biz_id`。灌入 3000 行后 `EXPLAIN` 结果见 T-08。2026-11-27 09:54 用户重启本机实例（连接生产库 `10.10.116.32/workhub`），Flyway 在生产库执行本迁移成功：`flyway_schema_history` 第 107 条、`success=1`，耗时约 1.1 秒；生产库已有索引 `idx_pm_attachment_biz_type_biz_id`。未部署到其他环境。
+
+### T-02：附件服务与映射支持待办截图
+
+- 描述与目标：`AttachmentService` 新增业务类型常量 `INTAKE_TODO_SCREENSHOT` 及按待办保存、删除、批量查元数据的方法；`AttachmentMapper` 新增按业务类型和多个业务 ID 查询元数据、按业务对象删除的方法；`toResponse` 把该类型的分类名定为“截图”。
+- 输入：design §2 模块表、§3 数据归属与约束。
+- 输出：`AttachmentService.java`、`AttachmentMapper.java` 修改及测试。
+- 前置依赖：无。
+- 允许修改范围：上述两个主代码文件及其测试。
+- 明确不修改范围：需求截图、需求附件、头像、数据文件的既有方法与行为。
+
+验收条件：
+
+- [x] 条件 1：按待办保存的记录 `biz_type` 为 `INTAKE_TODO_SCREENSHOT`、`biz_id` 为待办 ID、`storage_path` 为 NULL、`file_content` 有内容。
+- [x] 条件 2：批量查元数据在待办 ID 列表为空时不发起查询并返回空结果；查询列不包含 `file_content`，结果按待办分组且保持上传顺序。
+- [x] 条件 3：按 ID 删除时只删除属于该待办的截图；按待办删除全部截图时带上业务类型条件。
+
+计划验证方式：`AttachmentServiceTest`。
+
+状态及真实结果：已实施。新增 `saveTodoScreenshots`、`mapTodoScreenshots`、`deleteTodoScreenshots`、`deleteAllTodoScreenshots`，映射层新增 `findByBizIds`、`deleteByBiz`、`deleteByBizAndIds`。`AttachmentServiceTest` 由 9 项增至 13 项，全部通过（新增 4 项分别覆盖条件 1、2、3）。条件 2、3 的 SQL 行为由 T-08 新增的 `AttachmentMapperTodoScreenshotSqlTest` 在内存数据库执行真实 SQL 验证。
+
+### T-03：待办响应带 `screenshots`
+
+- 描述与目标：`IntakeTodoResponse` 末尾新增 `screenshots`；`IntakeTodoService.list` 与 `IntakeService.toDetailResponse` 组装待办时一次查出截图清单并挂到对应待办；同步修正 `IntakeControllerTest` 中的构造参数。
+- 输入：design §3 修改契约。
+- 输出：`IntakeTodoResponse.java`、`IntakeTodoService.java`、`IntakeService.java`、`IntakeControllerTest.java` 修改。
+- 前置依赖：T-02。
+- 允许修改范围：上述文件。
+- 明确不修改范围：`IntakeService` 的构造方法签名与其余组装逻辑。
+
+验收条件：
+
+- [x] 条件 1：`GET /api/intake/{id}/todos` 与需求详情的每个待办都带 `screenshots`，无截图为空数组而不是 `null`。
+- [x] 条件 2：一次组装只发起一条截图清单查询；待办列表为空时不查询。
+
+计划验证方式：`IntakeTodoServiceTest` 新增用例；全模块编译通过。
+
+状态及真实结果：已实施。`IntakeTodoService.list` 由“查待办后逐条转换”改为“查待办、查一次截图清单、按待办分组挂载”；`IntakeService.toDetailResponse` 同样只调用一次 `mapTodoScreenshots`，空列表时该方法直接返回不再访问数据库。`IntakeTodoServiceTest` 新增 `list_shouldAttachScreenshotsToEachTodo`，通过；`mvn -o -q test-compile` 全模块通过。`IntakeController` 测试构造参数已同步。
+
+### T-04：截图变更接口、删除级联与历史
+
+- 描述与目标：`IntakeTodoService` 新增 `saveScreenshots(intakeId, todoId, files, removedIds, operator)`，校验待办归属、图片类型、被删截图归属，在一个事务内完成删除与新增并写需求历史；`delete` 在同一事务内清理待办全部截图；`IntakeController` 暴露 `POST /api/intake/{id}/todos/{todoId}/screenshots`，权限 `intake:todo:manage`。
+- 输入：design §2 流程 1、2、4，§3 新增契约，§4 审计。
+- 输出：`IntakeTodoService.java`、`IntakeController.java` 修改；`IntakeTodoServiceTest`、`IntakeControllerTest` 新增用例。
+- 前置依赖：T-02。
+- 允许修改范围：上述文件。
+- 明确不修改范围：待办新增、编辑、改状态接口的路径与入参。
+
+验收条件：
+
+- [x] 条件 1：multipart 请求携带 `files` 与 `removedIds` 时，删除与新增在同一事务内完成，返回更新后的待办（含最新 `screenshots`）。
+- [x] 条件 2：`files`、`removedIds` 都为空时不写数据、不写历史。
+- [x] 条件 3：`removedIds` 含不属于该待办的附件时抛出“截图不存在或不属于当前待办”，不删除、不新增。
+- [x] 条件 4：文件内容类型不以 `image/` 开头时抛出“截图仅支持图片文件：{文件名}”，不写入任何记录。
+- [x] 条件 5：删除待办后调用按待办删除全部截图；历史摘要为「更新需求待办截图」，明细包含待办标题以及新增、删除的文件名。
+
+计划验证方式：`IntakeTodoServiceTest`、`IntakeControllerTest`。
+
+状态及真实结果：已实施。校验顺序为：待办归属 → 图片类型 → 被删截图归属 → 写入。空的文件分节与空 ID 会被忽略，`removedIds` 去重。`IntakeTodoServiceTest` 由 5 项增至 10 项、`IntakeControllerTest` 由 19 项增至 20 项（新增 `saveTodoScreenshots_shouldExposeMultipartApi`，验证 multipart 绑定、`removedIds` 转换与响应中的 `screenshots`），全部通过。
+
+### T-05：前端类型、接口、路径与 helper
+
+- 描述与目标：`IntakeTodo` 新增 `screenshots`；`intakeTodoPaths.ts` 新增截图路径；`api/intake.ts` 新增 `syncIntakeTodoScreenshots`；`intakeTodoForms.ts` 新增纯函数：筛选可接收的图片文件、从剪贴板提取截图、计算待办截图增删、拆出列表直接展示的截图；`intakeTodoForms.test.ts` 补充断言。
+- 输入：design §3 契约、§2 前端边界。
+- 输出：`types/work-item.ts`、`api/intakeTodoPaths.ts`、`api/intake.ts`、`intakeTodoForms.ts`、`intakeTodoForms.test.ts`。
+- 前置依赖：无。
+- 允许修改范围：上述文件，均为增量修改。
+- 明确不修改范围：既有待办接口函数与校验函数的签名。
+
+验收条件：
+
+- [x] 条件 1：`syncIntakeTodoScreenshots` 以 multipart 发送，`files` 逐个追加、`removedIds` 以文本逐个追加，返回 `IntakeTodo`。
+- [x] 条件 2：剪贴板同时含文本与图片时不提取截图；只含图片时返回全部图片文件。
+- [x] 条件 3：非图片文件被过滤并返回被忽略的数量。
+
+计划验证方式：运行 `intakeTodoForms.test.ts`；`npm run build` 类型检查。
+
+状态及真实结果：已实施。helper 为 `pickTodoScreenshotFiles`、`pickPastedTodoScreenshots`、`resolveTodoScreenshotChange`、`splitTodoScreenshots` 与常量 `todoScreenshotThumbLimit`。`intakeTodoForms.test.ts` 新增 12 条断言，运行退出码 0；`npm run build` 通过。
+
+### T-06：待办弹框截图交互与保存编排
+
+- 描述与目标：待办弹框新增「截图」项，支持点击选择、拖入、粘贴，显示缩略图并可移除；编辑态回显已有截图，移除为暂存；保存时先提交字段，再提交截图变更，失败时保留弹框内容并给出区分提示，新增态重试不重复创建。
+- 输入：T-05 产物；design §2 前端边界。
+- 输出：`IntakeListView.vue` 修改。
+- 前置依赖：T-05。
+- 允许修改范围：`IntakeListView.vue` 中待办弹框相关的模板、脚本与样式。
+- 明确不修改范围：新建需求弹框的截图处理、需求附件相关逻辑、待办状态弹框。
+
+验收条件：
+
+- [x] 条件 1：新增待办并带两张截图保存后弹框关闭，列表出现两张缩略图。
+- [x] 条件 2：编辑待办移除一张、新增一张后保存，列表与之一致；移除后点「取消」，列表不变。
+- [x] 条件 3：截图请求失败时弹框不关闭、已选文件仍在，提示包含后端返回的信息；新增态重试成功后只产生一条待办。
+- [x] 条件 4：在标题或内容输入框粘贴文字正常录入；粘贴纯截图进入截图列表。
+- [x] 条件 5：弹框关闭后本地预览地址全部释放，暂存状态清空。
+
+计划验证方式：`npm run build`；页面走查。
+
+状态及真实结果：已实施。保存顺序为字段接口 → 截图接口；截图失败时提示“待办已保存，但截图更新失败：{后端信息}”，弹框保留并后台刷新列表；字段保存成功后若详情刷新失败，单独提示“保存成功，但详情刷新失败，请重新打开详情”。实施中有一处与草案不同：粘贴监听从弹框内的包裹元素改为弹框打开期间在 `document` 上监听、关闭时移除，原因见 T-08 走查记录。
+
+### T-07：列表缩略图与预览切换
+
+- 描述与目标：「待办标题」单元格改为标题加缩略图条带，超出时以「+N」收起；点击打开预览弹框；预览弹框在传入多项时显示上一张、下一张与序号；缩略图仅在页签激活或编辑回显时加载，按附件 ID 缓存，切换需求时释放。
+- 输入：T-05 产物；design §2 前端边界、§4 性能与失败处理。
+- 输出：`IntakeListView.vue` 修改。
+- 前置依赖：T-05。
+- 允许修改范围：`IntakeListView.vue` 中待办表格、预览弹框及缩略图缓存相关代码。
+- 明确不修改范围：其他表格列；需求附件列表调用预览的方式（仍为单项，不出现切换）。
+
+验收条件：
+
+- [x] 条件 1：无截图的待办行高与现状一致；有截图的行标题下方出现缩略图。
+- [x] 条件 2：点击缩略图打开大图；多张时可左右切换，首尾不循环。
+- [x] 条件 3：未激活「需求待办」页签时不发起图片请求；切换到其他需求后原缓存的图片地址被释放。
+
+计划验证方式：`npm run build`；页面走查与网络面板核对。
+
+状态及真实结果：已实施。展示规则由“最多 4 张加「+N」”调整为“截图区最多 4 格：不超过 4 张全部展示，超过时展示前 3 张并以「+N」格收起其余”，格子 36×26、间距 3px，合计 153px，可排进 180px 标题列的内容区；表格列宽未改。条件 3 的后半句（切换需求后释放地址）为代码核对，未在浏览器中直接观测。
+
+### T-08：验证
+
+- 描述与目标：运行后端相关单元测试与前端构建、helper 用例；在可用的运行环境做页面走查和 `EXPLAIN` 核对。
+- 输入：T-01～T-07 产物。
+- 输出：命令输出与走查记录，回填到本文件。
+- 前置依赖：T-01～T-07。
+- 允许修改范围：仅修复验证中发现的本需求缺陷。
+- 明确不修改范围：与本需求无关的存量问题（发现后记录，不顺手修改）。
+
+验收条件：
+
+- [x] 条件 1：`AttachmentServiceTest`、`IntakeTodoServiceTest`、`IntakeControllerTest` 通过，相关模块编译通过。
+- [x] 条件 2：`npm run build` 通过，`intakeTodoForms.test.ts` 断言全部通过。
+- [x] 条件 3：按 AC-01～AC-08 逐条核对；无法在本地执行的项目如实标注“未执行”及原因（见下）。
+
+验证方式与结果：
+
+1. 后端测试（2026-11-26 23:37，工作区当前代码，`mvn -o -q -pl workhub-service,workhub-controller -am test -Dtest='Intake*Test,Attachment*Test'`，以 surefire 报告为准）：29 个测试类、252 个用例，0 失败、0 错误、0 跳过。其中本需求相关：`AttachmentServiceTest` 13/13、`IntakeTodoServiceTest` 10/10、`IntakeControllerTest` 20/20、`AttachmentMapperTodoScreenshotSqlTest` 3/3。`mvn -o -q test-compile` 全模块通过。
+2. 映射层真实 SQL（新增 `AttachmentMapperTodoScreenshotSqlTest`，沿用仓库既有做法，在 H2 的 MySQL 模式下执行注解中的 SQL）：`findByBizIds` 只返回指定业务类型和业务 ID 的记录、按业务 ID 与上传顺序排列、SQL 不含 `file_content`；`deleteByBizAndIds` 只删除该待办下指定的 ID；`deleteByBiz` 只删除指定业务类型和业务 ID 的记录。
+3. `EXPLAIN`（一次性临时 MySQL 8.4.10，`pm_attachment` 3000 行）：新增的截图清单查询 `type=range`、`key=idx_pm_attachment_biz_type_biz_id`、`key_len=138`、预估 2 行；既有的按需求查附件查询同样走该索引（预估 3 行）；`deleteByBiz` 走该索引；`deleteByBizAndIds` 走主键（2 行）。
+4. 生产库只读核对（经 WorkHub MCP 的只读目标，未写入）：`pm_attachment` 只有主键索引，无同名索引冲突；共 511 行（`INTAKE_SCREENSHOT` 273、`INTAKE_ATTACHMENT` 231、`INTAKE_DELIVERY_FILE` 6、`USER_AVATAR` 1）。
+5. 前端：`npm run build`（vue-tsc 与 vite）通过；`intakeTodoForms.test.ts` 运行退出码 0（方法见下）。
+6. 页面走查（2026-11-26，内置浏览器，真实 `IntakeListView.vue` 对接仓库外的模拟后端）：逐项结果见下。
+
+前端 helper 用例的运行方法：仓库没有测试脚本，本机默认 Node 18 不能直接运行 `.ts`。用项目自带的 `node_modules/.bin/tsc --module commonjs --target es2022 --skipLibCheck` 把用例及其依赖编译到仓库外的临时目录，再用 `node` 运行；断言风格下无输出且退出码 0 即通过。不安装任何依赖。
+
+页面走查环境：本机 8080 上运行着用户从 IDEA 启动的实例（旧代码），未重启、未触碰。为避免向生产库写测试数据，在 `/tmp/workhub-mock/` 下放一个不连数据库的模拟后端（端口 9099），并用一份放在仓库外的临时 Vite 配置（端口 9092）把 `/api` 代理到它，前端代码全部取自仓库。走查结束后两个进程已停止，临时文件已删除，走查标签页已关闭。
+
+走查结果（均通过）：
+
+- 详情停在「基本信息」时没有任何图片请求；切到「需求待办」后缩略图才加载。
+- 缩略图位于标题下方，无截图的行高不变；6 张截图的待办显示 3 张加「+3」，宽屏（1680×1000）与窄屏（1366×768）下都保持单行，表格列宽未变。
+- 点击缩略图打开预览，显示文件名、左右切换按钮和「当前 / 总数」；2/6 → 3/6 → 6/6 时「下一张」隐藏，回到 1/6 时「上一张」隐藏。
+- 「识别与附件」里的需求截图仍是单图预览，没有切换按钮和计数。
+- 新增弹框：「截图」项为虚线选择区。纯图片粘贴被接收为截图；带文字的粘贴不拦截；选文件时两张图片进入列表、PDF 被忽略并提示“已忽略 1 个非图片文件”。
+- 截图保存失败时提示“待办已保存，但截图更新失败：模拟截图保存失败”，弹框保留已选截图，列表里已出现新待办；重试后只产生一条待办，缩略图显示 3 张。
+- 编辑弹框回显已有截图；移除后点「取消」，列表仍是 2 张；移除一张、粘贴一张后保存，列表与服务端都只剩新的一张。
+- 来回切换两次页签，图片请求仍是 11 个，已缓存的缩略图没有重复下载。
+- 只读用户（去掉 `intake:todo:manage`）看不到「新增待办」和编辑、状态、删除按钮，缩略图与预览照常可用。
+- 待办页签切换、预览、新增弹框这些环节没有前端报错。
+
+走查中发现并已修复的问题：
+
+1. 在编辑弹框点掉一张截图的「×」后粘贴不生效。原因是被点掉的按钮从页面移除后焦点回到页面主体，粘贴事件不再经过弹框内的监听元素。改为弹框打开期间在 `document` 上监听粘贴，关闭时移除；同时去掉了为此而加的“打开弹框后自动聚焦标题输入框”。修复后在焦点位于页面主体时粘贴可被接收。
+2. 截图超过 4 张时「+N」被挤到第二行。改为“3 张加「+N」格”，格子缩到 36×26，标题列宽保持 180 不变（曾试过把列加宽到 200，会让窄屏下本来就横向溢出的表格溢出更多，已放弃）。
+
+未执行项：
+
+- 真实后端与真实数据库的端到端联调（待办截图接口、历史记录、`pm_attachment` 落库、删除待办后无残留）。原因是没有重启本机实例，也没有向生产库写数据。这部分由后端单元测试和内存数据库的真实 SQL 测试覆盖，待用户重启实例后走查。
+- AC-01 的 SQL 核对与 AC-08 的页面「修改历史」核对，同上。
+- 操作系统层面的真实拖放文件与真实剪贴板粘贴。内置浏览器不支持文件选择，走查用页面脚本构造 `DataTransfer` 和 `ClipboardEvent` 模拟，事件处理逻辑经过验证，但与真实输入的最终一致性待用户实际操作确认。
+- 生产库上的迁移执行与 `EXPLAIN`。`EXPLAIN` 只在临时 MySQL 8.4.10 上做过，生产 MySQL 版本未核对。
+
+发现的存量问题（未修改）：
+
+- 生产库 `INTAKE_DELIVERY_FILE` 有 6 条记录没有 `file_content`，属于 2026-09 之前只存本地文件的旧数据，与本需求无关。
+- 模拟后端对提测相关接口返回 `null` 时，`IntakeTestDeploymentPanel.vue` 第 29、168 行会抛出未捕获异常。这是模拟数据不完整所致，真实后端不返回 `null`，未确认是否存在健壮性问题。
+
+重启后的真实环境核对（2026-11-27，用户于 09:54 重启本机实例之后，全部为只读核对，未向生产库写入）：
+
+- 运行的是新代码：新进程类路径为各模块的 `target/classes`；编译产物时间 09:54:51～09:54:53，`IntakeController.class` 含 `todos/{todoId}/screenshots`，`IntakeTodoService.class` 含 `saveScreenshots`，`AttachmentService.class` 含 `INTAKE_TODO_SCREENSHOT`，`AttachmentMapper.class` 含 `findByBizIds`，`IntakeTodoResponse.class` 含 `screenshots`。
+- 启动日志（`logs/workhub-server.log`）：Flyway 校验 107 个迁移通过，执行 1 个迁移成功，应用 4.75 秒启动；重启后 37 行日志中没有 ERROR，只有 2 条既有 WARN（Flyway 提示 MySQL 8.4 高于其已验证版本；outOfOrder 模式提示）。
+- 生产库：`flyway_schema_history` 记录本迁移成功；`pm_attachment` 有索引 `idx_pm_attachment_biz_type_biz_id`。生产 MySQL 为 8.4（启动日志确认），与验证迁移时用的临时实例是同一大版本。
+- 生产库 `EXPLAIN`：新增的截图清单查询与既有的按需求查附件查询都是 `type=range`、`key=idx_pm_attachment_biz_type_biz_id`、`key_len=138`。
+- 前端：用户的开发服务器（9091）在运行，提供的是工作区当前代码；内置浏览器没有已登录会话，停在登录页。
+
+仍未执行：
+
+- 登录后的真实功能核对（上传截图、编辑时增删截图、删除带截图的待办、历史记录、`pm_attachment` 落库与清理）。原因是没有登录凭据，且这类操作会向生产库写入待办和不可删除的历史记录，需要用户登录并指定可用于测试的需求。
+- 操作系统层面的真实拖放文件与真实剪贴板粘贴。
+
+### T-09：文档更新
+
+- 描述与目标：`现状.md` 补充待办截图的存储、接口与权限说明；`迭代日志.md` 新增条目；`需求清单测试用例-20261103.md`「需求待办」小节补充截图用例。
+- 输入：T-08 的真实结果。
+- 输出：三份文档修改。
+- 前置依赖：T-08。
+- 允许修改范围：上述三份文档。
+- 明确不修改范围：历史条目与历史审批结论。
+
+验收条件：
+
+- [x] 条件 1：现状描述与实际实现一致，迭代日志区分开发、验证、部署状态。
+
+计划验证方式：文档核对。
+
+状态及真实结果：已更新（2026-11-27）。
+
+## 4. 覆盖与评审
+
+- Proposal 成功标准是否均映射至任务：AC-01、AC-02 → T-06、T-08；AC-03 → T-02、T-04、T-05、T-06；AC-04 → T-07、T-08；AC-05、AC-06、AC-08 → T-04；AC-07 → T-01、T-02、T-03、T-08；AC-09 → T-08。AC-01 的 SQL 核对与 AC-08 的页面核对未执行，见 T-08。
+- Design 接口/数据/非功能约束是否均有承接：新增契约 → T-04；响应字段 → T-03；迁移 → T-01；图片类型规则 → T-04；审计 → T-04；缩略图按需加载与失败处理 → T-06、T-07。
+- 未覆盖项及原因：见 T-08「未执行项」。
+- 已生效事实的核实与目标项目系统设计、迭代日志及专项文档更新：T-09。代码未提交、未部署，本机运行实例仍是旧代码。
+- 关联 Proposal、Design 与契约的版本链接：[proposal.md](proposal.md) v1.0 / [design.md](design.md) v1.1（契约在 design §3）。
+- 完整规格统一确认的范围、规格版本、结论、确认人与日期：范围为本目录三份规格全部内容（proposal v1.0、design v1.0、tasks v1.0）；用户于 2026-11-26 回复“开工吧”确认实施，并于 2026-11-27 回复“确认，含索引”明确答复 design §6 的待确认问题（确认项为“按规格实施前后端，并附带给 `pm_attachment` 加索引的迁移脚本”；缩略图沿用原图、不做服务端压缩随规格一并确认）。实施于 server、web 分支 `codex/development-20261122`。

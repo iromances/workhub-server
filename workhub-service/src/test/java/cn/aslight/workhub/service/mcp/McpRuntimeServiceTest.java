@@ -249,8 +249,8 @@ class McpRuntimeServiceTest {
         assertTrue(text.contains("codeWorkspaceRoot"));
         assertTrue(text.contains("projectVaultPath"));
         assertTrue(text.contains("accessTokenConfigured"));
-        assertTrue(text.contains("/workspace/workhub-server/docs/requirement-sources/汇浦"));
-        assertTrue(text.contains("/workspace/workhub-server/agents-playbook/docs/业务线/汇浦"));
+        assertTrue(!text.contains("businessLineRawRoot"));
+        assertTrue(text.contains("/workspace/agents-playbook/docs/业务线/汇浦"));
         assertTrue(!text.contains("plain-gitlab-token"));
     }
 

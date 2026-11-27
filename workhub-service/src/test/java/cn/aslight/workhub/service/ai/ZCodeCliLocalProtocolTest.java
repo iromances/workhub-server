@@ -32,6 +32,8 @@ class ZCodeCliLocalProtocolTest {
     private volatile boolean hang;
     private volatile boolean formatCorrection;
     private volatile boolean nativeAgent;
+    private volatile boolean nativeContinuation;
+    private volatile boolean recoveryOnly;
 
     @BeforeEach void setup() throws Exception {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 10);
@@ -41,7 +43,7 @@ class ZCodeCliLocalProtocolTest {
                 var request = json.readTree(exchange.getRequestBody().readNBytes(1_000_001)); requests.add(request);
                 assertEquals("glm-4.6", request.path("model").asText());
                 var actualNames = new TreeSet<String>(); request.path("tools").forEach(tool -> actualNames.add(tool.path("function").path("name").asText()));
-                boolean formatting = formatCorrection && requests.size() == 3;
+                boolean formatting = recoveryOnly || formatCorrection && requests.size() >= 3;
                 if (nativeAgent) {
                     assertTrue(actualNames.containsAll(Set.of("Bash", "Write", "mcp__workhub_task__monitor_read")), actualNames::toString);
                 } else {
@@ -70,6 +72,15 @@ class ZCodeCliLocalProtocolTest {
                     delta = Map.of("role", "assistant", "content", formatCorrection && requests.size() == 2
                             ? "已读取 observed-from-workhub-fixture，任务完成。"
                             : "{\"type\":\"RESULT\",\"summary\":\"本地完整工具任务通过\"}"); reason = "stop";
+                }
+                if (nativeContinuation && requests.size() == 3) {
+                    delta = Map.of("role", "assistant", "content", "{\"type\":\"RESULT\",\"summary\":\"原生续接");
+                    reason = "length";
+                } else if (nativeContinuation && requests.size() == 4) {
+                    delta = Map.of("role", "assistant", "content", "保留全部事实\"}"); reason = "stop";
+                } else if (recoveryOnly) {
+                    delta = Map.of("role", "assistant", "content", json.writeValueAsString(Map.of("type", "RESULT", "summary", "原文事实".repeat(30000))));
+                    reason = "stop";
                 }
                 if (!request.path("stream").asBoolean()) {
                     assertTrue(formatting || nativeAgent, "受限会话只有无工具格式校正使用普通文本生成请求");
@@ -138,14 +149,28 @@ class ZCodeCliLocalProtocolTest {
     }
     @Test void actualZcodeCorrectsFormatWithNoToolsAndDoesNotReplayMcp() throws Exception {
         formatCorrection = true; assertActualMcpTask();
-        assertTrue(events.stream().anyMatch(value -> value.contains("校正")));
+        assertTrue(events.stream().anyMatch(value -> value.contains("原生会话整理")));
+        assertTrue(requests.get(2).path("stream").asBoolean(), "整理也必须走原生流式任务调度");
+        assertTrue(requests.get(2).path("max_completion_tokens").asInt() > 8192, "输出额度应由 ZCode 原生模型能力决定");
+    }
+    @Test void actualZcodeContinuesLengthThroughNativeRuntime() throws Exception {
+        nativeContinuation = true; formatCorrection = true; assertActualMcpTask();
+        assertEquals("原生续接保留全部事实", json.readTree(Files.readString(directory.resolve("run/result.json"))).path("summary").asText());
+    }
+    @Test void actualRecoveryOnlyFormatsSavedOriginalWithoutMcpAndPreservesLargeResult() throws Exception {
+        recoveryOnly = true; assertActualMcpTask();
+        assertEquals("原文事实".repeat(30000), json.readTree(Files.readString(directory.resolve("run/result.json"))).path("summary").asText());
+        assertTrue(requests.getFirst().path("stream").asBoolean());
     }
     private void assertActualMcpTask() throws Exception {
-        toolsEnabled = true; client.preflight(provider);
+        toolsEnabled = !recoveryOnly; client.preflight(provider);
         Path run = Files.createDirectory(directory.resolve("run")), output = run.resolve("result.json");
         var launch = nativeAgent
                 ? client.prepareAgent(provider, provider.getDefaultModel(), "disabled", run, output, "写入并读取本地样本，调用 WorkHub 工具后完成任务。", base() + "/mcp", "task-fixture-token", "{\"type\":\"object\"}")
                 : client.prepare(provider, provider.getDefaultModel(), "disabled", run, output, "使用唯一工具读取本地样本后完成任务。", List.of("mcp__workhub_task__monitor_read"), base() + "/mcp", "task-fixture-token", formatCorrection ? "{\"type\":\"object\"}" : null);
+        if (recoveryOnly) {
+            ((ZCodeTaskConversation) launch.conversation()).analysisRecovery(new AiResultRecovery.Session("已保存的原文事实", ignored -> { }));
+        }
         if (nativeAgent) {
             // 实测不加载操作者的真实账户、插件或 MCP；生产入口本身保留原生 HOME。
             Path home = Files.createDirectory(run.resolve("fixture-home"));
@@ -158,6 +183,7 @@ class ZCodeCliLocalProtocolTest {
             launch.conversation().start(process.getOutputStream());
             Thread reader = Thread.ofVirtual().start(() -> {
                 try { ZCodeCliClient.readProtocol(process.getInputStream(), new CliTaskConversation() {
+                    @Override public boolean unlimitedResultMessages() { return launch.conversation().unlimitedResultMessages(); }
                     @Override public void start(java.io.OutputStream input) throws java.io.IOException { launch.conversation().start(input); }
                     @Override public String accept(tools.jackson.databind.JsonNode event) throws java.io.IOException {
                         if (event.has("error")) System.out.println("ZCODE_LOCAL_PROTOCOL_ERROR " + event.path("error"));
@@ -173,11 +199,11 @@ class ZCodeCliLocalProtocolTest {
             if (failure.get() != null) throw new AssertionError("Protocol failed", failure.get());
             if (handlerFailure.get() != null) throw new AssertionError("Fixture failed: " + events, handlerFailure.get());
             assertFalse(process.isAlive(), () -> "CLI did not finish: " + events); reader.join(1000); assertFalse(reader.isAlive()); assertEquals(0, process.exitValue());
-            assertNull(handlerFailure.get()); assertEquals(1, mcpCalls.get());
+            assertNull(handlerFailure.get()); assertEquals(recoveryOnly ? 0 : 1, mcpCalls.get());
             if (nativeAgent) {
                 assertTrue(requests.size() >= 4);
                 assertEquals(3, events.stream().filter(value -> value.startsWith("ZCode 正在调用 ")).count());
-            } else assertEquals(formatCorrection ? 3 : 2, requests.size());
+            } else assertEquals(recoveryOnly ? 1 : nativeContinuation ? 4 : formatCorrection ? 3 : 2, requests.size());
             assertEquals("RESULT", json.readTree(Files.readString(output)).path("type").asText());
         } finally { assertTrue(ZCodeCliClient.stopTree(process, descendants)); }
     }

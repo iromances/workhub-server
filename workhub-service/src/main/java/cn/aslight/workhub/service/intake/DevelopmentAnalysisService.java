@@ -317,11 +317,6 @@ public class DevelopmentAnalysisService {
             return new PreparedAnalysis(existing, false);
         }
 
-        if (existing != null && readDraft(existing.getDraftJson()) != null) {
-            DevelopmentAnalysisDraft previous = readDraft(existing.getDraftJson());
-            projectKnowledgeBaseService.appendAnalysisNote(intakeId, existing.getId(), "重评前保留原评估",
-                    previous, previous.requirementRawPath(), operatorUserName);
-        }
         developmentAnalysisMapper.failInFlightByIntakeId(intakeId, MESSAGE_SUPERSEDED, operatorUserName);
         DevelopmentAnalysisEntity entity = insertExecutionState(
                 intakeId,
@@ -350,7 +345,6 @@ public class DevelopmentAnalysisService {
         entity.setAnalysisMessage(null);
         entity.setUpdatedBy(operatorUserName);
         developmentAnalysisMapper.update(entity);
-        scheduleArchive(intakeId, entity.getId(), adjusted, STATUS_DRAFT, "AI 调整研发拆解", operatorUserName);
         recordHistory(intakeId, "AI 调整研发拆解", request.getMessage().trim(), operatorUserName);
         return toResponse(developmentAnalysisMapper.findLatestByIntakeId(intakeId));
     }
@@ -411,7 +405,7 @@ public class DevelopmentAnalysisService {
                     operatorUserName, LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
             historySummary += " SDD 三件套已发布到需求归档目录。";
         }
-        scheduleArchive(intakeId, entity.getId(), draft, STATUS_CONFIRMED, "确认研发评估", operatorUserName);
+        scheduleArchive(intakeId, entity.getId(), draft, operatorUserName);
         recordHistory(intakeId, "确认研发评估", historySummary, operatorUserName);
         return new DevelopmentAnalysisConfirmResponse(intakeId, workItemIds, "RESERVED", historySummary);
     }
@@ -763,7 +757,9 @@ public class DevelopmentAnalysisService {
         entity.setAnalysisMessage(null);
         entity.setUpdatedBy(operatorUserName);
         developmentAnalysisMapper.update(entity);
-        scheduleArchive(intakeId, entity.getId(), updated, updated.status(), "调整研发负责人", operatorUserName);
+        if (STATUS_CONFIRMED.equals(updated.status())) {
+            scheduleArchive(intakeId, entity.getId(), updated, operatorUserName);
+        }
         recordHistory(intakeId, "调整研发负责人", "已更新研发拆解草稿中的任务负责人。", operatorUserName);
         return toResponse(developmentAnalysisMapper.findLatestByIntakeId(intakeId));
     }
@@ -908,7 +904,9 @@ public class DevelopmentAnalysisService {
         } else {
             developmentAnalysisMapper.update(entity);
         }
-        scheduleArchive(intakeId, entity.getId(), updated, updated.status(), "调整研发任务", operatorUserName);
+        if (STATUS_CONFIRMED.equals(updated.status())) {
+            scheduleArchive(intakeId, entity.getId(), updated, operatorUserName);
+        }
         recordHistory(intakeId, "调整研发任务", "已人工更新研发任务，共 " + workItems.size() + " 项。", operatorUserName);
         return toResponse(developmentAnalysisMapper.findLatestByIntakeId(intakeId));
     }
@@ -962,6 +960,10 @@ public class DevelopmentAnalysisService {
             GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle = gitlabRepositoryService.resolveAndFetchGroup(project);
             ProjectKnowledgeBaseService.RequirementKnowledgeNote requirementNote =
                     projectKnowledgeBaseService.upsertRequirementIterationNote(intake, structuredData, project);
+            if (!requirementNote.written()) {
+                recordHistory(intakeId, "输入版本归档失败",
+                        "需求材料版本未归档，评估继续：" + requirementNote.failureReason(), operatorUserName);
+            }
             String knowledgeBaseContext = appendClarificationContext(
                     projectKnowledgeBaseService.buildContext(structuredData, project),
                     readClarificationItems(intakeId)
@@ -1000,8 +1002,7 @@ public class DevelopmentAnalysisService {
             completed.setDraftJson(writeDraftJson(draft));
             completed.setUpdatedBy(operatorUserName);
             developmentAnalysisMapper.update(completed);
-            scheduleArchive(intakeId, analysisId, draft, STATUS_DRAFT, "生成研发评估", operatorUserName);
-            String noteSummary = "原始材料版本：" + requirementNote.rawRelativePath() + "；临时评估归档见独立归档记录。";
+            String noteSummary = "原始材料版本：" + firstNonBlank(requirementNote.rawRelativePath(), "未归档") + "；";
             recordHistory(intakeId, "生成研发拆解草稿", noteSummary + "AI 已基于需求 Markdown 和 GitLab 代码生成研发工作项草稿，共 " + draft.workItems().size() + " 项。", operatorUserName);
         } catch (Exception ex) {
             DevelopmentAnalysisEntity failed = requireAnalysisEntity(analysisId);
@@ -1015,61 +1016,38 @@ public class DevelopmentAnalysisService {
         }
     }
 
-    /** 只重放已有结果的归档，不触发 AI 或工作项创建。 */
+    /** 只重放已确认评估的归档，不触发 AI 或工作项创建；未确认草稿仅保存在数据库，无需归档。 */
     @Transactional
     public String retryKnowledgeArchive(Long intakeId, String operatorUserName) {
         requireIntake(intakeId);
         DevelopmentAnalysisEntity analysis = developmentAnalysisMapper.findLatestByIntakeId(intakeId);
         DevelopmentAnalysisDraft draft = analysis == null ? null : readDraft(analysis.getDraftJson());
-        IntakeClarificationAnalysisEntity clarification = intakeClarificationAnalysisMapper.findLatestByIntakeId(intakeId);
-        boolean archived = false;
-        if (draft != null) {
-            if (isExecutionInProgress(analysis.getAnalysisStatus())) {
-                throw new IllegalArgumentException("评估正在执行，请完成后重新归档");
-            }
-            archiveResult(intakeId, analysis.getId(), draft, analysis.getAnalysisStatus(),
-                    "生成研发评估", firstNonBlank(analysis.getUpdatedBy(), operatorUserName));
-            archived = true;
+        if (draft == null || !STATUS_CONFIRMED.equals(analysis.getAnalysisStatus())) {
+            throw new IllegalArgumentException("尚无可归档的已确认评估");
         }
-        if (clarification != null && clarification.getItemsJson() != null) {
-            if (isExecutionInProgress(clarification.getAnalysisStatus())) {
-                throw new IllegalArgumentException("澄清分析正在执行，请完成后重新归档");
-            }
-            projectKnowledgeBaseService.appendAnalysisNote(intakeId, clarification.getId(), "生成需求澄清项",
-                    readClarificationItems(intakeId), null, operatorUserName);
-            archived = true;
-        }
-        if (!archived) { throw new IllegalArgumentException("尚无可归档的已保存分析结果"); }
-        recordHistory(intakeId, "重新归档分析", "已从数据库结果重新归档，未触发 AI 或创建工作项。", operatorUserName);
+        archiveResult(intakeId, analysis.getId(), draft, firstNonBlank(analysis.getUpdatedBy(), operatorUserName));
+        recordHistory(intakeId, "重新归档分析", "已重新发布已确认的评估，未触发 AI 或创建工作项。", operatorUserName);
         return "已重新归档现有分析结果";
     }
 
-    private void scheduleArchive(Long intakeId, Long analysisId, DevelopmentAnalysisDraft draft,
-                                 String status, String phase, String operator) {
+    /** 只归档已确认的评估；未确认草稿仅保存在数据库，不写文件。 */
+    private void scheduleArchive(Long intakeId, Long analysisId, DevelopmentAnalysisDraft draft, String operator) {
         projectKnowledgeBaseService.archiveAfterCommit(
                 () -> {
-                    String result = archiveResult(intakeId, analysisId, draft, status, phase, operator);
+                    String result = archiveResult(intakeId, analysisId, draft, operator);
                     recordHistory(intakeId, "分析归档成功", result, operator);
                 },
                 ex -> recordHistory(intakeId, "分析归档失败",
                         "业务结果仍已保存，可独立重新归档：" + summarizeException(ex), operator));
     }
 
-    private String archiveResult(Long intakeId, Long analysisId, DevelopmentAnalysisDraft draft,
-                               String status, String phase, String operator) {
-        if (!STATUS_CONFIRMED.equals(status)) {
-            projectKnowledgeBaseService.appendAnalysisNote(intakeId, analysisId, phase, draft,
-                    draft.requirementRawPath(), operator);
-            return "已追加 notes 临时分析，尚未发布正式 wiki 评估。";
-        }
+    private String archiveResult(Long intakeId, Long analysisId, DevelopmentAnalysisDraft draft, String operator) {
         if (developmentAnalysisMapper.lockForKnowledgeArchive(analysisId) == null) {
             throw new IllegalArgumentException("待归档分析已不存在");
         }
         DevelopmentAnalysisEntity saved = developmentAnalysisMapper.findById(analysisId);
         if (!STATUS_CONFIRMED.equals(saved.getAnalysisStatus()) || !sameArchiveContent(draft, readDraft(saved.getDraftJson()))) {
-            projectKnowledgeBaseService.appendAnalysisNote(intakeId, analysisId, "保留迟到的历史评估回调", draft,
-                    draft.requirementRawPath(), operator);
-            return "较新的业务结果已存在；旧回调追加 notes 留存，未覆盖当前正式文档。";
+            return "较新的业务结果已存在，旧回调未覆盖当前正式文档。";
         }
         IntakeRecordEntity intake = requireIntake(intakeId);
         IntakeStructuredData structuredData = readStructuredData(intake.getStructuredDataJson());

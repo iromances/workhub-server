@@ -28,12 +28,12 @@ public final class RepositoryDocumentPaths {
         return playbookArchiveRoot(config, documentsRoot);
     }
 
-    /** agents-playbook 仓库的业务线归档根（其 docs/业务线）；未配置 playbookPath 时默认取与本仓库同级的 agents-playbook 仓库。 */
+    /** agents-playbook 仓库的业务线归档根（其 docs/业务线）；未配置 playbookPath 时默认取与本仓库真实路径同级的 agents-playbook 仓库。 */
     public static Path playbookArchiveRoot(SysConfigService config, Path documentsRoot) {
         String configured = config.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, CONFIG_KEY_PLAYBOOK_PATH);
         Path repository = configured != null && !configured.isBlank()
                 ? Path.of(configured.trim()).toAbsolutePath().normalize()
-                : documentsRoot.getParent().resolve(PLAYBOOK);
+                : defaultPlaybookRepository(documentsRoot);
         Path root = repository.resolve("docs").resolve(BUSINESS_LINES);
         Path documents = documentsRoot.toAbsolutePath().normalize();
         if (root.startsWith(documents) || documents.startsWith(root)) {
@@ -69,6 +69,20 @@ public final class RepositoryDocumentPaths {
         } catch (IOException ex) {
             throw new IllegalStateException("研发归档目录不可用", ex);
         }
+    }
+
+    /** 与 WorkHub 仓库真实路径同级的 agents-playbook 仓库；仓库可能经符号链接访问，先解析真实路径再取同级。 */
+    public static Path defaultPlaybookRepository(Path documentsRoot) {
+        Path documents = documentsRoot.toAbsolutePath().normalize();
+        try {
+            documents = documents.toRealPath();
+        } catch (IOException ex) {
+            // 路径尚不存在时按字面路径推导同级
+        }
+        Path repositoryRoot = documents.getParent();
+        return repositoryRoot == null || repositoryRoot.getParent() == null
+                ? Path.of(PLAYBOOK)
+                : repositoryRoot.getParent().resolve(PLAYBOOK);
     }
 
     static Path findRepository(Path start) {

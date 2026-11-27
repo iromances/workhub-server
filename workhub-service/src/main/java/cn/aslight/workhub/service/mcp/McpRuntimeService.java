@@ -699,7 +699,6 @@ public class McpRuntimeService {
         if (documentPath != null) {
             // WorkHub 平台（BL000012）归档在 docs/业务线，其余业务线归档在 agents-playbook 仓库 docs/业务线
             context.put("businessLineWikiRoot", businessLineWikiRoot(Path.of(documentPath.toString()), context, businessLine));
-            context.put("businessLineRawRoot", documentPath + "/requirement-sources/" + firstNonBlank(businessLine.code(), businessLine.name()));
         }
         return context;
     }
@@ -711,7 +710,7 @@ public class McpRuntimeService {
         }
         Object playbookPath = context.get("projectPlaybookPath");
         Path root = playbookPath != null ? Path.of(playbookPath.toString())
-                : documentsRoot.getParent().resolve(RepositoryDocumentPaths.PLAYBOOK)
+                : RepositoryDocumentPaths.defaultPlaybookRepository(documentsRoot)
                         .resolve("docs").resolve(RepositoryDocumentPaths.BUSINESS_LINES);
         return root.resolve(segment).toString();
     }

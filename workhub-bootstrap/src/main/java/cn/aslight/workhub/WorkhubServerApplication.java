@@ -4,7 +4,6 @@ import cn.aslight.workhub.config.JwtProperties;
 import cn.aslight.workhub.config.McpProperties;
 import cn.aslight.workhub.config.PaymentProperties;
 import cn.aslight.workhub.config.ReminderProperties;
-import cn.aslight.workhub.config.StorageProperties;
 import cn.aslight.workhub.config.WecomRobotProperties;
 import cn.aslight.workhub.config.AiProperties;
 import cn.aslight.workhub.observability.ElkAlertProperties;
@@ -16,7 +15,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(exclude = UserDetailsServiceAutoConfiguration.class)
 @EnableScheduling
-@EnableConfigurationProperties({JwtProperties.class, WecomRobotProperties.class, ReminderProperties.class, AiProperties.class, StorageProperties.class, PaymentProperties.class, McpProperties.class, ElkAlertProperties.class})
+@EnableConfigurationProperties({JwtProperties.class, WecomRobotProperties.class, ReminderProperties.class, AiProperties.class, PaymentProperties.class, McpProperties.class, ElkAlertProperties.class})
 /**
  * WorkHub 后端启动入口。
  */

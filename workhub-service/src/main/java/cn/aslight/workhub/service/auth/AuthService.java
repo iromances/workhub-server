@@ -6,25 +6,21 @@ import cn.aslight.workhub.model.auth.UpdateProfileRequest;
 import cn.aslight.workhub.model.auth.UserProfileResponse;
 import cn.aslight.workhub.model.auth.ChangePasswordRequest;
 import cn.aslight.workhub.dao.system.SysUserMapper;
-import cn.aslight.workhub.config.StorageProperties;
 import cn.aslight.workhub.model.system.SysUserEntity;
 import cn.aslight.workhub.security.JwtTokenService;
+import cn.aslight.workhub.service.attachment.AttachmentService;
 import cn.aslight.workhub.service.system.SystemAuditService;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * 认证服务。
@@ -36,26 +32,29 @@ public class AuthService {
     private static final int LOCK_MINUTES = 15;
     private static final long MAX_AVATAR_BYTES = 2 * 1024 * 1024;
     private static final Set<String> ALLOWED_AVATAR_EXTENSIONS = Set.of("png", "jpg", "jpeg", "gif", "webp");
+    /** 本系统上传的头像地址，后半段是头像附件 ID。 */
+    private static final String AVATAR_URL_PREFIX = "/api/auth/avatars/";
+    private static final Pattern AVATAR_ID_PATTERN = Pattern.compile("[1-9][0-9]{0,17}");
 
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService jwtTokenService;
     private final SysUserMapper userMapper;
     private final PermissionContextService permissionContextService;
     private final SystemAuditService auditService;
-    private final StorageProperties storageProperties;
+    private final AttachmentService attachmentService;
 
     public AuthService(PasswordEncoder passwordEncoder,
                        JwtTokenService jwtTokenService,
                        SysUserMapper userMapper,
                        PermissionContextService permissionContextService,
                        SystemAuditService auditService,
-                       StorageProperties storageProperties) {
+                       AttachmentService attachmentService) {
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenService = jwtTokenService;
         this.userMapper = userMapper;
         this.permissionContextService = permissionContextService;
         this.auditService = auditService;
-        this.storageProperties = storageProperties;
+        this.attachmentService = attachmentService;
     }
 
     public LoginResponse login(LoginRequest request, String ip, String userAgent) {
@@ -119,6 +118,7 @@ public class AuthService {
         return currentUser(username);
     }
 
+    /** 上传头像：内容存入附件表，头像地址指向新的头像附件，并清理上一张本系统上传的头像。 */
     @Transactional
     public UserProfileResponse uploadAvatar(String username, MultipartFile file, String ip) {
         SysUserEntity user = permissionContextService.requireActiveUser(username);
@@ -128,39 +128,26 @@ public class AuthService {
         if (file.getSize() > MAX_AVATAR_BYTES) {
             throw new IllegalArgumentException("头像文件不能超过 2MB");
         }
-        String extension = avatarExtension(file.getOriginalFilename(), file.getContentType());
-        String storedName = UUID.randomUUID().toString().replace("-", "") + "." + extension;
-        Path avatarDir = avatarBaseDir();
-        Path target = avatarDir.resolve(storedName).normalize();
-        try {
-            Files.createDirectories(avatarDir);
-            file.transferTo(target);
-        } catch (IOException ex) {
-            throw new IllegalStateException("头像保存失败", ex);
-        }
+        validateAvatarFile(file.getOriginalFilename(), file.getContentType());
 
         String oldAvatarUrl = trimToNull(user.getAvatarUrl());
-        userMapper.updateAvatar(user.getId(), "/api/auth/avatars/" + storedName);
-        deleteLocalAvatar(oldAvatarUrl);
+        Long avatarId = attachmentService.saveUserAvatar(user.getId(), file);
+        userMapper.updateAvatar(user.getId(), AVATAR_URL_PREFIX + avatarId);
+        deleteStoredAvatar(oldAvatarUrl);
         auditService.operation(username, null, "UPLOAD_AVATAR", "SYS_USER", String.valueOf(user.getId()),
                 null, "上传个人头像", "SUCCESS", null, ip);
         return currentUser(username);
     }
 
-    public AvatarResource loadAvatar(String fileName) {
-        String safeFileName = sanitizeAvatarFileName(fileName);
-        Path avatarDir = avatarBaseDir();
-        Path path = avatarDir.resolve(safeFileName).normalize();
-        if (!path.startsWith(avatarDir) || !Files.exists(path) || !Files.isRegularFile(path)) {
+    /** 按头像地址中的附件 ID 读取头像；ID 非法、附件不存在或不是头像时按头像不存在处理。 */
+    public AvatarResource loadAvatar(String avatarKey) {
+        Long avatarId = parseAvatarId(avatarKey);
+        if (avatarId == null) {
             throw new IllegalArgumentException("头像文件不存在");
         }
-        String contentType;
-        try {
-            contentType = Files.probeContentType(path);
-        } catch (IOException ex) {
-            contentType = null;
-        }
-        return new AvatarResource(new FileSystemResource(path), contentType == null ? "application/octet-stream" : contentType);
+        AttachmentService.AttachmentResource avatar = attachmentService.loadUserAvatar(avatarId);
+        String contentType = avatar.entity().getContentType();
+        return new AvatarResource(avatar.resource(), contentType == null ? "application/octet-stream" : contentType);
     }
 
     private void handleLoginFailure(SysUserEntity user, String ip, String userAgent) {
@@ -174,7 +161,8 @@ public class AuthService {
         return value == null ? "" : value.trim();
     }
 
-    private String avatarExtension(String fileName, String contentType) {
+    /** 头像只接受图片，扩展名限 png、jpg、jpeg、gif、webp。 */
+    private void validateAvatarFile(String fileName, String contentType) {
         String normalizedContentType = contentType == null ? "" : contentType.toLowerCase(Locale.ROOT);
         if (!normalizedContentType.startsWith("image/")) {
             throw new IllegalArgumentException("只能上传图片头像");
@@ -185,7 +173,6 @@ public class AuthService {
         if (!ALLOWED_AVATAR_EXTENSIONS.contains(extension)) {
             throw new IllegalArgumentException("头像仅支持 png、jpg、jpeg、gif、webp 格式");
         }
-        return extension;
     }
 
     private String sanitizeAvatarFileName(String value) {
@@ -196,24 +183,21 @@ public class AuthService {
         return trimmed;
     }
 
-    private Path avatarBaseDir() {
-        return Path.of(storageProperties.getLocalPath()).toAbsolutePath().normalize().resolve("avatars").normalize();
-    }
-
-    private void deleteLocalAvatar(String avatarUrl) {
-        if (avatarUrl == null || !avatarUrl.startsWith("/api/auth/avatars/")) {
+    /** 只清理本系统上传的头像；用户管理中手工填写的其他地址不动。 */
+    private void deleteStoredAvatar(String avatarUrl) {
+        if (avatarUrl == null || !avatarUrl.startsWith(AVATAR_URL_PREFIX)) {
             return;
         }
-        String fileName = avatarUrl.substring("/api/auth/avatars/".length());
-        try {
-            Path avatarDir = avatarBaseDir();
-            Path path = avatarDir.resolve(sanitizeAvatarFileName(fileName)).normalize();
-            if (path.startsWith(avatarDir)) {
-                Files.deleteIfExists(path);
-            }
-        } catch (IOException ex) {
-            throw new IllegalStateException("旧头像文件删除失败", ex);
+        Long avatarId = parseAvatarId(avatarUrl.substring(AVATAR_URL_PREFIX.length()));
+        if (avatarId != null) {
+            attachmentService.deleteUserAvatar(avatarId);
         }
+    }
+
+    /** 头像地址中的附件 ID；不是纯数字时返回 null。 */
+    private Long parseAvatarId(String value) {
+        String trimmed = trimToNull(value);
+        return trimmed != null && AVATAR_ID_PATTERN.matcher(trimmed).matches() ? Long.valueOf(trimmed) : null;
     }
 
     private String trimRequired(String value, String message) {

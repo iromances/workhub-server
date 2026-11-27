@@ -1114,7 +1114,8 @@ public class IntakeService {
                 action
         );
         if (IntakeDemandStatusRules.ACTION_CONFIRM_DESIGN.equals(action) && intakeAiDevelopmentService != null
-                && isDevelopmentRequirement(currentStructuredData)) {
+                && isDevelopmentRequirement(currentStructuredData)
+                && !Boolean.FALSE.equals(request.getAiDevelopmentEnabled())) {
             intakeAiDevelopmentService.validateBeforeDesignConfirmed(id, operatorUserName);
         }
         IntakeStructuredData nextStructuredData = applyStageAction(currentStructuredData, request, action);
@@ -1127,6 +1128,13 @@ public class IntakeService {
                 nextDemandStatus,
                 uploadedFileNames
         );
+        if (IntakeDemandStatusRules.ACTION_CONFIRM_DESIGN.equals(action) && isDevelopmentRequirement(nextStructuredData)) {
+            String aiDevelopmentChoice = Boolean.FALSE.equals(request.getAiDevelopmentEnabled())
+                    ? "未启用（人工开发）" : "启用";
+            historyDetail = historyDetail == null
+                    ? "AI 自动开发：" + aiDevelopmentChoice
+                    : historyDetail + "\nAI 自动开发：" + aiDevelopmentChoice;
+        }
         intakeStructuredFieldNormalizer.applyStructuredData(entity, nextStructuredData);
         intakeMapper.updateFormalFields(entity);
         intakeMapper.updateManagementFields(
@@ -1542,6 +1550,9 @@ public class IntakeService {
                 .filter(history -> "UPDATE".equals(history.getActionType()))
                 .map(this::toHistoryResponse)
                 .toList();
+        List<IntakeTodoEntity> todos = intakeTodoMapper.findByIntakeId(entity.getId());
+        Map<Long, List<AttachmentResponse>> todoScreenshots = attachmentService.mapTodoScreenshots(
+                todos.stream().map(IntakeTodoEntity::getId).toList());
         return new IntakeDetailResponse(
                 entity.getId(),
                 entity.getSourceType(),
@@ -1566,8 +1577,8 @@ public class IntakeService {
                 entity.getEnrichmentUpdatedAt(),
                 readDraft(entity.getAiDraftJson()),
                 attachments,
-                intakeTodoMapper.findByIntakeId(entity.getId()).stream()
-                        .map(this::toTodoResponse)
+                todos.stream()
+                        .map(todo -> toTodoResponse(todo, todoScreenshots))
                         .toList(),
                 entity.getConvertedWorkItemId(),
                 entity.getCreatedAt(),
@@ -1731,7 +1742,7 @@ public class IntakeService {
         return value == null ? null : value.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm"));
     }
 
-    private IntakeTodoResponse toTodoResponse(IntakeTodoEntity entity) {
+    private IntakeTodoResponse toTodoResponse(IntakeTodoEntity entity, Map<Long, List<AttachmentResponse>> screenshots) {
         return new IntakeTodoResponse(
                 entity.getId(),
                 entity.getIntakeId(),
@@ -1743,7 +1754,8 @@ public class IntakeService {
                 entity.getCompletedAt(),
                 entity.getProcessResult(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
+                entity.getUpdatedAt(),
+                screenshots.getOrDefault(entity.getId(), List.of())
         );
     }
 
@@ -2978,7 +2990,7 @@ public class IntakeService {
         } else if (IntakeDemandStatusRules.ACTION_CONFIRM_CLARIFICATION.equals(action)) {
             runAfterCommit(() -> intakeClarificationAnalysisService.triggerDevelopmentAnalysis(intakeId, operatorUserName));
         } else if (IntakeDemandStatusRules.ACTION_CONFIRM_DESIGN.equals(action)) {
-            if (intakeAiDevelopmentService != null) {
+            if (intakeAiDevelopmentService != null && !Boolean.FALSE.equals(request.getAiDevelopmentEnabled())) {
                 runAfterCommit(() -> intakeAiDevelopmentService.triggerAfterDesignConfirmed(intakeId, operatorUserName));
             }
         }

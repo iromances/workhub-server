@@ -54,19 +54,22 @@ class RepositoryDocumentPathsTest {
     }
 
     @Test
-    void routesWorkhubPlatformToDocsBusinessLinesAndOthersToPlaybookRepository() {
+    void routesWorkhubPlatformToDocsBusinessLinesAndOthersToPlaybookRepository() throws Exception {
         SysConfigService config = mock(SysConfigService.class);
-        Path docs = Path.of("/repo").resolve("docs");
+        Path root = repository(temporary.resolve("workhub-server"));
+        Files.createDirectories(root.resolve("docs"));
+        Path docs = root.resolve("docs");
         assertEquals(docs.resolve("业务线"), RepositoryDocumentPaths.wikiArchiveRoot(config, docs, "BL000012"));
         assertEquals(docs.resolve("业务线"), RepositoryDocumentPaths.wikiArchiveRoot(config, docs, " BL000012 "));
-        assertEquals(Path.of("/repo").resolve("agents-playbook").resolve("docs").resolve("业务线"),
+        // 默认取与仓库真实路径同级的 agents-playbook（@TempDir 在 macOS 上本身经符号链接指向真实路径）
+        assertEquals(docs.toRealPath().getParent().getParent().resolve("agents-playbook").resolve("docs").resolve("业务线"),
                 RepositoryDocumentPaths.playbookArchiveRoot(config, docs));
         when(config.findPlainValue("knowledge.project", RepositoryDocumentPaths.CONFIG_KEY_PLAYBOOK_PATH))
                 .thenReturn("/ext/agents-playbook");
         assertEquals(Path.of("/ext/agents-playbook").resolve("docs").resolve("业务线"),
                 RepositoryDocumentPaths.playbookArchiveRoot(config, docs));
         when(config.findPlainValue("knowledge.project", RepositoryDocumentPaths.CONFIG_KEY_PLAYBOOK_PATH))
-                .thenReturn("/repo");
+                .thenReturn(root.toString());
         assertThrows(IllegalStateException.class, () -> RepositoryDocumentPaths.playbookArchiveRoot(config, docs));
     }
 }

@@ -1,0 +1,71 @@
+{
+  "requirement" : "REQ-8e63d628-015f-4509-9a12-0491b5fabd30",
+  "verifiedAt" : "2026-11-26",
+  "baseline" : {
+    "branch" : "codex/development-20261122",
+    "head" : "e7b7b7b",
+    "workingTree" : "含本次及此前未提交改动"
+  },
+  "environment" : {
+    "java" : "OpenJDK 25.0.2",
+    "maven" : "3.9.14",
+    "mode" : "mvn -o 离线；源码复制到临时目录构建，未改写运行实例正在使用的 target/classes；未下载依赖"
+  },
+  "dataSteps" : {
+    "dataDirectoryBefore" : { "files" : 28, "intakes" : "180-197", "size" : "3.4M" },
+    "filesAlreadyInDatabaseWithIdenticalSha256" : 27,
+    "attachment355" : {
+      "importedAt" : "2026-11-25T17:49:55+08:00",
+      "how" : "登录页面内调用 POST /api/attachments/355/replace?intakeId=197，提交同一份原文件",
+      "bytes" : 142750,
+      "sha256" : "fb39b6f6e9172519aa4e8dabcf05a5d3fdd6e9f5bbd0fab48bba16060887d0f4",
+      "databaseContentSha256Matches" : true,
+      "storagePathCleared" : true
+    },
+    "dataDirectoryRemovedAt" : "2026-11-25T18:01:03+08:00",
+    "legacyRowsWithoutContent" : 294,
+    "legacyRowsWhoseFileStillExists" : 0
+  },
+  "targeted" : {
+    "log" : "maven-targeted-tests.log",
+    "testClasses" : 9,
+    "workhubService" : { "tests" : 106, "failures" : 0, "errors" : 0 },
+    "workhubController" : { "tests" : 3, "failures" : 0, "errors" : 0 },
+    "newTests" : { "AuthServiceAvatarTest" : 5, "AttachmentServiceTest avatar cases" : 4 }
+  },
+  "full" : {
+    "log" : "maven-full-tests.log",
+    "workhubMcpServer" : { "tests" : 94, "failures" : 0, "errors" : 0 },
+    "workhubService" : { "tests" : 1334, "failures" : 1, "errors" : 1, "skipped" : 12 },
+    "workhubController" : { "tests" : 68, "failures" : 0, "errors" : 0 },
+    "workhubBootstrap" : { "tests" : 21, "failures" : 0, "errors" : 1 }
+  },
+  "preExistingFailures" : [
+    "AgentWorkbenchServiceTest.apiPromptRequiresEli5SummaryReport（2026-11-25 已在未改动的 HEAD e7b7b7b 上复现）",
+    "BusinessLogSearchServiceTest.shouldPreserveActualExecutionAndExposeContentTruncationWithoutSensitiveFilters（ELK 日志范围未配置，2026-11-25 已在未改动的 HEAD 上复现）",
+    "TeamAliasRecoveryStaticTest.restoreUsesNoRoutineOrImplicitCommit（读取 docs/WorkHub/团队重复人员合并/SDD/rollback.sql，该文件在仓库中不存在；本次未改动 workhub-bootstrap 的测试）"
+  ],
+  "liveVerification" : {
+    "status" : "已完成：本机实例已加载新代码，真实上传头像核对通过",
+    "instancePid" : 89214,
+    "reloadedAt" : "2026-11-26T11:03:41+08:00",
+    "reloadedBy" : "用户",
+    "loadCheckAt" : "2026-11-26T16:41+08:00",
+    "loadEvidence" : [
+      "target/classes 于 2026-11-26 10:49 重新编译；StorageProperties.class 不存在；打包后的 application.yml 没有 local-path",
+      "启动后日志 0 个 ERROR",
+      "仓库根目录没有 data/",
+      "上传前基线：USER_AVATAR 记录 0 条，带头像的用户 0 个，附件最大 ID 544"
+    ],
+    "uploadCheck" : {
+      "checkedAt" : "2026-11-26T16:55~16:57+08:00",
+      "operator" : "admin（用户 ID 7），用户在内置浏览器登录后由 AI 在页面内调用 POST /api/auth/me/avatar",
+      "firstUpload" : { "attachmentId" : 545, "bytes" : 273, "sha256" : "fc58c74f0dc462f64ff040afdb5ae7bc6499dc5ee09d466b17cd51608c75c432", "result" : "USER_AVATAR 记录入库，storage_path 为空，库内哈希一致" },
+      "secondUpload" : { "attachmentId" : 546, "bytes" : 2006, "sha256" : "da1288f620f0336c06fd1d52314332b70b648b2fb7ba568d5b125e48df34a24f", "result" : "头像地址更新为 /api/auth/avatars/546，记录 545 被删除，库中只剩一条头像记录" },
+      "anonymousRead" : { "url" : "/api/auth/avatars/546", "status" : 200, "contentType" : "image/png", "bytes" : 2006, "sha256MatchesUpload" : true },
+      "invalidAddresses" : "旧地址 545、非数字地址、需求附件 ID 355 均返回 400“头像文件不存在”",
+      "filesWrittenToRepository" : 0,
+      "dataDirectoryCreated" : false
+    }
+  }
+}

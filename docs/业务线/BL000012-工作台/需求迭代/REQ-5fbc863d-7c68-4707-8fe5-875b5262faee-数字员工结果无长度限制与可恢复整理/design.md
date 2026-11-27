@@ -27,3 +27,10 @@ CLI_RAW_RESULT 保存 text 与 inputThroughOrdinal；用业务输入快照序号
 - `AgentNativeCliAdapter`：无长度 Schema/文件/summary 校验，ELI5 提示，保存原文与输入序号，恢复入口。
 - `AgentToolData.sanitizeReport`、`AgentRunStore`：全文脱敏持久化；工具输出分页截断仍保留。
 - `AgentWorkbenchService.retry`：规格配置未变且没有新指令时复制 CLI_FORMAT_RECOVERY，原运行证据留存；新运行按原验收规则确认完成。
+
+## v2 设计：原生整理会话（2026-11-24）
+本机 ZCode 分发静态核实：普通 runtime 使用 resolveNormalRequestMaxOutputTokens 与 resolveModelStepMaxOutputTokens 根据模型上限及上下文分配；workspace/generateText 则直接 generateText，不走该分配路径。session/create 支持空 toolAllowlist、空 mcpServers 与禁用 dynamicWorkflow/offPeak。
+复用 ZCodeTaskConversation 的原生协议状态机；增加仅整理文本的完成回调，独立会话携带原文、schema、具体校验错误。使用随机协议请求前缀隔离业务与格式会话；旧业务会话尾部消息只在原状态机处理，格式会话严格核对 session/turn/input/seq。格式会话禁用工具及 MCP，不降级模型推理配置，不传 maxOutputTokens。仅消费 turn.completed 成功终态，ACK 不当作结果。原生模型循环负责单次额度与上下文管理；无效 JSON 仍按既有 2/3 次格式纠错规则失败并保留原文，不截断或压缩内容。
+统一普通结构化格式校正到同一整理器；移除 ZCode 路径 24KB/96KB 结果与文件上限，协议完整性校验保留。原文恢复指纹、持久化及业务验收契约不变。离线测试覆盖协议、长结果、错误、工具拒绝及恢复；实际供应商效果另记，回滚仅应用代码。
+
+实测补充：原生 length 续接由 ZCode 自动发起，但 turn.completed.response 仅含末段。整理会话按当前 session/turn/seq 接收 session.updated 中 querySource=main_turn 的完整 ModelComplete 消息，保存 stopReason=length 前缀；最终 stop 成功才合并末段并校验。忽略非主轮消息，不收集流式 delta。保留历次格式会话路由处理迟到 ACK。此为原生输出完整收集，不引入输出额度或自行续接调度。

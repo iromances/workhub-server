@@ -1,5 +1,6 @@
 package cn.aslight.workhub.controller.intake;
 
+import cn.aslight.workhub.model.attachment.AttachmentResponse;
 import cn.aslight.workhub.model.intake.IntakeDetailResponse;
 import cn.aslight.workhub.model.intake.IntakeDashboardResponse;
 import cn.aslight.workhub.model.intake.IntakeHistoryResponse;
@@ -15,16 +16,19 @@ import cn.aslight.workhub.service.intake.DevelopmentAnalysisService;
 import cn.aslight.workhub.service.intake.IntakeService;
 import cn.aslight.workhub.service.intake.IntakeTodoService;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatcher;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -131,7 +135,8 @@ class IntakeControllerTest {
                 null,
                 null,
                 LocalDateTime.of(2026, 6, 4, 10, 0),
-                LocalDateTime.of(2026, 6, 4, 10, 0)
+                LocalDateTime.of(2026, 6, 4, 10, 0),
+                List.of()
         ));
 
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new IntakeController(
@@ -149,6 +154,56 @@ class IntakeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(1001))
                 .andExpect(jsonPath("$.data.status").value("待处理"));
+    }
+
+    @Test
+    void saveTodoScreenshots_shouldExposeMultipartApi() throws Exception {
+        IntakeService intakeService = mock(IntakeService.class);
+        IntakeTodoService todoService = mock(IntakeTodoService.class);
+        when(todoService.saveScreenshots(eq(9L), eq(1001L), any(), eq(List.of(77L)), eq("admin"))).thenReturn(
+                new IntakeTodoResponse(
+                        1001L,
+                        9L,
+                        "确认资方接口口径",
+                        null,
+                        "待处理",
+                        "shihao",
+                        null,
+                        null,
+                        null,
+                        LocalDateTime.of(2026, 6, 4, 10, 0),
+                        LocalDateTime.of(2026, 6, 4, 10, 0),
+                        List.of(new AttachmentResponse(
+                                3001L,
+                                "截图",
+                                "error.png",
+                                "image/png",
+                                "/api/attachments/3001/download",
+                                true,
+                                LocalDateTime.of(2026, 6, 4, 10, 0)
+                        ))
+                )
+        );
+        MockMultipartFile file = new MockMultipartFile("files", "error.png", "image/png", "png".getBytes());
+
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new IntakeController(
+                intakeService,
+                mock(DevelopmentAnalysisService.class),
+                todoService
+        )).build();
+
+        mockMvc.perform(multipart("/api/intake/9/todos/1001/screenshots")
+                        .file(file)
+                        .param("removedIds", "77")
+                        .principal(new UsernamePasswordAuthenticationToken("admin", "N/A")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(1001))
+                .andExpect(jsonPath("$.data.screenshots[0].id").value(3001))
+                .andExpect(jsonPath("$.data.screenshots[0].fileName").value("error.png"));
+
+        ArgumentMatcher<List<MultipartFile>> onlyErrorPng = files -> files.size() == 1
+                && "error.png".equals(files.get(0).getOriginalFilename());
+        verify(todoService).saveScreenshots(eq(9L), eq(1001L), argThat(onlyErrorPng), eq(List.of(77L)), eq("admin"));
     }
 
     @Test

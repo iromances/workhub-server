@@ -51,6 +51,15 @@ public interface AgentMapper {
     @Select("SELECT " + TASK_COLUMNS + " FROM pm_agent_task WHERE agent_id=#{agentId} AND request_key=#{key}")
     AgentTaskEntity findTaskByKey(@Param("agentId") String agentId, @Param("key") String key);
 
+    /** 职责执行任务认领（REQ-7fecce00）：员工名下运行次数最多的手工分派任务，同数取创建最早、再按 ID；需求开发与问题修复任务不参与。 */
+    @Select("SELECT " + TASK_COLUMNS + " FROM pm_agent_task WHERE agent_id=#{agentId} AND request_key NOT LIKE 'intake-dev-%' "
+            + "AND request_key NOT LIKE 'fix-%' ORDER BY (SELECT COUNT(*) FROM pm_agent_run r WHERE r.task_id=pm_agent_task.id) DESC, "
+            + "pm_agent_task.created_at, pm_agent_task.id LIMIT 1")
+    AgentTaskEntity findDutyCandidate(@Param("agentId") String agentId);
+
+    @Update("UPDATE pm_agent_task SET request_key=#{requestKey} WHERE id=#{id}")
+    int updateTaskRequestKey(@Param("id") String id, @Param("requestKey") String requestKey);
+
     @Select("SELECT " + TASK_COLUMNS + " FROM pm_agent_task WHERE agent_id=#{agentId} ORDER BY created_at DESC,id LIMIT #{limit} OFFSET #{offset}")
     List<AgentTaskEntity> listTasks(@Param("agentId") String agentId, @Param("offset") int offset, @Param("limit") int limit);
 
@@ -222,6 +231,10 @@ public interface AgentMapper {
 
     @Select("SELECT COUNT(*) FROM pm_agent_run WHERE task_id=#{taskId}")
     long countRuns(String taskId);
+
+    /** 员工全部历史运行（含需求开发、问题修复等系统任务的运行），按开始时间倒序。 */
+    @Select("SELECT " + RUN_COLUMNS + " FROM pm_agent_run WHERE agent_id=#{agentId} ORDER BY created_at DESC,id LIMIT #{limit} OFFSET #{offset}")
+    List<AgentRunEntity> listRunsByAgent(@Param("agentId") String agentId, @Param("offset") int offset, @Param("limit") int limit);
 
     /** 增量数据窗口基线：本任务最近一次已完成运行（排除当前运行）的开始时间。 */
     @Select("SELECT created_at FROM pm_agent_run WHERE task_id=#{taskId} AND id<>#{runId} AND status='COMPLETED' ORDER BY created_at DESC LIMIT 1")

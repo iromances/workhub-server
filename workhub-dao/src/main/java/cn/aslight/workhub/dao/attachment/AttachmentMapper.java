@@ -67,6 +67,26 @@ public interface AttachmentMapper {
             "biz_type,",
             "biz_id,",
             "file_name,",
+            "file_size,",
+            "file_sha256,",
+            "created_at",
+            "FROM pm_attachment",
+            "WHERE biz_id = #{bizId}",
+            "AND biz_type IN",
+            "<foreach collection='bizTypes' item='bizType' open='(' separator=',' close=')'>",
+            "#{bizType}",
+            "</foreach>",
+            "ORDER BY created_at ASC, id ASC",
+            "</script>"
+    })
+    List<AttachmentEntity> findDigestsByBiz(@Param("bizId") Long bizId, @Param("bizTypes") List<String> bizTypes);
+
+    @Select({
+            "<script>",
+            "SELECT id,",
+            "biz_type,",
+            "biz_id,",
+            "file_name,",
             "storage_path,",
             "content_type,",
             "file_content,",
@@ -84,6 +104,32 @@ public interface AttachmentMapper {
     })
     List<AttachmentEntity> findByBizWithContent(@Param("bizId") Long bizId,
                                                 @Param("bizTypes") List<String> bizTypes);
+
+    /**
+     * 按业务类型查多个业务对象下的附件元数据，不读取附件内容。
+     *
+     * @param bizType 业务类型
+     * @param bizIds 业务 ID 列表，不能为空
+     * @return 附件元数据，按业务 ID 和上传顺序排列
+     */
+    @Select({
+            "<script>",
+            "SELECT id,",
+            "biz_type,",
+            "biz_id,",
+            "file_name,",
+            "content_type,",
+            "created_at",
+            "FROM pm_attachment",
+            "WHERE biz_type = #{bizType}",
+            "AND biz_id IN",
+            "<foreach collection='bizIds' item='bizId' open='(' separator=',' close=')'>",
+            "#{bizId}",
+            "</foreach>",
+            "ORDER BY biz_id ASC, created_at ASC, id ASC",
+            "</script>"
+    })
+    List<AttachmentEntity> findByBizIds(@Param("bizType") String bizType, @Param("bizIds") List<Long> bizIds);
 
     @Select("""
             SELECT id,
@@ -125,6 +171,43 @@ public interface AttachmentMapper {
             WHERE id = #{id}
             """)
     int deleteById(Long id);
+
+    /**
+     * 删除一个业务对象下的全部附件。
+     *
+     * @param bizType 业务类型
+     * @param bizId 业务 ID
+     * @return 影响行数
+     */
+    @Delete("""
+            DELETE FROM pm_attachment
+            WHERE biz_type = #{bizType}
+              AND biz_id = #{bizId}
+            """)
+    int deleteByBiz(@Param("bizType") String bizType, @Param("bizId") Long bizId);
+
+    /**
+     * 删除一个业务对象下的指定附件，不会删除其他业务对象或其他业务类型的附件。
+     *
+     * @param bizType 业务类型
+     * @param bizId 业务 ID
+     * @param ids 附件 ID 列表，不能为空
+     * @return 影响行数
+     */
+    @Delete({
+            "<script>",
+            "DELETE FROM pm_attachment",
+            "WHERE biz_type = #{bizType}",
+            "AND biz_id = #{bizId}",
+            "AND id IN",
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>",
+            "#{id}",
+            "</foreach>",
+            "</script>"
+    })
+    int deleteByBizAndIds(@Param("bizType") String bizType,
+                          @Param("bizId") Long bizId,
+                          @Param("ids") List<Long> ids);
 
     /**
      * 替换附件文件元数据。

@@ -128,10 +128,6 @@ public class IntakeClarificationAnalysisService {
         if (existing != null && isExecutionInProgress(existing.getAnalysisStatus()) && !isStaleExecution(existing)) {
             return new PreparedAnalysis(existing, false);
         }
-        if (existing != null && existing.getItemsJson() != null) {
-            projectKnowledgeBaseService.appendAnalysisNote(intakeId, existing.getId(), "重评前保留澄清记录",
-                    readItems(existing.getItemsJson()), null, operatorUserName);
-        }
         clarificationAnalysisMapper.failInFlightByIntakeId(intakeId, MESSAGE_SUPERSEDED, operatorUserName);
         IntakeClarificationAnalysisEntity entity = insertExecutionState(
                 intakeId,
@@ -185,7 +181,6 @@ public class IntakeClarificationAnalysisService {
         entity.setAnalysisMessage(null);
         entity.setUpdatedBy(operatorUserName);
         clarificationAnalysisMapper.update(entity);
-        scheduleClarificationArchive(intakeId, entity.getId(), updatedItems, null, "回复需求澄清项", operatorUserName);
         recordHistory(intakeId,
                 "回复需求澄清项",
                 ("QUESTION".equals(itemType) ? "待确认项" : "风险项") + " #" + (itemIndex + 1) + " 已处理。",
@@ -232,6 +227,10 @@ public class IntakeClarificationAnalysisService {
             GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle = gitlabRepositoryService.resolveAndFetchGroup(project);
             ProjectKnowledgeBaseService.RequirementKnowledgeNote requirementNote =
                     projectKnowledgeBaseService.upsertRequirementIterationNote(intake, structuredData, project);
+            if (!requirementNote.written()) {
+                recordHistory(intakeId, "输入版本归档失败",
+                        "需求材料版本未归档，评估继续：" + requirementNote.failureReason(), operatorUserName);
+            }
             String knowledgeBaseContext = projectKnowledgeBaseService.buildContext(structuredData, project);
             var recovery = new cn.aslight.workhub.service.ai.AiResultRecovery(
                     fingerprint -> clarificationAnalysisMapper.findRecoverableOutput(intakeId, fingerprint),
@@ -258,8 +257,6 @@ public class IntakeClarificationAnalysisService {
             completed.setItemsJson(writeItemsJson(items));
             completed.setUpdatedBy(operatorUserName);
             clarificationAnalysisMapper.update(completed);
-            scheduleClarificationArchive(intakeId, analysisId, items, requirementNote.rawRelativePath(),
-                    "生成需求澄清项", operatorUserName);
             recordHistory(intakeId,
                     "生成需求澄清项",
                     "AI 已基于需求材料和 GitLab 代码生成澄清项，共 " + items.size() + " 项。",
@@ -272,16 +269,6 @@ public class IntakeClarificationAnalysisService {
             clarificationAnalysisMapper.updateExecutionState(failed);
             recordHistory(intakeId, "需求澄清分析失败", failed.getAnalysisMessage(), operatorUserName);
         }
-    }
-
-    private void scheduleClarificationArchive(Long intakeId, Long analysisId, List<IntakeClarificationItem> items,
-                                              String sourcePath, String phase, String operator) {
-        projectKnowledgeBaseService.archiveAfterCommit(
-                () -> {
-                    projectKnowledgeBaseService.appendAnalysisNote(intakeId, analysisId, phase, items, sourcePath, operator);
-                    recordHistory(intakeId, "澄清归档成功", "已追加 notes，保留历次分析。", operator);
-                },
-                ex -> recordHistory(intakeId, "澄清归档失败", "业务结果已保存，可独立重试归档：" + ex.getMessage(), operator));
     }
 
     private IntakeClarificationAnalysisEntity insertExecutionState(Long intakeId,

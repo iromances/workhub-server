@@ -62,7 +62,7 @@ public record AgentTaskSpecification(
     }
     public void validateCompletionTargets() {
         if (requiresCompletionTargets() && completionTargets.isEmpty())
-            throw new IllegalArgumentException("发布或效果验收任务须明确选择本次完成目标环境；旧任务请重新分派");
+            throw new IllegalArgumentException("发布或效果验收任务须明确选择本次完成目标环境；请在执行设置中选择完成目标环境");
         if (!requiresCompletionTargets() && !completionTargets.isEmpty())
             throw new IllegalArgumentException("仅发布或效果验收任务可设置完成目标环境");
         if (completionTargets.size() > 100 || new HashSet<>(completionTargets).size() != completionTargets.size()

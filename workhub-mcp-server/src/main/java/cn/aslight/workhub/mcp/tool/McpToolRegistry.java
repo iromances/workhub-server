@@ -191,7 +191,6 @@ public class McpToolRegistry {
         Object documentPath = context.get("projectDocumentPath");
         if (documentPath != null) {
             context.put("businessLineWikiRoot", documentPath + "/requirements/" + businessLine);
-            context.put("businessLineRawRoot", documentPath + "/requirement-sources/" + businessLine);
         }
         return context;
     }

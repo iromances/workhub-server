@@ -38,6 +38,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class IntakeServiceTest {
@@ -750,6 +751,102 @@ class IntakeServiceTest {
         ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
         verify(intakeHistoryMapper).insert(historyCaptor.capture());
         assertTrue(!historyCaptor.getValue().getDetailText().contains("研发人员："));
+    }
+
+    @Test
+    void advanceStage_shouldSkipAiDevelopmentWhenDesignConfirmOptedOut() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        IntakeAiDevelopmentService aiDevelopment = mock(IntakeAiDevelopmentService.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                mock(IntakeWorkItemRelationMapper.class),
+                mock(cn.aslight.workhub.dao.intake.IntakeTodoMapper.class),
+                mock(cn.aslight.workhub.dao.intake.IntakeStructuredFieldMapper.class),
+                null,
+                attachmentService,
+                new IntakeStructuredDataExtractor(),
+                new IntakeStructuredFieldNormalizer(),
+                mock(IntakeEnrichmentService.class),
+                mock(CodexCliSqlDraftGenerator.class),
+                mock(IntakeClarificationAnalysisService.class),
+                new ObjectMapper(),
+                null,
+                null,
+                aiDevelopment
+        );
+
+        when(intakeMapper.findById(213L)).thenReturn(designConfirmFixture(213L, "待设计"), designConfirmFixture(213L, "开发中"));
+        when(attachmentService.listIntakeAttachments(213L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(213L, 20)).thenReturn(List.of());
+
+        IntakeStageActionRequest request = new IntakeStageActionRequest();
+        request.setAction("CONFIRM_DESIGN");
+        request.setOccurredAt("2026/04/06");
+        request.setAiDevelopmentEnabled(false);
+
+        service.advanceStage(213L, request, "admin");
+
+        verifyNoInteractions(aiDevelopment);
+        ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
+        verify(intakeHistoryMapper).insert(historyCaptor.capture());
+        assertTrue(historyCaptor.getValue().getDetailText().contains("AI 自动开发：未启用（人工开发）"));
+    }
+
+    @Test
+    void advanceStage_shouldValidateAndTriggerAiDevelopmentByDefaultOnDesignConfirm() {
+        IntakeMapper intakeMapper = mock(IntakeMapper.class);
+        IntakeHistoryMapper intakeHistoryMapper = mock(IntakeHistoryMapper.class);
+        IntakeAiDevelopmentService aiDevelopment = mock(IntakeAiDevelopmentService.class);
+        AttachmentService attachmentService = mock(AttachmentService.class);
+        IntakeService service = new IntakeService(
+                intakeMapper,
+                intakeHistoryMapper,
+                mock(IntakeWorkItemRelationMapper.class),
+                mock(cn.aslight.workhub.dao.intake.IntakeTodoMapper.class),
+                mock(cn.aslight.workhub.dao.intake.IntakeStructuredFieldMapper.class),
+                null,
+                attachmentService,
+                new IntakeStructuredDataExtractor(),
+                new IntakeStructuredFieldNormalizer(),
+                mock(IntakeEnrichmentService.class),
+                mock(CodexCliSqlDraftGenerator.class),
+                mock(IntakeClarificationAnalysisService.class),
+                new ObjectMapper(),
+                null,
+                null,
+                aiDevelopment
+        );
+
+        when(intakeMapper.findById(214L)).thenReturn(designConfirmFixture(214L, "待设计"), designConfirmFixture(214L, "开发中"));
+        when(attachmentService.listIntakeAttachments(214L)).thenReturn(List.of());
+        when(intakeHistoryMapper.findRecentByIntakeId(214L, 20)).thenReturn(List.of());
+
+        IntakeStageActionRequest request = new IntakeStageActionRequest();
+        request.setAction("CONFIRM_DESIGN");
+        request.setOccurredAt("2026/04/06");
+
+        service.advanceStage(214L, request, "admin");
+
+        verify(aiDevelopment).validateBeforeDesignConfirmed(214L, "admin");
+        verify(aiDevelopment).triggerAfterDesignConfirmed(214L, "admin");
+        ArgumentCaptor<IntakeHistoryEntity> historyCaptor = ArgumentCaptor.forClass(IntakeHistoryEntity.class);
+        verify(intakeHistoryMapper).insert(historyCaptor.capture());
+        assertTrue(historyCaptor.getValue().getDetailText().contains("AI 自动开发：启用"));
+    }
+
+    private IntakeRecordEntity designConfirmFixture(Long id, String demandStatus) {
+        IntakeRecordEntity entity = new IntakeRecordEntity();
+        entity.setId(id);
+        entity.setSenderName("zhoutuo");
+        entity.setReceivedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        entity.setStructuredDataJson("""
+                {"category":"需求审批","approvalTitle":"周拓的系统开发2.0","proposerName":"周拓","approvalCode":"202603250009","submittedTime":"2026/3/25 16:17","requirementType":"研发需求","requirementDigest":"沃橙绑卡","requirementName":"沃橙绑卡需求","requirementSummary":"描述","department":"供应链业务部","businessLine":"供应链科技","remark":"高优","estimatedEffort":"2d","plannedDueDate":"2026/04/05","developmentStartedDate":null,"actualEffort":null,"testingStartedDate":null,"actualCompletedTime":null,"acceptanceTime":null,"releasedTime":null,"projectHint":"供应链科技","fields":[],"attachmentSummaries":[]}
+                """);
+        entity.setDemandStatus(demandStatus);
+        return entity;
     }
 
     @Test

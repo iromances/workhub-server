@@ -29,18 +29,16 @@ class IntakeResultRecoveryTest {
         assertTrue(conversation.unlimitedResultMessages());
     }
 
-    @Test void missingFieldsAndWrongNestedTypesRequireFormattingAndCanContinue() throws Exception {
+    @Test void wrongNestedTypesRecoverThroughNativeFormatting() throws Exception {
         var stream = new ByteArrayOutputStream();
         var conversation = ZCodeTaskConversation.structuredNoCliSchema(json, directory, directory.resolve("result.json"), "task", model,
                 List.of("read_repository_text_file"), "http://fixture/mcp", "token", SCHEMA, List.of());
         conversation.analysisRecovery(new AiResultRecovery.Session("{\"confirmationItems\":[{\"title\":42}],\"riskItems\":[]}", ignored -> { }));
         conversation.start(stream);
-        assertTrue(stream.toString().contains("workspace/generateText"));
-        assertFalse(stream.toString().contains("session/send"));
+        var turn = NativeFormattingFixture.start(conversation::accept, stream);
         assertFalse(stream.toString().contains("maxOutputTokens"));
         assertFalse(stream.toString().contains("NEEDS_INPUT"));
-        conversation.accept(json.valueToTree(Map.of("id", "wh-agent-format-1", "result", Map.of("selection", model, "finishReason", "length", "text", "{\"confirmationItems\":[{\"title\":\"问题"))));
-        conversation.accept(json.valueToTree(Map.of("id", "wh-agent-format-2", "result", Map.of("selection", model, "finishReason", "stop", "text", "一\"}],\"riskItems\":[]}"))));
+        turn.finish("{\"confirmationItems\":[{\"title\":\"问题一\"}],\"riskItems\":[]}");
         assertEquals("问题一", json.readTree(Files.readString(directory.resolve("result.json"))).path("confirmationItems").get(0).path("title").asText());
     }
 

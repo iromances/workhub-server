@@ -6,6 +6,7 @@ import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeRequirementFolderResponse;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
+import cn.aslight.workhub.service.attachment.AttachmentService;
 import cn.aslight.workhub.service.system.SysConfigService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -49,7 +50,7 @@ class DevelopmentPlanFolderServiceTest {
                 .thenReturn(repository.resolve("agents-playbook").toString());
 
         RecordingPathOpener opener = new RecordingPathOpener();
-        ProjectKnowledgeBaseService knowledgeBaseService = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
+        ProjectKnowledgeBaseService knowledgeBaseService = new ProjectKnowledgeBaseService(sysConfigService, mock(AttachmentService.class),
                 new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
         DevelopmentPlanFolderService service = new DevelopmentPlanFolderService(
                 intakeMapper,
@@ -99,7 +100,7 @@ class DevelopmentPlanFolderServiceTest {
                 .thenReturn(repository.resolve("agents-playbook").toString());
 
         RecordingPathOpener opener = new RecordingPathOpener();
-        ProjectKnowledgeBaseService knowledgeBaseService = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
+        ProjectKnowledgeBaseService knowledgeBaseService = new ProjectKnowledgeBaseService(sysConfigService, mock(AttachmentService.class),
                 new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
         DevelopmentPlanFolderService service = new DevelopmentPlanFolderService(
                 intakeMapper,
@@ -142,7 +143,7 @@ class DevelopmentPlanFolderServiceTest {
         when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
 
         RecordingPathOpener opener = new RecordingPathOpener();
-        ProjectKnowledgeBaseService knowledgeBaseService = new ProjectKnowledgeBaseService(sysConfigService, mock(RequirementMaterialExportService.class),
+        ProjectKnowledgeBaseService knowledgeBaseService = new ProjectKnowledgeBaseService(sysConfigService, mock(AttachmentService.class),
                 new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
         DevelopmentPlanFolderService service = new DevelopmentPlanFolderService(
                 intakeMapper,

@@ -174,6 +174,29 @@ class IntakeAiDevelopmentServiceTest {
         assertEquals("PENDING", service.retry(277L, "admin").executionStatus());
     }
 
+    @Test
+    void retryWithoutRecordStartsFirstAiDevelopment() {
+        // 设计完成时选择人工开发：无执行记录，开发中手动补发首次 AI 开发
+        service.retry(277L, "admin");
+        queued.remove().run();
+
+        var result = service.detail(277L);
+        assertEquals("SUCCEEDED", result.executionStatus());
+        assertEquals("task", result.agentTaskId());
+        assertEquals("feature/repay-plan", result.developmentBranch());
+        verify(agents, times(1)).createTask(eq("agent"), any(), eq("admin"));
+    }
+
+    @Test
+    void retryWithoutRecordRejectsNonDevelopmentIntake() {
+        intake.setDemandStatus(IntakeDemandStatusRules.TESTING);
+        var error = assertThrows(IllegalArgumentException.class, () -> service.retry(277L, "admin"));
+        assertTrue(error.getMessage().contains("仅开发中的需求可以启动 AI 开发"));
+        assertEquals(0, jdbc.queryForObject(
+                "SELECT COUNT(*) FROM pm_intake_ai_development WHERE intake_id=277", Integer.class));
+        verifyNoInteractions(agents);
+    }
+
     private void insertRecord(String status) {
         jdbc.update("""
                 INSERT INTO pm_intake_ai_development (intake_id, request_key, execution_status, created_by)

@@ -194,8 +194,6 @@ public class ZCodeCliClient {
             stopped = stopTree(process, descendants); reader.join(1000); writer.join(1000);
             if (!stopped || reader.isAlive() || writer.isAlive() || failure.get() != null || process.exitValue() != 0) throw new IllegalStateException("ZCode CLI 未返回有效终态", failure.get());
             if (!Files.isRegularFile(output, LinkOption.NOFOLLOW_LINKS)) throw new IllegalStateException("ZCode CLI 最终产物文件缺失或不是普通文件");
-            if (recovery == null && Files.size(output) > ZCodeTaskConversation.MAX_RESULT_BYTES) throw new IllegalStateException(
-                    "ZCode CLI 最终产物文件超长，bytes=" + Files.size(output) + "，limit=" + ZCodeTaskConversation.MAX_RESULT_BYTES);
             return Files.readString(output);
         } finally {
             boolean interrupted = Thread.interrupted();

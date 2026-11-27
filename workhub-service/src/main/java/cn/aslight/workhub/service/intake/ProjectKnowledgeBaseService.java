@@ -5,6 +5,7 @@ import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeSddDocuments;
 import cn.aslight.workhub.model.intake.DevelopmentAnalysisDraft;
 import cn.aslight.workhub.model.project.ProjectDetailResponse;
+import cn.aslight.workhub.service.attachment.AttachmentService;
 import cn.aslight.workhub.service.system.SysConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,11 +29,11 @@ import java.util.function.Consumer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 项目知识库检索服务。
@@ -57,18 +58,20 @@ public class ProjectKnowledgeBaseService {
     private static final int MAX_READ_CHARS = 120_000;
     private static final int MAX_SNIPPET_CHARS = 1_200;
     private static final int MAX_CONTEXT_CHARS = 6_000;
+    /** 需求目录下输入版本的来源路径；版本 ID 之前的相对前缀不作解析依据。 */
+    private static final Pattern VERSIONED_SOURCE = Pattern.compile("(?:.*/)?原始材料/历史版本/([A-Za-z0-9_-]+)/source\\.md");
 
     private final SysConfigService sysConfigService;
-    private final RequirementMaterialExportService materialExportService;
+    private final AttachmentService attachmentService;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate archiveTransaction;
 
     public ProjectKnowledgeBaseService(SysConfigService sysConfigService,
-                                       RequirementMaterialExportService materialExportService,
+                                       AttachmentService attachmentService,
                                        ObjectMapper objectMapper,
                                        PlatformTransactionManager transactionManager) {
         this.sysConfigService = sysConfigService;
-        this.materialExportService = materialExportService;
+        this.attachmentService = attachmentService;
         this.objectMapper = objectMapper;
         this.archiveTransaction = new TransactionTemplate(transactionManager);
         this.archiveTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -162,39 +165,89 @@ public class ProjectKnowledgeBaseService {
         }
     }
 
-    /** 评估前仅归档原始材料；返回本轮不可变来源快照，供提示词与后续分析追溯。 */
+    /**
+     * 评估前归档本轮输入版本：需求原文与附件清单写入需求目录 原始材料/，附件内容只保留在数据库。
+     * 返回本轮不可变来源快照，供提示词与后续分析追溯；输入与最近版本一致时复用该版本。
+     * 归档失败不阻断 AI 分析：来源路径留空并携带失败原因，由调用方记入需求历史。
+     */
     public RequirementKnowledgeNote upsertRequirementIterationNote(IntakeRecordEntity intake,
                                                                    IntakeStructuredData structuredData,
                                                                    ProjectDetailResponse project) {
         try {
             RequirementKnowledgeLocation location = resolveRequirementIterationLocation(structuredData, project, intake.getId());
-            return KnowledgeArchiveFiles.locked(location.vaultRoot(), () -> {
-                Path vault = location.vaultRoot();
-                Path raw = location.rawPath();
-                Path snapshot = raw.getParent().resolve("历史版本").resolve(UUID.randomUUID().toString());
-                Path attachments = raw.getParent().resolve("附件");
-                materialExportService.synchronizeVersioned(intake.getId(), vault, attachments, snapshot.resolve("附件"));
-                String markdown = buildRawRequirementMarkdown(intake, structuredData, project, raw, vault);
-                KnowledgeArchiveFiles.versionedWrite(vault, raw, markdown.getBytes(StandardCharsets.UTF_8));
-                KnowledgeArchiveFiles.immutableWrite(vault, snapshot.resolve("source.md"), markdown.getBytes(StandardCharsets.UTF_8));
-                Map<String, String> checksums = new LinkedHashMap<>();
-                try (Stream<Path> files = Files.walk(snapshot)) {
-                    for (Path file : files.filter(path -> Files.isRegularFile(path, java.nio.file.LinkOption.NOFOLLOW_LINKS)).sorted().toList()) {
-                        KnowledgeArchiveFiles.checked(vault, file);
-                        checksums.put(snapshot.relativize(file).toString(), KnowledgeArchiveFiles.digest(Files.readAllBytes(file)));
-                    }
-                }
-                String manifest = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(Map.of(
-                        "intakeId", intake.getId(), "versionId", snapshot.getFileName().toString(),
-                        "recordedAt", LocalDateTime.now().toString(), "filesSha256", checksums));
-                KnowledgeArchiveFiles.immutableWrite(vault, snapshot.resolve("manifest.json"), manifest.getBytes(StandardCharsets.UTF_8));
-                indexRawSource(location);
-                return new RequirementKnowledgeNote(vault.relativize(snapshot.resolve("source.md")).toString(),
-                        null, null, markdown, true);
-            });
-        } catch (IOException | IllegalStateException ex) {
-            throw new IllegalStateException("原始材料归档失败，尚未执行 AI 分析：" + ex.getMessage(), ex);
+            String markdown = buildRawRequirementMarkdown(intake, structuredData, project, location.rawRelativePath());
+            return KnowledgeArchiveFiles.locked(location.wikiRoot(), () -> archiveInputVersion(location, intake.getId(), markdown));
+        } catch (IOException | RuntimeException ex) {
+            log.warn("输入版本归档失败，评估继续。intakeId={}", intake.getId(), ex);
+            return new RequirementKnowledgeNote(null, null, null,
+                    buildRawRequirementMarkdown(intake, structuredData, project, null), false,
+                    firstNonBlank(ex.getMessage(), ex.getClass().getSimpleName()));
         }
+    }
+
+    private RequirementKnowledgeNote archiveInputVersion(RequirementKnowledgeLocation location, Long intakeId,
+                                                         String markdown) throws IOException {
+        Path history = location.rawFolder().resolve("历史版本");
+        String sourceSha256 = KnowledgeArchiveFiles.digest(markdown.getBytes(StandardCharsets.UTF_8));
+        List<AttachmentService.AttachmentDigest> attachments = attachmentService.listIntakeMaterialDigests(intakeId);
+        Path version = reusableVersion(location.wikiRoot(), history, sourceSha256, attachments);
+        if (version == null) {
+            version = writeInputVersion(location.wikiRoot(), history, intakeId, markdown, sourceSha256, attachments);
+        }
+        // 历次输入由不可变版本目录保留，最近一轮输入直接覆盖，不再逐次留存旧文件。
+        KnowledgeArchiveFiles.atomicWrite(location.wikiRoot(), location.rawPath(), markdown.getBytes(StandardCharsets.UTF_8));
+        return new RequirementKnowledgeNote(location.repositoryRelative(version.resolve("source.md")),
+                null, null, markdown, true, null);
+    }
+
+    private Path writeInputVersion(Path root, Path history, Long intakeId, String markdown, String sourceSha256,
+                                   List<AttachmentService.AttachmentDigest> attachments) throws IOException {
+        Path version = history.resolve(UUID.randomUUID().toString());
+        KnowledgeArchiveFiles.immutableWrite(root, version.resolve("source.md"), markdown.getBytes(StandardCharsets.UTF_8));
+        String manifest = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(new InputVersionManifest(
+                intakeId, version.getFileName().toString(), LocalDateTime.now().toString(), sourceSha256, attachments));
+        KnowledgeArchiveFiles.immutableWrite(root, version.resolve("manifest.json"), manifest.getBytes(StandardCharsets.UTF_8));
+        return version;
+    }
+
+    /** 最近一个版本的原文哈希与附件清单都相同时复用该版本；没有可读的版本清单时返回 null。 */
+    private Path reusableVersion(Path root, Path history, String sourceSha256,
+                                 List<AttachmentService.AttachmentDigest> attachments) throws IOException {
+        if (!Files.isDirectory(history)) { return null; }
+        Path latest = null;
+        InputVersionManifest latestManifest = null;
+        try (Stream<Path> versions = Files.list(history)) {
+            for (Path version : versions.filter(Files::isDirectory).sorted().toList()) {
+                InputVersionManifest manifest = readVersionManifest(root, version);
+                if (manifest == null || manifest.recordedAt() == null) { continue; }
+                if (latestManifest == null || manifest.recordedAt().compareTo(latestManifest.recordedAt()) > 0) {
+                    latest = version;
+                    latestManifest = manifest;
+                }
+            }
+        }
+        if (latestManifest == null
+                || !sourceSha256.equals(latestManifest.sourceSha256())
+                || !attachments.equals(latestManifest.attachments())) {
+            return null;
+        }
+        return latest;
+    }
+
+    /** 版本清单缺失或不可解析时返回 null，按不可复用处理。 */
+    private InputVersionManifest readVersionManifest(Path root, Path version) {
+        try {
+            Path file = KnowledgeArchiveFiles.checked(root, version.resolve("manifest.json"));
+            if (!Files.isRegularFile(file)) { return null; }
+            return objectMapper.readValue(file.toFile(), InputVersionManifest.class);
+        } catch (IOException | RuntimeException ex) {
+            log.warn("输入版本清单不可读，按不可复用处理。path={}", version, ex);
+            return null;
+        }
+    }
+
+    private record InputVersionManifest(Long intakeId, String versionId, String recordedAt, String sourceSha256,
+                                        List<AttachmentService.AttachmentDigest> attachments) {
     }
 
     /** 只在业务事务提交后导出；失败单独记入需求历史，不把成功的 AI 结果改成失败。 */
@@ -218,57 +271,6 @@ public class ProjectKnowledgeBaseService {
             });
         } else {
             export.run();
-        }
-    }
-
-    public void appendAnalysisNote(Long intakeId, Long analysisId, String phase, Object payload,
-                                   String sourcePath, String operator) {
-        Path vault = RepositoryDocumentPaths.resolve(sysConfigService);
-        String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(payload);
-        try {
-            KnowledgeArchiveFiles.locked(vault, () -> {
-                // 来源绑定不是分析正文：用于同一澄清记录的后续回复和独立重试关联原输入。
-                String family = phase.contains("澄清") ? "clarification" : "development";
-                String bindingName = intakeId + "-" + analysisId + "-" + family + ".txt";
-                Path binding = KnowledgeArchiveFiles.checked(vault, vault.resolve("requirement-sources/.analysis-sources")
-                        .resolve(bindingName));
-                // 2026-11-13 前的来源绑定写在 .workhub-analysis-sources，读取时兼容旧目录
-                Path legacyBinding = KnowledgeArchiveFiles.checked(vault,
-                        vault.resolve("requirement-sources/.workhub-analysis-sources").resolve(bindingName));
-                String resolvedSource = sourcePath;
-                if (resolvedSource == null || resolvedSource.isBlank()) {
-                    if (Files.exists(binding)) {
-                        resolvedSource = Files.readString(binding);
-                    } else if (Files.exists(legacyBinding)) {
-                        resolvedSource = Files.readString(legacyBinding);
-                    }
-                }
-                String source = sourceLink(vault, resolvedSource);
-                if (resolvedSource != null && !resolvedSource.isBlank()) {
-                    KnowledgeArchiveFiles.versionedWrite(vault, binding, resolvedSource.getBytes(StandardCharsets.UTF_8));
-                }
-                String fingerprint = KnowledgeArchiveFiles.digest((intakeId + "|" + analysisId + "|" + family + "|" + resolvedSource + "|" + json)
-                        .getBytes(StandardCharsets.UTF_8));
-                String marker = "<!-- analysis-record:" + fingerprint + " -->";
-                // 2026-11-13 前的幂等标记为 workhub-analysis，同指纹视为已追加
-                String legacyMarker = "<!-- workhub-analysis:" + fingerprint + " -->";
-                Path notes = KnowledgeArchiveFiles.checked(vault, vault.resolve("notes.md"));
-                String previous = Files.exists(notes) ? Files.readString(notes) : "# 工作笔记\n";
-                if (previous.contains(marker) || previous.contains(legacyMarker)) { return null; }
-                String heading = "\n## 公司项目\n";
-                if (!previous.contains(heading)) { previous += heading; }
-                int start = previous.indexOf(heading) + heading.length();
-                int end = previous.indexOf("\n## ", start);
-                if (end < 0) { end = previous.length(); }
-                String record = "\n\n### 临时分析 · " + phase + " · 需求 " + intakeId
-                        + "\n\n" + marker + "\n\n- 状态：待确认／过程记录，不代表正式审批\n- 分析 ID：" + analysisId
-                        + "\n- 记录时间：" + LocalDateTime.now() + "\n- 操作者：" + operator
-                        + "\n- 来源：" + source + "\n\n" + fenced(json, "json") + "\n";
-                KnowledgeArchiveFiles.atomicWrite(vault, notes, (previous.substring(0, end) + record + previous.substring(end)).getBytes(StandardCharsets.UTF_8));
-                return null;
-            });
-        } catch (IOException ex) {
-            throw new IllegalStateException("临时分析追加 notes 失败", ex);
         }
     }
 
@@ -298,8 +300,8 @@ public class ProjectKnowledgeBaseService {
                         + "\n\n" + marker + "\n\n- 状态：已确认（不代表已开发或发布）\n- 需求 ID：" + intake.getId()
                         + "\n- 审批编号：" + requirementCodeSegment(structuredData, intake.getId()) + "\n- 分析 ID：" + analysisId
                         + "\n- 确认人：" + confirmedBy + "\n- 确认时间：" + confirmedAt
-                        + "\n- 来源版本：" + sourceLink(location.vaultRoot(), draft.requirementRawPath())
-                        + "\n- 临时分析：[项目过程记录](<" + location.vaultRoot().resolve("notes.md") + "#公司项目>)\n\n## 评估摘要\n\n" + firstNonBlank(draft.summary(), "无")
+                        + "\n- 来源版本：" + sourceLink(location, draft.requirementRawPath())
+                        + "\n\n## 评估摘要\n\n" + firstNonBlank(draft.summary(), "无")
                         + "\n\n## 经确认的评估数据\n\n" + fenced(json, "json") + "\n";
                 KnowledgeArchiveFiles.versionedWrite(location.wikiRoot(), target, markdown.getBytes(StandardCharsets.UTF_8));
                 indexConfirmedReport(location);
@@ -308,17 +310,6 @@ public class ProjectKnowledgeBaseService {
             return location;
         } catch (IOException ex) {
             throw new IllegalStateException("正式评估归档失败", ex);
-        }
-    }
-
-    private void indexRawSource(RequirementKnowledgeLocation location) throws IOException {
-        Path index = KnowledgeArchiveFiles.checked(location.vaultRoot(), location.vaultRoot().resolve("requirement-sources/index.md"));
-        String previous = Files.exists(index) ? Files.readString(index) : "# 公司项目原始需求材料\n";
-        String relative = location.rawRelativePath().replace('\\', '/');
-        String link = "[" + relative + "](<" + location.rawPath() + ">)";
-        if (!previous.contains(location.rawPath().toString())) {
-            KnowledgeArchiveFiles.atomicWrite(location.vaultRoot(), index,
-                    (previous + "\n- " + link + "\n").getBytes(StandardCharsets.UTF_8));
         }
     }
 
@@ -337,16 +328,28 @@ public class ProjectKnowledgeBaseService {
         }
     }
 
-    private String sourceLink(Path vault, String relative) throws IOException {
-        if (relative == null || relative.isBlank()) { return "历史分析未记录输入版本，不能据此补造来源"; }
-        String normalized = RepositoryDocumentPaths.migrateRelativePath(relative);
-        if (!normalized.startsWith("requirement-sources/")) { throw new IOException("来源必须位于项目原始需求目录"); }
-        Path target = KnowledgeArchiveFiles.checked(vault, vault.resolve(normalized));
-        if (!target.startsWith(vault.resolve("requirement-sources").normalize())) {
-            throw new IOException("来源不能越出原始需求目录");
+    /** 来源版本链接：新布局按需求目录定位，旧 requirement-sources、raw 路径只读解析；文件不存在时注明未留存。 */
+    private String sourceLink(RequirementKnowledgeLocation location, String relative) {
+        if (relative == null || relative.isBlank()) { return "未留存（历史分析未记录输入版本，不能据此补造来源）"; }
+        try {
+            Path target = resolveSourceVersion(location, relative);
+            return target != null && Files.isRegularFile(target)
+                    ? "[来源版本](<" + target + ">)"
+                    : "未留存（来源版本文件不存在：" + relative + "）";
+        } catch (IOException ex) {
+            throw new IllegalStateException("来源版本路径不合法：" + relative, ex);
         }
-        if (!Files.isRegularFile(target)) { throw new IOException("来源版本文件不存在：" + normalized); }
-        return "[来源版本](<" + target + ">)";
+    }
+
+    private Path resolveSourceVersion(RequirementKnowledgeLocation location, String relative) throws IOException {
+        String normalized = RepositoryDocumentPaths.migrateRelativePath(relative);
+        Matcher versioned = VERSIONED_SOURCE.matcher(normalized);
+        if (versioned.matches()) {
+            return KnowledgeArchiveFiles.checked(location.wikiRoot(),
+                    location.rawFolder().resolve("历史版本").resolve(versioned.group(1)).resolve("source.md"));
+        }
+        if (!normalized.startsWith(RepositoryDocumentPaths.SOURCES + "/")) { return null; }
+        return KnowledgeArchiveFiles.checked(location.vaultRoot(), location.vaultRoot().resolve(normalized));
     }
 
     private String fenced(String content, String language) {
@@ -359,32 +362,19 @@ public class ProjectKnowledgeBaseService {
     public RequirementKnowledgeLocation resolveRequirementIterationLocation(IntakeStructuredData structuredData,
                                                                            ProjectDetailResponse project, Long intakeId) {
         Path vaultRoot = RepositoryDocumentPaths.resolve(sysConfigService);
-        Path rawPath = buildRawRequirementPath(vaultRoot, structuredData, project, intakeId);
         Path wikiRoot = RepositoryDocumentPaths.wikiArchiveRoot(sysConfigService, vaultRoot, businessLineCode(project));
         Path wikiPath = buildWikiRequirementPath(wikiRoot, structuredData, project, intakeId);
-        String rawRelativePath = vaultRoot.relativize(rawPath).toString();
-        // wiki 相对路径以仓库根为基准，兼容 docs/业务线 与 agents-playbook 两个归档根
-        String wikiRelativePath = vaultRoot.getParent().relativize(wikiPath).toString();
+        // 原始材料与已确认评估同在需求目录；相对路径以仓库根为基准，兼容 docs/业务线 与 agents-playbook 两个归档根
+        Path rawPath = wikiPath.getParent().resolve("原始材料").resolve("source.md");
         return new RequirementKnowledgeLocation(
                 vaultRoot,
                 wikiRoot,
                 rawPath,
                 wikiPath,
-                rawRelativePath,
-                wikiRelativePath,
+                vaultRoot.getParent().relativize(rawPath).toString(),
+                vaultRoot.getParent().relativize(wikiPath).toString(),
                 null
         );
-    }
-
-    private Path buildRawRequirementPath(Path vaultRoot, IntakeStructuredData structuredData, ProjectDetailResponse project, Long intakeId) {
-        return vaultRoot
-                .resolve(RepositoryDocumentPaths.SOURCES)
-                .resolve(businessLineSegment(project))
-                .resolve(projectNameSegment(project))
-                .resolve(resolveRequirementYear(structuredData))
-                .resolve(requirementCodeSegment(structuredData, intakeId))
-                .resolve("source.md")
-                .normalize();
     }
 
     private Path buildWikiRequirementPath(Path wikiRoot, IntakeStructuredData structuredData, ProjectDetailResponse project, Long intakeId) {
@@ -510,8 +500,7 @@ public class ProjectKnowledgeBaseService {
     private String buildRawRequirementMarkdown(IntakeRecordEntity intake,
                                                IntakeStructuredData structuredData,
                                                ProjectDetailResponse project,
-                                               Path rawPath,
-                                               Path vaultRoot) {
+                                               String rawRelativePath) {
         String title = firstNonBlank(
                 structuredData == null ? null : structuredData.requirementNameOrTitle(),
                 structuredData == null ? null : structuredData.requirementDigest(),
@@ -521,7 +510,7 @@ public class ProjectKnowledgeBaseService {
         builder.append("# ").append(title).append("\n\n");
         builder.append("> 本文件由系统在 AI 任务评估前自动归档，用于保存散落的原始需求材料；本文件不总结需求点，不拆任务。\n\n");
         builder.append("## 元信息\n\n");
-        appendMetadata(builder, "项目文档路径", vaultRoot.relativize(rawPath).toString());
+        appendMetadata(builder, "项目文档路径", rawRelativePath);
         appendMetadata(builder, "需求ID", intake == null ? null : String.valueOf(intake.getId()));
         appendMetadata(builder, "审批编号", structuredData == null ? null : structuredData.approvalCode());
         appendMetadata(builder, "业务线", project == null ? null : project.businessLine());
@@ -534,7 +523,7 @@ public class ProjectKnowledgeBaseService {
 
         builder.append("\n## 原始内容\n\n");
         builder.append(fenced(intake.getRawContent() == null ? "" : intake.getRawContent(), "text"));
-        builder.append("\n原始截图与附件保存在同级 `附件/`；来源解析与 AI 判断不代替原始文件。\n");
+        builder.append("\n原始截图与附件保存在数据库，清单见 `manifest.json`；来源解析与 AI 判断不代替原始文件。\n");
         return builder.toString();
     }
 
@@ -860,7 +849,13 @@ public class ProjectKnowledgeBaseService {
                                            String wikiRelativePath,
                                            String wikiObsidianUrl,
                                            String markdown,
-                                           boolean written) {
+                                           boolean written,
+                                           String failureReason) {
+        public RequirementKnowledgeNote(String rawRelativePath, String wikiRelativePath, String wikiObsidianUrl,
+                                        String markdown, boolean written) {
+            this(rawRelativePath, wikiRelativePath, wikiObsidianUrl, markdown, written, null);
+        }
+
         public String asPromptContext() {
             return rawRelativePath == null ? markdown : "项目文档原始材料版本：" + rawRelativePath + "\n\n" + markdown;
         }
@@ -875,6 +870,16 @@ public class ProjectKnowledgeBaseService {
                                                String wikiObsidianUrl) {
         public Path wikiFolderPath() {
             return wikiPath.getParent();
+        }
+
+        /** 需求目录下保存输入版本的 原始材料/ 目录。 */
+        public Path rawFolder() {
+            return rawPath.getParent();
+        }
+
+        /** 以 WorkHub 仓库根为基准的相对路径，与 wikiRelativePath、rawRelativePath 同一基准。 */
+        public String repositoryRelative(Path target) {
+            return vaultRoot.getParent().relativize(target).toString();
         }
     }
 }

@@ -510,9 +510,10 @@ class McpResourceServiceTest {
         assertEquals(List.of("assets-saps"), businessLineSummary.get("involvedSystems"));
         assertEquals(List.of("authing"), businessLineSummary.get("globalSystems"));
         assertEquals("/mnt/workhub/project-knowledge", catalog.knowledge().get("projectVaultPath"));
-        assertEquals("notes.md#公司项目", catalog.knowledge().get("temporaryAnalysisPath"));
         assertTrue(catalog.knowledge().get("projectDocumentPath").toString().endsWith("/docs"));
-        assertEquals("requirement-sources/{业务线}/{项目名称}/{年份}/{审批编号}/source.md", catalog.knowledge().get("requirementRawPathPattern"));
+        assertTrue(!catalog.knowledge().containsKey("temporaryAnalysisPath"));
+        assertEquals("需求目录下 原始材料/历史版本/{版本ID}/source.md 与 manifest.json（需求目录即 requirementWikiPathPattern 中 研发评估.md 所在目录）；附件以数据库为准，经 get_intake_attachment 读取",
+                catalog.knowledge().get("requirementRawPathPattern"));
         String wikiPattern = catalog.knowledge().get("requirementWikiPathPattern").toString();
         assertTrue(wikiPattern.contains("docs/业务线/{业务线编码}-{业务线名称}/需求迭代/{项目名称}/{年份}/{审批编号}-{需求名称}/研发评估.md（仅 WorkHub 平台 BL000012-工作台）"));
         assertTrue(wikiPattern.contains("agents-playbook 仓库 docs/业务线/{业务线编码}-{业务线名称}/需求/{审批编号}-{需求名称}/研发评估.md（其余业务线）"));

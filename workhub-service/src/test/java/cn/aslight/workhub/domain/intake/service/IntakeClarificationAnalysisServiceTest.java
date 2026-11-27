@@ -213,7 +213,7 @@ class IntakeClarificationAnalysisServiceTest {
     }
 
     @Test
-    void successfulClarificationQueuesNotesOnlyAfterDatabaseResultIsSaved() {
+    void successfulClarificationSavesDatabaseResultWithoutArchivingFiles() {
         IntakeMapper intakes = mock(IntakeMapper.class);
         IntakeClarificationAnalysisMapper analyses = mock(IntakeClarificationAnalysisMapper.class);
         ProjectKnowledgeBaseService archive = mock(ProjectKnowledgeBaseService.class);
@@ -225,7 +225,7 @@ class IntakeClarificationAnalysisServiceTest {
         var items = java.util.List.of(new cn.aslight.workhub.model.intake.IntakeClarificationItem(
                 1, "QUESTION", "待确认", "规则未明确", "需求资料", "OPEN", null, null, null));
         when(archive.upsertRequirementIterationNote(any(), any(), any())).thenReturn(
-                new ProjectKnowledgeBaseService.RequirementKnowledgeNote("raw/公司项目/requirements/历史版本/run1/source.md",
+                new ProjectKnowledgeBaseService.RequirementKnowledgeNote("原始材料/历史版本/run1/source.md",
                         null, null, "原始需求", true));
         when(archive.buildContext(any(), any())).thenReturn("现状");
         when(generator.generate(any(), any(), any(), any(), any(), any(), any())).thenReturn(items);
@@ -238,13 +238,33 @@ class IntakeClarificationAnalysisServiceTest {
         order.verify(archive).upsertRequirementIterationNote(any(), any(), any());
         order.verify(archive).buildContext(any(), any());
         order.verify(analyses).update(entity);
-        org.mockito.ArgumentCaptor<Runnable> callback = org.mockito.ArgumentCaptor.forClass(Runnable.class);
-        order.verify(archive).archiveAfterCommit(callback.capture(), any());
-        org.mockito.Mockito.verify(archive, never()).appendAnalysisNote(any(), any(), any(), any(), any(), any());
-        callback.getValue().run();
-        org.mockito.Mockito.verify(archive).appendAnalysisNote(org.mockito.ArgumentMatchers.eq(92L), org.mockito.ArgumentMatchers.eq(2L),
-                org.mockito.ArgumentMatchers.eq("生成需求澄清项"), org.mockito.ArgumentMatchers.eq(items),
-                org.mockito.ArgumentMatchers.contains("历史版本/run1"), org.mockito.ArgumentMatchers.eq("reviewer"));
+        org.mockito.Mockito.verify(archive, org.mockito.Mockito.never()).archiveAfterCommit(any(), any());
+    }
+
+    @Test
+    void archiveFailureIsRecordedInHistoryWithoutStoppingClarification() {
+        IntakeMapper intakes = mock(IntakeMapper.class);
+        IntakeClarificationAnalysisMapper analyses = mock(IntakeClarificationAnalysisMapper.class);
+        IntakeHistoryMapper histories = mock(IntakeHistoryMapper.class);
+        ProjectKnowledgeBaseService archive = mock(ProjectKnowledgeBaseService.class);
+        CodexCliClarificationAnalysisGenerator generator = mock(CodexCliClarificationAnalysisGenerator.class);
+        when(intakes.findById(92L)).thenReturn(clarifyingDevelopmentIntake());
+        var entity = pendingAnalysis(LocalDateTime.now());
+        when(analyses.findById(2L)).thenReturn(entity);
+        when(archive.upsertRequirementIterationNote(any(), any(), any())).thenReturn(
+                new ProjectKnowledgeBaseService.RequirementKnowledgeNote(null, null, null, "原始需求", false, "目录不可写"));
+        var items = java.util.List.of(new cn.aslight.workhub.model.intake.IntakeClarificationItem(
+                1, "QUESTION", "待确认", "规则未明确", "需求资料", "OPEN", null, null, null));
+        when(generator.generate(any(), any(), any(), any(), org.mockito.ArgumentMatchers.contains("原始需求"), any(), any()))
+                .thenReturn(items);
+        IntakeClarificationAnalysisService service = new IntakeClarificationAnalysisService(intakes,
+                histories, analyses, mock(ProjectMapper.class), mock(GitlabRepositoryService.class), archive,
+                generator, mock(DevelopmentAnalysisService.class), ignored -> { }, new ObjectMapper(), org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
+        service.executeAnalysis(2L, 92L, "reviewer");
+        org.mockito.Mockito.verify(histories).insert(org.mockito.ArgumentMatchers.argThat(entry ->
+                "输入版本归档失败".equals(entry.getActionSummary()) && entry.getDetailText().contains("目录不可写")));
+        org.mockito.Mockito.verify(generator).generate(any(), any(), any(), any(), any(), any(), any());
+        org.mockito.Mockito.verify(analyses).update(entity);
     }
 
     private IntakeClarificationAnalysisService newService(IntakeMapper intakeMapper,

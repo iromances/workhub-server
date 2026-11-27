@@ -19,6 +19,7 @@ import cn.aslight.workhub.service.system.SysConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ import java.util.List;
 
 /**
  * 设计完成后的 AI 分支开发编排：按系统配置将需求开发任务交给平台 Agent 执行。
+ * 设计完成时可经 aiDevelopmentEnabled 选择人工开发，之后在开发中经 {@link #retry} 手动首次启动。
  * 配置（系统配置组 intake.aiDevelopment）：agentId 必填；environmentCode 默认 TEST。
  */
 @Service
@@ -116,21 +118,34 @@ public class IntakeAiDevelopmentService {
         agentWorkbenchService.requireAssignable(agentId, List.of(new AgentScope(requireBusinessLineCode(intake), environment)), user);
     }
 
-    /** 失败或待执行且无关联任务时，可在开发中直接重试。 */
+    /**
+     * 开发中直接重试或手动启动：失败或待执行且无关联任务时重试；
+     * 无执行记录（设计完成时选择人工开发）时视为首次启动，创建记录并启动。
+     */
     public IntakeAiDevelopmentResponse retry(Long intakeId, String operatorUserName) {
-        transaction.executeWithoutResult(status -> {
+        boolean firstStart = transaction.execute(status -> {
             requireDevelopmentIntake(intakeId);
             IntakeAiDevelopmentEntity entity = aiDevelopmentMapper.lockByIntakeId(intakeId);
             if (entity == null) {
-                throw new IllegalArgumentException("当前需求尚未触发 AI 开发");
+                return true;
             }
             if (STATUS_FAILED.equals(entity.getExecutionStatus())) {
                 resetPending(entity, operatorUserName);
             } else if (!STATUS_PENDING.equals(entity.getExecutionStatus()) || entity.getAgentTaskId() != null) {
                 throw new IllegalArgumentException("仅失败或尚未创建任务的待执行记录允许重试");
             }
+            return false;
         });
-        submit(intakeId, operatorUserName);
+        if (firstStart) {
+            try {
+                triggerAfterDesignConfirmed(intakeId, operatorUserName);
+            } catch (DuplicateKeyException ex) {
+                // 并发双击时另一请求已创建记录（intake_id 唯一键），直接返回当前状态
+                log.info("AI development first start raced for intake {}, returning current state", intakeId);
+            }
+        } else {
+            submit(intakeId, operatorUserName);
+        }
         return detail(intakeId);
     }
 
