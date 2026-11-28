@@ -1,9 +1,18 @@
 spring:
   datasource:
     druid:
-      url: "${WORKHUB_DB_URL:jdbc:mysql://10.10.116.32:3306/workhub?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}"
-      username: "${WORKHUB_DB_USERNAME:root}"
-      password: "${WORKHUB_DB_PASSWORD:amp_pre_%^888}"
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      initial-size: 0
+      min-idle: 0
+      max-active: 20
+      max-wait: 30000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      url: jdbc:mysql://10.10.116.32:3306/workhub?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      username: root
+      password: amp_pre_%^888
 
 workhub:
   desktop:
@@ -13,4 +22,4 @@ workhub:
   payment:
     master-key: workhub-payment-dev-master-key
   mcp:
-    master-key: ${WORKHUB_MCP_MASTER_KEY:workhub-mcp-dev-master-key}
+    master-key: workhub-mcp-dev-master-key

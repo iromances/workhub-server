@@ -13,19 +13,8 @@ spring:
   jackson:
     time-zone: Asia/Shanghai
     date-format: yyyy-MM-dd HH:mm:ss
-  datasource:
-    druid:
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      initial-size: 0
-      min-idle: 0
-      max-active: 20
-      max-wait: 30000
-      validation-query: SELECT 1
-      test-while-idle: true
-      test-on-borrow: false
-      test-on-return: false
   flyway:
-    enabled: ${FLYWAY_ENABLED:true}
+    enabled: true
     url: ${spring.datasource.druid.url}
     user: ${spring.datasource.druid.username}
     password: ${spring.datasource.druid.password}
@@ -48,19 +37,19 @@ mybatis:
 
 logging:
   file:
-    name: ${WORKHUB_LOG_FILE:logs/workhub-server.log}
+    name: logs/workhub-server.log
   structured:
     format:
       file: ecs
     ecs:
       service:
         name: ${spring.application.name}
-        environment: ${WORKHUB_OBSERVABILITY_ENV:local}
+        environment: local
   logback:
     rollingpolicy:
-      max-file-size: ${WORKHUB_LOG_MAX_FILE_SIZE:50MB}
-      max-history: ${WORKHUB_LOG_MAX_HISTORY:14}
-      total-size-cap: ${WORKHUB_LOG_TOTAL_SIZE_CAP:1GB}
+      max-file-size: 50MB
+      max-history: 14
+      total-size-cap: 1GB
   level:
     root: INFO
     cn.aslight.workhub: INFO
@@ -69,23 +58,43 @@ logging:
     org.mybatis: WARN
     com.alibaba.druid: WARN
 
+# 代码、研发规范和需求归档（dev、prod 通用）
+# 以下 KEY=值 为启动进程的环境变量示例。可填在 IDEA 运行配置的“环境变量”或服务环境中。
+# 默认目录的起点：IDEA 使用后端工程根目录；独立 JAR 使用 JAR 所在目录。
+#
+# 公司代码仓库默认放在 cache/repos/，保留 GitLab 的组/子组/项目层级。可用绝对路径覆盖：
+#   WORKHUB_REPOSITORIES_ROOT=D:/workhub-data/repos        （Linux 示例：/srv/workhub/repos）
+# SDD 规范默认从 config/standards/研发规范/SDD/ 读取本地模板。覆盖时指定 standards 这一层：
+#   WORKHUB_STANDARDS_ROOT=D:/workhub-data/standards
+# 可选，从 GitLab 同步规范；同名模板优先使用本地维护版：
+#   WORKHUB_STANDARDS_PROJECT=example-group/agents-playbook  （示例项目，请换成实际路径）
+#   WORKHUB_STANDARDS_REF=HEAD                             （默认跟随远端 HEAD）
+#   WORKHUB_STANDARDS_PATH=docs/研发规范/SDD                （默认的仓库内目录）
+#
+# 独立 JAR 需要自动检出 WorkHub 自身的需求归档仓库时，填写公司 GitLab 的完整项目路径。
+# 例如项目页面为 https://gitlab.example.com/platform/tools/workhub-server，则填写：
+#   WORKHUB_ARCHIVE_PROJECT=platform/tools/workhub-server
+# 已有本地检出时，也可直接指定仓库根目录，优先使用该目录下的 docs/业务线/：
+#   WORKHUB_ARCHIVE_PATH=D:/workhub-data/repos/platform/tools/workhub-server
+# 其他业务线的需求默认归档到 engineering/agents-playbook 仓库的 docs/业务线/。本地仓库可指定：
+#   WORKHUB_PLAYBOOK_PATH=D:/workhub-data/repos/engineering/agents-playbook
 workhub:
   desktop:
     open-folder-enabled: false
   ops:
     elk-alert:
-      enabled: ${WORKHUB_ELK_ALERT_ENABLED:false}
-      base-url: ${WORKHUB_ELK_BASE_URL:}
-      index-pattern: ${WORKHUB_ELK_INDEX_PATTERN:workhub-logs-*}
-      api-key: ${WORKHUB_ELK_API_KEY:}
-      username: ${WORKHUB_ELK_USERNAME:}
-      password: ${WORKHUB_ELK_PASSWORD:}
-      connect-timeout-seconds: ${WORKHUB_ELK_CONNECT_TIMEOUT_SECONDS:5}
-      request-timeout-seconds: ${WORKHUB_ELK_REQUEST_TIMEOUT_SECONDS:30}
-      page-size: ${WORKHUB_ELK_PAGE_SIZE:200}
-      initial-lookback-minutes: ${WORKHUB_ELK_INITIAL_LOOKBACK_MINUTES:5}
-      pit-keep-alive: ${WORKHUB_ELK_PIT_KEEP_ALIVE:1m}
-      cron: "${WORKHUB_ELK_ALERT_CRON:0 * * * * *}"
+      enabled: false
+      base-url: ""
+      index-pattern: workhub-logs-*
+      api-key: ""
+      username: ""
+      password: ""
+      connect-timeout-seconds: 5
+      request-timeout-seconds: 30
+      page-size: 200
+      initial-lookback-minutes: 5
+      pit-keep-alive: 1m
+      cron: "0 * * * * *"
   jwt:
     expiration-minutes: 720
   wecom:
@@ -98,11 +107,11 @@ workhub:
     dedupe-minutes: 60
     cron: "0 */30 * * * *"
   ai:
-    master-key: ${WORKHUB_AI_MASTER_KEY:}
+    master-key: ""
     codex-cli:
       enabled: true
   payment:
     mask-visible-suffix: 4
   mcp:
-    access-token: ${WORKHUB_MCP_ACCESS_TOKEN:}
-    repository-read-roots: ${WORKHUB_MCP_REPOSITORY_READ_ROOTS:@repositories}
+    access-token: ""
+    repository-read-roots: "@repositories"
