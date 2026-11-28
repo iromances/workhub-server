@@ -271,6 +271,72 @@ class AccountingMonitorServiceTest {
         assertThrows(IllegalArgumentException.class, () -> service.sqlEvidence(31L, "x", 1, 20));
     }
 
+    // ===== REQ-7f26a063：一致性提交校验、配置业务线放开与创建物化 =====
+
+    @Test
+    void integritySubmitRejectedWithoutEffectiveRules() {
+        var ruleInitializer = mock(AccountingRuleInitializer.class);
+        service.setRuleStore(mock(cn.aslight.workhub.dao.ops.AccountingRuleMapper.class), ruleInitializer);
+        when(monitorMapper.findById(20L)).thenReturn(integrityConfig(20L));
+        when(ruleInitializer.hasEffectiveRules(20L)).thenReturn(false);
+
+        var ex = assertThrows(IllegalArgumentException.class,
+                () -> service.submitManual(new AccountingManualRunRequest(20L, null, "none"), "tester"));
+        assertEquals("该配置未启用任何监测场景规则", ex.getMessage());
+        verify(runMapper, never()).insertRun(anyString(), anyString(), any(), anyString(),
+                any(), any(), any(), anyString(), anyString());
+    }
+
+    @Test
+    void integritySubmitProceedsWithEffectiveRules() {
+        var ruleInitializer = mock(AccountingRuleInitializer.class);
+        service.setRuleStore(mock(cn.aslight.workhub.dao.ops.AccountingRuleMapper.class), ruleInitializer);
+        when(monitorMapper.findById(20L)).thenReturn(integrityConfig(20L));
+        when(ruleInitializer.hasEffectiveRules(20L)).thenReturn(true);
+        when(runMapper.findIdByRunNo(anyString())).thenReturn(99L);
+
+        service.submitManual(new AccountingManualRunRequest(20L, null, "ok"), "tester");
+
+        verify(runMapper).insertRun(anyString(), eq("MANUAL:20:null:ok"), eq(20L), eq("MANUAL"),
+                eq(null), eq(null), eq(null), eq("PENDING"), eq("tester"));
+    }
+
+    @Test
+    void integrityConfigAllowsAnyBusinessLineAndMaterializesOnCreate() {
+        var ruleInitializer = mock(AccountingRuleInitializer.class);
+        service.setRuleStore(mock(cn.aslight.workhub.dao.ops.AccountingRuleMapper.class), ruleInitializer);
+        var request = new AccountingMonitorSaveRequest(
+                "BL000001", "PROD", "scf-saps", "自定义一致性", AccountingIntegrityCatalog.TYPE,
+                null, LocalTime.of(8, 30), null, null, null, null,
+                BigDecimal.ZERO, false, true, null);
+        var created = new AccountingMonitorConfigEntity(21L, "BL000001", null, "PROD", "scf-saps", "自定义一致性",
+                AccountingIntegrityCatalog.TYPE, null, LocalTime.of(8, 30), null, null, null, null,
+                BigDecimal.ZERO, false, true, null, null, null);
+        when(monitorMapper.findByIdentity("BL000001", "PROD", "scf-saps", AccountingIntegrityCatalog.TYPE))
+                .thenReturn(null, created);
+
+        service.createConfig(request);
+
+        verify(monitorMapper).insert(any(AccountingMonitorConfigEntity.class));
+        verify(ruleInitializer).ensureMaterialized(created);
+    }
+
+    @Test
+    void integrityConfigStillRejectsAlertEnabled() {
+        var request = new AccountingMonitorSaveRequest(
+                "BL000005", "PROD", "ol-saps", "一致性", AccountingIntegrityCatalog.TYPE,
+                null, LocalTime.of(8, 30), null, null, null, null,
+                BigDecimal.ZERO, true, false, null);
+        var ex = assertThrows(IllegalArgumentException.class, () -> service.createConfig(request));
+        assertEquals("单据及支付一致性当前仅手动核验，通知保持关闭", ex.getMessage());
+    }
+
+    private AccountingMonitorConfigEntity integrityConfig(Long id) {
+        return new AccountingMonitorConfigEntity(id, "BL000005", "智能柜", "PROD", "ol-saps", "一致性",
+                AccountingIntegrityCatalog.TYPE, null, LocalTime.MIDNIGHT, null, null, null, null,
+                BigDecimal.ZERO, false, true, null, null, null);
+    }
+
     private AccountingMonitorSaveRequest saveRequest(String expectedSqlCode, Integer fixedExpected) {
         return new AccountingMonitorSaveRequest(
                 "BL000008", "PROD", "lease-saps", "批量代扣", "BATCH_WITHHOLD",

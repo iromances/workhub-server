@@ -58,6 +58,15 @@ public class AccountingMonitorService {
                                    cn.aslight.workhub.dao.agent.AgentMonitorRunMapper links) {
         this.audits = audits; this.links = links;
     }
+    private cn.aslight.workhub.dao.ops.AccountingRuleMapper ruleMapper;
+    private AccountingRuleInitializer ruleInitializer;
+    /** REQ-7f26a063：规则组存取与种子；未注入时（无库单测）回退静态目录口径。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setRuleStore(cn.aslight.workhub.dao.ops.AccountingRuleMapper ruleMapper,
+                             AccountingRuleInitializer ruleInitializer) {
+        this.ruleMapper = ruleMapper;
+        this.ruleInitializer = ruleInitializer;
+    }
 
     /** REQ-372e4ce1：family 为逗号分隔的规则组/用途过滤；去空白、去重，最多取前 8 个。 */
     public SqlEvidencePage sqlEvidence(Long id, String family, int page, int pageSize) {
@@ -84,12 +93,41 @@ public class AccountingMonitorService {
 
     public List<String> agentRuns(Long id) { requireRun(id); return links.agents(id); }
 
+    /** REQ-7f26a063：规则组按配置读取（含停用与已删除）；无库存取时回退静态目录。 */
     public List<java.util.Map<String, Object>> rules(Long configId) {
         var config = requireConfig(configId);
         if (!AccountingIntegrityCatalog.TYPE.equals(config.scenarioType())) return List.of();
-        return AccountingIntegrityCatalog.families(config.businessLineCode()).stream().map(f -> java.util.Map.<String,Object>of(
-                "code", f.code(), "name", f.name(), "checks", f.checks(),
-                "sqlCodes", List.of(f.sqlCode("BOUNDS"), f.sqlCode("SUMMARY"), f.sqlCode("SAMPLE")))).toList();
+        if (ruleMapper == null || ruleInitializer == null) {
+            return AccountingIntegrityCatalog.families(config.businessLineCode()).stream().map(f -> java.util.Map.<String,Object>of(
+                    "code", f.code(), "name", f.name(), "checks", f.checks(),
+                    "sqlCodes", List.of(f.sqlCode("BOUNDS"), f.sqlCode("SUMMARY"), f.sqlCode("SAMPLE")))).toList();
+        }
+        ruleInitializer.ensureMaterialized(config);
+        var checksByFamily = new java.util.LinkedHashMap<Long, List<java.util.Map<String, Object>>>();
+        for (var check : ruleMapper.findChecks(configId)) {
+            checksByFamily.computeIfAbsent(check.familyId(), key -> new java.util.ArrayList<>())
+                    .add(new java.util.LinkedHashMap<>(java.util.Map.of(
+                            "id", check.checkId(), "name", check.checkName(), "severity", check.severity(),
+                            "note", check.note() == null ? "" : check.note(), "enabled", check.enabled())));
+        }
+        var result = new java.util.ArrayList<java.util.Map<String, Object>>();
+        for (var family : ruleMapper.findFamilies(configId)) {
+            var item = new java.util.LinkedHashMap<String, Object>();
+            item.put("code", family.familyCode());
+            item.put("name", family.familyName());
+            item.put("description", family.description());
+            item.put("batchSize", family.batchSize());
+            item.put("sourceType", family.sourceType());
+            item.put("enabled", family.enabled());
+            item.put("deleted", family.deleted());
+            item.put("sortOrder", family.sortOrder());
+            item.put("checks", checksByFamily.getOrDefault(family.id(), List.of()));
+            item.put("sqlCodes", List.of(IntegritySqlContract.sqlCode(family.familyCode(), "BOUNDS"),
+                    IntegritySqlContract.sqlCode(family.familyCode(), "SUMMARY"),
+                    IntegritySqlContract.sqlCode(family.familyCode(), "SAMPLE")));
+            result.add(item);
+        }
+        return result;
     }
 
     public AccountingMonitorService(AccountingMonitorMapper monitorMapper,
@@ -121,9 +159,14 @@ public class AccountingMonitorService {
         }
         AccountingMonitorConfigEntity entity = configEntity(null, request);
         monitorMapper.insert(entity);
-        return monitorMapper.findByIdentity(
+        AccountingMonitorConfigEntity created = monitorMapper.findByIdentity(
                 entity.businessLineCode(), entity.environmentCode(),
                 entity.systemName(), entity.scenarioType());
+        // REQ-7f26a063：新建一致性配置在同一事务内物化内置规则组。
+        if (created != null && ruleInitializer != null) {
+            ruleInitializer.ensureMaterialized(created);
+        }
+        return created;
     }
 
     @Transactional
@@ -249,6 +292,13 @@ public class AccountingMonitorService {
                                        LocalDateTime windowStart,
                                        String idempotencyKey,
                                        String operator) {
+        // REQ-7f26a063：一致性配置提交前校验存在生效规则（手动、重试、数字员工三条入口都经过这里）。
+        if (AccountingIntegrityCatalog.TYPE.equals(config.scenarioType()) && ruleInitializer != null) {
+            ruleInitializer.ensureMaterialized(config);
+            if (!ruleInitializer.hasEffectiveRules(config.id())) {
+                throw new IllegalArgumentException("该配置未启用任何监测场景规则");
+            }
+        }
         AccountingRunEntity existing = runMapper.findByIdempotencyKey(idempotencyKey);
         if (existing != null) {
             return existing;
@@ -289,9 +339,7 @@ public class AccountingMonitorService {
     private void validateConfig(AccountingMonitorSaveRequest request) {
         AccountingScenarioCatalog.requireType(request.scenarioType().trim());
         if (AccountingIntegrityCatalog.TYPE.equals(request.scenarioType().trim())) {
-            if (AccountingIntegrityCatalog.families(request.businessLineCode().trim()).isEmpty()) {
-                throw new IllegalArgumentException("单据及支付一致性仅支持叉车 BL000008、智能柜 BL000005");
-            }
+            // REQ-7f26a063：不再限制叉车/智能柜——任意业务线可建一致性配置后登记自定义规则组。
             if (Boolean.TRUE.equals(request.alertEnabled())) {
                 throw new IllegalArgumentException("单据及支付一致性当前仅手动核验，通知保持关闭");
             }

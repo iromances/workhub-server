@@ -91,6 +91,10 @@ public interface FuncCallSqlMapper {
     @Update("UPDATE func_call_sql SET enabled = #{enabled}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}")
     int updateEnabled(@Param("id") Long id, @Param("enabled") boolean enabled);
 
+    /** REQ-7f26a063：三段模板原子保存只更新模板文本，编码、名称、启停不变。 */
+    @Update("UPDATE func_call_sql SET sql_template = #{sqlTemplate}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}")
+    int updateSqlTemplate(@Param("id") Long id, @Param("sqlTemplate") String sqlTemplate);
+
     @Select("SELECT COUNT(1) FROM func_call_sql WHERE sql_code = #{sqlCode} AND id <> #{id}")
     long countOtherByCode(@Param("sqlCode") String sqlCode, @Param("id") Long id);
 }

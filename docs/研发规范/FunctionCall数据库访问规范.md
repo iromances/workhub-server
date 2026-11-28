@@ -24,6 +24,7 @@
 - **页面维护优先**：Function Call 页面可新增/编辑/启停模板，保存后即时生效（每次调用直查 `func_call_sql`，无缓存）。
 - **代码种子**：初始 14 条模板（OPS_XXL_* 8 条、OPS_MQ_* 6 条）由 `FuncCallSqlSeeds` 在启动时幂等回写（`sql_code` 已存在不覆盖，页面修改不会被种子冲掉）。修改种子需同步更新等价性测试 `FunctionCallTemplateEquivalenceTest`。
 - **停用影响**：停用模板会使其依赖方（业务监测巡检）立即报错并落 `last_status=ERROR`，页面上有二次确认。
+- **一致性模板保存契约（REQ-7f26a063）**：`source_module = OPS_ACCOUNTING_INTEGRITY` 的模板（编码 `AI_<规则组编码大写>_BOUNDS|SUMMARY|SAMPLE`）在新增或编辑保存时额外执行 `IntegritySqlContract` 校验：边界不允许任何参数；汇总必须引用 `:startId`、`:endId`，允许参数仅限 `startId/endId/startDateTime/endExclusiveDateTime/legacyMaxId`，且必须输出 `checked_count` 计数列；样本必须引用 `:startId`、`:endId`、`:ruleCode`、`:sampleLimit`。业务监测配置详情「监测场景」tab 的三段原子保存走同一校验；Function Call 页面保存这些模板同样生效。
 
 ## 4. 新场景接入步骤（示例）
 

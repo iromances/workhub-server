@@ -28,7 +28,8 @@ class AccountingMonitorControllerTest {
                 new AccountingDashboardSummaryResponse(8, 1, 5, 1, 1, 12),
                 List.of()
         ));
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AccountingMonitorController(service)).build();
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AccountingMonitorController(service,
+                mock(cn.aslight.workhub.service.ops.AccountingRuleAdminService.class))).build();
 
         mockMvc.perform(get("/api/ops/accounting/dashboard")
                         .param("businessLineCode", "BL000003")
@@ -46,7 +47,8 @@ class AccountingMonitorControllerTest {
                 List.of(new AccountingScenarioDimensionResponse(
                         "EXPECTED_VS_ACTUAL", "应发起 vs 实际", "应发起笔数与实际发起笔数差异超出容差时告警"))
         )));
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AccountingMonitorController(service)).build();
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AccountingMonitorController(service,
+                mock(cn.aslight.workhub.service.ops.AccountingRuleAdminService.class))).build();
 
         mockMvc.perform(get("/api/ops/accounting/scenarios").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -58,7 +60,8 @@ class AccountingMonitorControllerTest {
     @Test
     void manualRunAllowsOptionalDateForServiceToValidateByScenario() throws Exception {
         AccountingMonitorService service = mock(AccountingMonitorService.class);
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AccountingMonitorController(service)).build();
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new AccountingMonitorController(service,
+                mock(cn.aslight.workhub.service.ops.AccountingRuleAdminService.class))).build();
 
         mockMvc.perform(post("/api/ops/accounting/runs/manual")
                         .contentType(MediaType.APPLICATION_JSON)

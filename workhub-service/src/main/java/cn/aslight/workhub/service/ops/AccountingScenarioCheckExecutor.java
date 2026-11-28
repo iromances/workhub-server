@@ -36,6 +36,13 @@ public class AccountingScenarioCheckExecutor {
     private final AccountingRunMapper runMapper;
     private final FunctionCallService functionCallService;
     private final WecomRobotNotifier wecomRobotNotifier;
+    private AccountingRuleInitializer ruleInitializer;
+
+    /** REQ-7f26a063：一致性分支按配置的生效规则执行；生产必然注入，空值仅为无库单测回退静态目录。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setRuleInitializer(AccountingRuleInitializer ruleInitializer) {
+        this.ruleInitializer = ruleInitializer;
+    }
 
     @Autowired
     public AccountingScenarioCheckExecutor(AccountingMonitorMapper monitorMapper,
@@ -70,8 +77,19 @@ public class AccountingScenarioCheckExecutor {
         }
         try {
             if (AccountingIntegrityCatalog.TYPE.equals(config.scenarioType())) {
+                List<AccountingIntegrityCatalog.Family> families;
+                if (ruleInitializer != null) {
+                    ruleInitializer.ensureMaterialized(config);
+                    families = ruleInitializer.effectiveFamilies(config.id());
+                    if (families.isEmpty()) {
+                        failRun(runId, "该配置未启用任何监测场景规则");
+                        return;
+                    }
+                } else {
+                    families = AccountingIntegrityCatalog.families(config.businessLineCode());
+                }
                 List<AccountingResultEntity> results = new AccountingIntegrityCheckExecutor(functionCallService, runMapper)
-                        .execute(config, run);
+                        .execute(config, run, families);
                 finishRun(runId, results);
                 return;
             }

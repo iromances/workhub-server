@@ -196,6 +196,10 @@ public class FunctionCallSqlService {
         entity.setSourceModule(optionalText(request.sourceModule(), 64));
         entity.setEnabled(!Boolean.FALSE.equals(request.enabled()));
         entity.setRemark(optionalText(request.remark(), 255));
+        // REQ-7f26a063：一致性模板保存时执行三段契约校验（Function Call 页面保存同样生效）。
+        if ("OPS_ACCOUNTING_INTEGRITY".equals(entity.getSourceModule())) {
+            cn.aslight.workhub.service.ops.IntegritySqlContract.validate(entity.getSqlCode(), entity.getSqlTemplate());
+        }
         return entity;
     }
 

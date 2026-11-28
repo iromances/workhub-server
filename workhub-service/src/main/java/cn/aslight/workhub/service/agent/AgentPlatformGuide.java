@@ -15,11 +15,16 @@ public class AgentPlatformGuide {
     private cn.aslight.workhub.service.ops.AccountingMonitorService monitors;
     @org.springframework.beans.factory.annotation.Autowired
     public void setMonitors(cn.aslight.workhub.service.ops.AccountingMonitorService service) { monitors = service; }
+    private cn.aslight.workhub.service.ops.AccountingRuleInitializer ruleInitializer;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setRuleInitializer(cn.aslight.workhub.service.ops.AccountingRuleInitializer service) { ruleInitializer = service; }
     static final String MONITOR_GUIDE = """
             【现行运维口径，覆盖旧指南中的名称和旧规则表描述】
             系统预警：系统异常与慢 SQL；服务监测：XXL-JOB、MQ 等（ops_monitor_config）；
             业务监测：场景配置 ops_account_monitor_config、批次 ops_account_reconcile_run、规则结果 ops_account_reconcile_result。
-            ACCOUNTING_INTEGRITY 使用内置规则目录及 func_call_sql 的 AI_* 模板，不能用旧 ops_account_rule_config 为空判定无规则。
+            ACCOUNTING_INTEGRITY 的规则来自配置下的规则组与检查项 ops_account_monitor_family / ops_account_monitor_check
+            （内置目录为种子，可在业务监测配置详情启停、改级别或新增自定义规则组），SQL 为 func_call_sql 的 AI_* 模板；
+            不能用旧 ops_account_rule_config 为空判定无规则。
             一致性场景仅手动或明确任务执行，不按 check_time 自动调度；未运行不能推断调度中断；告警关闭不等于未核验。
             本轮 BUSINESS_MONITOR_SUBMITTED/RESULT 事件含正式批次及实际规则结果，必须引用该批次、核验范围和时间。
             OBSERVE 仅观察已有结果，不得声称执行了 SQL；EXECUTE_CONFIGURED 由平台先执行明确选择的场景，再撰写报告。
@@ -38,14 +43,25 @@ public class AgentPlatformGuide {
             for (var scope : context.specification().scopes()) {
                 for (var config : monitors.listConfigs(scope.businessLineCode(), false)) {
                     if (!scope.environmentCode().equals(config.environmentCode())) continue;
-                    var families = cn.aslight.workhub.service.ops.AccountingIntegrityCatalog.families(scope.businessLineCode());
                     boolean integrity = "ACCOUNTING_INTEGRITY".equals(config.scenarioType());
                     guide += "\n业务监测配置 " + config.id() + " / " + config.displayName() + " / " + config.environmentCode()
                             + " / 类型=" + config.scenarioType() + " / 启用=" + config.enabled()
-                            + (integrity ? " / 仅手动核验 / 内置规则=" + families.stream().mapToInt(f -> f.checks().size()).sum() : " / 流程计数场景");
+                            + (integrity ? " / 仅手动核验 / " + integrityRuleSummary(config) : " / 流程计数场景");
                 }
             }
         }
         return guide;
+    }
+
+    /** REQ-7f26a063 §3.7：按配置统计生效规则并区分内置与自定义；无库存取时回退内置目录口径。 */
+    private String integrityRuleSummary(cn.aslight.workhub.model.ops.AccountingMonitorConfigEntity config) {
+        if (ruleInitializer != null) {
+            var stats = ruleInitializer.stats(config.id());
+            return "生效规则=" + stats.effectiveChecks() + "（启用规则组 " + stats.enabledFamilies() + "/"
+                    + stats.totalFamilies() + "，自定义 " + stats.customFamilies() + "）";
+        }
+        int builtin = cn.aslight.workhub.service.ops.AccountingIntegrityCatalog.families(config.businessLineCode())
+                .stream().mapToInt(family -> family.checks().size()).sum();
+        return "内置规则=" + builtin;
     }
 }

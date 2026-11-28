@@ -28,10 +28,11 @@ public final class AccountingIntegrityCheckExecutor {
         this.runMapper = runMapper;
     }
 
-    public List<AccountingResultEntity> execute(AccountingMonitorConfigEntity config, AccountingRunEntity run) {
-        var families = AccountingIntegrityCatalog.families(config.businessLineCode());
-        if (families.isEmpty()) {
-            throw new IllegalArgumentException("该业务线尚未登记账务一致性规则");
+    /** REQ-7f26a063：生效规则组由调用方传入（启用且未删除的规则组 × 启用的检查项）。 */
+    public List<AccountingResultEntity> execute(AccountingMonitorConfigEntity config, AccountingRunEntity run,
+                                                List<AccountingIntegrityCatalog.Family> families) {
+        if (families == null || families.isEmpty()) {
+            throw new IllegalArgumentException("该配置未启用任何监测场景规则");
         }
         List<AccountingResultEntity> results = new ArrayList<>();
         for (var family : families) {
