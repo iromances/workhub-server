@@ -42,3 +42,20 @@
 按用户反馈调整为 dev/prod 配置。数据库地址、账号和密码可一起写在服务工作目录内的 `config/application-dev.yml` 或 `config/application-prod.yml`。本机 IDEA 的 Active profiles 已设为 dev。连接池与 Flyway 的六项配置已逐项与迁移前比对。
 
 按后续确认，开发库三项连接参数已迁入启动模块资源目录的 `application-dev.yml`，移除了工程根 `config/application-dev.yml`。生产环境继续使用资源目录的 `application-prod.yml`。
+
+## 2026-11-28 Windows 首次连接自动登记堡垒机主机公钥
+
+需求来源为本次聊天。用户在 Windows IDEA 运行后，经堡垒机查询生产库报“数据库查询失败：SSH 连接失败，请核对服务账号的主机指纹、凭据和网络”。定位结果是 `db-prod` 所用 2 号堡垒机（JumpServer `xxt-jumpserver.thchengtay.com:62222`）的主机公钥未登记在运行账号的 known_hosts，JSch 在认证之前拒绝连接。非 Windows 的 OpenSSH 实现使用 `StrictHostKeyChecking=accept-new`，首次连接自动登记，没有这个前置步骤。用户询问能否免去手动登记，并于 2026-11-28 说明应用可能在其他 Windows 机器和 Linux 上运行，确认按本节范围与方案实施。
+
+范围只含 Windows 的 JSch 路径 `JavaSshConnection`（数据库隧道、堡垒机连接测试和服务器诊断共用）；Linux 的 OpenSSH 路径已是 accept-new，不改。JSch 2.28.8 不识别 `StrictHostKeyChecking=accept-new`，实测该值会让主机公钥校验失效且不记录，因此改为包装 `HostKeyRepository`。
+
+| 情形 | 行为 | 本机验证结果 |
+| --- | --- | --- |
+| 公钥未登记 | 按 `host type base64` 追加到运行账号 `.ssh/known_hosts` 后继续连接，并在应用日志以 WARNING 记录主机与 SHA-256 指纹；文件或 `.ssh` 目录不存在时创建，原内容末尾无换行时另起一行。只追加，不改写已有内容 | 通过。真实堡垒机首次连接写入一行，日志为“首次登记 SSH 主机公钥：[xxt-jumpserver.thchengtay.com]:62222 ssh-rsa SHA256:wz2RrpjX0GoYcGer/BjdZHtzxY8FTnMjC7EfqD+Tays”；文件与目录不存在时创建；末尾无换行（LF、CRLF）时另起一行，原内容不变 |
+| 公钥已登记且一致 | 直接继续，不写文件 | 通过。再次连接放行，文件内容与字节数不变 |
+| 公钥已登记但变化 | 拒绝连接，文件不变 | 通过。判定为公钥已变化，连接被拒绝，文件不变 |
+| 追加失败 | 连接失败并明确报“无法写入 SSH known_hosts”，不静默放行 | 通过。真实的 `connect` 在登录前失败，报“无法写入 SSH known_hosts：<路径>” |
+
+验证于 2026-11-28 在本机 Windows 完成。`AcceptNewHostKeyRepositoryTest` 6 项通过。`workhub-mcp-server` 模块共 98 项，79 项通过，19 项失败或出错；这 19 项全部位于 `OpenSshConnectionTest`、`ServerFilePolicyTest`、`ServerDiagnosticServiceTest`，未改动的 HEAD 在本机同样是 92 项中的同 19 项，原因是依赖 POSIX 权限、符号链接和 Linux 绝对路径，与本次改动无关。改动叠加到 HEAD 干净副本后全工程 `test-compile` 通过。另用编译后的生产类对真实堡垒机验证：首次连接写入并放行、再次连接放行且文件不变、公钥不一致拒绝、本机真实 known_hosts 副本放行且不变、文件不可写时在登录前报错；验证在公钥判定后即中止，未发起登录，也未写入本机真实的 known_hosts。
+
+同日用户已手工把该堡垒机公钥登记到本机 known_hosts，13:00 起应用日志出现“堡垒机共享连接已建立”，`db-prod`、`amp-db-prod` 的只读查询成功，JSch 密码认证在 Windows 上可用得到确认。未执行：全新 Windows 账号上从首次连接到登录成功的完整链路，以及 Windows 服务账号和 Linux 实机验收。改动未提交、未部署。

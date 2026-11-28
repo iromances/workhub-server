@@ -4,10 +4,11 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/** Windows 原生 SSH 会话，主机密钥由服务账号的 known_hosts 校验。 */
+/** Windows 原生 SSH 会话，主机公钥由运行账号的 known_hosts 校验，未登记的首次连接时登记。 */
 public final class JavaSshConnection implements SshConnectionManager.Connection {
     private final Session session;
 
@@ -35,10 +36,11 @@ public final class JavaSshConnection implements SshConnectionManager.Connection 
         var jsch = new JSch();
         Path ssh = Path.of(System.getProperty("user.home"), ".ssh");
         Path knownHosts = ssh.resolve("known_hosts");
-        if (!Files.isRegularFile(knownHosts)) throw new IOException("请先为服务账号配置已核实的 SSH known_hosts");
         Session session = null;
         try {
             jsch.setKnownHosts(knownHosts.toString());
+            // 与非 Windows 的 OpenSSH accept-new 一致：未登记的公钥首次连接时登记，公钥变化仍拒绝。
+            jsch.setHostKeyRepository(new AcceptNewHostKeyRepository(jsch.getHostKeyRepository(), knownHosts));
             if (password == null || password.isBlank()) {
                 if (identity != null && !identity.isBlank()) jsch.addIdentity(identity);
                 else {
@@ -61,6 +63,9 @@ public final class JavaSshConnection implements SshConnectionManager.Connection 
         } catch (JSchException ex) {
             if (session != null) session.disconnect();
             throw new IOException("SSH 连接失败，请核对服务账号的主机指纹、凭据和网络", ex);
+        } catch (UncheckedIOException ex) {
+            if (session != null) session.disconnect();
+            throw new IOException("无法写入 SSH known_hosts：" + knownHosts, ex);
         }
     }
 

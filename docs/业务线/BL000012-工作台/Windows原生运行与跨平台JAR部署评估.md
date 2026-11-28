@@ -18,7 +18,7 @@ IDEA 的工作目录设为后端仓库根，Active profiles 选择 `dev`。开�
 | 需求归档 | `WORKHUB_ARCHIVE_PROJECT` 填公司 GitLab 上 WorkHub 后端的完整项目路径。协作仓库默认 `engineering/agents-playbook`。首次写入可使用已维护的 `gitlab.global/webApiUrl` 和 `accessToken` 克隆。实例绝对路径 `WORKHUB_ARCHIVE_PATH`、`WORKHUB_PLAYBOOK_PATH` 优先于数据库中的 `repositoryPath`、`playbookPath`。 |
 | 规范 | 默认 `config/standards/`，可通过 `WORKHUB_STANDARDS_ROOT` 单独覆盖。将自定义的 `流程.md`、`proposal.md`、`design.md`、`tasks.md`、`adr.md` 放在其 `研发规范/SDD/` 子目录。 |
 | GitLab 规范来源 | 可选 `WORKHUB_STANDARDS_PROJECT`。分支 `WORKHUB_STANDARDS_REF` 默认 `HEAD`，仓库内目录 `WORKHUB_STANDARDS_PATH` 默认 `docs/研发规范/SDD`。按提交号缓存至规范根下的 `.gitlab/`。同名文件优先使用手工维护版。配置的远端读取失败时本次评估报告错误。 |
-| Git、AI 与 SSH | Git 使用 `WORKHUB_GIT_EXECUTABLE` 或账号 PATH。Codex、ZCode 在 AI 接入配置中填写可执行程序，ZCode 的 CJS 入口同时填写 Node 运行时。Windows 堡垒机使用 JSch，须在运行账号的 `.ssh/known_hosts` 预置已核实的主机公钥，非默认端口使用 `[host]:port`。 |
+| Git、AI 与 SSH | Git 使用 `WORKHUB_GIT_EXECUTABLE` 或账号 PATH。Codex、ZCode 在 AI 接入配置中填写可执行程序，ZCode 的 CJS 入口同时填写 Node 运行时。Windows 堡垒机使用 JSch，主机公钥校验与 OpenSSH `accept-new` 一致：未登记的公钥在首次连接时追加到运行账号的 `.ssh/known_hosts` 并记入应用日志（WARNING，含 SHA-256 指纹），公钥变化拒绝连接，追加失败时连接失败并明确报错；非默认端口使用 `[host]:port`。 |
 | 打开文件夹 | `workhub.desktop.open-folder-enabled` 在 dev 开启，在 prod 和未选环境时关闭。开发模式按归档位置打开文件夹，显式的材料目录 `intake.requirementFolder/basePath` 优先。 |
 
 研发评估与澄清会在仓库根的 `.workhub-analysis/<快照编号>/` 下读取固定版本。目录中的 `revisions.json` 记录各项目及提交号。指定开发分支时，参与分析的仓库须提供对应远端分支。新任务可以读取更新后的代码和规范，在途任务继续使用原有快照。归档仓库可能持有未提交的需求材料，备份或清理时按项目处理。
@@ -142,6 +142,6 @@ Windows IDEA 使用源码运行。另取同一次构建生成的 JAR，分别在
 - [ ] **AI CLI 和 Git 联合验收**：在 Windows 原生 IDEA、Windows 服务和 Linux 服务三个环境，用同一版本代码验证完整流程，两台服务部署同一份 JAR。同步不同 GitLab 子组的同名项目，核对本地路径和提交号；Codex、ZCode 分别完成模型加载、连接测试和指定提交的只读分析；数字员工在独立工作区生成修改并查看差异。核对源仓库及归档仓库已有的未提交材料仍然保留。
 - [ ] **程序路径、权限与超时**：分别验证自动发现和显式路径，覆盖中文及含空格的目录；检查任务文件对无关普通账号不可读；让测试子进程持续输出并触发超时，确认进程树回收、任务正常结束并报告原因。三种环境的联合验收和这些边界用例全部通过，才认定 AI CLI 和 Git 适配完成。
 - [ ] **默认目录与自定义目录**：从不同工作目录启动同一 JAR，确认复用默认缓存；分别只指定代码缓存或规范目录，确认另一项仍使用默认位置。向测试分支提交一次变更并更新一份规范，确认下一次分析使用新提交和新规范，在途任务仍使用原版本。
-- [ ] **运维链路**：按启用的认证方式连接堡垒机，经隧道执行一次只读查询，读取授权远端目录中的日志；验证白名单外路径被拒绝，以及连接结束后的回收。
+- [ ] **运维链路**：按启用的认证方式连接堡垒机，经隧道执行一次只读查询，读取授权远端目录中的日志；验证白名单外路径被拒绝，以及连接结束后的回收。Windows 上先用未登记主机公钥的运行账号连接一次，确认 `known_hosts` 新增条目且日志记录指纹，再次连接不重复写入。
 - [ ] **打开本机文件夹**：IDEA 激活 `dev`，分别用 Run 和 Debug 验证两个按钮打开预期的需求目录和方案目录，覆盖自定义路径。在 Windows 和 Linux 上用同一份 JAR 激活 `prod`，并验证未指定 Profile 时的兜底行为：两个入口均隐藏，直接请求打开接口也无法创建目录或启动桌面程序，材料导出和需求归档正常。
 - [ ] **服务行为**：重启后验证已有密文仍可解密、历史附件可读、研发归档仍在，并确认一个调度周期内任务按预期执行一次。
