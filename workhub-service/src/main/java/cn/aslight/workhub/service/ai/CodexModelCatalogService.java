@@ -1,5 +1,6 @@
 package cn.aslight.workhub.service.ai;
 
+import cn.aslight.workhub.service.runtime.HostTools;
 import cn.aslight.workhub.model.ai.CodexModelCatalogRequest;
 import cn.aslight.workhub.model.ai.CodexModelCatalogResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,34 +99,16 @@ public class CodexModelCatalogService {
         if (!Files.isDirectory(directory)) throw new IllegalArgumentException("CLI 工作目录不存在");
         Path executable = Path.of(request.cliCommand().trim());
         String filename = executable.getFileName().toString();
-        if (!filename.equals("codex") && !filename.equals("codex.exe")) {
+        if (!filename.equalsIgnoreCase("codex") && !filename.equalsIgnoreCase("codex.exe")) {
             throw new IllegalArgumentException("模型查询仅支持 Codex 可执行文件，不支持 shell 命令或附加参数");
         }
-        if (!executable.isAbsolute() && executable.getParent() == null) {
-            executable = findOnPath(filename);
-        } else if (!executable.isAbsolute()) {
-            executable = directory.resolve(executable);
-        }
-        if (!Files.isRegularFile(executable) || !Files.isExecutable(executable)) {
-            throw new IllegalArgumentException("未找到可执行的 Codex，请检查 CLI 命令");
-        }
+        if (!executable.isAbsolute() && executable.getParent() != null) executable = directory.resolve(executable);
+        executable = Path.of(HostTools.executable(executable.toString()));
         try {
             return new CatalogKey(executable.toRealPath(), directory.toRealPath());
         } catch (IOException ex) {
             throw new IllegalArgumentException("无法访问 Codex 命令或工作目录");
         }
-    }
-
-    private Path findOnPath(String filename) {
-        String path = System.getenv("PATH");
-        if (path != null) {
-            for (String entry : path.split(java.util.regex.Pattern.quote(File.pathSeparator))) {
-                if (entry.isBlank()) continue;
-                Path candidate = Path.of(entry).resolve(filename);
-                if (Files.isRegularFile(candidate) && Files.isExecutable(candidate)) return candidate;
-            }
-        }
-        throw new IllegalArgumentException("后端运行环境 PATH 中未找到 Codex，请填写绝对路径");
     }
 
     private record CatalogKey(Path executable, Path directory) {

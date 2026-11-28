@@ -1,5 +1,6 @@
 package cn.aslight.workhub.service.ai;
 
+import cn.aslight.workhub.service.runtime.HostTools;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -34,13 +35,18 @@ final class AiAnalysisFingerprint {
     private static String git(String directory, String... arguments) {
         Process process = null;
         try {
-            var command = new ArrayList<>(List.of("git", "--no-optional-locks", "-C", directory));
+            var command = new ArrayList<>(List.of(HostTools.git(), "--no-optional-locks", "-C", directory));
             command.addAll(List.of(arguments));
             process = new ProcessBuilder(command).redirectError(ProcessBuilder.Redirect.DISCARD).start();
             Process observed = process;
             var bytes = new ByteArrayOutputStream();
             Thread reader = Thread.ofVirtual().start(() -> {
-                try (var input = observed.getInputStream()) { bytes.write(input.readNBytes(65537)); }
+                try (var input = observed.getInputStream()) {
+                    byte[] chunk = new byte[8192];
+                    for (int count; (count = input.read(chunk)) >= 0;) {
+                        bytes.write(chunk, 0, Math.min(count, 65537 - bytes.size()));
+                    }
+                }
                 catch (java.io.IOException ignored) { }
             });
             if (!process.waitFor(5, TimeUnit.SECONDS)) return null;
@@ -49,7 +55,12 @@ final class AiAnalysisFingerprint {
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("代码版本核对被中断", ex);
-        } catch (java.io.IOException ex) { return null; }
-        finally { if (process != null && process.isAlive()) process.destroyForcibly(); }
+        } catch (java.io.IOException | IllegalArgumentException ex) { return null; }
+        finally {
+            if (process != null && process.isAlive()) {
+                process.descendants().forEach(ProcessHandle::destroyForcibly);
+                process.destroyForcibly();
+            }
+        }
     }
 }

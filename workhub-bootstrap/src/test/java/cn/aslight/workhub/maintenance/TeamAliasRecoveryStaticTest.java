@@ -7,8 +7,7 @@ import org.flywaydb.database.mysql.MySQLDatabaseType;
 import org.flywaydb.database.mysql.MySQLParser;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -19,6 +18,7 @@ import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -59,9 +59,20 @@ class TeamAliasRecoveryStaticTest {
 
     @Test
     void restoreUsesNoRoutineOrImplicitCommit() throws Exception {
-        String sql = Files.readString(Path.of("..", "docs", "WorkHub", "团队重复人员合并", "SDD", "rollback.sql"));
-        for (String statement : parse(sql)) {
-            assertTrue(statement.matches("(?s)^(SET|SELECT|INSERT|PREPARE|EXECUTE|DEALLOCATE)\\s.*"), statement);
+        String resource = "/db/recovery/team-developer-aliases/rollback.sql";
+        Properties settings = new Properties();
+        try (var input = getClass().getResourceAsStream(resource + ".conf")) {
+            assertNotNull(input, resource + ".conf");
+            settings.load(input);
+        }
+        assertEquals("true", settings.getProperty("executeInTransaction"));
+        try (var input = getClass().getResourceAsStream(resource)) {
+            assertNotNull(input, resource);
+            List<String> statements = parse(new String(input.readAllBytes(), StandardCharsets.UTF_8));
+            assertTrue(statements.stream().anyMatch(sql -> sql.contains("restore_transaction_enabled")));
+            for (String statement : statements) {
+                assertTrue(statement.matches("(?s)^(SET|SELECT|INSERT|UPDATE|PREPARE|EXECUTE|DEALLOCATE)\\s.*"), statement);
+            }
         }
     }
 

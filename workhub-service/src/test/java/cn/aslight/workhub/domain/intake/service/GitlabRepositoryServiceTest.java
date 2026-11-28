@@ -262,6 +262,68 @@ class GitlabRepositoryServiceTest {
         assertEquals("th-jiatai-amp", method.invoke(service, "BL000003"));
     }
 
+    @Test
+    void freezesBothSubgroupsAtSelectedRevisionsAndKeepsUncommittedMaterials() throws Exception {
+        Path cache = Files.createDirectories(tempDir.resolve("含 空格/repos"));
+        var service = new GitlabRepositoryService(mock(SysConfigService.class), mock(BusinessLineMapper.class),
+                new ObjectMapper(), cache);
+        var sources = new ArrayList<GitlabRepositoryService.GitlabRepository>();
+        for (String name : List.of("一组", "二组")) {
+            Path source = Files.createDirectories(cache.resolve("company").resolve(name).resolve("api"));
+            git(source, "init", "-b", "main");
+            Files.writeString(source.resolve("version.txt"), name);
+            git(source, "add", "version.txt");
+            git(source, "-c", "user.name=test", "-c", "user.email=test@example.invalid", "commit", "-m", "initial");
+            git(source, "update-ref", "refs/remotes/origin/test", "HEAD");
+            Files.writeString(source.resolve("version.txt"), "未提交材料");
+            sources.add(new GitlabRepositoryService.GitlabRepository("https://example.invalid/" + name, source));
+        }
+        var group = new GitlabRepositoryService.GitlabRepositoryBundle("company", cache.resolve("company"), sources);
+        var snapshot = service.snapshot(group, "test");
+        assertEquals(snapshot, service.snapshot(group, "test"));
+        for (var repo : snapshot.repositories()) {
+            assertEquals(repo.localPath().getParent().getFileName().toString(), Files.readString(repo.localPath().resolve("version.txt")));
+            assertEquals(repo.commit(), git(repo.localPath(), "rev-parse", "HEAD"));
+        }
+        assertEquals("未提交材料", Files.readString(sources.getFirst().localPath().resolve("version.txt")));
+        assertThrows(IllegalStateException.class, () -> service.snapshot(group, "missing"));
+    }
+
+    @Test
+    void readsRemoteStandardsFromOneCommitAndKeepsManualOverrides() throws Exception {
+        var config = mock(SysConfigService.class);
+        var http = com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
+        String sha = "f".repeat(40);
+        http.createContext("/", exchange -> {
+            String path = exchange.getRequestURI().getPath();
+            String text = path.contains("/commits/") ? "{\"id\":\"" + sha + "\"}"
+                    : path.endsWith("/流程.md/raw") ? "远端流程" : path.endsWith("/design.md/raw") ? "远端模板" : null;
+            byte[] bytes = text == null ? new byte[0] : text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(text == null ? 404 : 200, bytes.length);
+            try (var body = exchange.getResponseBody()) { body.write(bytes); }
+        });
+        http.start();
+        try {
+            when(config.requirePlainValue("gitlab.global", "webApiUrl")).thenReturn("http://127.0.0.1:" + http.getAddress().getPort());
+            when(config.requirePlainValue("gitlab.global", "accessToken")).thenReturn("test");
+            var service = new GitlabRepositoryService(config, mock(BusinessLineMapper.class), new ObjectMapper(), tempDir);
+            var synced = service.syncStandards(tempDir, "company/policy", "release/v1", "docs/研发规范/SDD");
+            var knowledge = new ProjectKnowledgeBaseService(config, null, new ObjectMapper(),
+                    mock(org.springframework.transaction.PlatformTransactionManager.class));
+            Path override = tempDir.resolve("研发规范/SDD/design.md");
+            Files.createDirectories(override.getParent());
+            Files.writeString(override, "本地模板 V1");
+            String first = knowledge.readSddSnapshot(tempDir, synced);
+            Files.writeString(override, "本地模板 V2");
+            assertTrue(first.contains("远端流程") && first.contains("本地模板 V1"));
+            assertFalse(first.contains("远端模板"));
+            assertTrue(knowledge.readSddSnapshot(tempDir, synced).contains("本地模板 V2"));
+            assertEquals("远端模板", Files.readString(synced.resolve("design.md")));
+        } finally {
+            http.stop(0);
+        }
+    }
+
     private String git(Path workingDirectory, String... arguments) throws Exception {
         List<String> command = new ArrayList<>();
         command.add("git");

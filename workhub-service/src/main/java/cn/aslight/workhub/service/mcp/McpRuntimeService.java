@@ -1,5 +1,7 @@
 package cn.aslight.workhub.service.mcp;
 
+import cn.aslight.workhub.mcp.runtime.WorkhubPaths;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +18,6 @@ import cn.aslight.workhub.service.attachment.AttachmentService;
 import cn.aslight.workhub.service.attachment.AttachmentTextExtractionService;
 import cn.aslight.workhub.service.intake.GitlabRepositoryService;
 import cn.aslight.workhub.service.intake.IntakeService;
-import cn.aslight.workhub.service.intake.RepositoryDocumentPaths;
 import cn.aslight.workhub.service.ops.BusinessLogSearchService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,7 +54,7 @@ public class McpRuntimeService {
             "2025-03-26"
     );
     private static final String SERVER_INSTRUCTIONS = """
-            WorkHub 提供受控的需求、业务线、本地代码工作区、数据库和服务器只读诊断工具。业务代码统一位于 /Users/aslight/IDEAWorkspace/{gitlabGroupName}；涉及业务线排查或测试时，必须先确认业务线、环境和分支；生产日志排查首选 search_business_logs 实时查询受控 ELK 范围，服务器日志作为补充，尤其在生产服务器需要堡垒机时；数据库只允许只读 SQL，查询结果和日志结果会在服务端脱敏；目录和文本文件仅通过 list_server_directory/read_server_file 在统一 allowedLogPaths 范围内只读访问，默认 /mnt，空白名单关闭，其他目录必须先经用户明确授权后配置，AI 不得自行扩展；不得执行所读取脚本；不得尝试绕过资源白名单、时间、行数与字节限制、路径限制或安全策略。
+            WorkHub 提供受控的需求、业务线、本地代码工作区、数据库和服务器只读诊断工具。业务代码统一位于 the configured repository root/{gitlabGroupName}；涉及业务线排查或测试时，必须先确认业务线、环境和分支；生产日志排查首选 search_business_logs 实时查询受控 ELK 范围，服务器日志作为补充，尤其在生产服务器需要堡垒机时；数据库只允许只读 SQL，查询结果和日志结果会在服务端脱敏；目录和文本文件仅通过 list_server_directory/read_server_file 在统一 allowedLogPaths 范围内只读访问，默认 /mnt，空白名单关闭，其他目录必须先经用户明确授权后配置，AI 不得自行扩展；不得执行所读取脚本；不得尝试绕过资源白名单、时间、行数与字节限制、路径限制或安全策略。
             """.strip();
 
     private final McpResourceService mcpResourceService;
@@ -358,7 +359,7 @@ public class McpRuntimeService {
     }
 
     private void registerGitlabTools(McpToolRegistry registry) {
-        registry.register("sync_gitlab_group_repositories", "Locate all accessible repositories in /Users/aslight/IDEAWorkspace/{gitlabGroupName}; clone missing repositories and safely fetch existing repositories without resetting local work.",
+        registry.register("sync_gitlab_group_repositories", "Locate all accessible repositories in the configured repository root/{gitlabGroupName}; clone missing repositories and safely fetch existing repositories without resetting local work.",
                 objectSchema(List.of("businessLine")),
                 this::syncGitlabGroupRepositories);
     }
@@ -688,38 +689,16 @@ public class McpRuntimeService {
         Map<String, Object> context = new LinkedHashMap<>(catalog.gitlab());
         context.put("gitlabGroupName", businessLine.gitlabGroupName());
         if (businessLine.gitlabGroupName() != null && !businessLine.gitlabGroupName().isBlank()) {
-            context.put("codeWorkspaceRoot", "/Users/aslight/IDEAWorkspace/" + businessLine.gitlabGroupName().trim());
+            context.put("codeWorkspaceRoot", WorkhubPaths.namespace(WorkhubPaths.repositories(), businessLine.gitlabGroupName().trim()).toString());
         }
         return context;
     }
 
     private Map<String, Object> knowledgeContext(McpResourceCatalog catalog, McpResourceCatalog.BusinessLine businessLine) {
         Map<String, Object> context = new LinkedHashMap<>(catalog.knowledge());
-        Object documentPath = context.get("projectDocumentPath");
-        if (documentPath != null) {
-            // WorkHub 平台（BL000012）归档在 docs/业务线，其余业务线归档在 agents-playbook 仓库 docs/业务线
-            context.put("businessLineWikiRoot", businessLineWikiRoot(Path.of(documentPath.toString()), context, businessLine));
-        }
+        Path path = WorkhubPaths.businessLineArchive(context, businessLine.code(), businessLine.name());
+        if (path != null) context.put("businessLineWikiRoot", path.toString());
         return context;
-    }
-
-    private String businessLineWikiRoot(Path documentsRoot, Map<String, Object> context, McpResourceCatalog.BusinessLine businessLine) {
-        String segment = businessLineDirSegment(businessLine);
-        if (RepositoryDocumentPaths.WORKHUB_BUSINESS_LINE_CODE.equals(firstNonBlank(businessLine.code(), null))) {
-            return documentsRoot.resolve(RepositoryDocumentPaths.BUSINESS_LINES).resolve(segment).toString();
-        }
-        Object playbookPath = context.get("projectPlaybookPath");
-        Path root = playbookPath != null ? Path.of(playbookPath.toString())
-                : RepositoryDocumentPaths.defaultPlaybookRepository(documentsRoot)
-                        .resolve("docs").resolve(RepositoryDocumentPaths.BUSINESS_LINES);
-        return root.resolve(segment).toString();
-    }
-
-    /** 业务线文档目录统一为 {业务线编码}-{业务线名称}；无编码或编码与名称相同时退回名称。 */
-    private String businessLineDirSegment(McpResourceCatalog.BusinessLine businessLine) {
-        String code = firstNonBlank(businessLine.code(), null);
-        String name = firstNonBlank(businessLine.name(), code);
-        return code == null || code.equals(name) ? name : code + "-" + name;
     }
 
     private Map<String, Object> databaseTargetSummary(McpResourceCatalog.DatabaseTarget target) {

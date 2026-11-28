@@ -1,12 +1,13 @@
 package cn.aslight.workhub.service.ai;
 
+import cn.aslight.workhub.service.runtime.PrivateFiles;
+import cn.aslight.workhub.service.runtime.HostTools;
 import cn.aslight.workhub.model.ai.AiProviderConfigEntity;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -21,8 +22,8 @@ public class ZCodeCliClient {
     /** 数字员工保留原生配置与工具；仅会话存储、日志和 Provider 副本属于临时运行目录。 */
     public CliTaskLaunch prepareAgent(AiProviderConfigEntity provider, String model, String reasoning, Path directory, Path output,
                                      String prompt, String mcpUrl, String token, String finalResultSchema) throws IOException {
-        Path work = privateDirectory(directory.resolve("work"));
-        Path storage = privateDirectory(directory.resolve("storage"));
+        Path work = PrivateFiles.directory(directory.resolve("work"));
+        Path storage = PrivateFiles.directory(directory.resolve("storage"));
         Path personal = provider.getCliPersonalConfigPath() == null || provider.getCliPersonalConfigPath().isBlank()
                 ? Path.of(System.getProperty("user.home"), ".zcode", "v2", "provider_config.json") : absolute(provider.getCliPersonalConfigPath());
         copyConfig(resolveBuiltin(provider), directory.resolve("builtin.json"), "ZCode 内置 Provider 定义");
@@ -35,7 +36,7 @@ public class ZCodeCliClient {
         builder.environment().put("ZCODE_PERSONAL_PROVIDER_CONFIG_FILE", directory.resolve("provider.json").toString());
         builder.environment().put("ZCODE_STORAGE_DIR", storage.toString());
         builder.environment().put("ZCODE_SESSION_DB_PATH", storage.resolve("session.db").toString());
-        builder.environment().put("ZCODE_LOG_DIR", privateDirectory(directory.resolve("logs")).toString());
+        builder.environment().put("ZCODE_LOG_DIR", PrivateFiles.directory(directory.resolve("logs")).toString());
         return new CliTaskLaunch(builder, ZCodeTaskConversation.agent(json, work, output, prompt,
                 AiCliType.selection(model, reasoning), mcpUrl, token, finalResultSchema));
     }
@@ -75,7 +76,6 @@ public class ZCodeCliClient {
     public CliTaskLaunch prepare(AiProviderConfigEntity provider, String model, String reasoning, Path directory, Path output,
                           String prompt, List<String> toolNames, String mcpUrl, String token, String finalResultSchema,
                           List<String> imagePaths) throws IOException {
-        if (!Set.of("Mac OS X", "Linux").contains(System.getProperty("os.name"))) throw new IllegalArgumentException("ZCode 任务隔离目前已适配 macOS/Linux");
         var selection = AiCliType.selection(model, reasoning);
         var builder = prepareBuilder(provider, directory, mcpUrl != null);
         List<String> images = imagePaths == null ? List.of() : List.copyOf(imagePaths);
@@ -86,7 +86,6 @@ public class ZCodeCliClient {
     public CliTaskLaunch prepareStructuredWithoutCliSchema(AiProviderConfigEntity provider, String model, String reasoning, Path directory, Path output,
                                                            String prompt, List<String> toolNames, String mcpUrl, String token,
                                                            String schemaForFormatting, List<String> imagePaths) throws IOException {
-        if (!Set.of("Mac OS X", "Linux").contains(System.getProperty("os.name"))) throw new IllegalArgumentException("ZCode 任务隔离目前已适配 macOS/Linux");
         var selection = AiCliType.selection(model, reasoning);
         var builder = prepareBuilder(provider, directory, mcpUrl != null);
         List<String> images = imagePaths == null ? List.of() : List.copyOf(imagePaths);
@@ -95,24 +94,23 @@ public class ZCodeCliClient {
     }
 
     ProcessBuilder prepareBuilder(AiProviderConfigEntity provider, Path directory, boolean mcpEnabled) throws IOException {
-        if (!Set.of("Mac OS X", "Linux").contains(System.getProperty("os.name"))) throw new IllegalArgumentException("ZCode 任务隔离目前已适配 macOS/Linux");
         var command = new ArrayList<>(command(provider));
-        Path taskProfile = privateDirectory(directory.resolve("profile"));
-        Path configDirectory = privateDirectory(taskProfile.resolve(".zcode/cli"));
-        Path storage = privateDirectory(directory.resolve("storage"));
-        Path work = privateDirectory(directory.resolve("work"));
+        Path taskProfile = PrivateFiles.directory(directory.resolve("profile"));
+        Path configDirectory = PrivateFiles.directory(taskProfile.resolve(".zcode/cli"));
+        Path storage = PrivateFiles.directory(directory.resolve("storage"));
+        Path work = PrivateFiles.directory(directory.resolve("work"));
         // 独立目录作为项目边界，避免父目录的项目配置参与当前任务。
-        privateDirectory(work.resolve(".git"));
+        PrivateFiles.directory(work.resolve(".git"));
         var config = Map.of("features", Map.of("mcp", mcpEnabled, "memory", false, "subagent", false, "skill", false, "compact", false, "rewind", false),
                 "memory", Map.of("use", false), "plugins", Map.of("enabled", false), "skills", Map.of("enabled", false, "includeInstructions", false),
                 "hooks", Map.of("enabled", false), "mcp", Map.of("servers", Map.of()));
-        privateFile(configDirectory.resolve("config.json"), json.writeValueAsBytes(config));
+        PrivateFiles.writeNew(configDirectory.resolve("config.json"), json.writeValueAsBytes(config));
         Path builtin = resolveBuiltin(provider);
         Path personal = provider.getCliPersonalConfigPath() == null || provider.getCliPersonalConfigPath().isBlank()
                 ? Path.of(System.getProperty("user.home"), ".zcode", "v2", "provider_config.json") : absolute(provider.getCliPersonalConfigPath());
         copyConfig(builtin, directory.resolve("builtin.json"), "ZCode 内置 Provider 定义");
         copyConfig(personal, directory.resolve("provider.json"), "ZCode 个人 Provider 配置");
-        Path privateState = privateDirectory(taskProfile.resolve(".zcode/v2"));
+        Path privateState = PrivateFiles.directory(taskProfile.resolve(".zcode/v2"));
         // 只复制选定配置旁的认证及设备状态；刷新与遥测写入只发生在本次私有目录。
         copyOptionalState(personal.getParent().resolve("credentials.json"), privateState.resolve("credentials.json"));
         copyOptionalState(personal.getParent().resolve("telemetry-state.json"), privateState.resolve("telemetry-state.json"));
@@ -121,12 +119,17 @@ public class ZCodeCliClient {
         restrictEnvironment(builder.environment());
         // 仅设置子进程的真实用户目录语义，不改 WorkHub 进程、用户 shell 或现有 ZCode 配置。
         builder.environment().put("HOME", taskProfile.toString());
+        if (HostTools.windows()) {
+            for (String name : List.of("USERPROFILE", "APPDATA", "LOCALAPPDATA", "TEMP", "TMP")) {
+                builder.environment().put(name, taskProfile.toString());
+            }
+        }
         builder.environment().put("ZCODE_DATA_BASE_DIR", taskProfile.toString());
         builder.environment().put("ZCODE_BUILTIN_PROVIDER_CONFIG_FILE", directory.resolve("builtin.json").toString());
         builder.environment().put("ZCODE_PERSONAL_PROVIDER_CONFIG_FILE", directory.resolve("provider.json").toString());
         builder.environment().put("ZCODE_STORAGE_DIR", storage.toString());
         builder.environment().put("ZCODE_SESSION_DB_PATH", storage.resolve("session.db").toString());
-        builder.environment().put("ZCODE_LOG_DIR", privateDirectory(directory.resolve("logs")).toString());
+        builder.environment().put("ZCODE_LOG_DIR", PrivateFiles.directory(directory.resolve("logs")).toString());
         builder.environment().put("ZCODE_MAX_TOOL_CONCURRENCY", "1");
         return builder;
     }
@@ -164,7 +167,7 @@ public class ZCodeCliClient {
         if (seconds < 1 || seconds > 14400 || prompt == null || (recovery == null && prompt.length() > 180000)) throw new IllegalArgumentException("ZCode 任务输入或时间预算无效");
         List<String> images = imagePaths == null ? List.of() : List.copyOf(imagePaths);
         preflight(provider);
-        Path directory = Files.createTempDirectory("workhub-zcode-");
+        Path directory = PrivateFiles.tempDirectory("workhub-zcode-");
         Process process = null; boolean stopped = false;
         var descendants = new LinkedHashMap<Long, ProcessHandle>();
         try {
@@ -248,14 +251,14 @@ public class ZCodeCliClient {
         byte[] raw = Files.readAllBytes(source);
         var config = readConfig(raw, label);
         if (!config.isObject() || config.path("schemaVersion").asInt() != 1 || !config.path("config").isObject()) throw new IllegalArgumentException(label + "格式不兼容");
-        privateFile(target, raw);
+        PrivateFiles.writeNew(target, raw);
     }
     private void copyOptionalState(Path source, Path target) throws IOException {
         if (!Files.exists(source, LinkOption.NOFOLLOW_LINKS)) return;
         if (!Files.isRegularFile(source, LinkOption.NOFOLLOW_LINKS) || Files.size(source) > 1_000_000) throw new IllegalArgumentException("ZCode 认证或设备状态文件不是有效普通文件");
         byte[] raw = Files.readAllBytes(source);
         if (!readConfig(raw, "ZCode 认证或设备状态").isObject()) throw new IllegalArgumentException("ZCode 认证或设备状态格式不兼容");
-        privateFile(target, raw);
+        PrivateFiles.writeNew(target, raw);
     }
     private tools.jackson.databind.JsonNode readConfig(byte[] raw, String label) {
         try { return json.reader().with(tools.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS).readTree(raw); }
@@ -267,28 +270,11 @@ public class ZCodeCliClient {
         return path.normalize();
     }
     static String executable(String command) {
-        if (command == null || command.isBlank() || command.indexOf('\n') >= 0) throw new IllegalArgumentException("CLI 程序未配置");
-        Path path = Path.of(command);
-        if (path.isAbsolute()) {
-            if (!Files.isRegularFile(path) || !Files.isExecutable(path)) throw new IllegalArgumentException("CLI 程序不存在或不可执行");
-            return path.toString();
-        }
-        if (!command.matches("[A-Za-z0-9_.-]+")) throw new IllegalArgumentException("CLI 程序必须是单个名称或绝对路径，不接受 shell 表达式");
-        for (String folder : System.getenv().getOrDefault("PATH", "").split(java.io.File.pathSeparator)) {
-            if (folder.isBlank()) continue;
-            Path candidate = Path.of(folder).resolve(command);
-            if (Files.isRegularFile(candidate) && Files.isExecutable(candidate)) return candidate.toAbsolutePath().toString();
-        }
-        throw new IllegalArgumentException("未找到已安装的 CLI 程序");
+        return HostTools.executable(command);
     }
     static void restrictEnvironment(Map<String, String> environment) {
-        environment.keySet().removeIf(key -> !Set.of("PATH", "HOME", "USER", "LANG", "LC_ALL", "TMPDIR", "SSL_CERT_FILE", "SSL_CERT_DIR", "NODE_EXTRA_CA_CERTS", "SSH_AUTH_SOCK").contains(key)
+        environment.keySet().removeIf(key -> !HostTools.windowsEnvironment(key) && !Set.of("PATH", "HOME", "USER", "LANG", "LC_ALL", "TMPDIR", "SSL_CERT_FILE", "SSL_CERT_DIR", "NODE_EXTRA_CA_CERTS", "SSH_AUTH_SOCK").contains(key)
                 && !key.startsWith("CODEX_SANDBOX"));
-    }
-    private static Path privateDirectory(Path path) throws IOException { Files.createDirectories(path); Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rwx------")); return path; }
-    private static void privateFile(Path path, byte[] bytes) throws IOException {
-        Files.createFile(path, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
-        Files.write(path, bytes);
     }
     public static boolean stopTree(Process process, Map<Long, ProcessHandle> descendants) {
         process.descendants().forEach(child -> descendants.put(child.pid(), child));

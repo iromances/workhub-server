@@ -3,7 +3,6 @@ package cn.aslight.workhub.service.intake;
 import cn.aslight.workhub.model.intake.IntakeAttachmentSummary;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.service.attachment.AttachmentService;
-import cn.aslight.workhub.service.attachment.AttachmentTemporaryFileSet;
 import cn.aslight.workhub.service.ai.AiGatewayClient;
 import cn.aslight.workhub.service.ai.AiGatewayRequest;
 import cn.aslight.workhub.service.ai.AiGatewayResult;
@@ -107,14 +106,16 @@ public class CodexCliStructuredExtractor {
             return CodexCliExtractionResult.failed("AI 场景未配置或已停用: " + USE_CASE_CODE);
         }
 
-        try (AttachmentTemporaryFileSet temporaryFiles = AttachmentTemporaryFileSet.materialize(attachments)) {
+        try {
+            var memoryImages = attachments == null ? List.<AttachmentService.AttachmentFileContext>of()
+                    : attachments.stream().filter(this::isImage).filter(image -> image.fileContent() != null).toList();
             CodexCliInvocation invocation = buildInvocation(
                     sourceChannel,
                     rawContent,
-                    temporaryFiles.contexts(),
+                    attachments,
                     attachmentSummaries
             );
-            if (invocation.imagePaths().isEmpty()
+            if (memoryImages.isEmpty() && invocation.imagePaths().isEmpty()
                     && invocation.attachmentSummaries().isEmpty()
                     && isBlank(rawContent)) {
                 return CodexCliExtractionResult.skipped();
@@ -126,7 +127,7 @@ public class CodexCliStructuredExtractor {
                     invocation.addDirs(),
                     invocation.imagePaths(),
                     OUTPUT_SCHEMA
-            ));
+            ).withImages(memoryImages));
             if (!result.succeeded()) {
                 return CodexCliExtractionResult.failed(result.failureSummary());
             }
@@ -148,7 +149,7 @@ public class CodexCliStructuredExtractor {
         List<String> imagePaths = new ArrayList<>();
         Set<String> addDirs = new LinkedHashSet<>();
         for (AttachmentService.AttachmentFileContext attachment : safeAttachments) {
-            if (!isImage(attachment)) {
+            if (!isImage(attachment) || attachment.fileContent() != null) {
                 continue;
             }
             Path imagePath = Path.of(attachment.storagePath()).toAbsolutePath().normalize();

@@ -5,7 +5,6 @@ import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeSqlDraft;
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.service.attachment.AttachmentService;
-import cn.aslight.workhub.service.attachment.AttachmentTemporaryFileSet;
 import cn.aslight.workhub.service.ai.AiGatewayClient;
 import cn.aslight.workhub.service.ai.AiGatewayRequest;
 import cn.aslight.workhub.service.ai.AiGatewayResult;
@@ -91,8 +90,10 @@ public class CodexCliSqlDraftGenerator {
         if (!aiGatewayClient.isConfigured(USE_CASE_CODE)) {
             return SqlDraftGenerationResult.failed("AI 场景未配置或已停用");
         }
-        try (AttachmentTemporaryFileSet temporaryFiles = AttachmentTemporaryFileSet.materialize(attachments)) {
-            SqlDraftInvocation invocation = buildInvocation(entity, structuredData, temporaryFiles.contexts());
+        try {
+            var memoryImages = attachments == null ? List.<AttachmentService.AttachmentFileContext>of()
+                    : attachments.stream().filter(this::isImage).filter(image -> image.fileContent() != null).toList();
+            SqlDraftInvocation invocation = buildInvocation(entity, structuredData, attachments);
             AiGatewayResult result = aiGatewayClient.executeStructured(AiGatewayRequest.withVariables(
                     USE_CASE_CODE,
                     invocation.variables(),
@@ -100,7 +101,7 @@ public class CodexCliSqlDraftGenerator {
                     invocation.addDirs(),
                     invocation.imagePaths(),
                     OUTPUT_SCHEMA
-            ));
+            ).withImages(memoryImages));
             if (!result.succeeded()) {
                 return SqlDraftGenerationResult.failed(result.failureSummary());
             }
@@ -131,7 +132,7 @@ public class CodexCliSqlDraftGenerator {
         List<String> imagePaths = new ArrayList<>();
         Set<String> addDirs = new LinkedHashSet<>();
         for (AttachmentService.AttachmentFileContext attachment : safeAttachments) {
-            if (!isImage(attachment)) {
+            if (!isImage(attachment) || attachment.fileContent() != null) {
                 continue;
             }
             Path imagePath = Path.of(attachment.storagePath()).toAbsolutePath().normalize();

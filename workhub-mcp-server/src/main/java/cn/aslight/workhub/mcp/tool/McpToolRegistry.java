@@ -1,5 +1,7 @@
 package cn.aslight.workhub.mcp.tool;
 
+import cn.aslight.workhub.mcp.runtime.WorkhubPaths;
+
 import cn.aslight.workhub.mcp.config.McpResourceCatalog;
 import cn.aslight.workhub.mcp.audit.McpAuditLogger;
 import cn.aslight.workhub.mcp.db.DatabaseDiagnosticService;
@@ -170,11 +172,10 @@ public class McpToolRegistry {
 
     private Map<String, Object> businessLineContext(McpResourceCatalog catalog, String businessLine) {
         McpResourceCatalog.BusinessLine matched = findBusinessLine(catalog, businessLine);
-        String code = matched.code();
         Map<String, Object> context = new LinkedHashMap<>();
         context.put("businessLine", businessLineSummary(matched));
         context.put("gitlab", gitlabContext(catalog, matched));
-        context.put("knowledge", knowledgeContext(catalog, code));
+        context.put("knowledge", knowledgeContext(catalog, matched.code()));
         context.put("databaseTargets", catalog.databaseTargets().stream()
                 .filter(target -> target.publicResource() || matchesBusinessLine(target.businessLineCodes(), matched))
                 .map(this::databaseTargetSummary)
@@ -188,10 +189,11 @@ public class McpToolRegistry {
 
     private Map<String, Object> knowledgeContext(McpResourceCatalog catalog, String businessLine) {
         Map<String, Object> context = new LinkedHashMap<>(catalog.knowledge());
-        Object documentPath = context.get("projectDocumentPath");
-        if (documentPath != null) {
-            context.put("businessLineWikiRoot", documentPath + "/requirements/" + businessLine);
-        }
+        var line = catalog.businessLines().stream()
+                .filter(item -> businessLine.equals(item.code()) || businessLine.equals(item.name())).findFirst();
+        var root = WorkhubPaths.businessLineArchive(context, line.map(McpResourceCatalog.BusinessLine::code).orElse(businessLine),
+                line.map(McpResourceCatalog.BusinessLine::name).orElse(businessLine));
+        if (root != null) context.put("businessLineWikiRoot", root.toString());
         return context;
     }
 
@@ -199,7 +201,7 @@ public class McpToolRegistry {
         Map<String, Object> context = new LinkedHashMap<>(catalog.gitlab());
         context.put("gitlabGroupName", businessLine.gitlabGroupName());
         if (businessLine.gitlabGroupName() != null && !businessLine.gitlabGroupName().isBlank()) {
-            context.put("codeWorkspaceRoot", "/Users/aslight/IDEAWorkspace/" + businessLine.gitlabGroupName().trim());
+            context.put("codeWorkspaceRoot", WorkhubPaths.namespace(WorkhubPaths.repositories(), businessLine.gitlabGroupName().trim()).toString());
         }
         return context;
     }

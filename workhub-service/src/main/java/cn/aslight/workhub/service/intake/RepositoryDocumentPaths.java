@@ -1,5 +1,7 @@
 package cn.aslight.workhub.service.intake;
 
+import cn.aslight.workhub.mcp.runtime.WorkhubPaths;
+
 import cn.aslight.workhub.service.system.SysConfigService;
 
 import java.io.IOException;
@@ -19,6 +21,13 @@ public final class RepositoryDocumentPaths {
 
     private RepositoryDocumentPaths() { }
 
+    static String configuredArchive(SysConfigService config, String key) {
+        String override = System.getenv(CONFIG_KEY_PLAYBOOK_PATH.equals(key) ? "WORKHUB_PLAYBOOK_PATH" : "WORKHUB_ARCHIVE_PATH");
+        if (override == null || override.isBlank()) return config.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, key);
+        if (!Path.of(override).isAbsolute()) throw new IllegalArgumentException("实例归档路径必须是绝对路径");
+        return override;
+    }
+
     /** 业务线 wiki 归档根：WorkHub 平台走 docs/业务线，其余业务线走 agents-playbook 仓库的 docs/业务线。 */
     public static Path wikiArchiveRoot(SysConfigService config, Path documentsRoot, String businessLineCode) {
         String code = businessLineCode == null ? null : businessLineCode.trim();
@@ -28,30 +37,34 @@ public final class RepositoryDocumentPaths {
         return playbookArchiveRoot(config, documentsRoot);
     }
 
-    /** agents-playbook 仓库的业务线归档根（其 docs/业务线）；未配置 playbookPath 时默认取与本仓库真实路径同级的 agents-playbook 仓库。 */
+    /** agents-playbook 仓库的业务线归档根（其 docs/业务线）；未配置 playbookPath 时按 GitLab 组定位协作仓库。 */
     public static Path playbookArchiveRoot(SysConfigService config, Path documentsRoot) {
-        String configured = config.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, CONFIG_KEY_PLAYBOOK_PATH);
+        String configured = configuredArchive(config, CONFIG_KEY_PLAYBOOK_PATH);
         Path repository = configured != null && !configured.isBlank()
                 ? Path.of(configured.trim()).toAbsolutePath().normalize()
-                : defaultPlaybookRepository(documentsRoot);
+                : WorkhubPaths.namespace(WorkhubPaths.repositories(), WorkhubPaths.PLAYBOOK_PROJECT);
         Path root = repository.resolve("docs").resolve(BUSINESS_LINES);
-        Path documents = documentsRoot.toAbsolutePath().normalize();
-        if (root.startsWith(documents) || documents.startsWith(root)) {
+        Path documents = documentsRoot == null ? null : documentsRoot.toAbsolutePath().normalize();
+        if (documents != null && (root.startsWith(documents) || documents.startsWith(root))) {
             throw new IllegalStateException("agents-playbook 归档根不能位于 WorkHub 仓库 docs 内");
         }
         return root;
     }
 
     public static Path resolve(SysConfigService config) {
-        String configured = config.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, CONFIG_KEY_REPOSITORY_PATH);
+        String configured = configuredArchive(config, CONFIG_KEY_REPOSITORY_PATH);
         Path repository;
         if (configured != null && !configured.isBlank()) {
             repository = Path.of(configured.trim()).toAbsolutePath().normalize();
-            if (!isRepository(repository)) {
-                throw new IllegalStateException("研发归档 repositoryPath 必须指向 WorkHub 源码仓库");
+            if (!Files.isDirectory(repository.resolve("docs")) && !isRepository(repository)) {
+                throw new IllegalStateException("研发归档 repositoryPath 必须指向已有文档仓库");
             }
         } else {
-            repository = findRepository(Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize());
+            String project = System.getenv("WORKHUB_ARCHIVE_PROJECT");
+            repository = project == null || project.isBlank()
+                    ? findRepository(WorkhubPaths.applicationHome())
+                    : WorkhubPaths.namespace(WorkhubPaths.repositories(), project);
+
         }
         try {
             Path documents = KnowledgeArchiveFiles.checked(repository, repository.resolve("docs"));
@@ -60,7 +73,7 @@ public final class RepositoryDocumentPaths {
             if (vault != null && !vault.isBlank()) {
                 Path knowledge = Path.of(vault.trim()).toAbsolutePath().normalize();
                 Path realKnowledge = canonicalPath(knowledge);
-                Path realDocuments = repository.toRealPath().resolve("docs");
+                Path realDocuments = canonicalPath(documents);
                 if (realDocuments.startsWith(realKnowledge) || realKnowledge.startsWith(realDocuments)) {
                     throw new IllegalStateException("研发产出不能归档到知识库内，请检查 repositoryPath 与 vaultPath");
                 }
@@ -71,18 +84,17 @@ public final class RepositoryDocumentPaths {
         }
     }
 
-    /** 与 WorkHub 仓库真实路径同级的 agents-playbook 仓库；仓库可能经符号链接访问，先解析真实路径再取同级。 */
-    public static Path defaultPlaybookRepository(Path documentsRoot) {
-        Path documents = documentsRoot.toAbsolutePath().normalize();
+    static void checkArchiveRoot(SysConfigService config, Path root) {
+        String vault = config.findPlainValue(ProjectKnowledgeBaseService.CONFIG_GROUP, ProjectKnowledgeBaseService.CONFIG_KEY_VAULT_PATH);
+        if (vault == null || vault.isBlank()) return;
         try {
-            documents = documents.toRealPath();
+            Path archive = canonicalPath(root);
+            Path knowledge = canonicalPath(Path.of(vault.trim()).toAbsolutePath().normalize());
+            if (archive.startsWith(knowledge) || knowledge.startsWith(archive))
+                throw new IllegalStateException("正式归档目录与只读知识库重叠");
         } catch (IOException ex) {
-            // 路径尚不存在时按字面路径推导同级
+            throw new IllegalStateException("无法检查归档目录", ex);
         }
-        Path repositoryRoot = documents.getParent();
-        return repositoryRoot == null || repositoryRoot.getParent() == null
-                ? Path.of(PLAYBOOK)
-                : repositoryRoot.getParent().resolve(PLAYBOOK);
     }
 
     static Path findRepository(Path start) {

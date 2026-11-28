@@ -3,8 +3,6 @@ package cn.aslight.workhub.mcp.security;
 import cn.aslight.workhub.mcp.config.McpResourceCatalog.ServerTarget;
 import cn.aslight.workhub.mcp.config.McpResourceCatalog.ServerTarget.ServerProfile;
 
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -77,16 +75,19 @@ public class CommandPolicyGuard {
     }
 
     private String normalizeAbsoluteLogPath(String value, String message) {
-        String normalizedValue = requireValue(value, message);
-        try {
-            Path path = Path.of(normalizedValue).normalize();
-            if (!path.isAbsolute()) {
-                throw new IllegalArgumentException(message + "：" + normalizedValue);
-            }
-            return path.toString();
-        } catch (InvalidPathException ex) {
-            throw new IllegalArgumentException(message + "：" + normalizedValue, ex);
+        String text = requireValue(value, message);
+        if (!text.startsWith("/") || text.chars().anyMatch(Character::isISOControl)) {
+            throw new IllegalArgumentException(message + "：" + text);
         }
+        var parts = new java.util.ArrayDeque<String>();
+        for (String part : text.split("/")) {
+            if (part.equals("..")) {
+                if (!parts.isEmpty()) parts.removeLast();
+            } else if (!part.isEmpty() && !part.equals(".")) {
+                parts.addLast(part);
+            }
+        }
+        return "/" + String.join("/", parts);
     }
 
     private String normalizeLines(String rawLines, int maxLines) {

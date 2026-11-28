@@ -1,5 +1,6 @@
 package cn.aslight.workhub.service.attachment;
 
+import cn.aslight.workhub.service.runtime.PrivateFiles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ public final class AttachmentTemporaryFileSet implements AutoCloseable {
 
         Path temporaryDirectory = null;
         try {
-            temporaryDirectory = Files.createTempDirectory("workhub-attachments-");
+            temporaryDirectory = PrivateFiles.tempDirectory("workhub-attachments-");
             List<AttachmentService.AttachmentFileContext> materialized = new ArrayList<>(safeAttachments.size());
             for (AttachmentService.AttachmentFileContext attachment : safeAttachments) {
                 if (!needsMaterialization(attachment)) {
@@ -84,8 +85,9 @@ public final class AttachmentTemporaryFileSet implements AutoCloseable {
         if (fileName == null || fileName.isBlank()) {
             return "attachment.bin";
         }
-        String sanitized = fileName.replace('\\', '_').replace('/', '_').trim();
-        return sanitized.isEmpty() ? "attachment.bin" : sanitized;
+        int dot = fileName.lastIndexOf('.');
+        String extension = dot < 0 ? "" : fileName.substring(dot).toLowerCase(java.util.Locale.ROOT);
+        return "image" + (extension.matches("\\.[a-z0-9]{1,8}") ? extension : ".bin");
     }
 
     private static boolean needsMaterialization(AttachmentService.AttachmentFileContext attachment) {

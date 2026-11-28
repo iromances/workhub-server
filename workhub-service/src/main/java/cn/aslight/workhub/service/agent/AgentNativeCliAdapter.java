@@ -1,5 +1,6 @@
 package cn.aslight.workhub.service.agent;
 
+import cn.aslight.workhub.service.runtime.PrivateFiles;
 import cn.aslight.workhub.config.McpProperties;
 import cn.aslight.workhub.service.ai.AiPromptTemplateRenderer;
 import cn.aslight.workhub.service.ai.AiProviderConfigService;
@@ -107,7 +108,7 @@ public class AgentNativeCliAdapter implements AgentExecutionAdapter {
             boolean processConfirmedStopped = false;
             boolean replanRequested = false;
             try {
-                directory = Files.createTempDirectory("workhub-agent-");
+                directory = PrivateFiles.tempDirectory("workhub-agent-");
                 Path schema = directory.resolve("result-schema.json");
                 Path output = directory.resolve("result.json");
                 Files.writeString(schema, RESULT_SCHEMA, StandardCharsets.UTF_8);

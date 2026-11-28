@@ -1089,9 +1089,9 @@ class AgentWorkbenchServiceTest {
     }
 
     @Test
-    void apiPromptRequiresEli5SummaryReport() {
+    void apiPromptRequiresConciseConclusionAndSeparateEvidence() {
         var agent = enabledAgent();
-        var task = service.createTask(agent.id(), taskRequest("eli5", true), "owner");
+        var task = service.createTask(agent.id(), taskRequest("report-presentation", true), "owner");
         var run = service.runs(task.id(), "owner", 1, 20).items().getFirst();
         var claim = store.claim();
         var gateway = mock(AiGatewayClient.class);
@@ -1102,8 +1102,10 @@ class AgentWorkbenchServiceTest {
         });
         adapter(gateway).execute(run.id(), claim.ownerToken());
         assertEquals("COMPLETED", store.get(run.id()).status());
-        assertTrue(prompts.getFirst().contains("ELI5"));
-        assertTrue(prompts.getFirst().contains("先说结论"));
+        String prompt = prompts.getFirst();
+        assertTrue(prompt.contains("报告使用简明中文"));
+        assertTrue(prompt.contains("report.conclusion 先用一句话给出总体结论"));
+        assertTrue(prompt.contains("完整事实分别写入 checks/findings/evidence/actions"));
     }
 
     private AgentApiExecutionAdapter adapter(AiGatewayClient gateway) {

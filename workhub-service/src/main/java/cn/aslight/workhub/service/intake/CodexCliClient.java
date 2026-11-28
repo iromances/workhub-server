@@ -1,5 +1,6 @@
 package cn.aslight.workhub.service.intake;
 
+import cn.aslight.workhub.service.runtime.HostTools;
 import cn.aslight.workhub.config.AiProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +62,9 @@ public class CodexCliClient {
         Path outputFile = null;
         StringBuffer processOutput = new StringBuffer();
         Thread outputPump = null;
+        Process process = null;
+        Thread writer = null;
+        java.util.concurrent.atomic.AtomicReference<Exception> writeFailure = new java.util.concurrent.atomic.AtomicReference<>();
         long startedAt = System.nanoTime();
         try {
             outputSchema = Files.createTempFile("workhub-codex-schema-", ".json");
@@ -76,7 +80,9 @@ public class CodexCliClient {
                     request.addDirs().size(),
                     request.imagePaths().size(),
                     request.prompt() == null ? 0 : request.prompt().length());
-            ProcessBuilder processBuilder = new ProcessBuilder(command);
+            var executableCommand = new ArrayList<>(command);
+            executableCommand.set(0, HostTools.executable(command.getFirst()));
+            ProcessBuilder processBuilder = new ProcessBuilder(executableCommand);
             processBuilder.directory(request.workingDirectory().toFile());
             processBuilder.redirectErrorStream(true);
 
@@ -89,12 +95,16 @@ public class CodexCliClient {
             env.remove("CODEX_INTERNAL_ORIGINATOR_OVERRIDE");
             log.info("Codex CLI environment prepared. useCase={}", request.useCaseCode());
 
-            Process process = processBuilder.start();
-            writePrompt(process, request.prompt());
+            process = processBuilder.start();
+            Process running = process;
+            writer = Thread.ofVirtual().start(() -> {
+                try { writePrompt(running, request.prompt()); }
+                catch (Exception ex) { writeFailure.set(ex); }
+            });
             outputPump = startOutputPump(process, processOutput);
             boolean finished = waitForProcess(process, effectiveConfig.timeoutSeconds());
             if (!finished) {
-                process.destroyForcibly();
+                terminate(process);
                 awaitOutputPump(outputPump);
                 log.warn("Codex CLI parsing timed out. useCase={}, timeoutSeconds={}, processOutputLength={}",
                         request.useCaseCode(),
@@ -103,6 +113,8 @@ public class CodexCliClient {
                 return CodexCliResult.failed("Codex CLI 解析超时");
             }
             awaitOutputPump(outputPump);
+            writer.join(1000);
+            if (writeFailure.get() != null) throw writeFailure.get();
             if (process.exitValue() != 0) {
                 log.warn("Codex CLI parsing failed. useCase={}, exitCode={}, durationMs={}, processOutputLength={}",
                         request.useCaseCode(),
@@ -127,6 +139,8 @@ public class CodexCliClient {
                     request == null ? null : request.useCaseCode(), processOutput.length(), ex);
             return CodexCliResult.failed("Codex CLI 解析异常: " + summarizeException(ex));
         } finally {
+            if (process != null && process.isAlive()) terminate(process);
+            if (writer != null && writer.isAlive()) writer.interrupt();
             deleteIfExists(outputFile);
             deleteIfExists(outputSchema);
         }
@@ -243,16 +257,9 @@ public class CodexCliClient {
     private Thread startOutputPump(Process process, StringBuffer processOutput) {
         Thread thread = new Thread(() -> {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (processOutput.length() >= 65_536) {
-                        continue;
-                    }
-                    if (!processOutput.isEmpty()) {
-                        processOutput.append('\n');
-                    }
-                    int remaining = 65_536 - processOutput.length();
-                    processOutput.append(line, 0, Math.min(line.length(), remaining));
+                char[] chunk = new char[4096];
+                for (int count; (count = reader.read(chunk)) >= 0;) {
+                    processOutput.append(chunk, 0, Math.min(count, 65536 - processOutput.length()));
                 }
             } catch (Exception ex) {
                 log.debug("Failed to read Codex CLI output stream", ex);
@@ -261,6 +268,14 @@ public class CodexCliClient {
         thread.setDaemon(true);
         thread.start();
         return thread;
+    }
+
+    private static void terminate(Process process) {
+        var children = process.descendants().toList();
+        children.reversed().forEach(ProcessHandle::destroyForcibly);
+        process.destroyForcibly();
+        try { process.waitFor(2, TimeUnit.SECONDS); }
+        catch (InterruptedException ex) { Thread.currentThread().interrupt(); }
     }
 
     private void awaitOutputPump(Thread outputPump) {

@@ -54,6 +54,14 @@ public class McpBastionConnectionTester {
                        String identityFile) {
         long startedAt = System.nanoTime();
         boolean passwordAuth = password != null && !password.isBlank();
+        if (cn.aslight.workhub.mcp.ssh.JavaSshConnection.windows()) {
+            try {
+                cn.aslight.workhub.mcp.ssh.JavaSshConnection.probe(host, port, username, password, identityFile);
+                return new Result(true, elapsedMillis(startedAt), "连接成功");
+            } catch (IOException ex) {
+                return failure(startedAt, ex.getMessage());
+            }
+        }
         Path controlSocket = controlSocketPath();
         List<String> command = command(host, port, username, passwordAuth, identityFile, controlSocket);
         Map<String, String> environment = new HashMap<>();

@@ -105,7 +105,7 @@ class DevelopmentAnalysisServiceTest {
                 Path.of("/tmp/code-workspace/xxt-plateform"),
                 List.of(repository)
         );
-        when(gitlabRepositoryService.resolveAndFetchGroup(project)).thenReturn(repositoryBundle);
+        when(gitlabRepositoryService.analysisSnapshot(org.mockito.ArgumentMatchers.eq(project), org.mockito.ArgumentMatchers.nullable(String.class))).thenReturn(repositoryBundle);
         when(projectKnowledgeBaseService.upsertRequirementIterationNote(any(), any(), eq(project)))
                 .thenReturn(new ProjectKnowledgeBaseService.RequirementKnowledgeNote(
                         "raw/公司项目/requirements/账单管理/物流平台-账务系统/2026/202603130005/历史版本/run1/source.md",
@@ -212,7 +212,7 @@ class DevelopmentAnalysisServiceTest {
         entity.setAnalysisStatus("PENDING");
         entity.setDraftJson(null);
         when(developmentAnalysisMapper.findById(2L)).thenReturn(entity);
-        when(gitlabRepositoryService.resolveAndFetchGroup(any(ProjectDetailResponse.class))).thenThrow(new IllegalArgumentException("GitLab 业务线未配置"));
+        when(gitlabRepositoryService.analysisSnapshot(any(ProjectDetailResponse.class), org.mockito.ArgumentMatchers.nullable(String.class))).thenThrow(new IllegalArgumentException("GitLab 业务线未配置"));
 
         service.executeAnalysis(2L, 40L, "admin");
 

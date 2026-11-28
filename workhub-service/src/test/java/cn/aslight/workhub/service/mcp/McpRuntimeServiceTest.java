@@ -245,12 +245,12 @@ class McpRuntimeServiceTest {
         assertTrue(text.contains("ca-assets"));
         assertTrue(text.contains("assets-saps"));
         assertTrue(text.contains("jiatai-hp-db-prod"));
-        assertTrue(text.contains("/Users/aslight/IDEAWorkspace/ca-assets"));
+        assertTrue(text.contains(objectMapper.writeValueAsString(cn.aslight.workhub.mcp.runtime.WorkhubPaths.repositories().resolve("ca-assets").toString())));
         assertTrue(text.contains("codeWorkspaceRoot"));
         assertTrue(text.contains("projectVaultPath"));
         assertTrue(text.contains("accessTokenConfigured"));
         assertTrue(!text.contains("businessLineRawRoot"));
-        assertTrue(text.contains("/workspace/agents-playbook/docs/业务线/汇浦"));
+        assertTrue(text.contains(objectMapper.writeValueAsString(cn.aslight.workhub.mcp.runtime.WorkhubPaths.repositories().resolve("engineering/agents-playbook/docs/业务线/汇浦").toString())));
         assertTrue(!text.contains("plain-gitlab-token"));
     }
 
@@ -539,7 +539,7 @@ class McpRuntimeServiceTest {
         assertTrue(text.contains("\"jiatai-hp-server-test\""));
         assertTrue(text.contains("\"profiles\" : [ \"readonly\" ]"));
         assertTrue(text.contains("\"profiles\" : [ \"diagnostic\" ]"));
-        assertTrue(text.contains("\"codeWorkspaceRoot\" : \"/Users/aslight/IDEAWorkspace/ca-assets\""));
+        assertTrue(text.contains(objectMapper.writeValueAsString(cn.aslight.workhub.mcp.runtime.WorkhubPaths.repositories().resolve("ca-assets").toString())));
         assertTrue(text.contains("\"accessEndpoints\""));
         assertTrue(text.contains("\"effectiveUrl\" : \"https://ops.example.test\""));
         assertTrue(!text.contains("plain-gitlab-token"));

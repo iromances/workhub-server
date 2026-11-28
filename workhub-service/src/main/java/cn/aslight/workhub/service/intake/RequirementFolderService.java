@@ -1,5 +1,7 @@
 package cn.aslight.workhub.service.intake;
 
+import cn.aslight.workhub.mcp.runtime.WorkhubPaths;
+
 import cn.aslight.workhub.dao.intake.IntakeMapper;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeRequirementFolderResponse;
@@ -31,7 +33,7 @@ public class RequirementFolderService {
 
     private static final String CONFIG_GROUP = "intake.requirementFolder";
     private static final String CONFIG_KEY_BASE_PATH = "basePath";
-    private static final String DEFAULT_BASE_PATH = "/Users/aslight/Desktop/进行中的需求";
+    private static final String LEGACY_BASE_PATH = "/Users/aslight/Desktop/进行中的需求";
 
     private final IntakeMapper intakeMapper;
     private final SysConfigService sysConfigService;
@@ -39,6 +41,13 @@ public class RequirementFolderService {
 
     private final ObjectMapper objectMapper;
     private final RequirementMaterialExportService materialExportService;
+
+    private DevelopmentPlanFolderService archiveFolders;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void configureArchiveFolders(DevelopmentPlanFolderService archiveFolders) {
+        this.archiveFolders = archiveFolders;
+    }
 
     public RequirementFolderService(IntakeMapper intakeMapper,
                                     SysConfigService sysConfigService,
@@ -63,7 +72,11 @@ public class RequirementFolderService {
         if (intake == null) {
             throw new IllegalArgumentException("需求不存在");
         }
-        // 手动入口只创建并打开目录，不触发材料导出或目录归属校验。
+        String override = trimToNull(sysConfigService.findPlainValue(CONFIG_GROUP, CONFIG_KEY_BASE_PATH));
+        if (archiveFolders != null && (override == null || LEGACY_BASE_PATH.equals(override) && !Files.isDirectory(Path.of(override)))) {
+            return archiveFolders.open(intakeId);
+        }
+        // 用户显式指定的材料目录继续沿用原布局。
         Path folderPath = resolveBasePath().resolve(buildFolderName(intake, null));
         try {
             Files.createDirectories(folderPath);
@@ -185,7 +198,10 @@ public class RequirementFolderService {
 
     private Path resolveBasePath() {
         String configured = trimToNull(sysConfigService.findPlainValue(CONFIG_GROUP, CONFIG_KEY_BASE_PATH));
-        String rawPath = configured == null ? DEFAULT_BASE_PATH : configured;
+        String rawPath = configured;
+        if (rawPath == null || LEGACY_BASE_PATH.equals(rawPath) && !Files.isDirectory(Path.of(rawPath))) {
+            rawPath = WorkhubPaths.applicationHome().resolve("data/进行中的需求").toString();
+        }
         if (rawPath.startsWith("~/")) {
             rawPath = System.getProperty("user.home") + rawPath.substring(1);
         }

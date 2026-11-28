@@ -335,7 +335,7 @@ public class DevelopmentAnalysisService {
         }
         ProjectDetailResponse project = resolveProjectForDraft(currentDraft);
         List<UserOptionResponse> developers = resolveDevelopers();
-        GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle = gitlabRepositoryService.resolveAndFetchGroup(project);
+        GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle = gitlabRepositoryService.analysisSnapshot(project, requireIntake(intakeId).getDevelopmentBranchName());
         DevelopmentAnalysisDraft adjusted = attachRequirementKnowledgeNote(
                 analysisGenerator.adjust(currentDraft, request.getMessage().trim(), project, repositoryBundle, developers),
                 new ProjectKnowledgeBaseService.RequirementKnowledgeNote(currentDraft.requirementRawPath(),
@@ -957,7 +957,7 @@ public class DevelopmentAnalysisService {
             requireDevelopmentRequirement(structuredData);
             ProjectDetailResponse project = resolveProjectForStructuredData(structuredData);
             List<UserOptionResponse> developers = resolveDevelopers();
-            GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle = gitlabRepositoryService.resolveAndFetchGroup(project);
+            GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle = gitlabRepositoryService.analysisSnapshot(project, firstNonBlank(intake.getDevelopmentBranchName(), structuredData.developmentBranchName()));
             ProjectKnowledgeBaseService.RequirementKnowledgeNote requirementNote =
                     projectKnowledgeBaseService.upsertRequirementIterationNote(intake, structuredData, project);
             if (!requirementNote.written()) {

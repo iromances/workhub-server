@@ -16,8 +16,8 @@ public final class AiCliType {
             return type;
         }
         String file = command == null || command.isBlank() ? "" : Path.of(command).getFileName().toString().toLowerCase(Locale.ROOT);
-        if (file.equals("zcode") || file.equals("zcode.cjs") || file.startsWith("zcode-")) return "ZCODE";
-        if (file.equals("codex") || file.startsWith("codex-")) return "CODEX";
+        if (file.equals("zcode") || file.equals("zcode.exe") || file.equals("zcode.cjs") || file.startsWith("zcode-")) return "ZCODE";
+        if (file.equals("codex") || file.equals("codex.exe") || file.startsWith("codex-")) return "CODEX";
         throw new IllegalArgumentException("请明确选择 CLI 类型，不将其他 CLI 当作 Codex 执行");
     }
 

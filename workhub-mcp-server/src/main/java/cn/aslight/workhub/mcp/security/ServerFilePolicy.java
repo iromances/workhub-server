@@ -7,8 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +62,7 @@ public final class ServerFilePolicy {
         }
         String path = normalizePath(value);
         if (target.allowedLogPaths().stream().map(ServerFilePolicy::normalizeRoot)
-                .noneMatch(root -> Path.of(path).startsWith(root))) {
+                .noneMatch(root -> (path.equals(root) || path.startsWith(root + "/")))) {
             throw new IllegalArgumentException("路径不在允许 AI 读取的白名单目录内，其他目录需用户明确授权：" + path);
         }
         return path;
@@ -95,7 +93,7 @@ public final class ServerFilePolicy {
         return path;
     }
 
-    private static String normalizePath(String value) {
+    static String normalizePath(String value) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("文件路径不能为空");
         }
@@ -106,11 +104,8 @@ public final class ServerFilePolicy {
         if (!path.startsWith("/") || List.of(path.split("/")).contains("..")) {
             throw new IllegalArgumentException("文件路径必须是绝对路径且不能包含上级目录引用");
         }
-        try {
-            return Path.of(path).normalize().toString();
-        } catch (InvalidPathException ex) {
-            throw new IllegalArgumentException("文件路径无效", ex);
-        }
+        return "/" + String.join("/", java.util.Arrays.stream(path.split("/"))
+                .filter(part -> !part.isEmpty() && !part.equals(".")).toList());
     }
 
     private static int limit(String raw, int defaultValue, int maximum, String label) {

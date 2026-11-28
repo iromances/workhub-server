@@ -1,5 +1,8 @@
 package cn.aslight.workhub.service.intake;
 
+import cn.aslight.workhub.service.runtime.HostTools;
+import cn.aslight.workhub.mcp.runtime.WorkhubPaths;
+
 import cn.aslight.workhub.dao.project.BusinessLineMapper;
 import cn.aslight.workhub.model.project.BusinessLineEntity;
 import cn.aslight.workhub.service.system.SysConfigService;
@@ -37,7 +40,6 @@ public class GitlabRepositoryService {
     private static final Duration GIT_TIMEOUT = Duration.ofMinutes(3);
     private static final Duration GITLAB_API_TIMEOUT = Duration.ofSeconds(20);
     private static final String GLOBAL_CONFIG_GROUP = "gitlab.global";
-    private static final Path DEFAULT_CODE_WORKSPACE_ROOT = Path.of("/Users/aslight/IDEAWorkspace").normalize();
 
     private final SysConfigService sysConfigService;
     private final BusinessLineMapper businessLineMapper;
@@ -49,7 +51,7 @@ public class GitlabRepositoryService {
     public GitlabRepositoryService(SysConfigService sysConfigService,
                                    BusinessLineMapper businessLineMapper,
                                    ObjectMapper objectMapper) {
-        this(sysConfigService, businessLineMapper, objectMapper, DEFAULT_CODE_WORKSPACE_ROOT);
+        this(sysConfigService, businessLineMapper, objectMapper, WorkhubPaths.repositories());
     }
 
     GitlabRepositoryService(SysConfigService sysConfigService,
@@ -67,6 +69,75 @@ public class GitlabRepositoryService {
                 .build();
     }
 
+    private Path configuredCheckoutPath(String url, String group) {
+        URI uri = URI.create(url);
+        String path = uri.getPath();
+        if (path == null) throw new IllegalArgumentException("GitLab 项目 URL 缺少路径");
+        String marker = "/" + group + "/";
+        int offset = path.indexOf(marker);
+        if (offset < 0) throw new IllegalArgumentException("GitLab 项目 URL 不属于已配置的组：" + group);
+        String namespace = path.substring(offset + 1).replaceFirst("\\.git$", "");
+        return WorkhubPaths.namespace(codeWorkspaceRoot, namespace);
+    }
+
+    /** 归档仓库只在首次写入前克隆，之后复用检出并保留未提交文档。 */
+    public synchronized Path ensureCheckout(String namespace) {
+        Path path = WorkhubPaths.namespace(codeWorkspaceRoot, namespace);
+        if (Files.exists(path.resolve(".git"), java.nio.file.LinkOption.NOFOLLOW_LINKS)) return path;
+        String base = trimTrailingSlash(sysConfigService.requirePlainValue(GLOBAL_CONFIG_GROUP, "webApiUrl"));
+        String token = sysConfigService.requirePlainValue(GLOBAL_CONFIG_GROUP, "accessToken");
+        fetchRepository(base + "/" + namespace + ".git", token, path);
+        return path;
+    }
+
+    /** 锁定远端提交，再读取同一提交中的流程与模板。每次分析持有独立的文本快照。 */
+    Path syncStandards(Path standards, String project, String ref, String directory) {
+        Path cache = WorkhubPaths.namespace(standards.resolve(".gitlab"), project);
+        if (ref == null || ref.isBlank() || directory == null || directory.isBlank()) {
+            throw new IllegalArgumentException("GitLab 规范分支和目录不能为空");
+        }
+        Path relative = Path.of(directory);
+        if (relative.isAbsolute() || directory.contains("\\") || directory.startsWith("/")
+                || !relative.normalize().equals(relative) || directory.startsWith("..")) {
+            throw new IllegalArgumentException("GitLab 规范目录必须是仓库内的相对目录");
+        }
+        String token = sysConfigService.requirePlainValue(GLOBAL_CONFIG_GROUP, "accessToken");
+        String base = trimTrailingSlash(sysConfigService.requirePlainValue(GLOBAL_CONFIG_GROUP, "webApiUrl"))
+                + "/api/v4/projects/" + encode(project) + "/repository/";
+        try {
+            var commit = standardsResponse(base + "commits/" + encode(ref), token);
+            if (commit.statusCode() != 200) throw new java.io.IOException("查询规范版本失败 HTTP " + commit.statusCode());
+            String sha = objectMapper.readTree(commit.body()).path("id").asText();
+            if (!sha.matches("[0-9a-f]{40}|[0-9a-f]{64}")) throw new java.io.IOException("GitLab 规范版本无效");
+            Path snapshot = cache.resolve(sha).resolve(relative).normalize();
+            Path ready = KnowledgeArchiveFiles.checked(standards, snapshot.resolve(".ready"));
+            if (Files.isRegularFile(ready)) return snapshot;
+            for (String name : ProjectKnowledgeBaseService.SDD_FILES) {
+                var response = standardsResponse(base + "files/" + encode(directory + "/" + name) + "/raw?ref=" + sha, token);
+                if (response.statusCode() == 404 && !name.equals("流程.md")) continue;
+                if (response.statusCode() != 200) throw new java.io.IOException("读取规范 " + name + " 失败 HTTP " + response.statusCode());
+                KnowledgeArchiveFiles.atomicWrite(standards, snapshot.resolve(name), response.body());
+            }
+            KnowledgeArchiveFiles.atomicWrite(standards, ready, sha.getBytes(StandardCharsets.US_ASCII));
+            return snapshot;
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("规范同步已中断", ex);
+        } catch (java.io.IOException ex) {
+            throw new IllegalStateException("无法同步 GitLab 规范：" + ex.getMessage(), ex);
+        }
+    }
+
+    private static String encode(String text) {
+        return URLEncoder.encode(text, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    private HttpResponse<byte[]> standardsResponse(String url, String token) throws java.io.IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url)).timeout(GITLAB_API_TIMEOUT)
+                .header("PRIVATE-TOKEN", token).GET().build();
+        return httpClient.send(request, HttpResponse.BodyHandlers.limiting(HttpResponse.BodyHandlers.ofByteArray(), 512 * 1024));
+    }
+
     public GitlabRepository resolveAndFetch(String businessLine) {
         String group = requireText(businessLine, "业务线不能为空");
         ConfiguredRepository repository = resolveConfiguredRepository(group);
@@ -77,10 +148,7 @@ public class GitlabRepositoryService {
         if (gitlabGroupName == null) {
             throw new IllegalArgumentException("业务线未维护 GitLab 组名，请在项目管理中维护业务线对应的 gitlabGroupName：" + group);
         }
-        Path repoPath = repositoryPath(
-                groupWorkspaceRoot(gitlabGroupName),
-                inferRepositoryName(repository.repositoryUrl())
-        );
+        Path repoPath = configuredCheckoutPath(repository.repositoryUrl(), gitlabGroupName);
         fetchRepository(repository.repositoryUrl(), repository.accessToken(), repoPath);
         return new GitlabRepository(repository.repositoryUrl(), repoPath);
     }
@@ -98,10 +166,7 @@ public class GitlabRepositoryService {
         if (gitlabGroupName == null) {
             throw new IllegalArgumentException("业务线未维护 GitLab 组名，请在项目管理中维护业务线对应的 gitlabGroupName：" + group);
         }
-        Path repoPath = repositoryPath(
-                groupWorkspaceRoot(gitlabGroupName),
-                inferRepositoryName(repository.repositoryUrl())
-        );
+        Path repoPath = configuredCheckoutPath(repository.repositoryUrl(), gitlabGroupName);
         fetchRepository(repository.repositoryUrl(), repository.accessToken(), repoPath);
         return new GitlabRepository(repository.repositoryUrl(), repoPath);
     }
@@ -112,11 +177,65 @@ public class GitlabRepositoryService {
      * @param project 需求归属项目
      * @return 业务线仓库集合
      */
-    public GitlabRepositoryBundle resolveAndFetchGroup(ProjectDetailResponse project) {
-        if (project == null) {
-            throw new IllegalArgumentException("项目不能为空");
+    public GitlabRepositoryBundle analysisSnapshot(ProjectDetailResponse project, String branch) {
+        if (project == null) throw new IllegalArgumentException("项目不能为空");
+        return snapshot(syncGroup(project.businessLine(), false), trimToNull(branch));
+    }
+
+    /** 按所有仓库提交号标识只读分析目录，同时进行的不同分支分析各自读取固定版本。 */
+    synchronized GitlabRepositoryBundle snapshot(GitlabRepositoryBundle group, String branch) {
+        try {
+            if (branch != null) runGit(List.of("git", "check-ref-format", "refs/heads/" + branch), group.localRoot());
+            var revisions = new java.util.TreeMap<String, String>();
+            for (GitlabRepository repository : group.repositories()) {
+                String ref = branch == null ? "refs/remotes/origin/HEAD" : "refs/remotes/origin/" + branch;
+                String sha = runGit(List.of("git", "rev-parse", "--verify", "--end-of-options", ref + "^{commit}"),
+                        repository.localPath()).strip();
+                if (!sha.matches("[0-9a-f]{40}|[0-9a-f]{64}")) throw new IllegalStateException("Git 提交号无效");
+                revisions.put(codeWorkspaceRoot.relativize(repository.localPath()).toString().replace('\\', '/'), sha);
+            }
+            byte[] digest = java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(objectMapper.writeValueAsBytes(revisions));
+            Path root = codeWorkspaceRoot.resolve(".workhub-analysis");
+            KnowledgeArchiveFiles.directory(codeWorkspaceRoot, root);
+            Path version = KnowledgeArchiveFiles.checked(codeWorkspaceRoot, root.resolve(java.util.HexFormat.of().formatHex(digest)));
+            if (!Files.isDirectory(version)) {
+                Path staging = Files.createTempDirectory(root, ".snapshot-");
+                try {
+                    for (var entry : revisions.entrySet()) {
+                        Path source = WorkhubPaths.namespace(codeWorkspaceRoot, entry.getKey());
+                        Path dest = WorkhubPaths.namespace(staging, entry.getKey());
+                        Files.createDirectories(dest);
+                        runGit(List.of("git", "init", "--quiet"), dest);
+                        runGit(List.of("git", "fetch", "--no-tags", "--depth=1", source.toString(), entry.getValue()), dest);
+                        runGit(List.of("git", "checkout", "--detach", entry.getValue()), dest);
+                    }
+                    Files.write(staging.resolve("revisions.json"), objectMapper.writeValueAsBytes(revisions));
+                    try {
+                        Files.move(staging, version);
+                    } catch (java.nio.file.FileSystemException ex) {
+                        if (!Files.isDirectory(version)) throw ex;
+                    }
+                } finally {
+                    removeStaging(staging);
+                }
+            }
+            var repositories = group.repositories().stream().map(repo -> {
+                String project = codeWorkspaceRoot.relativize(repo.localPath()).toString().replace('\\', '/');
+                return new GitlabRepository(repo.repositoryUrl(), WorkhubPaths.namespace(version, project), revisions.get(project));
+            }).toList();
+            return new GitlabRepositoryBundle(group.gitlabGroupName(), WorkhubPaths.namespace(version, group.gitlabGroupName()), repositories);
+        } catch (Exception ex) {
+            throw new IllegalStateException("无法创建只读分析快照，分支：" + (branch == null ? "远端默认分支" : branch)
+                    + "，" + summarizeException(ex), ex);
         }
-        return resolveAndFetchGroup(project.businessLine());
+    }
+
+    private void removeStaging(Path staging) throws java.io.IOException {
+        if (!Files.exists(staging)) return;
+        try (var paths = Files.walk(staging)) {
+            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.deleteIfExists(path);
+        }
     }
 
     /**
@@ -126,6 +245,10 @@ public class GitlabRepositoryService {
      * @return 业务线仓库集合
      */
     public GitlabRepositoryBundle resolveAndFetchGroup(String businessLine) {
+        return syncGroup(businessLine, true);
+    }
+
+    private GitlabRepositoryBundle syncGroup(String businessLine, boolean updateWorkingTree) {
         String normalizedBusinessLine = requireText(businessLine, "业务线不能为空");
         String gitlabGroupName = findGitlabGroupName(normalizedBusinessLine);
         if (gitlabGroupName == null) {
@@ -147,9 +270,11 @@ public class GitlabRepositoryService {
                     gitlabProject.httpUrlToRepo(),
                     gitlabProject.webUrl() == null ? null : gitlabProject.webUrl() + ".git"
             );
-            String repositoryName = repositoryDirectoryName(gitlabProject, repositoryUrl);
-            Path repoPath = repositoryPath(groupRoot, repositoryName);
-            fetchRepository(repositoryUrl, accessToken, repoPath);
+            Path repoPath = WorkhubPaths.namespace(codeWorkspaceRoot, gitlabProject.pathWithNamespace());
+            if (!gitlabProject.pathWithNamespace().startsWith(gitlabGroupName + "/") || !repoPath.startsWith(groupRoot) || repoPath.equals(groupRoot)) {
+                throw new IllegalArgumentException("GitLab 项目不属于所选组");
+            }
+            fetchRepository(repositoryUrl, accessToken, repoPath, updateWorkingTree);
             repositories.add(new GitlabRepository(repositoryUrl, repoPath));
         }
         log.info("GitLab group repositories synced. businessLine={}, gitlabGroupName={}, repositoryCount={}",
@@ -369,18 +494,30 @@ public class GitlabRepositoryService {
     }
 
     private void fetchRepository(String repoUrl, String accessToken, Path repoPath) {
+        fetchRepository(repoUrl, accessToken, repoPath, true);
+    }
+
+    private synchronized void fetchRepository(String repoUrl, String accessToken, Path repoPath, boolean updateWorkingTree) {
         try {
             Files.createDirectories(repoPath.getParent());
             if (Files.exists(repoPath.resolve(".git"))) {
+                String origin = runGit(List.of("git", "remote", "get-url", "origin"), repoPath).strip();
+                if (!repoUrl.equals(origin)) throw new IllegalStateException("缓存仓库 origin 与已配置 GitLab 项目不一致");
                 boolean shallowRepository = isShallowRepository(repoPath);
                 runGit(fetchCommand(repoPath, accessToken, shallowRepository), repoPath.getParent());
-                updateCurrentBranch(repoPath);
+                if (updateWorkingTree) updateCurrentBranch(repoPath);
                 return;
             }
             if (Files.exists(repoPath)) {
                 throw new IllegalStateException("目标路径已存在但不是 Git 仓库：" + repoPath);
             }
-            runGit(cloneCommand(repoUrl, accessToken, repoPath), repoPath.getParent());
+            Path staging = Files.createTempDirectory(repoPath.getParent(), ".workhub-clone-");
+            try {
+                runGit(cloneCommand(repoUrl, accessToken, staging), repoPath.getParent());
+                Files.move(staging, repoPath);
+            } finally {
+                removeStaging(staging);
+            }
         } catch (Exception ex) {
             throw new IllegalStateException("GitLab 工作区仓库更新失败：" + summarizeException(ex), ex);
         }
@@ -476,16 +613,45 @@ public class GitlabRepositoryService {
 
     private String runGit(List<String> command, Path workingDirectory) throws Exception {
         log.info("GitLab repository sync started. command={}, workingDirectory={}", sanitizeCommand(command), workingDirectory);
-        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        var args = new ArrayList<>(command);
+        args.set(0, HostTools.git());
+        String credential = null;
+        for (int index = 1; index < args.size(); index++) {
+            if (args.get(index).startsWith("http.extraHeader=PRIVATE-TOKEN: ")) {
+                credential = args.get(index).substring("http.extraHeader=".length());
+                args.set(index - 1, "-c");
+                args.set(index, "http.followRedirects=false");
+                args.add(index + 1, "--config-env=http.extraHeader=WORKHUB_GIT_HTTP_HEADER");
+                break;
+            }
+        }
+        ProcessBuilder processBuilder = new ProcessBuilder(args);
+        if (credential != null) processBuilder.environment().put("WORKHUB_GIT_HTTP_HEADER", credential);
+        processBuilder.environment().put("GIT_TERMINAL_PROMPT", "0");
         processBuilder.directory(workingDirectory.toFile());
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
-        boolean finished = process.waitFor(GIT_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
-        String output = new String(process.getInputStream().readAllBytes());
-        if (!finished) {
-            process.destroyForcibly();
-            throw new IllegalStateException("git 命令超时");
+        var buffer = new java.io.ByteArrayOutputStream();
+        Thread reader = Thread.ofVirtual().start(() -> {
+            try (var input = process.getInputStream()) {
+                byte[] bytes = new byte[8192];
+                for (int n; (n = input.read(bytes)) >= 0;) {
+                    buffer.write(bytes, 0, Math.min(n, 65536 - buffer.size()));
+                }
+            } catch (java.io.IOException ignored) { /* 进程退出时关闭输出流 */ }
+        });
+        try {
+            if (!process.waitFor(GIT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)) {
+                throw new IllegalStateException("git 命令超时");
+            }
+            reader.join(1000);
+            if (reader.isAlive()) throw new IllegalStateException("git 输出等待超时");
+        } finally {
+            process.descendants().forEach(ProcessHandle::destroyForcibly);
+            if (process.isAlive()) process.destroyForcibly();
+            process.getInputStream().close();
         }
+        String output = buffer.toString(StandardCharsets.UTF_8);
         if (process.exitValue() != 0) {
             throw new IllegalStateException("git 命令失败: " + truncate(output, 1000));
         }
@@ -555,12 +721,7 @@ public class GitlabRepositoryService {
     }
 
     Path groupWorkspaceRoot(String gitlabGroupName) {
-        String directoryName = requireText(gitlabGroupName, "GitLab 组名不能为空");
-        Path groupRoot = codeWorkspaceRoot.resolve(directoryName).normalize();
-        if (!codeWorkspaceRoot.equals(groupRoot.getParent())) {
-            throw new IllegalArgumentException("GitLab 组名不能越过代码工作区根目录：" + directoryName);
-        }
-        return groupRoot;
+        return WorkhubPaths.namespace(codeWorkspaceRoot, gitlabGroupName);
     }
 
     Path repositoryPath(Path groupRoot, String repositoryName) {
@@ -592,7 +753,8 @@ public class GitlabRepositoryService {
         return normalized.length() <= maxLength ? normalized : normalized.substring(0, maxLength);
     }
 
-    public record GitlabRepository(String repositoryUrl, Path localPath) {
+    public record GitlabRepository(String repositoryUrl, Path localPath, String commit) {
+        public GitlabRepository(String repositoryUrl, Path localPath) { this(repositoryUrl, localPath, null); }
     }
 
     public record GitlabProjectSystem(String systemName,
@@ -610,7 +772,12 @@ public class GitlabRepositoryService {
         }
 
         public String repositorySummary() {
-            return gitlabGroupName + " (" + repositories.size() + " repositories)";
+            String summary = gitlabGroupName + " (" + repositories.size() + " repositories)";
+            if (repositories.stream().noneMatch(repo -> repo.commit() != null)) return summary;
+            Path version = localRoot;
+            for (String ignored : gitlabGroupName.split("/")) version = version.getParent();
+            return summary + " @" + version.getFileName();
+
         }
     }
 

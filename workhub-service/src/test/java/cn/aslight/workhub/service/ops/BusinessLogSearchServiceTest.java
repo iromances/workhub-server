@@ -86,17 +86,19 @@ class BusinessLogSearchServiceTest {
         var scopes=mock(SystemAlertScopeService.class); var client=mock(ElasticsearchSystemAlertClient.class);
         var service=new BusinessLogSearchService(scopes,client,Clock.fixed(NOW,ZoneOffset.UTC),new SensitiveDataMasker(),mock(McpAuditLogger.class));
         var request=new BusinessLogSearchRequest("BL000001","prod",List.of(),List.of(),null,null,null,null,null,20);
-        when(scopes.list("BL000001","prod",true)).thenReturn(List.of(new SystemAlertScopeResponse(1L,"BL000001","prod","SELECTED",List.of(),List.of("logs-*"),true,null,null,null)));
-        assertThrows(IllegalArgumentException.class,()->service.search(request));
-        when(scopes.list("BL000001","prod",true)).thenReturn(List.of(new SystemAlertScopeResponse(1L,"BL000001","TEST","ALL",List.of(),List.of("logs-*"),true,null,null,null)));
-        assertThrows(IllegalArgumentException.class,()->service.search(request));
+        when(scopes.list("BL000001","PROD",true)).thenReturn(List.of(new SystemAlertScopeResponse(1L,"BL000001","PROD","SELECTED",List.of(),List.of("logs-*"),true,null,null,null)));
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> service.search(request))
+                .getMessage().contains("没有启用服务"));
+        when(scopes.list("BL000001","PROD",true)).thenReturn(List.of(new SystemAlertScopeResponse(1L,"BL000001","TEST","ALL",List.of(),List.of("logs-*"),true,null,null,null)));
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> service.search(request))
+                .getMessage().contains("范围已变化或停用"));
         org.mockito.Mockito.verifyNoInteractions(client);
     }
 
     @Test
     void shouldPreserveActualExecutionAndExposeContentTruncationWithoutSensitiveFilters() {
         var scopes=mock(SystemAlertScopeService.class); var client=mock(ElasticsearchSystemAlertClient.class);
-        when(scopes.list("BL000001","prod",true)).thenReturn(List.of(selectedScope()));
+        when(scopes.list("BL000001","PROD",true)).thenReturn(List.of(selectedScope()));
         var receipt=new ElasticsearchSystemAlertClient.QueryReceipt("a".repeat(64),NOW,NOW,"b".repeat(64),List.of(
                 new cn.aslight.workhub.model.ops.BusinessLogQueryEvidence.Activity("scf-payment",3,NOW.minusSeconds(1),"c".repeat(64))));
         when(client.searchLogs(any(),any(),any(),any(),any(),any(),any(),any(),any(),any(Integer.class))).thenReturn(

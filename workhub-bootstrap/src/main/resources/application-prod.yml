@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    druid:
+      url: ${WORKHUB_DB_URL}
+      username: ${WORKHUB_DB_USERNAME}
+      password: ${WORKHUB_DB_PASSWORD}
+
+workhub:
+  desktop:
+    open-folder-enabled: false
+  jwt:
+    secret: ${WORKHUB_JWT_SECRET}
+  payment:
+    master-key: ${WORKHUB_PAYMENT_MASTER_KEY}
+  mcp:
+    master-key: ${WORKHUB_MCP_MASTER_KEY}

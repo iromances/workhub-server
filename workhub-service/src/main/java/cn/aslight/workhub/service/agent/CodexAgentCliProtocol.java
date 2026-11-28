@@ -1,5 +1,6 @@
 package cn.aslight.workhub.service.agent;
 
+import cn.aslight.workhub.service.runtime.HostTools;
 import cn.aslight.workhub.model.ai.AiProviderConfigEntity;
 import cn.aslight.workhub.service.ai.CliTaskConversation;
 import org.springframework.stereotype.Component;
@@ -25,7 +26,7 @@ public class CodexAgentCliProtocol implements AgentCliProtocol {
         if (provider.getCliType() != null) return "CODEX".equals(provider.getCliType());
         if (provider.getCliCommand() == null || provider.getCliCommand().isBlank()) return false;
         String name = Path.of(provider.getCliCommand()).getFileName().toString();
-        return name.equals("codex") || name.startsWith("codex-");
+        return name.equalsIgnoreCase("codex.exe") || name.equals("codex") || name.startsWith("codex-");
     }
 
     @Override
@@ -78,27 +79,14 @@ public class CodexAgentCliProtocol implements AgentCliProtocol {
 
     static void restrictEnvironment(Map<String, String> environment) {
         // 只继承 CLI 认证/系统证书及现有沙箱约束；不把 WorkHub DB、Jenkins、Git 凭据传给模型进程。
-        environment.keySet().removeIf(key -> !List.of("PATH", "HOME", "USER", "LANG", "LC_ALL", "TMPDIR", "CODEX_HOME",
+        environment.keySet().removeIf(key -> !HostTools.windowsEnvironment(key) && !List.of("PATH", "HOME", "USER", "LANG", "LC_ALL", "TMPDIR", "CODEX_HOME",
                 "SSL_CERT_FILE", "SSL_CERT_DIR", "NODE_EXTRA_CA_CERTS", "SSH_AUTH_SOCK").contains(key) && !key.startsWith("CODEX_SANDBOX"));
     }
 
     private void config(List<String> args, String key, String value) { args.addAll(List.of("-c", key + "=" + json.writeValueAsString(value))); }
 
     private static String executable(String command) {
-        if (command == null || command.isBlank() || command.indexOf('\n') >= 0) throw new IllegalArgumentException("CLI 未配置可执行文件");
-        Path path = Path.of(command);
-        if (!path.isAbsolute()) {
-            if (!command.matches("[A-Za-z0-9_.-]+")) throw new IllegalArgumentException("CLI 命令只能是单个程序名或绝对路径，不接受 shell 表达式");
-            String search = System.getenv("PATH");
-            if (search != null) for (String folder : search.split(java.io.File.pathSeparator)) {
-                if (folder.isBlank()) continue;
-                Path candidate = Path.of(folder).resolve(command);
-                if (Files.isRegularFile(candidate) && Files.isExecutable(candidate)) return candidate.toAbsolutePath().toString();
-            }
-            throw new IllegalArgumentException("未找到已安装的 CLI 程序: " + command);
-        }
-        if (!Files.isRegularFile(path) || !Files.isExecutable(path)) throw new IllegalArgumentException("CLI 程序不存在或不可执行");
-        return path.toString();
+        return HostTools.executable(command);
     }
 
     private static String inspect(List<String> command) throws IOException, InterruptedException {

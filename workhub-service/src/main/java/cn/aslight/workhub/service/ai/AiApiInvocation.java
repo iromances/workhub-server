@@ -2,6 +2,8 @@ package cn.aslight.workhub.service.ai;
 
 import cn.aslight.workhub.model.ai.AiProviderConfigEntity;
 
+import cn.aslight.workhub.service.attachment.AttachmentService.AttachmentFileContext;
+
 import java.util.List;
 
 /**
@@ -16,7 +18,15 @@ record AiApiInvocation(String useCaseCode,
                        Integer timeoutSeconds,
                        String prompt,
                        List<String> imagePaths,
-                       String outputSchema) {
+                       String outputSchema,
+                       List<AttachmentFileContext> images) {
+
+    AiApiInvocation(String useCaseCode, AiProviderConfigEntity provider, String apiKey, String model,
+                    String reasoningLevel, String speedMode, Integer timeoutSeconds, String prompt,
+                    List<String> imagePaths, String outputSchema) {
+        this(useCaseCode, provider, apiKey, model, reasoningLevel, speedMode, timeoutSeconds, prompt,
+                imagePaths, outputSchema, List.of());
+    }
 
     AiApiInvocation {
         imagePaths = imagePaths == null ? List.of() : List.copyOf(imagePaths);

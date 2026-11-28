@@ -1,5 +1,7 @@
 package cn.aslight.workhub.service.mcp;
 
+import cn.aslight.workhub.mcp.runtime.WorkhubPaths;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -35,7 +37,7 @@ public class RepositoryFileService {
     private final List<Path> readRoots;
 
     public RepositoryFileService(@Value("${workhub.mcp.repository-read-roots:}") String roots) {
-        this.readRoots = parseRoots(roots);
+        this.readRoots = "@repositories".equals(roots) ? List.of(WorkhubPaths.repositories()) : parseRoots(roots);
     }
 
     @FunctionalInterface
@@ -138,12 +140,24 @@ public class RepositoryFileService {
         return path;
     }
 
-    private Path requireAllowed(String rawPath) {
+    private Path requireAllowed(String rawPath) throws IOException {
         if (rawPath == null || rawPath.isBlank()) throw new IllegalArgumentException("path 不能为空");
         Path path = Path.of(rawPath).toAbsolutePath().normalize();
         if (rawPath.indexOf('\0') >= 0) throw new IllegalArgumentException("路径非法");
         for (Path root : readRoots) {
-            if (path.startsWith(root) && !path.equals(root)) return path;
+            if (path.startsWith(root) && !path.equals(root)) {
+                Path part = root;
+                for (Path name : root.relativize(path)) {
+                    part = part.resolve(name);
+                    if (Files.isSymbolicLink(part)) throw new IllegalArgumentException("仓库读取路径不能经过符号链接");
+                }
+                Path realRoot = root.toRealPath();
+                Path real = path.toRealPath();
+                if (!real.startsWith(realRoot) || real.equals(realRoot)) {
+                    throw new IllegalArgumentException("路径越过 repository-read-roots 白名单");
+                }
+                return real;
+            }
         }
         throw new IllegalArgumentException("路径不在 repository-read-roots 白名单内: " + path);
     }

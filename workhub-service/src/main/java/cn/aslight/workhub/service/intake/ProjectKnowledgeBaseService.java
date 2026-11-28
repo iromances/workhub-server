@@ -1,5 +1,7 @@
 package cn.aslight.workhub.service.intake;
 
+import cn.aslight.workhub.mcp.runtime.WorkhubPaths;
+
 import cn.aslight.workhub.model.intake.IntakeStructuredData;
 import cn.aslight.workhub.model.intake.IntakeRecordEntity;
 import cn.aslight.workhub.model.intake.IntakeSddDocuments;
@@ -52,6 +54,8 @@ public class ProjectKnowledgeBaseService {
     /** 仓库 docs 内的 SDD 流程规范路径，优先于知识库配置读取。 */
     public static final String REPOSITORY_SDD_PROCESS_PATH = "研发规范/SDD/流程.md";
 
+    static final List<String> SDD_FILES = List.of("流程.md", "proposal.md", "design.md", "tasks.md", "adr.md");
+
     private static final Logger log = LoggerFactory.getLogger(ProjectKnowledgeBaseService.class);
     private static final int MAX_SCAN_FILES = 800;
     private static final int MAX_SELECTED_FILES = 5;
@@ -65,6 +69,13 @@ public class ProjectKnowledgeBaseService {
     private final AttachmentService attachmentService;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate archiveTransaction;
+
+    private GitlabRepositoryService repositorySync;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void configureRepositorySync(GitlabRepositoryService repositorySync) {
+        this.repositorySync = repositorySync;
+    }
 
     public ProjectKnowledgeBaseService(SysConfigService sysConfigService,
                                        AttachmentService attachmentService,
@@ -119,11 +130,35 @@ public class ProjectKnowledgeBaseService {
      * @throws IllegalStateException 仓库与知识库均未提供可读取的规范文件
      */
     public String readSddProcessSpec() {
-        Path repositorySpec = resolveRepositorySddSpec();
-        if (repositorySpec != null) {
-            return readSpecFile(repositorySpec);
+        Path root = WorkhubPaths.standards();
+        String project = System.getenv("WORKHUB_STANDARDS_PROJECT");
+        Path synced = project == null || project.isBlank() ? null : repositorySync.syncStandards(root, project,
+                System.getenv().getOrDefault("WORKHUB_STANDARDS_REF", "HEAD"),
+                System.getenv().getOrDefault("WORKHUB_STANDARDS_PATH", "docs/研发规范/SDD"));
+        return readSddSnapshot(root, synced);
+    }
+
+    String readSddSnapshot(Path root, Path synced) {
+        Path local = root.resolve(REPOSITORY_SDD_PROCESS_PATH).getParent();
+        Path repository = resolveRepositorySddSpec();
+        List<String> parts = new ArrayList<>();
+        try {
+            for (String name : SDD_FILES) {
+                Path file = KnowledgeArchiveFiles.checked(root, local.resolve(name));
+                if (!Files.isRegularFile(file) && synced != null) file = KnowledgeArchiveFiles.checked(root, synced.resolve(name));
+                if (!Files.isRegularFile(file) && repository != null) {
+                    file = KnowledgeArchiveFiles.checked(repository.getParent(), repository.resolveSibling(name));
+                }
+                if (Files.isRegularFile(file)) {
+                    parts.add(name.equals("流程.md") ? readSpecFile(file) : "## " + name + "\n\n" + readSpecFile(file));
+                } else if (name.equals("流程.md")) {
+                    parts.add(readVaultSddSpec());
+                }
+            }
+            return String.join("\n\n", parts);
+        } catch (IOException ex) {
+            throw new IllegalStateException("外部 SDD 规范不可读", ex);
         }
-        return readVaultSddSpec();
     }
 
     /** 解析仓库 docs 内的 SDD 流程规范；仓库目录不可用或文件不存在时返回 {@code null}，由调用方回落知识库配置。 */
@@ -361,8 +396,30 @@ public class ProjectKnowledgeBaseService {
 
     public RequirementKnowledgeLocation resolveRequirementIterationLocation(IntakeStructuredData structuredData,
                                                                            ProjectDetailResponse project, Long intakeId) {
-        Path vaultRoot = RepositoryDocumentPaths.resolve(sysConfigService);
-        Path wikiRoot = RepositoryDocumentPaths.wikiArchiveRoot(sysConfigService, vaultRoot, businessLineCode(project));
+        boolean workhub = RepositoryDocumentPaths.WORKHUB_BUSINESS_LINE_CODE.equals(businessLineCode(project));
+        String key = workhub ? RepositoryDocumentPaths.CONFIG_KEY_REPOSITORY_PATH : RepositoryDocumentPaths.CONFIG_KEY_PLAYBOOK_PATH;
+        String explicit = RepositoryDocumentPaths.configuredArchive(sysConfigService, key);
+        String namespace = workhub ? System.getenv("WORKHUB_ARCHIVE_PROJECT") : WorkhubPaths.PLAYBOOK_PROJECT;
+        if (repositorySync != null && (explicit == null || explicit.isBlank()) && namespace != null && !namespace.isBlank()) {
+            repositorySync.ensureCheckout(namespace);
+        }
+        Path vaultRoot;
+        Path wikiRoot;
+        try {
+            vaultRoot = RepositoryDocumentPaths.resolve(sysConfigService);
+        } catch (IllegalStateException ex) {
+            if (workhub) throw ex;
+            vaultRoot = null;
+        }
+        if (vaultRoot == null) {
+            Path playbook = explicit == null || explicit.isBlank()
+                    ? WorkhubPaths.namespace(WorkhubPaths.repositories(), namespace) : Path.of(explicit).toAbsolutePath().normalize();
+            vaultRoot = playbook.resolve("docs");
+            wikiRoot = vaultRoot.resolve(RepositoryDocumentPaths.BUSINESS_LINES);
+        } else {
+            wikiRoot = RepositoryDocumentPaths.wikiArchiveRoot(sysConfigService, vaultRoot, businessLineCode(project));
+        }
+        RepositoryDocumentPaths.checkArchiveRoot(sysConfigService, wikiRoot);
         Path wikiPath = buildWikiRequirementPath(wikiRoot, structuredData, project, intakeId);
         // 原始材料与已确认评估同在需求目录；相对路径以仓库根为基准，兼容 docs/业务线 与 agents-playbook 两个归档根
         Path rawPath = wikiPath.getParent().resolve("原始材料").resolve("source.md");
@@ -371,10 +428,16 @@ public class ProjectKnowledgeBaseService {
                 wikiRoot,
                 rawPath,
                 wikiPath,
-                vaultRoot.getParent().relativize(rawPath).toString(),
-                vaultRoot.getParent().relativize(wikiPath).toString(),
+                documentLink(vaultRoot, wikiRoot, rawPath),
+                documentLink(vaultRoot, wikiRoot, wikiPath),
                 null
         );
+    }
+
+    private static String documentLink(Path documents, Path businessLines, Path target) {
+        Path repository = documents.getParent();
+        if (!repository.getRoot().equals(target.getRoot())) repository = businessLines.getParent().getParent();
+        return repository.relativize(target).toString().replace(java.io.File.separatorChar, '/');
     }
 
     private Path buildWikiRequirementPath(Path wikiRoot, IntakeStructuredData structuredData, ProjectDetailResponse project, Long intakeId) {
@@ -879,7 +942,7 @@ public class ProjectKnowledgeBaseService {
 
         /** 以 WorkHub 仓库根为基准的相对路径，与 wikiRelativePath、rawRelativePath 同一基准。 */
         public String repositoryRelative(Path target) {
-            return vaultRoot.getParent().relativize(target).toString();
+            return documentLink(vaultRoot, wikiRoot, target);
         }
     }
 }

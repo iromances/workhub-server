@@ -65,6 +65,21 @@ import java.util.List;
 @RequestMapping({"/api/intake-records", "/api/intake"})
 public class IntakeController {
 
+    @org.springframework.beans.factory.annotation.Value("${workhub.desktop.open-folder-enabled:false}")
+    private boolean openFolderEnabled;
+
+    @GetMapping("/desktop-capabilities")
+    @PreAuthorize("hasAuthority('intake:record:view')")
+    public ApiResponse<java.util.Map<String, Boolean>> desktopCapabilities() {
+        return ApiResponse.success(java.util.Map.of("openFolderEnabled", openFolderEnabled));
+    }
+
+    private void requireDesktopAccess() {
+        if (!openFolderEnabled) {
+            throw new org.springframework.security.access.AccessDeniedException("当前部署未启用打开本机文件夹");
+        }
+    }
+
     private final IntakeService intakeService;
     private final DevelopmentAnalysisService developmentAnalysisService;
     private final IntakeClarificationAnalysisService intakeClarificationAnalysisService;
@@ -325,6 +340,7 @@ public class IntakeController {
     @PostMapping("/{id}/requirement-folder/open")
     @PreAuthorize("hasAuthority('intake:requirement-folder:open')")
     public ApiResponse<IntakeRequirementFolderResponse> openRequirementFolder(@PathVariable Long id) {
+        requireDesktopAccess();
         return ApiResponse.success(requirementFolderService.open(id));
     }
 
@@ -337,6 +353,7 @@ public class IntakeController {
     @PostMapping("/{id}/development-plan-folder/open")
     @PreAuthorize("hasAuthority('intake:development-plan-folder:open')")
     public ApiResponse<IntakeRequirementFolderResponse> openDevelopmentPlanFolder(@PathVariable Long id) {
+        requireDesktopAccess();
         return ApiResponse.success(developmentPlanFolderService.open(id));
     }
 

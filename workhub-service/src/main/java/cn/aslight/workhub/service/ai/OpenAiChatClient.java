@@ -29,7 +29,7 @@ public class OpenAiChatClient {
         body.put("model", requireText(invocation.model(), "AI 模型不能为空"));
         body.put("messages", List.of(Map.of(
                 "role", "user",
-                "content", AiHttpPayloadSupport.chatContent(invocation.prompt(), invocation.imagePaths())
+                "content", AiHttpPayloadSupport.chatContent(invocation.prompt(), invocation.imagePaths(), invocation.images())
         )));
         String reasoning = AiHttpPayloadSupport.normalizeReasoning(invocation.reasoningLevel());
         if (reasoning != null) {

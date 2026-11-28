@@ -123,6 +123,8 @@ class ProjectKnowledgeBaseServiceTest {
                 .thenReturn(vault.toString());
         Path repository = RepositoryDocumentPathsTest.repository(tempDir.resolve("workhub-server"));
         when(sysConfigService.findPlainValue("knowledge.project", "repositoryPath")).thenReturn(repository.toString());
+        when(sysConfigService.findPlainValue("knowledge.project", "playbookPath"))
+                .thenReturn(tempDir.resolve("agents-playbook").toString());
         ProjectKnowledgeBaseService service = new ProjectKnowledgeBaseService(sysConfigService, mock(AttachmentService.class),
                 new tools.jackson.databind.ObjectMapper(), mock(org.springframework.transaction.PlatformTransactionManager.class));
 

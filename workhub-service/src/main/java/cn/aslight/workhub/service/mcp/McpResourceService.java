@@ -279,12 +279,10 @@ public class McpResourceService {
         } catch (IllegalStateException ex) {
             knowledge.put("projectDocumentPathError", ex.getMessage());
         }
-        if (documents != null) {
-            try {
-                knowledge.put("projectPlaybookPath", RepositoryDocumentPaths.playbookArchiveRoot(sysConfigService, documents).toString());
-            } catch (IllegalStateException ex) {
-                knowledge.put("projectPlaybookPathError", ex.getMessage());
-            }
+        try {
+            knowledge.put("projectPlaybookPath", RepositoryDocumentPaths.playbookArchiveRoot(sysConfigService, documents).toString());
+        } catch (IllegalStateException ex) {
+            knowledge.put("projectPlaybookPathError", ex.getMessage());
         }
         knowledge.put("requirementRawPathPattern", "需求目录下 原始材料/历史版本/{版本ID}/source.md 与 manifest.json（需求目录即 requirementWikiPathPattern 中 研发评估.md 所在目录）；附件以数据库为准，经 get_intake_attachment 读取");
         knowledge.put("requirementWikiPathPattern", "WorkHub 仓库 docs/业务线/{业务线编码}-{业务线名称}/需求迭代/{项目名称}/{年份}/{审批编号}-{需求名称}/研发评估.md（仅 WorkHub 平台 BL000012-工作台）；agents-playbook 仓库 docs/业务线/{业务线编码}-{业务线名称}/需求/{审批编号}-{需求名称}/研发评估.md（其余业务线）");

@@ -28,7 +28,7 @@ public class OpenAiResponsesClient {
     String execute(AiApiInvocation invocation) throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", requireText(invocation.model(), "AI 模型不能为空"));
-        body.put("input", AiHttpPayloadSupport.responsesInput(invocation.prompt(), invocation.imagePaths()));
+        body.put("input", AiHttpPayloadSupport.responsesInput(invocation.prompt(), invocation.imagePaths(), invocation.images()));
         body.put("store", false);
         String reasoning = AiHttpPayloadSupport.normalizeReasoning(invocation.reasoningLevel());
         if (reasoning != null) {

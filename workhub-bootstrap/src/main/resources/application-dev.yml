@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    druid:
+      url: "${WORKHUB_DB_URL:jdbc:mysql://10.10.116.32:3306/workhub?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}"
+      username: "${WORKHUB_DB_USERNAME:root}"
+      password: "${WORKHUB_DB_PASSWORD:amp_pre_%^888}"
+
+workhub:
+  desktop:
+    open-folder-enabled: true
+  jwt:
+    secret: workhub-dev-secret-workhub-dev-secret
+  payment:
+    master-key: workhub-payment-dev-master-key
+  mcp:
+    master-key: ${WORKHUB_MCP_MASTER_KEY:workhub-mcp-dev-master-key}

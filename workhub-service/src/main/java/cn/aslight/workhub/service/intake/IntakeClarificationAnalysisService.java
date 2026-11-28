@@ -224,7 +224,7 @@ public class IntakeClarificationAnalysisService {
             IntakeStructuredData structuredData = readStructuredData(intake.getStructuredDataJson());
             requireDevelopmentRequirement(structuredData);
             ProjectDetailResponse project = resolveProjectForGroup(structuredData);
-            GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle = gitlabRepositoryService.resolveAndFetchGroup(project);
+            GitlabRepositoryService.GitlabRepositoryBundle repositoryBundle = gitlabRepositoryService.analysisSnapshot(project, firstNonBlank(intake.getDevelopmentBranchName(), structuredData.developmentBranchName()));
             ProjectKnowledgeBaseService.RequirementKnowledgeNote requirementNote =
                     projectKnowledgeBaseService.upsertRequirementIterationNote(intake, structuredData, project);
             if (!requirementNote.written()) {

@@ -110,38 +110,47 @@ public class ServerDiagnosticService {
             List<String> executionCommand = ServerFilePolicy.isPathLogCommand(commandKey)
                     ? ServerFilePolicy.protectLogCommand(target, commandKey, remoteCommand) : remoteCommand;
             try (SshTunnel forward = SshTunnel.open(target.sshTunnel(), target.host(), target.port() <= 0 ? 22 : target.port())) {
-                ProcessBuilder processBuilder = sshProcess(target, executionCommand, forward.host(), forward.port());
-                sshCommand = processBuilder.command();
-                process = processBuilder.start();
-                Process runningProcess = process;
-                CompletableFuture<byte[]> outputFuture = CompletableFuture.supplyAsync(() -> {
-                    try {
-                        return readBoundedOutput(runningProcess.getInputStream(), 2097152);
-                    } catch (Exception ex) {
-                        throw new IllegalStateException(ex);
+                int exitCode;
+                String output;
+                if (cn.aslight.workhub.mcp.ssh.JavaSshConnection.windows()) {
+                    DiagnosticOutput response = executeWindows(target, forward, executionCommand, profile.timeoutSeconds());
+                    exitCode = response.exitCode();
+                    output = response.text();
+                } else {
+                    ProcessBuilder processBuilder = sshProcess(target, executionCommand, forward.host(), forward.port());
+                    sshCommand = processBuilder.command();
+                    process = processBuilder.start();
+                    Process runningProcess = process;
+                    CompletableFuture<byte[]> outputFuture = CompletableFuture.supplyAsync(() -> {
+                        try {
+                            return readBoundedOutput(runningProcess.getInputStream(), 2097152);
+                        } catch (Exception ex) {
+                            throw new IllegalStateException(ex);
+                        }
+                    });
+                    boolean finished = process.waitFor(Math.max(profile.timeoutSeconds(), 1), TimeUnit.SECONDS);
+                    if (!finished) {
+                        throw new IllegalArgumentException("诊断命令执行超时");
                     }
-                });
-                boolean finished = process.waitFor(Math.max(profile.timeoutSeconds(), 1), TimeUnit.SECONDS);
-                if (!finished) {
-                    throw new IllegalArgumentException("诊断命令执行超时");
+                    output = new String(outputFuture.get(1, TimeUnit.SECONDS), StandardCharsets.UTF_8);
+                    exitCode = process.exitValue();
                 }
-                String output = new String(outputFuture.get(1, TimeUnit.SECONDS), StandardCharsets.UTF_8);
                 Map<String, Object> result = new LinkedHashMap<>();
                 result.put("targetKey", targetKey);
                 result.put("profileKey", profileKey);
                 result.put("commandKey", commandKey);
-                result.put("exitCode", process.exitValue());
+                result.put("exitCode", exitCode);
                 if (ServerFilePolicy.isFileCommand(commandKey)) {
-                    result.putAll(fileResult(output, process.exitValue()));
+                    result.putAll(fileResult(output, exitCode));
                 } else {
-                    if (ServerFilePolicy.isPathLogCommand(commandKey) && process.exitValue() != 0
+                    if (ServerFilePolicy.isPathLogCommand(commandKey) && exitCode != 0
                             && output.startsWith("{\"error\":")) {
-                        fileResult(output, process.exitValue());
+                        fileResult(output, exitCode);
                     }
                     result.put("output", fileContentMasker.mask(truncateLines(output, profile.maxOutputLines())));
                 }
                 audit("run_diagnostic_command", target, profile, commandKey, parameters, remoteCommand, sshCommand,
-                        process.exitValue(), startedAt, null);
+                        exitCode, startedAt, null);
                 return result;
             }
         } catch (Exception ex) {
@@ -156,6 +165,39 @@ public class ServerDiagnosticService {
                 process.descendants().forEach(ProcessHandle::destroyForcibly);
                 process.destroyForcibly();
             }
+        }
+    }
+
+    private record DiagnosticOutput(int exitCode, String text) {}
+
+    private DiagnosticOutput executeWindows(ServerTarget target, SshTunnel forward, List<String> command,
+                                            int timeoutSeconds) throws Exception {
+        int targetPort = target.port() <= 0 ? 22 : target.port();
+        String identity = targetPort == 22 ? target.host() : "[" + target.host() + "]:" + targetPort;
+        var session = cn.aslight.workhub.mcp.ssh.JavaSshConnection.connect(forward.host(), forward.port(),
+                target.username(), secretResolver.resolve(target.password()), target.identityFile(), identity);
+        try {
+            var channel = (com.jcraft.jsch.ChannelExec) session.openChannel("exec");
+            channel.setCommand(formatCommand(command));
+            try (var stdout = channel.getInputStream(); var stderr = channel.getErrStream();
+                 var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+                var out = executor.submit(() -> readBoundedOutput(stdout, 2097152));
+                var err = executor.submit(() -> readBoundedOutput(stderr, 65536));
+                try {
+                    channel.connect(8000);
+                    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(Math.max(timeoutSeconds, 1));
+                    while (!channel.isClosed()) {
+                        if (System.nanoTime() >= deadline) throw new IOException("诊断命令执行超时");
+                        Thread.sleep(20);
+                    }
+                    err.get(1, TimeUnit.SECONDS);
+                    return new DiagnosticOutput(channel.getExitStatus(), new String(out.get(1, TimeUnit.SECONDS), StandardCharsets.UTF_8));
+                } finally {
+                    channel.disconnect();
+                }
+            }
+        } finally {
+            session.disconnect();
         }
     }
 

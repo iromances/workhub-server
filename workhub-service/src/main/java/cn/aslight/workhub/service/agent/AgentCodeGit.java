@@ -1,5 +1,7 @@
 package cn.aslight.workhub.service.agent;
 
+import cn.aslight.workhub.service.runtime.PrivateFiles;
+import cn.aslight.workhub.service.runtime.HostTools;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
@@ -7,7 +9,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.*;
 import java.nio.file.*;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -40,7 +41,7 @@ public class AgentCodeGit {
         try {
             Files.createDirectories(root);
             Path directory = root.resolve(id);
-            if (!Files.exists(directory, LinkOption.NOFOLLOW_LINKS)) Files.createDirectory(directory, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
+            PrivateFiles.directory(directory);
             noSymlinks(directory);
             if (!Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS)) throw new IllegalStateException("工作区目录类型不符");
             return directory;
@@ -180,14 +181,32 @@ public class AgentCodeGit {
         return value;
     }
 
+    private static Path defaults;
+    private static synchronized Path gitDefaults() {
+        if (defaults != null) return defaults;
+        try {
+            Path root = PrivateFiles.tempDirectory("workhub-git-config-");
+            Path hooks = Files.createDirectory(root.resolve("hooks"));
+            Path config = Files.createFile(root.resolve("config"));
+            root.toFile().deleteOnExit();
+            hooks.toFile().deleteOnExit();
+            config.toFile().deleteOnExit();
+            defaults = root;
+            return root;
+        } catch (IOException ex) {
+            throw new IllegalStateException("无法创建隔离的 Git 配置", ex);
+        }
+    }
+
     private String run(Path directory, Map<String, String> extra, String input, String... args) {
-        var command = new ArrayList<>(List.of("git", "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=false", "-c", "core.pager=cat",
+        String program = HostTools.git();
+        var command = new ArrayList<>(List.of(program, "-c", "core.hooksPath=" + gitDefaults().resolve("hooks"), "-c", "core.fsmonitor=false", "-c", "core.pager=cat",
                 "-c", "protocol.allow=never", "-c", "protocol.file.allow=always", "-c", "gc.auto=0", "-c", "maintenance.auto=false"));
         command.addAll(List.of(args));
         var builder = new ProcessBuilder(command).directory(directory.toFile());
-        builder.environment().clear();
-        builder.environment().putAll(Map.of("PATH", "/usr/bin:/bin:/usr/local/bin", "LANG", "C.UTF-8", "GIT_CONFIG_NOSYSTEM", "1",
-                "GIT_CONFIG_GLOBAL", "/dev/null", "GIT_TERMINAL_PROMPT", "0", "GIT_NO_REPLACE_OBJECTS", "1", "GIT_OPTIONAL_LOCKS", "0"));
+        builder.environment().keySet().removeIf(key -> !HostTools.windowsEnvironment(key));
+        builder.environment().putAll(Map.of("PATH", Path.of(program).getParent().toString(), "LANG", "C.UTF-8", "GIT_CONFIG_NOSYSTEM", "1",
+                "GIT_CONFIG_GLOBAL", gitDefaults().resolve("config").toString(), "GIT_TERMINAL_PROMPT", "0", "GIT_NO_REPLACE_OBJECTS", "1", "GIT_OPTIONAL_LOCKS", "0"));
         builder.environment().putAll(extra);
         Process process = null;
         var children = new HashMap<Long, ProcessHandle>();

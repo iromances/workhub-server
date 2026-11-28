@@ -1,5 +1,6 @@
 package cn.aslight.workhub.service.ai;
 
+import cn.aslight.workhub.service.runtime.PrivateFiles;
 import cn.aslight.workhub.model.ai.AiProviderConfigEntity;
 import cn.aslight.workhub.model.ai.AiUseCaseConfigEntity;
 import cn.aslight.workhub.service.intake.CodexCliClient;
@@ -347,7 +348,10 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
             }
             String output;
             if ("CLI".equals(normalize(provider.getChannelType()))) {
-                output = executeCli(request, definition, provider, useCase, prompt, outputSchema);
+                try (var files = cn.aslight.workhub.service.attachment.AttachmentTemporaryFileSet.materialize(request.images())) {
+                    var local = files.contexts().isEmpty() ? request : request.withLocalImages(files.contexts());
+                    output = executeCli(local, definition, provider, useCase, prompt, outputSchema);
+                }
             } else if ("API".equals(normalize(provider.getChannelType()))) {
                 output = executeApi(new AiApiInvocation(
                         definition.code(),
@@ -359,7 +363,7 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
                         positive(request.timeoutSecondsOverride(), positive(useCase.getTimeoutSeconds(), provider.getCallTimeoutSeconds())),
                         prompt,
                         request.imagePaths(),
-                        outputSchema
+                        outputSchema, request.images()
                 ));
             } else {
                 throw new IllegalStateException("不支持的 AI 调用通道: " + provider.getChannelType());
@@ -435,7 +439,7 @@ public class DefaultAiGatewayClient implements AiGatewayClient {
             Path workingDirectory = request.workingDirectory();
             List<String> allowedDirectories = request.allowedDirectories();
             if (!localRepository) {
-                temporaryDirectory = Files.createTempDirectory("workhub-ai-gateway-");
+                temporaryDirectory = PrivateFiles.tempDirectory("workhub-ai-gateway-");
                 workingDirectory = temporaryDirectory;
                 allowedDirectories = List.of();
             }

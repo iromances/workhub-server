@@ -1,5 +1,7 @@
 package cn.aslight.workhub.service.ai;
 
+import cn.aslight.workhub.service.attachment.AttachmentService.AttachmentFileContext;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,27 +19,35 @@ final class AiHttpPayloadSupport {
     }
 
     static Object responsesInput(String prompt, List<String> imagePaths) throws IOException {
-        if (imagePaths == null || imagePaths.isEmpty()) {
+        return responsesInput(prompt, imagePaths, List.of());
+    }
+
+    static Object responsesInput(String prompt, List<String> imagePaths, List<AttachmentFileContext> images) throws IOException {
+        if ((imagePaths == null || imagePaths.isEmpty()) && images.isEmpty()) {
             return prompt;
         }
         List<Map<String, Object>> content = new ArrayList<>();
         content.add(Map.of("type", "input_text", "text", prompt));
-        for (String imagePath : imagePaths) {
-            content.add(Map.of("type", "input_image", "image_url", dataUrl(imagePath)));
+        for (String dataUrl : imageUrls(imagePaths, images)) {
+            content.add(Map.of("type", "input_image", "image_url", dataUrl));
         }
         return List.of(Map.of("role", "user", "content", content));
     }
 
     static Object chatContent(String prompt, List<String> imagePaths) throws IOException {
-        if (imagePaths == null || imagePaths.isEmpty()) {
+        return chatContent(prompt, imagePaths, List.of());
+    }
+
+    static Object chatContent(String prompt, List<String> imagePaths, List<AttachmentFileContext> images) throws IOException {
+        if ((imagePaths == null || imagePaths.isEmpty()) && images.isEmpty()) {
             return prompt;
         }
         List<Map<String, Object>> content = new ArrayList<>();
         content.add(Map.of("type", "text", "text", prompt));
-        for (String imagePath : imagePaths) {
+        for (String dataUrl : imageUrls(imagePaths, images)) {
             content.add(Map.of(
                     "type", "image_url",
-                    "image_url", Map.of("url", dataUrl(imagePath))
+                    "image_url", Map.of("url", dataUrl)
             ));
         }
         return content;
@@ -79,6 +89,23 @@ final class AiHttpPayloadSupport {
             case "MAX" -> "max";
             default -> throw new IllegalArgumentException("不支持的 AI 推理强度: " + reasoningLevel);
         };
+    }
+
+    private static List<String> imageUrls(List<String> paths, List<AttachmentFileContext> images) throws IOException {
+        List<String> urls = new ArrayList<>();
+        if (paths != null) for (String path : paths) urls.add(dataUrl(path));
+        for (var image : images) {
+            byte[] bytes = image.fileContent();
+            if (bytes == null || bytes.length == 0 || bytes.length > MAX_IMAGE_BYTES)
+                throw new IllegalArgumentException("AI 图片大小必须在 1 字节到 10MB 之间");
+            String mime = image.contentType();
+            if (mime == null || !mime.matches("image/[A-Za-z0-9.+-]+")) {
+                mime = java.net.URLConnection.guessContentTypeFromName(image.fileName());
+            }
+            if (mime == null || !mime.startsWith("image/")) throw new IllegalArgumentException("附件不是支持的图片");
+            urls.add("data:" + mime + ";base64," + Base64.getEncoder().encodeToString(bytes));
+        }
+        return urls;
     }
 
     private static String dataUrl(String imagePath) throws IOException {

@@ -47,6 +47,15 @@ class IntakeControllerTest {
     }
 
     @Test
+    void disabledDesktopRejectsBothOpenRequestsBeforeInvokingFolderServices() {
+        var controller = new IntakeController(null, null);
+        org.junit.jupiter.api.Assertions.assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> controller.openRequirementFolder(1L));
+        org.junit.jupiter.api.Assertions.assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> controller.openDevelopmentPlanFolder(1L));
+    }
+
+    @Test
     void dashboard_shouldExposeProgressReportContract() throws Exception {
         IntakeService intakeService = mock(IntakeService.class);
         when(intakeService.dashboard("ALL")).thenReturn(new IntakeDashboardResponse(

@@ -43,7 +43,7 @@ public final class SshConnectionManager implements AutoCloseable {
             throw new IllegalStateException("堡垒机连接管理器已关闭");
         }
         if (shared == null) {
-            shared = new SshConnectionManager(OpenSshConnection::open, System::nanoTime, true);
+            shared = new SshConnectionManager(JavaSshConnection.windows() ? JavaSshConnection::open : OpenSshConnection::open, System::nanoTime, true);
             Runtime.getRuntime().addShutdownHook(new Thread(SshConnectionManager::closeShared, "workhub-ssh-exit"));
         }
         return shared;

@@ -1,5 +1,6 @@
 package cn.aslight.workhub.service.ai;
 
+import cn.aslight.workhub.service.runtime.PrivateFiles;
 import cn.aslight.workhub.model.ai.CodexModelCatalogResponse;
 import cn.aslight.workhub.model.ai.ZCodeModelCatalogRequest;
 import org.springframework.stereotype.Service;
@@ -41,7 +42,7 @@ public class ZCodeModelCatalogService {
         try {
             var provider = request.provider();
             client.preflight(provider);
-            directory = Files.createTempDirectory("workhub-zcode-catalog-");
+            directory = PrivateFiles.tempDirectory("workhub-zcode-catalog-");
             process = client.prepareBuilder(provider, directory, false).start();
             var conversation = new ZCodeModelCatalogConversation(json, directory.resolve("work"));
             Process observed = process;

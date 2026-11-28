@@ -1,5 +1,7 @@
 package cn.aslight.workhub.service.ai;
 
+import cn.aslight.workhub.service.attachment.AttachmentService.AttachmentFileContext;
+
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,7 +24,36 @@ public record AiGatewayRequest(String useCaseCode,
                                String speedModeOverride,
                                Integer timeoutSecondsOverride,
                                String schemaClasspathOverride,
-                               AiResultRecovery resultRecovery) {
+                               AiResultRecovery resultRecovery,
+                               List<AttachmentFileContext> images) {
+
+    public AiGatewayRequest(String useCaseCode, Map<String, Object> variables, Path workingDirectory,
+                            List<String> allowedDirectories, List<String> imagePaths, String outputSchema,
+                            Long providerConfigIdOverride, String modelOverride, String reasoningLevelOverride,
+                            String speedModeOverride, Integer timeoutSecondsOverride, String schemaClasspathOverride,
+                            AiResultRecovery resultRecovery) {
+        this(useCaseCode, variables, workingDirectory, allowedDirectories, imagePaths, outputSchema, providerConfigIdOverride,
+                modelOverride, reasoningLevelOverride, speedModeOverride, timeoutSecondsOverride, schemaClasspathOverride, resultRecovery, List.of());
+    }
+
+    public AiGatewayRequest withImages(List<AttachmentFileContext> images) {
+        return new AiGatewayRequest(useCaseCode, variables, workingDirectory, allowedDirectories, imagePaths, outputSchema,
+                providerConfigIdOverride, modelOverride, reasoningLevelOverride, speedModeOverride, timeoutSecondsOverride,
+                schemaClasspathOverride, resultRecovery, images);
+    }
+
+    AiGatewayRequest withLocalImages(List<AttachmentFileContext> files) {
+        var paths = new java.util.ArrayList<>(imagePaths);
+        var dirs = new java.util.LinkedHashSet<>(allowedDirectories);
+        for (var file : files) {
+            Path path = Path.of(file.storagePath());
+            paths.add(path.toString());
+            dirs.add(path.getParent().toString());
+        }
+        return new AiGatewayRequest(useCaseCode, variables, workingDirectory, List.copyOf(dirs), paths, outputSchema,
+                providerConfigIdOverride, modelOverride, reasoningLevelOverride, speedModeOverride, timeoutSecondsOverride,
+                schemaClasspathOverride, resultRecovery);
+    }
 
     public AiGatewayRequest(String useCaseCode, Map<String, Object> variables, Path workingDirectory,
                             List<String> allowedDirectories, List<String> imagePaths, String outputSchema,
@@ -34,10 +65,11 @@ public record AiGatewayRequest(String useCaseCode,
 
     public AiGatewayRequest withResultRecovery(AiResultRecovery recovery) {
         return new AiGatewayRequest(useCaseCode, variables, workingDirectory, allowedDirectories, imagePaths, outputSchema,
-                providerConfigIdOverride, modelOverride, reasoningLevelOverride, speedModeOverride, timeoutSecondsOverride, schemaClasspathOverride, recovery);
+                providerConfigIdOverride, modelOverride, reasoningLevelOverride, speedModeOverride, timeoutSecondsOverride, schemaClasspathOverride, recovery, images);
     }
 
     public AiGatewayRequest {
+        images = images == null ? List.of() : List.copyOf(images);
         variables = variables == null ? Map.of() : Map.copyOf(new LinkedHashMap<>(variables));
         allowedDirectories = allowedDirectories == null ? List.of() : List.copyOf(allowedDirectories);
         imagePaths = imagePaths == null ? List.of() : List.copyOf(imagePaths);
