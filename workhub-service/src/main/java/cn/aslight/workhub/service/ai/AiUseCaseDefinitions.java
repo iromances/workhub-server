@@ -19,6 +19,7 @@ public final class AiUseCaseDefinitions {
     public static final String SUBMIT_TEST_REVIEW = "intake.submit-test.review";
     public static final String AGENT_API_STEP = "agent.api.step";
     public static final String AGENT_CLI_STEP = "agent.cli.step";
+    public static final String AGENT_CHAT_CONTEXT = "agent.chat.context";
     public static final String PROVIDER_SMOKE = "system.provider.smoke";
 
     private static final Set<String> STRUCTURED_EXTRACT_VARIABLES = Set.of(
@@ -42,6 +43,8 @@ public final class AiUseCaseDefinitions {
             "agentInstructions", "taskSpecification", "dataWindow", "platformGuide", "trajectory");
     private static final Set<String> AGENT_CLI_STEP_VARIABLES = Set.of(
             "agentInstructions", "taskSpecification", "dataWindow", "platformGuide", "trajectory");
+    private static final Set<String> AGENT_CHAT_CONTEXT_VARIABLES = Set.of(
+            "agentName", "positionName", "agentInstructions", "scopeSummary", "platformGuide");
 
     private static final Map<String, Definition> DEFINITIONS;
 
@@ -66,6 +69,8 @@ public final class AiUseCaseDefinitions {
                 Set.of("API"), Set.of(), AGENT_API_STEP_VARIABLES));
         definitions.put(AGENT_CLI_STEP, new Definition(AGENT_CLI_STEP, "Agent CLI 步进", Capability.MODEL_ONLY,
                 Set.of("CLI"), allCliTypes, AGENT_CLI_STEP_VARIABLES));
+        definitions.put(AGENT_CHAT_CONTEXT, new Definition(AGENT_CHAT_CONTEXT, "Agent 对话工位指引", Capability.MODEL_ONLY,
+                Set.of("API", "CLI"), allCliTypes, AGENT_CHAT_CONTEXT_VARIABLES));
         DEFINITIONS = Map.copyOf(definitions);
     }
 

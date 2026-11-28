@@ -26,7 +26,8 @@ public final class TestPromptTemplates {
             "V20261114_210000__remove_development_analysis_risks_questions.sql",
             "V20261114_213000__freeze_clarification_prompt.sql",
             "V20261116_160000__agent_instructions_draft.sql",
-            "V20261116_170000__agent_position.sql");
+            "V20261116_170000__agent_position.sql",
+            "V20261128_170000__agent_conversation.sql");
     private static final Pattern TEMPLATE_BLOCK = Pattern.compile("SET @tpl := '([\\s\\S]*?)';");
     private static final Pattern USE_CASE_CODE = Pattern.compile("'((?:intake|agent)\\.[a-z0-9.-]+)'");
 
@@ -100,7 +101,8 @@ public final class TestPromptTemplates {
             }
             String sql;
             try {
-                sql = Files.readString(path);
+                // core.autocrlf 检出为 CRLF 时模板与断言串会差一个不可见 \r，统一按 LF 解析。
+                sql = Files.readString(path).replace("\r\n", "\n");
             } catch (IOException ex) {
                 throw new IllegalStateException("无法读取提示词迁移文件: " + path.toAbsolutePath(), ex);
             }
